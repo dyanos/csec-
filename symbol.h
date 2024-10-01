@@ -31,14 +31,14 @@ struct Symbol {
 
 struct ClassSymbol {
     std::string name;
-    llvm::StructType* classType;
+    llvm::Type* classType;
     std::unordered_map<std::string, Symbol> fields;
     std::unordered_map<std::string, Symbol> methods;
     std::string superClassName;
     ClassSymbol* superClassSymbol;
 
     ClassSymbol() : name(""), superClassName(""), superClassSymbol(nullptr), classType(nullptr), fields({}), methods({}) {}
-    ClassSymbol(const std::string& name, llvm::StructType* classType, const std::string& superClassName)
+    ClassSymbol(const std::string& name, llvm::Type* classType, const std::string& superClassName)
         : name(name), classType(classType), superClassName(superClassName), superClassSymbol(nullptr) {}
 
 	std::shared_ptr<Symbol> getField(const std::string& fieldName) {

@@ -21,6 +21,7 @@ public:
     std::string name;
     std::shared_ptr<Type> parentType;  // 상위 타입 (부모 타입)
 
+	Type() : Type(TypeKind::UNKNOWN, "unknown") {}
     Type(TypeKind kind, const std::string& name, std::shared_ptr<Type> parentType = nullptr)
         : kind(kind), name(name), parentType(parentType) {}
 
@@ -47,14 +48,26 @@ public:
 // 기본 타입
 class BasicType : public Type, public std::enable_shared_from_this<BasicType> {
 public:
-    BasicType(const std::string& name, std::shared_ptr<Type> parentType)
+	BasicType() : Type(TypeKind::BASIC, "basic") {}
+    BasicType(const std::string& name, std::shared_ptr<Type> parentType = nullptr)
         : Type(TypeKind::BASIC, name, parentType) {}
+
+    bool equals(std::shared_ptr<Type> other) override {
+        if (other->kind != TypeKind::BASIC) return false;
+        return name == other->name;
+    }
 };
 
 class ClassType : public Type, public std::enable_shared_from_this<ClassType> {
 public:
-    ClassType(const std::string& name, std::shared_ptr<Type> parentType)
+	ClassType() : Type(TypeKind::CLASS, "class") {}
+    ClassType(const std::string& name, std::shared_ptr<Type> parentType = nullptr)
         : Type(TypeKind::CLASS, name, parentType) {}
+
+    bool equals(std::shared_ptr<Type> other) override {
+        if (other->kind != TypeKind::CLASS) return false;
+        return name == other->name;
+    }
 };
 
 class FunctionType : public Type {
@@ -62,6 +75,7 @@ public:
     std::vector<std::shared_ptr<Type>> parameterTypes;
     std::shared_ptr<Type> returnType;
 
+	FunctionType() : Type(TypeKind::FUNCTION, "function") {}
     FunctionType(const std::vector<std::shared_ptr<Type>>& parameterTypes, std::shared_ptr<Type> returnType)
         : Type(TypeKind::FUNCTION, "function"), parameterTypes(parameterTypes), returnType(returnType) {}
 
@@ -92,6 +106,7 @@ public:
     std::shared_ptr<Type> baseType;  // 기본 타입 (예: Array)
     std::vector<std::shared_ptr<Type>> typeArguments;  // 타입 인자 (예: [String])
 
+	GenericType() : Type(TypeKind::GENERIC, "generic") {}
     GenericType(std::shared_ptr<Type> baseType, const std::vector<std::shared_ptr<Type>>& typeArguments)
         : Type(TypeKind::GENERIC, baseType->name), baseType(baseType), typeArguments(typeArguments) {}
 

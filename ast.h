@@ -446,6 +446,37 @@ public:
     std::shared_ptr<Type> getType() override;
 };
 
+class ArrayCreationNode : public ASTNode {
+public:
+    std::shared_ptr<GenericType> arrayType;
+    std::vector<std::shared_ptr<ASTNode>> elements;
+
+    void accept(ASTVisitor& visitor) override;
+    llvm::Value* codegen() override;
+    std::shared_ptr<Type> getType() override {
+        return arrayType;
+    }
+};
+
+class ArrayAccessNode : public ASTNode {
+public:
+    std::shared_ptr<ASTNode> array;
+    std::shared_ptr<ASTNode> index;
+
+    void accept(ASTVisitor& visitor) override;
+    llvm::Value* codegen() override;
+    std::shared_ptr<Type> getType() override {
+        // 배열의 요소 타입 반환
+        auto arrayType = std::dynamic_pointer_cast<GenericType>(array->getType());
+        if (arrayType && arrayType->typeArguments.size() == 1) {
+            return arrayType->typeArguments[0];
+        }
+        else {
+            return std::make_shared<UnknownType>();
+        }
+    }
+};
+
 // ASTVisitor Ŭ���� ����
 class ASTVisitor {
 public:
@@ -484,6 +515,8 @@ public:
     virtual void visit(IdentifierNode& node) = 0;
 	virtual void visit(ValueNode& node) = 0;
 	virtual void visit(FunctionCallNode& node) = 0;
+	virtual void visit(ArrayCreationNode& node) = 0;
+	virtual void visit(ArrayAccessNode& node) = 0;
 };
 
 

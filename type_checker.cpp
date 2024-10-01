@@ -133,6 +133,20 @@ void TypeChecker::visit(ValueNode& node) {
     node.getType();
 }
 
+void TypeChecker::visit(FunctionCallNode& node) {
+	node.getType();
+}
+
+void TypeChecker::visit(ArrayAccessNode& node)
+{
+	node.getType();
+}
+
+void TypeChecker::visit(ArrayCreationNode& node)
+{
+	node.getType();
+}
+
 void TypeChecker::visit(NewCallExpressionNode& node) {
     node.getType();
 }

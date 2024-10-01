@@ -1,15 +1,15 @@
 // symbol_table.cpp
 
 #include "symbol_table.h"
+#include "ast.h"
 #include "type_utils.h"
-
 
 SymbolTable::SymbolTable() {
     // 전역 범위 생성
     enterScope();
 }
 
-void SymbolTable::initializeBuiltInTypes() {
+void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
     // 최상위 타입 Any
     auto anyType = std::make_shared<ClassType>("Any");
     addTypeSymbol("Any", anyType);
@@ -33,19 +33,23 @@ void SymbolTable::initializeBuiltInTypes() {
     addTypeSymbol("String", std::make_shared<ClassType>("String", anyRefType));
 
     // Unit 타입 (void)
-    addTypeSymbol("Unit", std::make_shared<ClassType>("Unit", anyValType));
+    addTypeSymbol("Unit", std::make_shared<BasicType>("Unit", anyValType));
 
     // 기본 타입을 클래스 심볼로 등록
     auto intType = lookupType("Int");
-    ClassSymbol intClassSymbol("Int", nullptr, "AnyVal");
+    ClassSymbol intClassSymbol("Int", llvm::Type::getInt32Ty(context), "AnyVal");
     classSymbols["Int"] = intClassSymbol;
 
     auto charType = lookupType("Char");
-    ClassSymbol charClassSymbol("Char", nullptr, "AnyVal");
+    ClassSymbol charClassSymbol("Char", llvm::Type::getInt8Ty(context), "AnyVal");
     classSymbols["Char"] = charClassSymbol;
 
+	auto stringType = lookupType("String");
+	ClassSymbol stringClassSymbol("String", llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), "AnyRef");
+	classSymbols["String"] = stringClassSymbol;
+
     // Int 타입의 메서드 등록
-    auto intClassSymbol = classSymbols["Int"];
+    //auto& intClassSymbol = classSymbols["Int"];
     // 예를 들어, toString 메서드 등록
     auto toStringType = std::make_shared<FunctionType>(std::vector<std::shared_ptr<Type>>{}, lookupType("String"));
     Symbol toStringSymbol("toString", toStringType, nullptr, false, SymbolType::METHOD);

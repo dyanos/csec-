@@ -76,8 +76,11 @@ std::shared_ptr<Type> Parser::parseType() {
 
         // Handle basic types
 		std::shared_ptr<Type> baseType;
-        if (typeName == "Int" || typeName == "Float" || typeName == "Double" || typeName == "String" || typeName == "Unit") {
+        if (typeName == "Int" || typeName == "Float" || typeName == "Double" || typeName == "Unit") {
             baseType = std::make_shared<BasicType>(typeName);
+        }
+        else if (typeName == "String") {
+			baseType = std::make_shared<ClassType>(typeName);
         }
         else {
             // User-defined types are treated as ClassType
@@ -88,7 +91,7 @@ std::shared_ptr<Type> Parser::parseType() {
         if (match(TokenType::OPERATOR, "[")) {
             auto tempArgsType = parseType();
             expect(TokenType::OPERATOR, "]");
-            return std::make_shared<GenericType>(baseType, tempArgsType);
+            return std::make_shared<GenericType>(baseType, std::vector<std::shared_ptr<Type>>{tempArgsType});
         }
 
         return baseType;
@@ -591,7 +594,7 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
         while (match(TokenType::OPERATOR, ".")) {
             // 바로 다음에 id가 오는 경우와 match clause가 오는 경우를 처리해야 하는데, 여기서는 id만 오는 것을 가정
             if (match(TokenType::IDENTIFIER)) {
-                pathComponents.push_back(peek().value);
+                pathComponents.push_back(previous().value);
             }
             else {
                 error("Expected identifier after '.'");
@@ -601,14 +604,26 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 
         if (match(TokenType::OPERATOR, "(")) {
             // 함수 호출 표현식 파싱
-            auto callNode = std::make_shared<CallExpressionNode>();
+			if (pathComponents.size() == 1) {
+				// 단일 함수 호출 (예: println())
+				auto callNode = std::make_shared<FunctionCallNode>();
+				callNode->functionName = pathComponents[0];
+				callNode->arguments = parseCallParameterList();
+				return callNode;
+            }
+            else {
+                auto callNode = std::make_shared<MethodCallNode>();
 
-            // TODO: template 함수 호출에 대한 처리도 나중에 해야할 듯 
-            auto id = std::make_shared<IdentifierNode>(join(pathComponents, "."));
-            callNode->callee = id;
-            callNode->arguments = parseCallParameterList();
+                // TODO: template 함수 호출에 대한 처리도 나중에 해야할 듯 
+                std::vector<std::string> result;
+                std::copy(pathComponents.begin(), pathComponents.end() - 1, std::back_inserter(result));
 
-            return callNode;
+                callNode->object = std::make_shared<IdentifierNode>(join(result, "."));
+                callNode->methodName = pathComponents.back();
+                callNode->arguments = parseCallParameterList();
+
+                return callNode;
+            }
         } 
         else if (match(TokenType::OPERATOR, "=")) {
 			// 할당 표현식 파싱
@@ -645,7 +660,7 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
             // new keyword 뒤에는 argument list나 배열의 크기를 설정하는 []가 나올 수 있음.
             // []는 4차원까지 기본적으로 지원하도록 하자.
             // []가 나오면 배열로 간주하고, argument list가 나오면 생성자 호출로 간주하자.
-            
+			auto id = previous().value;
             if (match(TokenType::OPERATOR, "[")) {
                 std::vector<std::shared_ptr<ASTNode>> sizes;
                 while (!check(TokenType::OPERATOR, "]")) {
@@ -656,18 +671,18 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
                     }
                 }
                 expect(TokenType::OPERATOR, "]");
-                auto newArrayExpr = std::make_shared<NewArrayExpressionNode>(previous().value, sizes);
+                auto newArrayExpr = std::make_shared<NewArrayExpressionNode>(id, sizes);
                 return newArrayExpr;
             }
             else if (match(TokenType::OPERATOR, "(")) {
                 std::shared_ptr<NewCallExpressionNode> newExpr = std::make_shared<NewCallExpressionNode>();
-                newExpr->className = previous().value;
+                newExpr->className = id;
                 newExpr->arguments = parseArgumentList();
                 return newExpr;
             }
             else {
                 std::shared_ptr<NewCallExpressionNode> newExpr = std::make_shared<NewCallExpressionNode>();
-                newExpr->className = previous().value;
+                newExpr->className = id;
                 return newExpr;
             }
         }

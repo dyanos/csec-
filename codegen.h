@@ -16,12 +16,12 @@ public:
     std::unique_ptr<llvm::Module> module;
     ModuleLoader moduleLoader;
     llvm::Function* mainFunction;
-    llvm::Function* mallocFunction;
-	llvm::Function* freeFunction;
 
     SymbolTable symbolTable;  // 심볼 테이블 추가
     std::string currentClassName;
     
+    llvm::LLVMContext& getContext() { return context; }
+
     void generateCode(std::shared_ptr<ProgramNode> program);
     void dumpIR();
     llvm::Type* getLLVMType(std::shared_ptr<Type> type);

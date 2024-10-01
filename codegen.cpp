@@ -10,27 +10,18 @@
 CodeGenerator::CodeGenerator() : builder(context) {
     module = std::make_unique<llvm::Module>("main", context);
 
-    // main �Լ� ����
     llvm::FunctionType* funcType = llvm::FunctionType::get(builder.getInt32Ty(), false);
     mainFunction = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module.get());
 
-	// mallocFunction�� freeFunction�� Type�� ���߿��� ���� �ʿ�
-    // ������ AddressSpace�� 0�̱� ������, �� �κ��� ���߿� ������ ������ �ִ��� Ȯ�� �ʿ�
-	//mallocFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::PointerType::get(context, 0), { llvm::Type::getInt32Ty(context) }, false), llvm::Function::ExternalLinkage, "malloc", module.get());
-	//freeFunction = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::get(context, 0) }, false), llvm::Function::ExternalLinkage, "free", module.get());
-
-    // ��Ʈ�� ���� ����
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", mainFunction);
     builder.SetInsertPoint(entry);
 
-	symbolTable.initializeBuiltInTypes();
-
-    // ��� �δ� �ʱ�ȭ
-    moduleLoader = ModuleLoader();
+    symbolTable.initializeBuiltInTypes(context);
 }
 
 void CodeGenerator::generateCode(std::shared_ptr<ProgramNode> program) {
     program->codegen();
+
     builder.CreateRet(builder.getInt32(0));
 }
 
@@ -39,36 +30,28 @@ void CodeGenerator::dumpIR() {
 }
 
 llvm::Type* CodeGenerator::getLLVMType(std::shared_ptr<Type> type) {
-    if (type->kind == TypeKind::BASIC || type->kind == TypeKind::FUNCTION || type->kind == TypeKind::CLASS) {
-        if (type->name == "Int") {
+    if (type->kind == TypeKind::BASIC) {
+        if (type == symbolTable.lookupType("Int")) {
             return llvm::Type::getInt32Ty(context);
         }
-        else if (type->name == "Float") {
+        else if (type == symbolTable.lookupType("Float")) {
             return llvm::Type::getFloatTy(context);
         }
-        else if (type->name == "Double") {
+        else if (type == symbolTable.lookupType("Double")) {
             return llvm::Type::getDoubleTy(context);
         }
-        else if (type->name == "Unit") {
+        else if (type == symbolTable.lookupType("Char")) {
+            return llvm::Type::getInt8Ty(context);
+        }
+        else if (type == symbolTable.lookupType("String")) {
+			return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+        }
+        else if (type.get()->equals(symbolTable.lookupType("Unit"))) {
             return llvm::Type::getVoidTy(context);
         }
-        else if (type->name == "String") {
-            return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
-        }
-		else if (type->name == "Boolean") {
-			return llvm::Type::getInt1Ty(context);
-		}
-		else if (type->name == "Void") {
-			return llvm::Type::getVoidTy(context);
-		}
-		else if (type->name == "Array") {
-			return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
-		}
-		else if (type->name == "Any") {
-			return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
-		}
     }
     else if (type->kind == TypeKind::CLASS) {
+        // 클래스 타입 처리
         ClassSymbol* classSymbol = symbolTable.lookupClass(type->name);
         if (classSymbol) {
             return classSymbol->classType->getPointerTo();
@@ -79,20 +62,25 @@ llvm::Type* CodeGenerator::getLLVMType(std::shared_ptr<Type> type) {
         }
     }
     else if (type->kind == TypeKind::GENERIC) {
-		auto ty = std::static_pointer_cast<GenericType>(type);
-
-        ClassSymbol* classSymbol = symbolTable.lookupClass(ty->baseType->name);
-        if (classSymbol) {
-            return classSymbol->classType->getPointerTo();
+        auto genericType = std::dynamic_pointer_cast<GenericType>(type);
+        if (genericType->baseType->name == "Array") {
+            if (genericType->typeArguments.size() != 1) {
+                std::cerr << "Error: Array type must have exactly one type argument" << std::endl;
+                return nullptr;
+            }
+            auto elementType = getLLVMType(genericType->typeArguments[0]);
+            if (!elementType) {
+                std::cerr << "Error: Invalid element type in Array" << std::endl;
+                return nullptr;
+            }
+            return llvm::PointerType::getUnqual(elementType);
         }
-        else {
-            std::cerr << "Error: Undefined class type '" << ty->baseType->name << "'" << std::endl;
-            return nullptr;
-        }
+        std::cerr << "Error: Unsupported generic type '" << genericType->baseType->name << "'" << std::endl;
+        return nullptr;
     }
-    else {
-        std::cerr << "Undefined type: " << type->name << std::endl;
+    else if (type->kind == TypeKind::UNKNOWN) {
+        std::cerr << "Error: Unknown type '" << type->name << "'" << std::endl;
+        return nullptr;
     }
-
     return nullptr;
 }

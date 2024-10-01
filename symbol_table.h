@@ -6,11 +6,13 @@
 #include <string>
 #include <memory>
 
+class CodeGenerator;
+
 class SymbolTable {
 public:
     SymbolTable();
 
-    void initializeBuiltInTypes();
+    void initializeBuiltInTypes(llvm::LLVMContext& context);
 
     void enterScope();
     void exitScope();

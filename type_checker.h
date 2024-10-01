@@ -90,4 +90,9 @@ public:
 
     // 값 노드를 방문합니다.
     void visit(ValueNode& node) override;
+
+	void visit(FunctionCallNode& node) override;
+    
+	void visit(ArrayAccessNode& node) override;
+	void visit(ArrayCreationNode& node) override;
 };

@@ -1,0 +1,93 @@
+// type_checker.h
+
+#pragma once
+
+#include "ast.h"
+
+// TypeChecker 클래스는 AST를 방문하여 타입 검사를 수행합니다.
+class TypeChecker : public ASTVisitor {
+public:
+    // 프로그램 노드를 방문합니다.
+    void visit(ProgramNode& node) override;
+
+    // 임포트 노드를 방문합니다.
+    void visit(ImportNode& node) override;
+
+    // 클래스 선언 노드를 방문합니다.
+    void visit(ClassDeclarationNode& node) override;
+
+    // 객체 선언 노드를 방문합니다.
+    void visit(ObjectDeclarationNode& node) override;
+
+    // 함수 선언 노드를 방문합니다.
+    void visit(FunctionDeclarationNode& node) override;
+
+    // 파라미터 노드를 방문합니다.
+    void visit(ParameterNode& node) override;
+
+    // 블록 노드를 방문합니다.
+    void visit(BlockNode& node) override;
+
+    // 표현식 노드를 방문합니다.
+    void visit(ExpressionNode& node) override;
+
+    // 변수 선언 노드를 방문합니다.
+    void visit(VariableDeclarationNode& node) override;
+
+    // 호출 표현식 노드를 방문합니다.
+    void visit(CallExpressionNode& node) override;
+
+	void visit(MethodCallNode& node) override;
+
+    // if 문 노드를 방문합니다.
+    void visit(IfStatementNode& node) override;
+
+    // for 문 노드를 방문합니다.
+    void visit(ForStatementNode& node) override;
+
+    // match 표현식 노드를 방문합니다.
+    void visit(MatchExpressionNode& node) override;
+
+    // 범위 표현식 노드를 방문합니다.
+    void visit(RangeExpressionNode& node) override;
+
+    // 이항 표현식 노드를 방문합니다.
+    void visit(BinaryExpressionNode& node) override;
+
+    // 할당 노드를 방문합니다.
+    void visit(AssignmentNode& node) override;
+
+    // 클래스 본문 노드를 방문합니다.
+    void visit(ClassBodyNode& node) override;
+
+    // 반환 문 노드를 방문합니다.
+    void visit(ReturnStatementNode& node) override;
+
+    // 새로운 호출 표현식 노드를 방문합니다.
+    void visit(NewCallExpressionNode& node) override;
+
+    // 새로운 배열 표현식 노드를 방문합니다.
+    void visit(NewArrayExpressionNode& node) override;
+
+    // 할당 표현식 노드를 방문합니다.
+    void visit(AssignmentExpressionNode& node) override;
+
+    // 단항 표현식 노드를 방문합니다.
+    void visit(UnaryExpressionNode& node) override;
+    void visit(CastingExpressionNode& node) override;
+
+    // 후위 표현식 노드를 방문합니다.
+    void visit(PostfixExpressionNode& node) override;
+
+    // 전위 표현식 노드를 방문합니다.
+    void visit(PrefixExpressionNode& node) override;
+
+    // 단위 노드를 방문합니다.
+    void visit(UnitNode& node) override;
+
+    // 식별자 노드를 방문합니다.
+    void visit(IdentifierNode& node) override;
+
+    // 값 노드를 방문합니다.
+    void visit(ValueNode& node) override;
+};

@@ -16,6 +16,27 @@ CodeGenerator::CodeGenerator() : builder(context) {
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", mainFunction);
     builder.SetInsertPoint(entry);
 
+    mallocFunction = module->getFunction("malloc");
+    if (!mallocFunction) {
+        mallocFunction = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1) }, false),
+            llvm::Function::ExternalLinkage,
+            "malloc",
+            module.get()
+        );
+    }
+    
+    freeFunction = module->getFunction("free");
+    if (!freeFunction) {
+        freeFunction = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
+            llvm::Function::ExternalLinkage,
+            "free",
+            module.get()
+        );
+    }
+
+
     symbolTable.initializeBuiltInTypes(context);
 }
 

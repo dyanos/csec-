@@ -338,13 +338,13 @@ public:
     std::shared_ptr<Type> getType() override;
 };
 
-class NewCallExpressionNode : public ASTNode {
+class ClassInstanceCreationNode : public ASTNode {
 public:
     std::string className;
     std::vector<std::shared_ptr<ASTNode>> arguments;
 
-	NewCallExpressionNode() {}
-    NewCallExpressionNode(const std::string& className, std::vector<std::shared_ptr<ASTNode>> arguments)
+	ClassInstanceCreationNode() {}
+    ClassInstanceCreationNode(const std::string& className, std::vector<std::shared_ptr<ASTNode>> arguments)
         : className(className), arguments(arguments) {}
 
     void accept(ASTVisitor& visitor) override;
@@ -352,13 +352,14 @@ public:
     std::shared_ptr<Type> getType() override;
 };
 
-class NewArrayExpressionNode : public ExpressionNode {
+// TODO: 나중에 이 노드는 new operator 사용법 때문에 ClassInstanceCreationNode로 통합될 예정
+class ArrayCreationExpressionNode : public ExpressionNode {
 public:
     std::string typeName;
     std::vector<std::shared_ptr<ASTNode>> sizes;
 
-	NewArrayExpressionNode() {}
-    NewArrayExpressionNode(const std::string& typeName, const std::vector<std::shared_ptr<ASTNode>>& sizes)
+	ArrayCreationExpressionNode() {}
+    ArrayCreationExpressionNode(const std::string& typeName, const std::vector<std::shared_ptr<ASTNode>>& sizes)
         : typeName(typeName), sizes(sizes) {}
 
     void accept(ASTVisitor& visitor) override;
@@ -503,8 +504,8 @@ public:
 	virtual void visit(AssignmentNode& node) = 0;
 	virtual void visit(ClassBodyNode& node) = 0;
 	virtual void visit(ReturnStatementNode& node) = 0;
-    virtual void visit(NewCallExpressionNode& node) = 0;
-	virtual void visit(NewArrayExpressionNode& node) = 0;
+    virtual void visit(ClassInstanceCreationNode& node) = 0;
+	virtual void visit(ArrayCreationExpressionNode& node) = 0;
 	virtual void visit(AssignmentExpressionNode& node) = 0;
 	virtual void visit(UnaryExpressionNode& node) = 0;
 	virtual void visit(CastingExpressionNode& node) = 0;

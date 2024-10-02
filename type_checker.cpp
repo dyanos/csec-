@@ -147,11 +147,11 @@ void TypeChecker::visit(ArrayCreationNode& node)
 	node.getType();
 }
 
-void TypeChecker::visit(NewCallExpressionNode& node) {
+void TypeChecker::visit(ClassInstanceCreationNode& node) {
     node.getType();
 }
 
-void TypeChecker::visit(NewArrayExpressionNode& node) {
+void TypeChecker::visit(ArrayCreationExpressionNode& node) {
     node.getType();
 }
 

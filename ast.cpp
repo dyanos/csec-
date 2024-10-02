@@ -931,11 +931,11 @@ std::shared_ptr<Type> MethodCallNode::getType() {
     return type;
 }
 
-void NewCallExpressionNode::accept(ASTVisitor& visitor) {
+void ClassInstanceCreationNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
 
-llvm::Value* NewCallExpressionNode::codegen() {
+llvm::Value* ClassInstanceCreationNode::codegen() {
 	// primitive type인지, class type인지 확인, template type인지 확인
     // primitive type이면 llvm::CreateAlloca로 
 	if (isPrimitiveType(className)) {
@@ -987,15 +987,15 @@ llvm::Value* NewCallExpressionNode::codegen() {
     return allocatedMemory;
 }
 
-std::shared_ptr<Type> NewArrayExpressionNode::getType() {
-    return std::make_shared<ClassType>(typeName);
+std::shared_ptr<Type> ClassInstanceCreationNode::getType() {
+    return std::make_shared<ClassType>(className);
 }
 
-void NewArrayExpressionNode::accept(ASTVisitor& visitor) {
+void ArrayCreationExpressionNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
 
-llvm::Value* NewArrayExpressionNode::codegen() {
+llvm::Value* ArrayCreationExpressionNode::codegen() {
     // sizes로 배열 크기를 받아서 처리하는데 이들은 4차원이 최대이므로, 이들을 곱한다.
     llvm::Value* array_size = sizes[0]->codegen();
     for (int i = 1; i < sizes.size(); i++) {
@@ -1041,8 +1041,8 @@ llvm::Value* NewArrayExpressionNode::codegen() {
     return allocatedMemory;
 }
 
-std::shared_ptr<Type> NewCallExpressionNode::getType() {
-    return std::make_shared<ClassType>(className);
+std::shared_ptr<Type> ArrayCreationExpressionNode::getType() {
+    return std::make_shared<ClassType>(typeName);
 }
 
 void AssignmentExpressionNode::accept(ASTVisitor& visitor) {

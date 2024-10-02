@@ -64,10 +64,10 @@ public:
     void visit(ReturnStatementNode& node) override;
 
     // 새로운 호출 표현식 노드를 방문합니다.
-    void visit(NewCallExpressionNode& node) override;
+    void visit(ClassInstanceCreationNode& node) override;
 
     // 새로운 배열 표현식 노드를 방문합니다.
-    void visit(NewArrayExpressionNode& node) override;
+    void visit(ArrayCreationExpressionNode& node) override;
 
     // 할당 표현식 노드를 방문합니다.
     void visit(AssignmentExpressionNode& node) override;

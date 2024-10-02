@@ -17,7 +17,7 @@ public:
     ModuleLoader moduleLoader;
     llvm::Function* mainFunction;
 
-    SymbolTable symbolTable;  // ½Éº¼ Å×ÀÌºí Ãß°¡
+    SymbolTable symbolTable;  // ï¿½Éºï¿½ ï¿½ï¿½ï¿½Ìºï¿½ ï¿½ß°ï¿½
     std::string currentClassName;
     
     llvm::LLVMContext& getContext() { return context; }
@@ -25,4 +25,7 @@ public:
     void generateCode(std::shared_ptr<ProgramNode> program);
     void dumpIR();
     llvm::Type* getLLVMType(std::shared_ptr<Type> type);
+
+    llvm::Function* mallocFunction;
+    llvm::Function* freeFunction;
 };

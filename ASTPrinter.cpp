@@ -129,7 +129,7 @@ public:
         }
     }
 
-    void visit(NewCallExpressionNode& node) override {
+    void visit(ClassInstanceCreationNode& node) override {
         std::cout << "NewCallExpression:" << std::endl;
         std::cout << "Type: " << node.type << std::endl;
         std::cout << "Arguments:" << std::endl;
@@ -138,7 +138,7 @@ public:
         }
     }
 
-    void visit(NewArrayExpressionNode& node) override {
+    void visit(ArrayCreationExpressionNode& node) override {
         std::cout << "NewArrayExpression:" << std::endl;
         std::cout << "Type: " << node.type << std::endl;
         std::cout << "Size:" << std::endl;

@@ -343,7 +343,7 @@ std::shared_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
             // initializer의 평가 결과로부터 변수의 타입 추론
             if (initializer) {
                 varType = initializer->getType();
-                
+
                 if (!varType) {
                     error("Cannot infer type of '" + varName + "'");
                     varType = std::make_shared<UnknownType>();
@@ -712,17 +712,17 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
                     }
                 }
                 expect(TokenType::OPERATOR, "]");
-                auto newArrayExpr = std::make_shared<NewArrayExpressionNode>(id, sizes);
+                auto newArrayExpr = std::make_shared<ArrayCreationExpressionNode>(id, sizes);
                 return newArrayExpr;
             }
             else if (match(TokenType::OPERATOR, "(")) {
-                std::shared_ptr<NewCallExpressionNode> newExpr = std::make_shared<NewCallExpressionNode>();
+                std::shared_ptr<ClassInstanceCreationNode> newExpr = std::make_shared<ClassInstanceCreationNode>();
                 newExpr->className = id;
                 newExpr->arguments = parseArgumentList();
                 return newExpr;
             }
             else {
-                std::shared_ptr<NewCallExpressionNode> newExpr = std::make_shared<NewCallExpressionNode>();
+                std::shared_ptr<ClassInstanceCreationNode> newExpr = std::make_shared<ClassInstanceCreationNode>();
                 newExpr->className = id;
                 return newExpr;
             }

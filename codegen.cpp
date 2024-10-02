@@ -19,13 +19,13 @@ CodeGenerator::CodeGenerator() : builder(context) {
     mallocFunction = module->getFunction("malloc");
     if (!mallocFunction) {
         mallocFunction = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1) }, false),
+            llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::Type::getInt64Ty(context) }, false),
             llvm::Function::ExternalLinkage,
             "malloc",
             module.get()
         );
     }
-    
+
     freeFunction = module->getFunction("free");
     if (!freeFunction) {
         freeFunction = llvm::Function::Create(

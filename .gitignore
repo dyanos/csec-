@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+/.vs/csec++
+/.vscode
+/csec++/x64/Debug
+/x64/Debug
+/csec++.vcxproj.filters
+/csec++.vcxproj.user

@@ -31,19 +31,19 @@ void CodeGenerator::dumpIR() {
 
 llvm::Type* CodeGenerator::getLLVMType(std::shared_ptr<Type> type) {
     if (type->kind == TypeKind::BASIC) {
-        if (type == symbolTable.lookupType("Int")) {
+        if (type.get()->equals(symbolTable.lookupType("Int"))) {
             return llvm::Type::getInt32Ty(context);
         }
-        else if (type == symbolTable.lookupType("Float")) {
+        else if (type.get()->equals(symbolTable.lookupType("Float"))) {
             return llvm::Type::getFloatTy(context);
         }
-        else if (type == symbolTable.lookupType("Double")) {
+        else if (type.get()->equals(symbolTable.lookupType("Double"))) {
             return llvm::Type::getDoubleTy(context);
         }
-        else if (type == symbolTable.lookupType("Char")) {
+        else if (type.get()->equals(symbolTable.lookupType("Char"))) {
             return llvm::Type::getInt8Ty(context);
         }
-        else if (type == symbolTable.lookupType("String")) {
+        else if (type.get()->equals(symbolTable.lookupType("String"))) {
 			return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
         }
         else if (type.get()->equals(symbolTable.lookupType("Unit"))) {

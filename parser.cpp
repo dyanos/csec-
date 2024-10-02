@@ -8,7 +8,7 @@
 Parser::Parser(const std::vector<Token>& tokens)
     : tokens(tokens), position(0) {}
 
-// °¢ ÇÔ¼öÀÇ ±¸Çö (ÀÌÀü ÄÚµå¿Í µ¿ÀÏ)
+// ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½Úµï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 std::shared_ptr<ProgramNode> Parser::parse() {
     auto program = std::make_shared<ProgramNode>();
     while (!isAtEnd()) {
@@ -53,10 +53,10 @@ bool Parser::match(TokenType type, const std::string& value) {
 }
 
 /* std::string Parser::parseType() {
-    // °£´ÜÇÑ Å¸ÀÔ ÆÄ½Ì (¿¹: Int, String)
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½Ä½ï¿½ (ï¿½ï¿½: Int, String)
     if (match(TokenType::IDENTIFIER)) {
         std::string typeName = previous().value;
-        // Á¦³×¸¯ Å¸ÀÔ Ã³¸® (¿¹: Array[String])
+        // ï¿½ï¿½ï¿½×¸ï¿½ Å¸ï¿½ï¿½ Ã³ï¿½ï¿½ (ï¿½ï¿½: Array[String])
         if (match(TokenType::OPERATOR, "[")) {
             std::string genericType = parseType();
             expect(TokenType::OPERATOR, "]");
@@ -104,8 +104,8 @@ std::shared_ptr<Type> Parser::parseType() {
 
 std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 	if (match(TokenType::KEYWORD, "import")) {
-		// import ¹® Ã³¸®
-		// ÀÌ ¿¹Á¦¿¡¼­´Â import ¹®À» ¹«½Ã
+		// import ï¿½ï¿½ Ã³ï¿½ï¿½
+		// ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ import ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		while (!check(TokenType::OPERATOR, ";")) {
 			if (isAtEnd()) {
 				error("Unterminated import statement");
@@ -113,15 +113,15 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 			}
 			advance();
 		}
-		advance();  // ¼¼¹ÌÄÝ·Ð ½ºÅµ
+		advance();  // ï¿½ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ ï¿½ï¿½Åµ
 		return nullptr;
 	}
 	else if (match(TokenType::KEYWORD, "class")) {
-		// Å¬·¡½º ¼±¾ð Ã³¸®
-		// ÀÌ ¿¹Á¦¿¡¼­´Â Å¬·¡½º ¼±¾ðÀ» ¹«½Ã
+		// Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
+		// ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         std::vector<std::shared_ptr<ASTNode>> stmts;
 
-        // class ÀÌ¸§À» ¾ò½À´Ï´Ù. ¾ÆÁ÷ »ó¼ÓÀº °í¹ÎÇÏÁö ¾Ê½À´Ï´Ù.
+        // class ï¿½Ì¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï´ï¿½. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê½ï¿½ï¿½Ï´ï¿½.
         if (!match(TokenType::IDENTIFIER)) {
             error("Expected class name");
             return nullptr;
@@ -129,7 +129,7 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 
         std::string className = previous().value;
 
-        // constructor parameters¸¦ ÆÄ½Ì
+        // constructor parametersï¿½ï¿½ ï¿½Ä½ï¿½
 		std::vector<std::shared_ptr<ParameterNode>> constructorParams;
 		if (match(TokenType::OPERATOR, "(")) {
 			constructorParams = parseParameterList();
@@ -147,14 +147,43 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
             stmts.push_back(stmt);
 		}
 		
+		std::shared_ptr<ClassBodyNode> classBody = std::make_shared<ClassBodyNode>();
+		for (auto stmt : stmts) {
+			if (auto fieldDecl = std::dynamic_pointer_cast<VariableDeclarationNode>(stmt)) {
+				classBody->fields.push_back(fieldDecl);
+			} else if (auto methodDecl = std::dynamic_pointer_cast<FunctionDeclarationNode>(stmt)) {
+				classBody->methods.push_back(methodDecl);
+			} else {
+				error("Unexpected token in class body");
+			}
+		}
+
+        // ìƒì„±ìžê°€ ì—†ëŠ” ê²½ìš° ê¸°ë³¸ ìƒì„±ìž ì¶”ê°€
+        bool hasConstructor = false;
+        for (const auto& method : classBody->methods) {
+            if (method->name == className) {
+                hasConstructor = true;
+                break;
+            }
+        }
+        
+        if (!hasConstructor) {
+            auto defaultConstructor = std::make_shared<FunctionDeclarationNode>();
+            defaultConstructor->name = className;
+            defaultConstructor->parameters = constructorParams;
+            defaultConstructor->returnType = std::make_shared<BasicType>("Unit");
+            defaultConstructor->body = std::make_shared<BlockNode>();
+            classBody->methods.push_back(defaultConstructor);
+        }
+
         std::shared_ptr<ClassDeclarationNode> classNode = std::make_shared<ClassDeclarationNode>();
         classNode->name = className;
 		classNode->constructorParams = constructorParams;
-        classNode->body = std::make_shared<ClassBodyNode>();
+        classNode->body = classBody;
         return classNode;
 	}
     else if (match(TokenType::KEYWORD, "object")) {
-        // °´Ã¼ ¼±¾ð Ã³¸®
+        // ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
         return parseObjectDeclaration();
     } 
     else {
@@ -163,7 +192,7 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 }
 
 std::shared_ptr<ASTNode> Parser::parseImportStatement() {
-    // ¿¹¸¦ µé¾î "import package.object" ÇüÅÂÀÇ °£´ÜÇÑ import ¹®À» Ã³¸®ÇÕ´Ï´Ù.
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ "import package.object" ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ import ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
     std::vector<std::string> pathComponents;
 
     do {
@@ -185,14 +214,14 @@ std::shared_ptr<ASTNode> Parser::parseClassDeclaration() {
     if (match(TokenType::IDENTIFIER)) {
         std::string className = previous().value;
 
-        // Å¬·¡½º ÆÄ¶ó¹ÌÅÍ ¸ñ·Ï ÆÄ½Ì (¼±ÅÃ »çÇ×)
+        // Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         std::vector<std::shared_ptr<ParameterNode>> constructorParams;
         if (match(TokenType::OPERATOR, "(")) {
             constructorParams = parseParameterList();
             expect(TokenType::OPERATOR, ")");
         }
 
-        // »ó¼Ó Å¬·¡½º ÆÄ½Ì (¼±ÅÃ »çÇ×)
+        // ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         std::string superClassName;
         if (match(TokenType::KEYWORD, "extends")) {
             if (match(TokenType::IDENTIFIER)) {
@@ -203,7 +232,7 @@ std::shared_ptr<ASTNode> Parser::parseClassDeclaration() {
             }
         }
 
-        // Å¬·¡½º º»¹® ÆÄ½Ì
+        // Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
         std::shared_ptr<ClassBodyNode> classBody;
         if (match(TokenType::OPERATOR, "{")) {
             classBody = parseClassBody();
@@ -235,7 +264,7 @@ std::shared_ptr<ClassBodyNode> Parser::parseClassBody() {
             return nullptr;
         }
 
-        // Å¬·¡½º ¸â¹ö ÆÄ½Ì (ÇÊµå ¶Ç´Â ¸Þ¼­µå)
+        // Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½ (ï¿½Êµï¿½ ï¿½Ç´ï¿½ ï¿½Þ¼ï¿½ï¿½ï¿½)
         if (match(TokenType::KEYWORD, "def")) {
             auto method = parseFunctionDeclaration();
             classBody->methods.push_back(method);
@@ -261,15 +290,15 @@ std::shared_ptr<ASTNode> Parser::parseStatement() {
     else if (match(TokenType::KEYWORD, "if")) {
         return parseIfStatement();
     }
-    // for ¹® Ã³¸®
+    // for ï¿½ï¿½ Ã³ï¿½ï¿½
     else if (match(TokenType::KEYWORD, "for")) {
         return parseForStatement();
     }
-    // ÇÔ¼ö ¼±¾ð Ã³¸®
+    // ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
     else if (match(TokenType::KEYWORD, "def")) {
         return parseFunctionDeclaration();
     }
-    // return ¹® Ã³¸®
+    // return ï¿½ï¿½ Ã³ï¿½ï¿½
     else if (match(TokenType::KEYWORD, "return")) {
         std::shared_ptr<ASTNode> expr = nullptr;
         if (!check(TokenType::END_OF_FILE) && !check(TokenType::OPERATOR, ";")) {
@@ -279,11 +308,11 @@ std::shared_ptr<ASTNode> Parser::parseStatement() {
         returnNode->expression = expr;
         return returnNode;
     }
-    // °´Ã¼ ¼±¾ð Ã³¸®
+    // ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
     else if (match(TokenType::KEYWORD, "object")) {
         return parseObjectDeclaration();
     }
-    // ÀÌ ¿¹Á¦¿¡¼­´Â ÇÔ¼ö¿Í °´Ã¼ ¼±¾ð¸¸ Ã³¸®
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
     else {
 		return parseExpression();
 		//error("Expected statement");
@@ -297,17 +326,29 @@ std::shared_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
         std::shared_ptr<Type> varType;
         std::shared_ptr<ASTNode> initializer;
 
-        // Å¸ÀÔ ÁöÁ¤ÀÌ ÀÖ´ÂÁö È®ÀÎ
+        // Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½
         if (match(TokenType::OPERATOR, ":")) {
             varType = parseType();
         }
 
-        // ÃÊ±âÈ­ ½ÄÀÌ ÀÖ´ÂÁö È®ÀÎ
+        // ï¿½Ê±ï¿½È­ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½
         if (match(TokenType::OPERATOR, "=")) {
             initializer = parseSimpleExpression();
         }
         else {
             error("Expected '=' in variable declaration");
+        }
+
+        if (varType == nullptr) {
+            // initializerì˜ í‰ê°€ ê²°ê³¼ë¡œë¶€í„° ë³€ìˆ˜ì˜ íƒ€ìž… ì¶”ë¡ 
+            if (initializer) {
+                varType = initializer->getType();
+                
+                if (!varType) {
+                    error("Cannot infer type of '" + varName + "'");
+                    varType = std::make_shared<UnknownType>();
+                } 
+            }
         }
 
         auto varDecl = std::make_shared<VariableDeclarationNode>();
@@ -332,23 +373,23 @@ std::shared_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration() {
     auto parameters = parseParameterList();
     expect(TokenType::OPERATOR, ")");
 
-    // ¹ÝÈ¯ Å¸ÀÔ ÆÄ½Ì
+    // ï¿½ï¿½È¯ Å¸ï¿½ï¿½ ï¿½Ä½ï¿½
     std::shared_ptr<Type> returnType;
     if (match(TokenType::OPERATOR, ":")) {
         returnType = parseType();
     }
     else {
-        // ¹ÝÈ¯ Å¸ÀÔÀÌ ¸í½ÃµÇÁö ¾ÊÀº °æ¿ì ±âº» Å¸ÀÔÀ¸·Î ¼³Á¤ (¿¹: void)
+        // ï¿½ï¿½È¯ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½âº» Å¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½: void)
         returnType = std::make_shared<BasicType>("Unit");
     }
 
-    // ÇÔ¼ö º»¹® ÆÄ½Ì
+    // ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
     std::shared_ptr<BlockNode> body = nullptr;
     if (match(TokenType::OPERATOR, "{")) {
         body = parseBlock();
     }
     else if (match(TokenType::OPERATOR, "=")) {
-        // ´ÜÀÏ Ç¥Çö½Ä ÇÔ¼ö º»¹® Ã³¸®
+        // ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
         auto expr = parseExpression();
         body = std::make_shared<BlockNode>();
         body->statements.push_back(expr);
@@ -360,17 +401,17 @@ std::shared_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration() {
     auto functionDecl = std::make_shared<FunctionDeclarationNode>();
     functionDecl->name = functionName;
     functionDecl->parameters = parameters;
-    functionDecl->returnType = returnType;  // ¹ÝÈ¯ Å¸ÀÔ ¼³Á¤
+    functionDecl->returnType = returnType;  // ï¿½ï¿½È¯ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     functionDecl->body = body;
 
     return functionDecl;
 }
 
 std::shared_ptr<ASTNode> Parser::parseObjectDeclaration() {
-    // °´Ã¼ ÀÌ¸§
+    // ï¿½ï¿½Ã¼ ï¿½Ì¸ï¿½
     if (match(TokenType::IDENTIFIER)) {
         std::string objectName = previous().value;
-        // °´Ã¼ º»¹®
+        // ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½
         std::shared_ptr<ASTNode> body;
         if (match(TokenType::OPERATOR, "{")) {
             body = parseBlock();
@@ -391,7 +432,7 @@ std::shared_ptr<ASTNode> Parser::parseObjectDeclaration() {
 
 std::vector<std::shared_ptr<ASTNode>> Parser::parseCallParameterList()
 {
-	// ÇÔ¼ö È£Ãâ ½Ã Àü´ÞµÇ´Â ÀÎ¼ö ¸ñ·Ï ÆÄ½Ì
+	// ï¿½Ô¼ï¿½ È£ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ÞµÇ´ï¿½ ï¿½Î¼ï¿½ ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
 	std::vector<std::shared_ptr<ASTNode>> arguments;
 	while (true) {
 		if (isAtEnd()) {
@@ -485,7 +526,7 @@ std::string Parser::tokenTypeToString(TokenType type) const {
     case TokenType::KEYWORD: return "keyword";
     case TokenType::IDENTIFIER: return "identifier";
     case TokenType::OPERATOR: return "operator";
-        // ÇÊ¿äÇÑ °æ¿ì ±âÅ¸ À¯Çü Ãß°¡
+        // ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½Å¸ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
     default: return "token";
     }
 }
@@ -493,12 +534,12 @@ std::string Parser::tokenTypeToString(TokenType type) const {
 std::shared_ptr<ASTNode> Parser::parseIfStatement() {
     auto ifNode = std::make_shared<IfStatementNode>();
 
-    // Á¶°Ç½Ä ÆÄ½Ì (¿©±â¼­´Â °£´ÜÈ÷ IDENTIFIER ¶Ç´Â ¸®ÅÍ·²·Î °¡Á¤)
+    // ï¿½ï¿½ï¿½Ç½ï¿½ ï¿½Ä½ï¿½ (ï¿½ï¿½ï¿½â¼­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IDENTIFIER ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     expect(TokenType::OPERATOR, "(");
     ifNode->condition = parseExpression();
     expect(TokenType::OPERATOR, ")");
 
-    // then ºí·Ï ÆÄ½Ì
+    // then ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
     if (match(TokenType::OPERATOR, "{")) {
         ifNode->thenBlock = parseBlock();
     }
@@ -506,7 +547,7 @@ std::shared_ptr<ASTNode> Parser::parseIfStatement() {
         error("Expected '{' after 'if' condition");
     }
 
-    // else ºí·Ï ÆÄ½Ì (¼±ÅÃÀû)
+    // else ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
     if (match(TokenType::KEYWORD, "else")) {
         if (match(TokenType::OPERATOR, "{")) {
             ifNode->elseBlock = parseBlock();
@@ -524,12 +565,12 @@ std::shared_ptr<ASTNode> Parser::parseForStatement() {
 
     expect(TokenType::OPERATOR, "(");
 
-    // º¯¼ö ÆÄ½Ì
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
     if (match(TokenType::IDENTIFIER)) {
         forNode->variable = previous().value;
 
         if (match(TokenType::OPERATOR, "<-")) {
-            // `to` ¶Ç´Â `until`ÀÌ ÀÖ´ÂÁö È®ÀÎ
+            // `to` ï¿½Ç´ï¿½ `until`ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½
             auto startExpr = parseExpression();
 
             if (match(TokenType::KEYWORD, "to") || match(TokenType::KEYWORD, "until")) {
@@ -538,7 +579,7 @@ std::shared_ptr<ASTNode> Parser::parseForStatement() {
 
                 auto endExpr = parseExpression();
 
-                // ¹üÀ§ Ç¥Çö½ÄÀ» »ý¼ºÇÏ¿© iterableExpr¿¡ ÀúÀå
+                // ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ iterableExprï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                 auto rangeExpr = std::make_shared<RangeExpressionNode>();
                 rangeExpr->startExpr = startExpr;
                 rangeExpr->endExpr = endExpr;
@@ -547,7 +588,7 @@ std::shared_ptr<ASTNode> Parser::parseForStatement() {
                 forNode->iterableExpr = rangeExpr;
             }
             else {
-                // ÄÃ·º¼Ç Ç¥Çö½ÄÀ¸·Î °£ÁÖ
+                // ï¿½Ã·ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                 forNode->iterableExpr = startExpr;
             }
         }
@@ -561,7 +602,7 @@ std::shared_ptr<ASTNode> Parser::parseForStatement() {
 
     expect(TokenType::OPERATOR, ")");
 
-    // for º»¹® ÆÄ½Ì
+    // for ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
     if (match(TokenType::OPERATOR, "{")) {
         forNode->body = parseBlock();
     }
@@ -585,14 +626,14 @@ std::vector<std::shared_ptr<ASTNode>> Parser::parseArgumentList() {
 }
 
 std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
-    // °£´ÜÇÑ Ç¥Çö½Ä ÆÄ½Ì ÇÔ¼ö (IDENTIFIER ¶Ç´Â ¸®ÅÍ·²¸¸ Ã³¸®)
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½ ï¿½Ô¼ï¿½ (IDENTIFIER ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½)
     std::shared_ptr<ASTNode> expr;
 
     if (match(TokenType::IDENTIFIER)) {
         std::vector<std::string> pathComponents;
         pathComponents.push_back(previous().value);
         while (match(TokenType::OPERATOR, ".")) {
-            // ¹Ù·Î ´ÙÀ½¿¡ id°¡ ¿À´Â °æ¿ì¿Í match clause°¡ ¿À´Â °æ¿ì¸¦ Ã³¸®ÇØ¾ß ÇÏ´Âµ¥, ¿©±â¼­´Â id¸¸ ¿À´Â °ÍÀ» °¡Á¤
+            // ï¿½Ù·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ idï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ match clauseï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ì¸¦ Ã³ï¿½ï¿½ï¿½Ø¾ï¿½ ï¿½Ï´Âµï¿½, ï¿½ï¿½ï¿½â¼­ï¿½ï¿½ idï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (match(TokenType::IDENTIFIER)) {
                 pathComponents.push_back(previous().value);
             }
@@ -603,9 +644,9 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
         }
 
         if (match(TokenType::OPERATOR, "(")) {
-            // ÇÔ¼ö È£Ãâ Ç¥Çö½Ä ÆÄ½Ì
+            // ï¿½Ô¼ï¿½ È£ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
 			if (pathComponents.size() == 1) {
-				// ´ÜÀÏ ÇÔ¼ö È£Ãâ (¿¹: println())
+				// ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ È£ï¿½ï¿½ (ï¿½ï¿½: println())
 				auto callNode = std::make_shared<FunctionCallNode>();
 				callNode->functionName = pathComponents[0];
 				callNode->arguments = parseCallParameterList();
@@ -614,7 +655,7 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
             else {
                 auto callNode = std::make_shared<MethodCallNode>();
 
-                // TODO: template ÇÔ¼ö È£Ãâ¿¡ ´ëÇÑ Ã³¸®µµ ³ªÁß¿¡ ÇØ¾ßÇÒ µí 
+                // TODO: template ï¿½Ô¼ï¿½ È£ï¿½â¿¡ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½Ø¾ï¿½ï¿½ï¿½ ï¿½ï¿½ 
                 std::vector<std::string> result;
                 std::copy(pathComponents.begin(), pathComponents.end() - 1, std::back_inserter(result));
 
@@ -626,7 +667,7 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
             }
         } 
         else if (match(TokenType::OPERATOR, "=")) {
-			// ÇÒ´ç Ç¥Çö½Ä ÆÄ½Ì
+			// ï¿½Ò´ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
 			auto assignNode = std::make_shared<AssignmentExpressionNode>();
 			assignNode->left = std::make_shared<IdentifierNode>(join(pathComponents, "."));
 			assignNode->right = parseExpression();
@@ -650,16 +691,16 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
         expr = std::make_shared<UnitNode>();
     }
     else if (match(TokenType::OPERATOR, "{")) {
-        // ºí·Ï Ç¥Çö½Ä ÆÄ½Ì
+        // ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
         expr = parseBlock();
     }
     else if (match(TokenType::KEYWORD, "new")) {
-        // °´Ã¼ »ý¼º Ç¥Çö½Ä ÆÄ½Ì
+        // ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
         if (match(TokenType::IDENTIFIER)) {
             //auto id = std::make_shared<IdentifierNode>(previous().value);
-            // new keyword µÚ¿¡´Â argument list³ª ¹è¿­ÀÇ Å©±â¸¦ ¼³Á¤ÇÏ´Â []°¡ ³ª¿Ã ¼ö ÀÖÀ½.
-            // []´Â 4Â÷¿ø±îÁö ±âº»ÀûÀ¸·Î Áö¿øÇÏµµ·Ï ÇÏÀÚ.
-            // []°¡ ³ª¿À¸é ¹è¿­·Î °£ÁÖÇÏ°í, argument list°¡ ³ª¿À¸é »ý¼ºÀÚ È£Ãâ·Î °£ÁÖÇÏÀÚ.
+            // new keyword ï¿½Ú¿ï¿½ï¿½ï¿½ argument listï¿½ï¿½ ï¿½è¿­ï¿½ï¿½ Å©ï¿½â¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ []ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
+            // []ï¿½ï¿½ 4ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½âº»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
+            // []ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½è¿­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½, argument listï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 			auto id = previous().value;
             if (match(TokenType::OPERATOR, "[")) {
                 std::vector<std::shared_ptr<ASTNode>> sizes;
@@ -693,8 +734,8 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
     }
     else {
         //error("Expected expression");
-        // emptyÀÏ °æ¿ìµµ ÀÖÀ½(¿¹, println())
-        // ÀÌ°Ô ¸Â´ÂÁö °ËÁõ ÇÊ¿ä
+        // emptyï¿½ï¿½ ï¿½ï¿½ìµµ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½, println())
+        // ï¿½Ì°ï¿½ ï¿½Â´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½
         return nullptr;
     }
 
@@ -947,34 +988,34 @@ std::shared_ptr<ASTNode> Parser::parsePrefixExpression()
 	}
 }
 
-// °£´ÜÇÑ Ç¥Çö½Ä ÆÄ½Ì ÇÔ¼ö (IDENTIFIER ¶Ç´Â ¸®ÅÍ·²¸¸ Ã³¸®)
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½ ï¿½Ô¼ï¿½ (IDENTIFIER ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½)
 std::shared_ptr<ASTNode> Parser::parseExpression() {
-    // c++ÀÇ ¿¬»êÀÚ ¿ì¼±¼øÀ§¿¡ µû¶ó¼­ ÄÚµå¸¦ Á¤¸®ÇÕ´Ï´Ù.
+    // c++ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ì¼±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Úµå¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
     std::shared_ptr<ASTNode> expr = parseOrExpression();
 
-    // ¸¸¾à ´ÙÀ½¿¡ 'match' Å°¿öµå°¡ ÀÖÀ¸¸é MatchExpressionÀ¸·Î Ã³¸®
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 'match' Å°ï¿½ï¿½ï¿½å°¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ MatchExpressionï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
     if (match(TokenType::KEYWORD, "match")) {
         auto matchNode = std::make_shared<MatchExpressionNode>();
         matchNode->expression = expr;
 
         expect(TokenType::OPERATOR, "{");
 
-        // ÄÉÀÌ½º ¸ñ·Ï ÆÄ½Ì
+        // ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
         while (!check(TokenType::OPERATOR, "}")) {
             if (isAtEnd()) {
                 error("Unterminated 'match' block");
                 return nullptr;
             }
 
-            // 'case' Å°¿öµå È®ÀÎ
+            // 'case' Å°ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
             expect(TokenType::KEYWORD, "case");
 
-            // ÄÉÀÌ½º ÆÐÅÏ ÆÄ½Ì
+            // ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
             auto casePattern = parseSimpleExpression();
 
             expect(TokenType::OPERATOR, "=>");
 
-            // °á°ú Ç¥Çö½Ä ÆÄ½Ì
+            // ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½
             auto caseResult = parseExpression();
 
             matchNode->cases.push_back(std::make_pair(casePattern, caseResult));

@@ -953,14 +953,25 @@ llvm::Value* NewCallExpressionNode::codegen() {
     }
 
     // 클래스 타입 가져오기
-    llvm::StructType* classType = (llvm::StructType*)classSymbol->classType;
+    llvm::StructType* classType = llvm::dyn_cast<llvm::StructType>(classSymbol->classType);
+    if (!classType) {
+        std::cerr << "오류: 클래스 타입을 가져올 수 없습니다." << std::endl;
+        return nullptr;
+    }
 
     // 메모리 할당
-    llvm::Value* allocSize = codeGenerator->builder.CreateStructGEP(classType, nullptr, 0);
-    llvm::Value* allocatedMemory = codeGenerator->builder.CreateAlloca(classType, allocSize, "objAlloc");
+    llvm::DataLayout dataLayout;
+    uint64_t typeSize = dataLayout.getTypeAllocSize(classType);
+    llvm::Value* allocSize = llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, typeSize));
+    llvm::Value* allocatedMemory = codeGenerator->builder.CreateAlloca(
+        classType,
+        allocSize,
+        "objAlloc"
+    );
+    allocatedMemory = codeGenerator->builder.CreateBitCast(allocatedMemory, classType->getPointerTo());
 
     // 객체 초기화 (생성자 호출)
-    std::string constructorName = className + "_constructor";
+    std::string constructorName = className;
     llvm::Function* constructorFunc = codeGenerator->module->getFunction(constructorName);
     if (constructorFunc) {
         std::vector<llvm::Value*> constructorArgs = { allocatedMemory };

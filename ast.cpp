@@ -9,7 +9,7 @@
 
 CodeGenerator* ASTNode::codeGenerator = nullptr;
 
-//   accept  codegen Լ 
+//   accept  codegen Լ
 
 void ProgramNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -34,7 +34,7 @@ void ImportNode::accept(ASTVisitor& visitor) {
 llvm::Value* ImportNode::codegen() {
     auto moduleSymbols = codeGenerator->moduleLoader.loadModule(path);
     if (moduleSymbols) {
-        //  ɺ  ɺ ̺ 
+        //  ɺ  ɺ ̺
         codeGenerator->symbolTable.merge(moduleSymbols);
     }
     else {
@@ -411,7 +411,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
     return alloc;
 }
 
-// IfStatementNode 
+// IfStatementNode
 void IfStatementNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
@@ -476,7 +476,7 @@ llvm::Value* IfStatementNode::codegen() {
     return llvm::Constant::getNullValue(llvm::Type::getInt32Ty(codeGenerator->context));
 }
 
-// ForStatementNode 
+// ForStatementNode
 void ForStatementNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
@@ -488,7 +488,7 @@ llvm::Value* ForStatementNode::codegen() {
     llvm::Value* endValue;
 
     if (isRange) {
-        //   
+        //
         auto rangeExpr = std::dynamic_pointer_cast<RangeExpressionNode>(iterableExpr);
         startValue = rangeExpr->startExpr->codegen();
         endValue = rangeExpr->endExpr->codegen();
@@ -577,13 +577,13 @@ llvm::Value* MatchExpressionNode::codegen() {
 
         codeGenerator->builder.CreateBr(afterBB);
 
-        //  ̽  
+        //  ̽
         if (nextCaseBB != afterBB) {
             codeGenerator->builder.SetInsertPoint(nextCaseBB);
         }
     }
 
-    // afterBB 
+    // afterBB
     codeGenerator->builder.SetInsertPoint(afterBB);
 
     return result ? result : llvm::Constant::getNullValue(llvm::Type::getInt32Ty(codeGenerator->context));
@@ -602,8 +602,8 @@ void BinaryExpressionNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
 
-bool isStringTypeFromLLVM(llvm::Value* value) {
-    return value->getType()->isPointerTy() && value->getType()->getPointerElementType()->isIntegerTy(8);
+bool isStringTypeFromLLVM(llvm::Value* value, CodeGenerator* codeGenerator) {
+    return value->getType()->isPointerTy() && ((llvm::PointerType*)value->getType())->isValidElementType(llvm::Type::getInt8Ty(codeGenerator->context));
 }
 
 llvm::Value* BinaryExpressionNode::codegen() {
@@ -615,16 +615,16 @@ llvm::Value* BinaryExpressionNode::codegen() {
 
     if (op == "+") {
         // If leftValue is a pointer and rightValue is an integer, perform pointer arithmetic
-        if (isStringTypeFromLLVM(leftValue) && rightValue->getType()->isIntegerTy()) {
+        if (isStringTypeFromLLVM(leftValue, codeGenerator) && rightValue->getType()->isIntegerTy()) {
             // To add int to pointer, we need to convert pointer to int64.
             llvm::Value* int64Pointer = codeGenerator->builder.CreatePtrToInt(rightValue, llvm::Type::getInt64Ty(codeGenerator->context), "int64Pointer");
             // Then we add int to int64 pointer.
             llvm::Value* resultPointer = codeGenerator->builder.CreateAdd(int64Pointer, leftValue, "resultPointer");
             // Then we convert int64 to pointer.
-            return codeGenerator->builder.CreateIntToPtr(resultPointer, leftValue->getType()->getPointerElementType(), "resultPointer");
+            return codeGenerator->builder.CreateIntToPtr(resultPointer, llvm::Type::getInt8Ty(codeGenerator->context), "resultPointer");
         }
         // If rightValue is a pointer and leftValue is an integer, perform pointer arithmetic
-        else if (isStringTypeFromLLVM(rightValue) && leftValue->getType()->isIntegerTy()) {
+        else if (isStringTypeFromLLVM(rightValue, codeGenerator) && leftValue->getType()->isIntegerTy()) {
             // To add int to pointer, we need to convert pointer to int64.
             llvm::Value* int64Pointer = codeGenerator->builder.CreatePtrToInt(rightValue, llvm::Type::getInt64Ty(codeGenerator->context), "int64Pointer");
             // Then we add int to int64 pointer.
@@ -632,8 +632,8 @@ llvm::Value* BinaryExpressionNode::codegen() {
             return resultPointer;
         }
         // If leftvalue is string and rightvalue is int, perform string addition
-        else if (isStringTypeFromLLVM(leftValue) && isStringTypeFromLLVM(rightValue)) {
-            // To concatenate string and int, we need to convert int to string. 
+        else if (isStringTypeFromLLVM(leftValue, codeGenerator) && isStringTypeFromLLVM(rightValue, codeGenerator)) {
+            // To concatenate string and int, we need to convert int to string.
             // To convert int to string, we need to call toString from int class.
             // But we can't call method directly from int value, so we need to store int value in a variable.
             llvm::Value* intToString = codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("toString"), rightValue, "intToString");
@@ -652,151 +652,35 @@ llvm::Value* BinaryExpressionNode::codegen() {
                 return codeGenerator->builder.CreateFAdd(leftValue, rightValue, "faddtmp");
             }
             // If leftvalue and rightvalue are both strings, perform string addition.
-            else if (isStringTypeFromLLVM(leftValue) && isStringTypeFromLLVM(rightValue)) {
+            else if (isStringTypeFromLLVM(leftValue, codeGenerator) && isStringTypeFromLLVM(rightValue, codeGenerator)) {
                 return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator+"), std::vector<llvm::Value*>{leftValue, rightValue}, "concattmp");
             }
             // If leftvalue and rightvalue are different types, perform type casting and then addition.
-            else if (leftValue->getType().equal(rightValue->getType())) {
+            else if (leftValue->getType() == rightValue->getType()) {
                 // To cast type, we need to call constructor of that type with value as argument.
                 // But we can't call constructor directly, so we need to store value in a variable.
                 // We can call constructor with variable as argument.
                 // We need to get constructor of that type.
-                llvm::Function* constructor = codeGenerator->module->getFunction(leftValue->getType()->getTypeName());
+                // get the type name of leftValue and rightValue.
+                llvm::Function* constructor = codeGenerator->module->getFunction(left->type->name);
                 if (!constructor) {
-                    std::cerr << "Error: Constructor not found for type '" << rightValue->getType()->getTypeName() << "' from " << leftValue->getType()->GetTypeName() << std::endl;
+                    std::cerr << "Error: Constructor not found for type '" << right->type->name << "' from " << left->type->name << std::endl;
                     return nullptr;
                 }
                 llvm::Value* convertedValue = codeGenerator->builder.CreateCall(constructor, std::vector<llvm::Value*>{rightValue}, "casttmp");
                 return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator+"), std::vector<llvm::Value*>{leftValue, convertedValue}, "addtmp");
             }
             else {
-                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << leftValue->getType()->getTypeName() << "' and '" << rightValue->getType()->getTypeName() << "'" << std::endl;
+                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->type->name << "' and '" << right->type->name << "'" << std::endl;
                 return nullptr;
             }
         }
     }
     else if (op == "-") {
-        // If leftValue is a pointer and rightValue is an integer, perform pointer arithmetic
-        if (isStringTypeFromLLVM(leftValue) && rightValue->getType()->isIntegerTy()) {
-            // To add int to pointer, we need to convert pointer to int64.
-            llvm::Value* int64Pointer = codeGenerator->builder.CreatePtrToInt(rightValue, llvm::Type::getInt64Ty(codeGenerator->context), "int64Pointer");
-            // Then we add int to int64 pointer.
-            llvm::Value* resultPointer = codeGenerator->builder.CreateSub(int64Pointer, leftValue, "resultPointer");
-            // Then we convert int64 to pointer.
-            return codeGenerator->builder.CreateIntToPtr(resultPointer, leftValue->getType()->getPointerElementType(), "resultPointer");
-        }
-        // If rightValue is a pointer and leftValue is an integer, perform pointer arithmetic
-        else if (isStringTypeFromLLVM(rightValue) && leftValue->getType()->isIntegerTy()) {
-            // To add int to pointer, we need to convert pointer to int64.
-            llvm::Value* int64Pointer = codeGenerator->builder.CreatePtrToInt(rightValue, llvm::Type::getInt64Ty(codeGenerator->context), "int64Pointer");
-            // Then we add int to int64 pointer.
-            llvm::Value* resultPointer = codeGenerator->builder.CreateSub(int64Pointer, leftValue, "resultPointer");
-            return resultPointer;
-        }
-        // If leftvalue is string and rightvalue is int, perform string addition
-        else if (isStringTypeFromLLVM(leftValue) && isStringTypeFromLLVM(rightValue)) {
-            // To concatenate string and int, we need to convert int to string. 
-            // To convert int to string, we need to call toString from int class.
-            // But we can't call method directly from int value, so we need to store int value in a variable.
-            llvm::Value* intToString = codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("toString"), rightValue, "intToString");
-            // Then we call string concatenation method with intToString as argument.
-            return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator-"), std::vector<llvm::Value*>{leftValue, intToString}, "concattmp");
-        }
-        else {
-            // If leftvalue and rightvalue are both numerical primitives type, perform numerical addition.
-            // If leftvalue and rightvalue are both objects based on class, perform method call.
-            // If leftvalue and rightvalue are different types, perform type casting and then addition.
-            // First, we need to check if leftValue and rightValue are both numerical primitives type.
-            if (leftValue->getType()->isIntegerTy() && rightValue->getType()->isIntegerTy()) {
-                return codeGenerator->builder.CreateSub(leftValue, rightValue, "subtmp");
-            }
-            else if (leftValue->getType()->isFloatingPointTy() && rightValue->getType()->isFloatingPointTy()) {
-                return codeGenerator->builder.CreateFSub(leftValue, rightValue, "fsubtmp");
-            }
-            // If leftvalue and rightvalue are both strings, perform string addition.
-            else if (isStringTypeFromLLVM(leftValue) && isStringTypeFromLLVM(rightValue)) {
-                return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator-"), std::vector<llvm::Value*>{leftValue, rightValue}, "concattmp");
-            }
-            // If leftvalue and rightvalue are different types, perform type casting and then addition.
-            else if (leftValue->getType().equal(rightValue->getType())) {
-                // To cast type, we need to call constructor of that type with value as argument.
-                // But we can't call constructor directly, so we need to store value in a variable.
-                // We can call constructor with variable as argument.
-                // We need to get constructor of that type.
-                llvm::Function* constructor = codeGenerator->module->getFunction(leftValue->getType()->getTypeName());
-                if (!constructor) {
-                    std::cerr << "Error: Constructor not found for type '" << rightValue->getType()->getTypeName() << "' from " << leftValue->getType()->GetTypeName() << std::endl;
-                    return nullptr;
-                }
-                llvm::Value* convertedValue = codeGenerator->builder.CreateCall(constructor, std::vector<llvm::Value*>{rightValue}, "casttmp");
-                return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator-"), std::vector<llvm::Value*>{leftValue, convertedValue}, "subtmp");
-            }
-            else {
-                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << leftValue->getType()->getTypeName() << "' and '" << rightValue->getType()->getTypeName() << "'" << std::endl;
-                return nullptr;
-            }
-        }
+        return nullptr;
     }
     else if (op == "*") {
-        if (isStringTypeFromLLVM(leftValue) && rightValue->getType()->isIntegerTy()) {
-            // To add int to pointer, we need to convert pointer to int64.
-            llvm::Value* int64Pointer = codeGenerator->builder.CreatePtrToInt(rightValue, llvm::Type::getInt64Ty(codeGenerator->context), "int64Pointer");
-            // Then we add int to int64 pointer.
-            llvm::Value* resultPointer = codeGenerator->builder.CreateMul(int64Pointer, leftValue, "resultPointer");
-            // Then we convert int64 to pointer.
-            return codeGenerator->builder.CreateIntToPtr(resultPointer, leftValue->getType()->getPointerElementType(), "resultPointer");
-        }
-        // If rightValue is a pointer and leftValue is an integer, perform pointer arithmetic
-        else if (isStringTypeFromLLVM(rightValue) && leftValue->getType()->isIntegerTy()) {
-            // To add int to pointer, we need to convert pointer to int64.
-            llvm::Value* int64Pointer = codeGenerator->builder.CreatePtrToInt(rightValue, llvm::Type::getInt64Ty(codeGenerator->context), "int64Pointer");
-            // Then we add int to int64 pointer.
-            llvm::Value* resultPointer = codeGenerator->builder.CreateMul(int64Pointer, leftValue, "resultPointer");
-            return resultPointer;
-        }
-        // If leftvalue is string and rightvalue is int, perform string addition
-        else if (isStringTypeFromLLVM(leftValue) && isStringTypeFromLLVM(rightValue)) {
-            // To concatenate string and int, we need to convert int to string. 
-            // To convert int to string, we need to call toString from int class.
-            // But we can't call method directly from int value, so we need to store int value in a variable.
-            llvm::Value* intToString = codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("toString"), rightValue, "intToString");
-            // Then we call string concatenation method with intToString as argument.
-            return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator*"), std::vector<llvm::Value*>{leftValue, intToString}, "concattmp");
-        }
-        else {
-            // If leftvalue and rightvalue are both numerical primitives type, perform numerical addition.
-            // If leftvalue and rightvalue are both objects based on class, perform method call.
-            // If leftvalue and rightvalue are different types, perform type casting and then addition.
-            // First, we need to check if leftValue and rightValue are both numerical primitives type.
-            if (leftValue->getType()->isIntegerTy() && rightValue->getType()->isIntegerTy()) {
-                return codeGenerator->builder.CreateMul(leftValue, rightValue, "multmp");
-            }
-            else if (leftValue->getType()->isFloatingPointTy() && rightValue->getType()->isFloatingPointTy()) {
-                return codeGenerator->builder.CreateFMul(leftValue, rightValue, "fmultmp");
-            }
-            // If leftvalue and rightvalue are both strings, perform string addition.
-            else if (isStringTypeFromLLVM(leftValue) && isStringTypeFromLLVM(rightValue)) {
-                return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator*"), std::vector<llvm::Value*>{leftValue, rightValue}, "concattmp");
-            }
-            // If leftvalue and rightvalue are different types, perform type casting and then addition.
-            else if (leftValue->getType().equal(rightValue->getType())) {
-                // To cast type, we need to call constructor of that type with value as argument.
-                // But we can't call constructor directly, so we need to store value in a variable.
-                // We can call constructor with variable as argument.
-                // We need to get constructor of that type.
-                llvm::Function* constructor = codeGenerator->module->getFunction(leftValue->getType()->getTypeName());
-                if (!constructor) {
-                    std::cerr << "Error: Constructor not found for type '" << rightValue->getType()->getTypeName() << "' from " << leftValue->getType()->GetTypeName() << std::endl;
-                    return nullptr;
-                }
-                llvm::Value* convertedValue = codeGenerator->builder.CreateCall(constructor, std::vector<llvm::Value*>{rightValue}, "casttmp");
-                return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator*"), std::vector<llvm::Value*>{leftValue, convertedValue}, "multmp");
-            }
-            else {
-                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << leftValue->getType()->getTypeName() << "' and '" << rightValue->getType()->getTypeName() << "'" << std::endl;
-                return nullptr;
-            }
-        }
+        return nullptr;
     }
     else if (op == "/") {
         return codeGenerator->builder.CreateFDiv(leftValue, rightValue, "divtmp");
@@ -933,7 +817,7 @@ void ValueNode::accept(ASTVisitor& visitor) {
 llvm::Value* ValueNode::codegen() {
 	if (valueType == TokenType::INTEGER_LITERAL) {
 		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, value, 10));
-	} 
+	}
 	else if (valueType == TokenType::FLOAT_LITERAL) {
 		return llvm::ConstantFP::get(codeGenerator->context, llvm::APFloat(std::stof(value)));
 	}
@@ -1123,14 +1007,14 @@ void ClassInstanceCreationNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* ClassInstanceCreationNode::codegen() {
 	// primitive type인지, class type인지 확인, template type인지 확인
-    // primitive type이면 llvm::CreateAlloca로 
+    // primitive type이면 llvm::CreateAlloca로
 	if (isPrimitiveType(className)) {
 		llvm::Type* type = codeGenerator->getLLVMType(std::make_shared<BasicType>(className));
 		return codeGenerator->builder.CreateAlloca(type, nullptr, className);
     }
 
 	// Template Class인지 확인은 나중에 코드 추가되면...
-    
+
     // 클래스 심볼 찾기
     ClassSymbol* classSymbol = codeGenerator->symbolTable.lookupClass(className);
     if (!classSymbol) {
@@ -1372,7 +1256,7 @@ std::shared_ptr<Type> UnaryExpressionNode::getType() {
     auto res = this->codegen();
     if (res->getType()->isVoidTy()) {
         return std::make_shared<BasicType>("Void");
-    } 
+    }
     else if (res->getType()->isStructTy()) {
 		return std::make_shared<ClassType>(res->getType()->getStructName().str());
 	}

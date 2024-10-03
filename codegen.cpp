@@ -36,8 +36,23 @@ CodeGenerator::CodeGenerator() : builder(context) {
         );
     }
 
-
     symbolTable.initializeBuiltInTypes(context);
+
+	// int클래스에 추가된 toString메서드의 llvm 코드 생성
+	auto intClassSymbol = symbolTable.lookupClass("Int");
+	auto toStringFunction = llvm::Function::Create(
+		llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { intClassSymbol->classType->getPointerTo() }, false),
+		llvm::Function::ExternalLinkage,
+		"toString",
+		module.get()
+	);
+
+    llvm::Function::Create(
+		llvm::FunctionType::get(llvm::Type::getInt8Ty(context)->getPointerTo(), { llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt8Ty(context)->getPointerTo() }, false),
+		llvm::Function::ExternalLinkage,
+		"operator+",
+		module.get()
+	);
 }
 
 void CodeGenerator::generateCode(std::shared_ptr<ProgramNode> program) {

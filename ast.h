@@ -112,10 +112,7 @@ public:
 
     void accept(ASTVisitor& visitor) override;
 
-    llvm::Value* codegen() override {
-        // Ķʹ FunctionDeclarationNode ó
-        return nullptr;
-    }
+    llvm::Value* codegen() override;
 
     std::shared_ptr<Type> getType() override {
         return nullptr;
@@ -151,6 +148,7 @@ public:
     std::shared_ptr<Type> type;
     std::shared_ptr<ASTNode> initializer;
     bool isMutable;
+	bool isField = false;   // 클래스 필드인지 여부
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
@@ -375,7 +373,7 @@ public:
     AssignmentExpressionNode() {}
 	AssignmentExpressionNode(std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right)
 		: left(left), right(right) {};
-    
+
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     std::shared_ptr<Type> getType() override;
@@ -478,6 +476,19 @@ public:
     }
 };
 
+class AccessFieldNode : public ASTNode {
+public:
+    std::shared_ptr<ASTNode> base;
+    std::shared_ptr<ASTNode> field;
+
+    AccessFieldNode(std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right)
+        : base(left), field(right) {}
+
+    void accept(ASTVisitor& visitor) override;
+    llvm::Value* codegen() override;
+    std::shared_ptr<Type> getType() override;
+};
+
 // ASTVisitor Ŭ���� ����
 class ASTVisitor {
 public:
@@ -518,6 +529,7 @@ public:
 	virtual void visit(FunctionCallNode& node) = 0;
 	virtual void visit(ArrayCreationNode& node) = 0;
 	virtual void visit(ArrayAccessNode& node) = 0;
+	virtual void visit(AccessFieldNode& node) = 0;
 };
 
 

@@ -133,6 +133,17 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 		std::vector<std::shared_ptr<ParameterNode>> constructorParams;
 		if (match(TokenType::OPERATOR, "(")) {
 			constructorParams = parseParameterList();
+
+			// parameters를 VariableDeclarationNode로 변환
+            for (auto param : constructorParams) {
+				auto varDecl = std::make_shared<VariableDeclarationNode>();
+				varDecl->name = param->name;
+				varDecl->type = param->type;
+				varDecl->initializer = nullptr;
+				varDecl->isMutable = false;
+				stmts.push_back(varDecl);
+            }
+
 			expect(TokenType::OPERATOR, ")");
 		}
 
@@ -146,10 +157,11 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
             auto stmt = parseStatement();
             stmts.push_back(stmt);
 		}
-		
+
 		std::shared_ptr<ClassBodyNode> classBody = std::make_shared<ClassBodyNode>();
 		for (auto stmt : stmts) {
 			if (auto fieldDecl = std::dynamic_pointer_cast<VariableDeclarationNode>(stmt)) {
+                fieldDecl->isField = true;
 				classBody->fields.push_back(fieldDecl);
 			} else if (auto methodDecl = std::dynamic_pointer_cast<FunctionDeclarationNode>(stmt)) {
 				classBody->methods.push_back(methodDecl);
@@ -166,14 +178,35 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
                 break;
             }
         }
-        
+
         if (!hasConstructor) {
-            auto defaultConstructor = std::make_shared<FunctionDeclarationNode>();
-            defaultConstructor->name = className;
-            defaultConstructor->parameters = constructorParams;
-            defaultConstructor->returnType = std::make_shared<BasicType>("Unit");
-            defaultConstructor->body = std::make_shared<BlockNode>();
-            classBody->methods.push_back(defaultConstructor);
+			// default constructor는 constructorParameters를 받아들이고, 각각의 parameter를 field에 할당하는 코드를 생성
+			auto defaultConstructor = std::make_shared<FunctionDeclarationNode>();
+			defaultConstructor->name = className;
+
+            // constructorParam을 복제한 후 this parameter추가
+			std::vector<std::shared_ptr<ParameterNode>> constructorParamsCopy;
+			auto thisParam = std::make_shared<ParameterNode>();
+			thisParam->name = "this";
+			thisParam->type = std::make_shared<ClassType>(className);
+            constructorParamsCopy.push_back(thisParam);
+			for (const auto& param : constructorParams) {
+				constructorParamsCopy.push_back(param);
+			}
+
+			defaultConstructor->parameters = constructorParamsCopy;
+			defaultConstructor->returnType = std::make_shared<BasicType>("Unit");
+            // constructor parameter를 받아들이는 코드 생성
+            auto constructorBody = std::make_shared<BlockNode>();
+            for (const auto& param : constructorParams) {
+                auto assignment = std::make_shared<AssignmentExpressionNode>();
+				// left는 this.field, right는 parameter
+				assignment->left = std::make_shared<AccessFieldNode>(std::make_shared<IdentifierNode>("this"), std::make_shared<IdentifierNode>(param->name));
+                assignment->right = std::make_shared<IdentifierNode>(param->name);  // left와 right가 같은데, 이거 문제임
+				constructorBody->statements.push_back(assignment);
+            }
+            defaultConstructor->body = constructorBody;
+			classBody->methods.push_back(defaultConstructor);
         }
 
         std::shared_ptr<ClassDeclarationNode> classNode = std::make_shared<ClassDeclarationNode>();
@@ -185,10 +218,10 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
     else if (match(TokenType::KEYWORD, "object")) {
         // ��ü ���� ó��
         return parseObjectDeclaration();
-    } 
+    }
     else {
 		return parseStatement();
-	} 
+	}
 }
 
 std::shared_ptr<ASTNode> Parser::parseImportStatement() {
@@ -347,7 +380,7 @@ std::shared_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
                 if (!varType) {
                     error("Cannot infer type of '" + varName + "'");
                     varType = std::make_shared<UnknownType>();
-                } 
+                }
             }
         }
 
@@ -655,7 +688,7 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
             else {
                 auto callNode = std::make_shared<MethodCallNode>();
 
-                // TODO: template �Լ� ȣ�⿡ ���� ó���� ���߿� �ؾ��� �� 
+                // TODO: template �Լ� ȣ�⿡ ���� ó���� ���߿� �ؾ��� ��
                 std::vector<std::string> result;
                 std::copy(pathComponents.begin(), pathComponents.end() - 1, std::back_inserter(result));
 
@@ -665,14 +698,14 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 
                 return callNode;
             }
-        } 
+        }
         else if (match(TokenType::OPERATOR, "=")) {
 			// �Ҵ� ǥ���� �Ľ�
 			auto assignNode = std::make_shared<AssignmentExpressionNode>();
 			assignNode->left = std::make_shared<IdentifierNode>(join(pathComponents, "."));
 			assignNode->right = parseExpression();
 			return assignNode;
-        } 
+        }
 
         auto exprNode = std::make_shared<IdentifierNode>(pathComponents.back());
         expr = exprNode;
@@ -774,7 +807,7 @@ std::shared_ptr<ASTNode> Parser::parsePrimaryExpression()
         castexpr->expression = expr;
 		return castexpr;
 	}
-	else if (match(TokenType::OPERATOR, "-") || 
+	else if (match(TokenType::OPERATOR, "-") ||
         match(TokenType::OPERATOR, "+") ||
         match(TokenType::OPERATOR, "~")) {
 		auto unaryNode = std::make_shared<UnaryExpressionNode>();
@@ -787,7 +820,7 @@ std::shared_ptr<ASTNode> Parser::parsePrimaryExpression()
 		unaryNode->op = previous().value;
 		unaryNode->expression = parsePrimaryExpression();
 		return unaryNode;
-	}   
+	}
 	else if (match(TokenType::OPERATOR, "!")) {
 		auto unaryNode = std::make_shared<UnaryExpressionNode>();
 		unaryNode->op = "!";

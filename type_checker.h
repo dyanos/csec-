@@ -92,7 +92,9 @@ public:
     void visit(ValueNode& node) override;
 
 	void visit(FunctionCallNode& node) override;
-    
+
 	void visit(ArrayAccessNode& node) override;
 	void visit(ArrayCreationNode& node) override;
+
+	void visit(AccessFieldNode& node) override;
 };

@@ -29,7 +29,7 @@ struct Symbol {
         : name(name), type(type), value(value), function(nullptr), isMutable(isMutable), symbolType(symbolType) {} // 'function' √ ±‚»≠
 };
 
-struct ClassSymbol {
+struct ClassSymbol : public Symbol {
     std::string name;
     llvm::Type* classType;
     std::unordered_map<std::string, Symbol> fields;

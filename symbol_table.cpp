@@ -167,6 +167,7 @@ void SymbolTable::merge(const std::shared_ptr<SymbolTable>& other) {
 bool SymbolTable::addClassSymbol(const std::string& name, const ClassSymbol& classSymbol) {
     if (classSymbols.count(name) == 0) {
         classSymbols[name] = classSymbol;
+        scopes.back()[name] = classSymbol;
         return true;
     }
     return false;  // 이미 존재하는 클래스 심볼

@@ -27,6 +27,20 @@ void ParameterNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
 
+llvm::Value* ParameterNode::codegen() {
+	// 함수의 Parameter는 local변수로 처리
+	llvm::Type* paramType = codeGenerator->getLLVMType(type);
+    if (!paramType) {
+        std::cerr << "Error: Unsupported parameter type '" << type->name << "' in function '" << name << "'" << std::endl;
+        return nullptr;
+    }
+
+	llvm::AllocaInst* alloc = codeGenerator->builder.CreateAlloca(paramType, nullptr, name.c_str());
+	Symbol symbol(name, type, alloc, false, SymbolType::VARIABLE);
+	codeGenerator->symbolTable.addSymbol(name, symbol);
+    return alloc;
+}
+
 void ImportNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
@@ -94,7 +108,8 @@ llvm::Value* ClassDeclarationNode::codegen() {
             return nullptr;
         }
 
-        Symbol fieldSymbol(field->name, field->type, nullptr, field->isMutable, SymbolType::FIELD);
+		llvm::AllocaInst* alloc = codeGenerator->builder.CreateAlloca(fieldType, nullptr, field->name.c_str());
+        Symbol fieldSymbol(field->name, field->type, alloc, field->isMutable, SymbolType::FIELD);
         classSymbol.fields[field->name] = fieldSymbol;
     }
 
@@ -272,6 +287,17 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         // this 포인터를 심볼 테이블에 추가
         Symbol thisSymbol("this", std::make_shared<ClassType>(codeGenerator->currentClassName), alloc, false, SymbolType::VARIABLE);
         codeGenerator->symbolTable.addSymbol("this", thisSymbol);
+
+		// class의 필드와 함수를 심볼 테이블에 추가
+		auto classSymbol = codeGenerator->symbolTable.lookupClass(codeGenerator->currentClassName);
+        if (classSymbol) {
+            for (auto& field : classSymbol->fields) {
+                codeGenerator->symbolTable.addSymbol(field.first, field.second);
+            }
+            for (auto& method : classSymbol->methods) {
+                codeGenerator->symbolTable.addSymbol(method.first, method.second);
+            }
+        }
     }
 
     for (size_t idx = 0; idx < parameters.size(); ++idx, ++argIter) {
@@ -789,6 +815,7 @@ void IdentifierNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* IdentifierNode::codegen() {
+    // symbolTable에서의 symbol 검색은 symbolTable의 scopes를 역순으로 해서 따라가면서 symbol을 lookup한다.
 	Symbol* symbol = codeGenerator->symbolTable.lookup(value);
 	if (!symbol) {
 		std::cerr << "Undefined variable: " << value << std::endl;
@@ -1009,8 +1036,14 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
 	// primitive type인지, class type인지 확인, template type인지 확인
     // primitive type이면 llvm::CreateAlloca로
 	if (isPrimitiveType(className)) {
+        // new로 시작한 것이므로, malloc사용
 		llvm::Type* type = codeGenerator->getLLVMType(std::make_shared<BasicType>(className));
-		return codeGenerator->builder.CreateAlloca(type, nullptr, className);
+        // type을 메모리 할당할때 필요한 메모리 크기를 계산
+		llvm::DataLayout dataLayout;
+		uint64_t typeSize = dataLayout.getTypeAllocSize(type);
+		llvm::Value* allocSize = llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, typeSize));
+		// malloc함수 호출
+		return codeGenerator->builder.CreateCall(codeGenerator->mallocFunction, allocSize, "malloc");
     }
 
 	// Template Class인지 확인은 나중에 코드 추가되면...
@@ -1025,7 +1058,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
     // 클래스 타입 가져오기
     llvm::StructType* classType = llvm::dyn_cast<llvm::StructType>(classSymbol->classType);
     if (!classType) {
-        std::cerr << "오류: 클래스 타입을 가져올 수 없습니다." << std::endl;
+        std::cerr << "Error: Unknown type about class '" << className << "'" << std::endl;
         return nullptr;
     }
 
@@ -1033,11 +1066,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
     llvm::DataLayout dataLayout;
     uint64_t typeSize = dataLayout.getTypeAllocSize(classType);
     llvm::Value* allocSize = llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, typeSize));
-    llvm::Value* allocatedMemory = codeGenerator->builder.CreateAlloca(
-        classType,
-        allocSize,
-        "objAlloc"
-    );
+    llvm::Value* allocatedMemory = codeGenerator->builder.CreateCall(codeGenerator->mallocFunction, allocSize, "objAlloc");
     allocatedMemory = codeGenerator->builder.CreateBitCast(allocatedMemory, classType->getPointerTo());
 
     // 객체 초기화 (생성자 호출)
@@ -1745,4 +1774,19 @@ llvm::Value* ArrayAccessNode::codegen() {
     llvm::Value* elemPtr = codeGenerator->builder.CreateGEP(elementType, arrayValue, indexValue, "arrayelem");
     // 요소 로드
     return codeGenerator->builder.CreateLoad(elementType, elemPtr, "arrayload");
+}
+
+void AccessFieldNode::accept(ASTVisitor& visitor) {
+    visitor.visit(*this);
+}
+
+llvm::Value* AccessFieldNode::codegen() {
+	auto leftValue = base->codegen();
+    auto rightValue = field->codegen();
+    return nullptr;
+}
+
+std::shared_ptr<Type> AccessFieldNode::getType() {
+    // left의 type과 동일
+    return base->getType();
 }

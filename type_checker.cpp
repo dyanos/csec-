@@ -147,6 +147,11 @@ void TypeChecker::visit(ArrayCreationNode& node)
 	node.getType();
 }
 
+void TypeChecker::visit(AccessFieldNode& node)
+{
+    node.getType();
+}
+
 void TypeChecker::visit(ClassInstanceCreationNode& node) {
     node.getType();
 }

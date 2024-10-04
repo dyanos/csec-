@@ -16,6 +16,8 @@ enum class SymbolType {
     METHOD
 };
 
+class FunctionDeclarationNode;
+
 struct Symbol {
     std::string name;
     std::shared_ptr<Type> type;  // 타입을 std::string에서 llvm::Type*으로 변경
@@ -36,6 +38,7 @@ struct ClassSymbol : public Symbol {
     std::unordered_map<std::string, Symbol> methods;
     std::string superClassName;
     ClassSymbol* superClassSymbol;
+	std::unordered_map<std::string, FunctionDeclarationNode*> methodBodies;
 
     ClassSymbol() : name(""), superClassName(""), superClassSymbol(nullptr), classType(nullptr), fields({}), methods({}) {}
     ClassSymbol(const std::string& name, llvm::Type* classType, const std::string& superClassName)

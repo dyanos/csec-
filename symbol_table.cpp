@@ -100,6 +100,19 @@ Symbol* SymbolTable::lookup(const std::string& name) {
     return nullptr;  // 심볼을 찾지 못함
 }
 
+Symbol* SymbolTable::lookupAtSameLevel(const std::string& baseName, const std::string& name) {
+    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+        auto found = it->find(baseName);
+        if (found != it->end()) {
+			auto secondFound = it->find(name);
+            if (secondFound != it->end()) {
+                return &secondFound->second;
+            }
+        }
+    }
+	return nullptr;
+}
+
 Symbol* SymbolTable::lookupMethod(ClassSymbol* classSymbol, const std::string& methodName) {
     if (!classSymbol) {
         return nullptr;

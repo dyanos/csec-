@@ -19,6 +19,7 @@ public:
 
     bool addSymbol(const std::string& name, const Symbol& symbol);
     Symbol* lookup(const std::string& name);
+    Symbol* lookupAtSameLevel(const std::string& baseName, const std::string& name);
     Symbol* lookupMethod(ClassSymbol* classSymbol, const std::string& methodName);
 
     // 타입 심볼 관리 함수

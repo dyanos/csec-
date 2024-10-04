@@ -65,29 +65,19 @@ public:
 };
 
 class ClassBodyNode;
-class ParameterNode;
 
-class ClassDeclarationNode : public ASTNode {
+class ParameterNode : public ASTNode {
 public:
     std::string name;
-    std::vector<std::shared_ptr<ParameterNode>> constructorParams;
-    std::string superClassName;
-    std::shared_ptr<ClassBodyNode> body;
+    std::shared_ptr<Type> type;
 
     void accept(ASTVisitor& visitor) override;
+
     llvm::Value* codegen() override;
 
     std::shared_ptr<Type> getType() override {
         return nullptr;
     }
-
-private:
-    std::vector<llvm::Type*> createFieldTypes();
-    llvm::StructType* createClassType(const std::vector<llvm::Type*>& fieldTypes);
-    ClassSymbol createClassSymbol(llvm::StructType* classType);
-    void addFieldsToClassSymbol(ClassSymbol& classSymbol, const std::vector<llvm::Type*>& fieldTypes);
-    void addClassSymbolToTable(const ClassSymbol& classSymbol);
-    void generateMethodCode();
 };
 
 class FunctionDeclarationNode : public ASTNode {
@@ -105,14 +95,17 @@ public:
     }
 };
 
-class ParameterNode : public ASTNode {
+class ClassDeclarationNode : public ASTNode {
 public:
     std::string name;
-    std::shared_ptr<Type> type;
+    std::vector<std::shared_ptr<ParameterNode>> constructorParams;
+    std::string superClassName;
+    std::shared_ptr<ClassBodyNode> body;
 
     void accept(ASTVisitor& visitor) override;
-
     llvm::Value* codegen() override;
+
+    void declareMethod(FunctionDeclarationNode *method, ClassSymbol *classSymbol);
 
     std::shared_ptr<Type> getType() override {
         return nullptr;

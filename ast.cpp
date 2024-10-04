@@ -93,14 +93,12 @@ llvm::Value* ClassDeclarationNode::codegen() {
     classSymbol.superClassSymbol = superClassSymbol;
 
     // 필드 및 메서드 수집
-    // 상위 클래스의 필드와 메서드를 복사
     if (superClassSymbol) {
         classSymbol.fields = superClassSymbol->fields;
         classSymbol.methods = superClassSymbol->methods;
     }
 
     // 현재 클래스의 필드와 메서드 추가 또는 오버라이딩
-    // 필드 처리
     for (auto& field : body->fields) {
         llvm::Type* fieldType = codeGenerator->getLLVMType(field->type);
         if (!fieldType) {
@@ -108,28 +106,23 @@ llvm::Value* ClassDeclarationNode::codegen() {
             return nullptr;
         }
 
-		llvm::AllocaInst* alloc = codeGenerator->builder.CreateAlloca(fieldType, nullptr, field->name.c_str());
-        Symbol fieldSymbol(field->name, field->type, alloc, field->isMutable, SymbolType::FIELD);
+        Symbol fieldSymbol(field->name, field->type, nullptr, field->isMutable, SymbolType::FIELD);
         classSymbol.fields[field->name] = fieldSymbol;
     }
 
-    // 메서드 처리
     for (auto& method : body->methods) {
-        // 메서드 시그니처 생성
         std::vector<std::shared_ptr<Type>> paramTypes;
+        paramTypes.push_back(std::make_shared<ClassType>(name)); // this 포인터 타입 추가
         for (auto& param : method->parameters) {
             paramTypes.push_back(param->type);
         }
         auto funcType = std::make_shared<FunctionType>(paramTypes, method->returnType);
 
-        // 메서드 심볼 생성
         Symbol methodSymbol(method->name, funcType, nullptr, false, SymbolType::METHOD);
-
-        // 메서드 오버라이딩 처리
         classSymbol.methods[method->name] = methodSymbol;
     }
 
-    // 클래스 타입 생성 (필드 타입으로 구성된 구조체)
+    // 클래스 타입 생성
     std::vector<llvm::Type*> fieldTypes;
     for (auto& fieldEntry : classSymbol.fields) {
         llvm::Type* fieldType = codeGenerator->getLLVMType(fieldEntry.second.type);
@@ -140,56 +133,49 @@ llvm::Value* ClassDeclarationNode::codegen() {
         fieldTypes.push_back(fieldType);
     }
 
-    // 클래스 구조체 타입 생성
     llvm::StructType* classType = llvm::StructType::create(codeGenerator->context, fieldTypes, name);
     classSymbol.classType = classType;
 
     // 심볼 테이블에 클래스 심볼 추가
     codeGenerator->symbolTable.addClassSymbol(name, classSymbol);
 
-    // 메서드 코드 생성
-    codeGenerator->currentClassName = name;
+    // 메서드 선언 생성 (실제 코드 생성은 나중에 수행)
     for (auto& method : body->methods) {
-        method->codegen();
+        declareMethod(method.get(), &classSymbol);
     }
-    codeGenerator->currentClassName.clear();
 
     return nullptr;
 }
 
-std::vector<llvm::Type*> ClassDeclarationNode::createFieldTypes() {
-    std::vector<llvm::Type*> fieldTypes;
-    for (auto& field : body->fields) {
-        llvm::Type* fieldType = llvm::Type::getInt32Ty(codeGenerator->context);  // 임시로 int32로 설정
-        fieldTypes.push_back(fieldType);
+void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol) {
+    std::vector<llvm::Type*> paramTypes;
+    paramTypes.push_back(classSymbol->classType->getPointerTo()); // this 포인터 타입
+
+    for (auto& param : method->parameters) {
+        llvm::Type* paramType = codeGenerator->getLLVMType(param->type);
+        if (!paramType) {
+            std::cerr << "Error: Not supported the parameter's type of '" << method->name << "'" << std::endl;
+            return;
+        }
+        paramTypes.push_back(paramType);
     }
-    return fieldTypes;
-}
 
-llvm::StructType* ClassDeclarationNode::createClassType(const std::vector<llvm::Type*>& fieldTypes) {
-    return llvm::StructType::create(codeGenerator->context, fieldTypes, name);
-}
-
-ClassSymbol ClassDeclarationNode::createClassSymbol(llvm::StructType* classType) {
-    return ClassSymbol(name, classType, superClassName);
-}
-
-void ClassDeclarationNode::addFieldsToClassSymbol(ClassSymbol& classSymbol, const std::vector<llvm::Type*>& fieldTypes) {
-    for (size_t i = 0; i < body->fields.size(); ++i) {
-        auto& field = body->fields[i];
-        Symbol fieldSymbol(field->name, field->type, nullptr, field->isMutable, SymbolType::FIELD);
-        classSymbol.fields[field->name] = fieldSymbol;
+    llvm::Type* returnType = codeGenerator->getLLVMType(method->returnType);
+    if (!returnType) {
+        std::cerr << "Error: Not supported the return type of '" << method->name << "'" << std::endl;
+        return;
     }
-}
 
-void ClassDeclarationNode::addClassSymbolToTable(const ClassSymbol& classSymbol) {
-    codeGenerator->symbolTable.addClassSymbol(name, classSymbol);
-}
+    llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
+    std::string methodName = name + "_" + method->name; // 클래스 이름을 접두사로 사용
+    llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, methodName, codeGenerator->module.get());
 
-void ClassDeclarationNode::generateMethodCode() {
-    for (auto& method : body->methods) {
-        method->codegen();
-    }
+    // 메서드 심볼 업데이트
+    classSymbol->methods[method->name].value = function;
+
+    // 메서드 본문 생성을 지연시키기 위해 FunctionDeclarationNode를 저장
+    classSymbol->methodBodies[method->name] = method;
+    //classSymbol->methodBodies[method->name] = method;
 }
 
 void ClassBodyNode::accept(ASTVisitor& visitor) {
@@ -277,17 +263,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
 
     // 파라미터를 심볼 테이블에 추가하고 변수로 할당
     auto argIter = function->arg_begin();
-    if (isClassMethod) {
-        // 첫 번째 인자는 this 포인터
-        llvm::Argument* thisArg = argIter++;
-        thisArg->setName("this");
-        llvm::AllocaInst* alloc = codeGenerator->builder.CreateAlloca(thisArg->getType(), nullptr, "this");
-        codeGenerator->builder.CreateStore(thisArg, alloc);
-
-        // this 포인터를 심볼 테이블에 추가
-        Symbol thisSymbol("this", std::make_shared<ClassType>(codeGenerator->currentClassName), alloc, false, SymbolType::VARIABLE);
-        codeGenerator->symbolTable.addSymbol("this", thisSymbol);
-
+    /*if (isClassMethod) {
 		// class의 필드와 함수를 심볼 테이블에 추가
 		auto classSymbol = codeGenerator->symbolTable.lookupClass(codeGenerator->currentClassName);
         if (classSymbol) {
@@ -298,7 +274,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
                 codeGenerator->symbolTable.addSymbol(method.first, method.second);
             }
         }
-    }
+    }*/
 
     for (size_t idx = 0; idx < parameters.size(); ++idx, ++argIter) {
         auto& param = parameters[idx];
@@ -821,6 +797,12 @@ llvm::Value* IdentifierNode::codegen() {
 		std::cerr << "Undefined variable: " << value << std::endl;
 		return nullptr;
 	}
+
+	// this 포인터 또는 parameter, class의 field인 경우는 CreateLoad를 하지 않아야 함. llvm::Value가 있기 때문에
+	if (symbol->name.compare("this") == 0) {
+		return symbol->value;
+	}
+
 	return codeGenerator->builder.CreateLoad(codeGenerator->getLLVMType(symbol->type), symbol->value, value.c_str());
 }
 
@@ -1069,8 +1051,65 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
     llvm::Value* allocatedMemory = codeGenerator->builder.CreateCall(codeGenerator->mallocFunction, allocSize, "objAlloc");
     allocatedMemory = codeGenerator->builder.CreateBitCast(allocatedMemory, classType->getPointerTo());
 
-    // 객체 초기화 (생성자 호출)
+    // this 포인터 설정
+    classSymbol->fields["this"].value = allocatedMemory;
+	Symbol thisSymbol("this", std::make_shared<ClassType>(className), allocatedMemory, false, SymbolType::FIELD);
+    codeGenerator->symbolTable.addSymbol("this", thisSymbol);
+
+	// class의 fields에 대해서 allocatedMemory상의 위치를 계산하고, 이를 symbolTable에 추가
+    int idx = 1;
+	for (auto& field : classSymbol->fields) {
+		if (field.first.compare("this") == 0) continue;
+
+		llvm::Value* fieldPtr = codeGenerator->builder.CreateStructGEP(classType, allocatedMemory, idx, field.first);
+		field.second.value = fieldPtr;
+		codeGenerator->symbolTable.addSymbol(field.first, field.second);
+        idx += 1;
+	}
+
+    // class method 생성
+
     std::string constructorName = className;
+
+    FunctionDeclarationNode* method = classSymbol->methodBodies[constructorName];
+    if (!method) {
+        // 생성자가 없으면 기본 생성자를 생성
+        method = new FunctionDeclarationNode();
+        method->name = constructorName;
+        method->returnType = std::make_shared<ClassType>(className);
+        method->body = std::make_shared<BlockNode>();
+        for (auto& param : classSymbol->fields) {
+			if (param.first.compare("this") == 0) continue;
+
+            auto p = std::make_shared<ParameterNode>();
+            p->name = param.first;
+			p->type = param.second.type;
+
+            method->parameters.push_back(p);
+        }
+
+        // 생성자 함수 본문 생성을 지연시키기 위해 FunctionDeclarationNode를 저장
+        std::vector<std::shared_ptr<ASTNode>> body;
+        for (auto& param : method->parameters) {
+            auto assign = std::make_shared<AssignmentExpressionNode>();
+            auto thisId = std::make_shared<IdentifierNode>("this");
+			thisId->type = std::make_shared<ClassType>(className);
+			auto paramId = std::make_shared<IdentifierNode>(param->name);
+			paramId->type = param->type;
+            auto accessNode = std::make_shared<AccessFieldNode>(thisId, paramId);
+            assign->left = accessNode;
+            assign->right = std::make_shared<IdentifierNode>(param->name);
+            body.push_back(assign);
+        }
+        method->body = std::make_shared<BlockNode>();
+        method->body->statements = body;
+
+        method->codegen();
+
+        classSymbol->methodBodies[constructorName] = method;
+    }
+
+    // 객체 초기화 (생성자 호출)
     llvm::Function* constructorFunc = codeGenerator->module->getFunction(constructorName);
     if (constructorFunc) {
         std::vector<llvm::Value*> constructorArgs = { allocatedMemory };
@@ -1781,12 +1820,23 @@ void AccessFieldNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* AccessFieldNode::codegen() {
-	auto leftValue = base->codegen();
-    auto rightValue = field->codegen();
-    return nullptr;
+    // C++의 base->field 접근식에 대한 처리입니다.
+    auto leftValue = base;
+    auto rightValue = field;
+    if (!leftValue || !rightValue) {
+        return nullptr;
+    }
+
+    auto symbol = codeGenerator->symbolTable.lookupAtSameLevel(((IdentifierNode*)base.get())->value, ((IdentifierNode*)field.get())->value);
+    if (!symbol) {
+        std::cerr << "Error: Failed to find the symbol '" << ((IdentifierNode*)field.get())->value << "' at '" << ((IdentifierNode*)base.get())->value << "'" << std::endl;
+        return nullptr;
+    }
+
+    return symbol->value;
 }
 
 std::shared_ptr<Type> AccessFieldNode::getType() {
     // left의 type과 동일
-    return base->getType();
+	return field->getType();
 }

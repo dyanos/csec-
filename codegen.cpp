@@ -53,6 +53,21 @@ CodeGenerator::CodeGenerator() : builder(context) {
 		"operator+",
 		module.get()
 	);
+
+    // print 함수 생성
+    llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::Type::getInt8Ty(context)->getPointerTo() }, false),
+        llvm::Function::ExternalLinkage,
+        "print",
+        module.get()
+    );
+
+    llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::Type::getInt8Ty(context)->getPointerTo() }, false),
+        llvm::Function::ExternalLinkage,
+        "println",
+        module.get()
+    );
 }
 
 void CodeGenerator::generateCode(std::shared_ptr<ProgramNode> program) {

@@ -288,30 +288,12 @@ llvm::Value* FunctionDeclarationNode::codegen() {
     codeGenerator->symbolTable.enterScope();
 
     // 파라미터를 심볼 테이블에 추가하고 변수로 할당
-    auto argIter = function->arg_begin();
-    /*if (isClassMethod) {
-		// class의 필드와 함수를 심볼 테이블에 추가
-		auto classSymbol = codeGenerator->symbolTable.lookupClass(codeGenerator->currentClassName);
-        if (classSymbol) {
-            for (auto& field : classSymbol->fields) {
-                codeGenerator->symbolTable.addSymbol(field.first, field.second);
-            }
-            for (auto& method : classSymbol->methods) {
-                codeGenerator->symbolTable.addSymbol(method.first, method.second);
-            }
-        }
-    }*/
-
-    for (size_t idx = 0; idx < parameters.size(); ++idx, ++argIter) {
-        auto& param = parameters[idx];
-        llvm::Argument* arg = argIter;
-        arg->setName(param->name);
-        llvm::AllocaInst* alloc = codeGenerator->builder.CreateAlloca(arg->getType(), nullptr, arg->getName());
-        codeGenerator->builder.CreateStore(arg, alloc);
-
-        // 심볼 테이블에 추가
-        Symbol paramSymbol(param->name, param->type, alloc, false, SymbolType::VARIABLE);
-        codeGenerator->symbolTable.addSymbol(param->name, paramSymbol);
+    int idx = 0;
+    for (auto& param : function->args()) {
+        param->setName(parameters[idx]->name);
+        Symbol paramSymbol(param.getName().str(), param.getType(), param, false, SymbolType::VARIABLE);
+        codeGenerator->symbolTable.addSymbol(param.getName().str(), paramSymbol);
+        idx += 1;
     }
 
     // 함수 본문 코드 생성
@@ -851,19 +833,20 @@ void ValueNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* ValueNode::codegen() {
 	if (valueType == TokenType::INTEGER_LITERAL) {
+        // long, short, int, char, byte 등의 타입 처리가 필요
 		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(32, value, 10));
 	}
 	else if (valueType == TokenType::FLOAT_LITERAL) {
 		return llvm::ConstantFP::get(codeGenerator->context, llvm::APFloat(std::stof(value)));
 	}
 	else if (valueType == TokenType::BINARY_LITERAL) {
-		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, value.substr(2), 2));
+		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(32, value.substr(2), 2));
 	}
 	else if (valueType == TokenType::HEX_LITERAL) {
-		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, value.substr(2), 16));
+		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(32, value.substr(2), 16));
 	}
 	else if (valueType == TokenType::OCTAL_LITERAL) {
-		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, value.substr(2), 8));
+		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(32, value.substr(2), 8));
 	}
 	else if (valueType == TokenType::STRING_LITERAL) {
 		return codeGenerator->builder.CreateGlobalStringPtr(value);
@@ -896,7 +879,7 @@ void CallExpressionNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* CallExpressionNode::codegen() {
 	auto name = callee->codegen()->getName();
-	std::cout << "name: " << name.str() << std::endl;
+	//std::cout << "name: " << name.str() << std::endl;
 	llvm::Function* function = codeGenerator->module->getFunction(name);
 	if (!function) {
 		std::cerr << "Function not found: " << name.str() << std::endl;
@@ -963,6 +946,20 @@ llvm::Value* MethodCallNode::codegen() {
     // 함수 타입과 LLVM 함수 가져오기
     auto funcType = std::dynamic_pointer_cast<FunctionType>(methodSymbol->type);
     llvm::Function* function = static_cast<llvm::Function*>(methodSymbol->value);
+    if (!function) {
+        auto classSymbol = codeGenerator->symbolTable.lookupClass(objectType->name);
+        if (classSymbol->methodBodies.find(methodName) == classSymbol->methodBodies.end()) {
+            std::cerr << "Error: Method '" << methodName << "' not found in class '" << objectType->name << "'" << std::endl;
+            return nullptr;
+        }
+        // 해당 method가 구현되어 있지 않다면, 구현한다.
+        auto method = classSymbol->methodBodies[methodName];
+        method->codegen();
+        function = codeGenerator->module->getFunction(methodName);
+        methodSymbol->value = function;
+        codeGenerator->symbolTable.addSymbol(methodName, *methodSymbol);
+    }
+    
     if (!funcType || !function) {
         std::cerr << "Error: Invalid method '" << methodName << "' in class '" << objectType->name << "'" << std::endl;
         return nullptr;

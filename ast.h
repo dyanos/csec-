@@ -76,7 +76,7 @@ public:
     llvm::Value* codegen() override;
 
     std::shared_ptr<Type> getType() override {
-        return nullptr;
+        return type;
     }
 };
 

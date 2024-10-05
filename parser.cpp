@@ -392,7 +392,7 @@ std::shared_ptr<ASTNode> Parser::parseObjectDeclaration() {
 std::vector<std::shared_ptr<ASTNode>> Parser::parseCallParameterList()
 {
 	std::vector<std::shared_ptr<ASTNode>> arguments;
-	while (true) {
+	while (!check(TokenType::OPERATOR, ")")) {
 		if (isAtEnd()) {
 			error("Unterminated argument list");
 			return std::vector<std::shared_ptr<ASTNode>>();

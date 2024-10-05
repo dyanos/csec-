@@ -94,11 +94,26 @@ llvm::Value* ClassDeclarationNode::codegen() {
 
     // 필드 및 메서드 수집
     if (superClassSymbol) {
-        classSymbol.fields = superClassSymbol->fields;
-        classSymbol.methods = superClassSymbol->methods;
+		for (auto& field : superClassSymbol->fields) {
+			classSymbol.fields[field.first] = field.second;
+		}
+		for (auto& method : superClassSymbol->methods) {
+			classSymbol.methods[method.first] = method.second;
+		}
     }
 
     // 현재 클래스의 필드와 메서드 추가 또는 오버라이딩
+    for (auto& field : constructorParams) {
+        llvm::Type* fieldType = codeGenerator->getLLVMType(field->type);
+        if (!fieldType) {
+            std::cerr << "Error: Unsupported field type '" << field->type->name << "' in class '" << name << "'" << std::endl;
+            return nullptr;
+        }
+
+        Symbol fieldSymbol(field->name, field->type, nullptr, false, SymbolType::FIELD);
+        classSymbol.constructorParams[field->name] = fieldSymbol;
+    }
+
     for (auto& field : body->fields) {
         llvm::Type* fieldType = codeGenerator->getLLVMType(field->type);
         if (!fieldType) {
@@ -124,6 +139,17 @@ llvm::Value* ClassDeclarationNode::codegen() {
 
     // 클래스 타입 생성
     std::vector<llvm::Type*> fieldTypes;
+    // 생성자 파라메터 추가
+    for (auto& fieldEntry : classSymbol.constructorParams) {
+        llvm::Type* fieldType = codeGenerator->getLLVMType(fieldEntry.second.type);
+        if (!fieldType) {
+            std::cerr << "Error: Unsupported field type '" << fieldEntry.second.type->name << "' in class '" << name << "'" << std::endl;
+            return nullptr;
+        }
+        fieldTypes.push_back(fieldType);
+    }
+
+    // 일반 필드 추가
     for (auto& fieldEntry : classSymbol.fields) {
         llvm::Type* fieldType = codeGenerator->getLLVMType(fieldEntry.second.type);
         if (!fieldType) {
@@ -825,7 +851,7 @@ void ValueNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* ValueNode::codegen() {
 	if (valueType == TokenType::INTEGER_LITERAL) {
-		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, value, 10));
+		return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(32, value, 10));
 	}
 	else if (valueType == TokenType::FLOAT_LITERAL) {
 		return llvm::ConstantFP::get(codeGenerator->context, llvm::APFloat(std::stof(value)));
@@ -1058,7 +1084,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
 
 	// class의 fields에 대해서 allocatedMemory상의 위치를 계산하고, 이를 symbolTable에 추가
     int idx = 1;
-	for (auto& field : classSymbol->fields) {
+	for (auto& field : classSymbol->constructorParams) {
 		if (field.first.compare("this") == 0) continue;
 
 		llvm::Value* fieldPtr = codeGenerator->builder.CreateStructGEP(classType, allocatedMemory, idx, field.first);
@@ -1066,6 +1092,15 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
 		codeGenerator->symbolTable.addSymbol(field.first, field.second);
         idx += 1;
 	}
+
+    for (auto& field : classSymbol->fields) {
+        if (field.first.compare("this") == 0) continue;
+
+        llvm::Value* fieldPtr = codeGenerator->builder.CreateStructGEP(classType, allocatedMemory, idx, field.first);
+        field.second.value = fieldPtr;
+        codeGenerator->symbolTable.addSymbol(field.first, field.second);
+        idx += 1;
+    }
 
     // class method 생성
 
@@ -1078,9 +1113,13 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         method->name = constructorName;
         method->returnType = std::make_shared<ClassType>(className);
         method->body = std::make_shared<BlockNode>();
-        for (auto& param : classSymbol->fields) {
-			if (param.first.compare("this") == 0) continue;
 
+		std::shared_ptr<ParameterNode> thisParam = std::make_shared<ParameterNode>();
+		thisParam->name = "this";
+		thisParam->type = std::make_shared<ClassType>(className);
+		method->parameters.push_back(thisParam);
+
+        for (auto& param : classSymbol->constructorParams) {
             auto p = std::make_shared<ParameterNode>();
             p->name = param.first;
 			p->type = param.second.type;
@@ -1121,7 +1160,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
     else {
         std::cerr << "Warning: Constructor for class '" << className << "' not found" << std::endl;
     }
-
+    
     return allocatedMemory;
 }
 
@@ -1202,7 +1241,7 @@ llvm::Value* AssignmentExpressionNode::codegen()
 
 std::shared_ptr<Type> AssignmentExpressionNode::getType()
 {
-    return std::shared_ptr<Type>();
+    return left->getType();
 }
 
 void UnaryExpressionNode::accept(ASTVisitor& visitor)

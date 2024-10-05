@@ -105,16 +105,6 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 		std::vector<std::shared_ptr<ParameterNode>> constructorParams;
 		if (match(TokenType::OPERATOR, "(")) {
 			constructorParams = parseParameterList();
-
-			for (auto param : constructorParams) {
-				auto varDecl = std::make_shared<VariableDeclarationNode>();
-				varDecl->name = param->name;
-				varDecl->type = param->type;
-				varDecl->initializer = nullptr;
-				varDecl->isMutable = false;
-				stmts.push_back(varDecl);
-			}
-
 			expect(TokenType::OPERATOR, ")");
 		}
 

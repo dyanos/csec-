@@ -34,6 +34,7 @@ struct Symbol {
 struct ClassSymbol : public Symbol {
     std::string name;
     llvm::Type* classType;
+	std::unordered_map<std::string, Symbol> constructorParams;
     std::unordered_map<std::string, Symbol> fields;
     std::unordered_map<std::string, Symbol> methods;
     std::string superClassName;

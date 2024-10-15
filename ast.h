@@ -14,12 +14,50 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/DerivedTypes.h>
 
+
+enum class ASTNodeType {
+    PROGRAM, 
+    IMPORT, 
+    OBJECT_DECLARATION, 
+    CLASS_DECLARATION, 
+    FUNCTION_DECLARATION, 
+    PARAMETER, 
+    BLOCK, 
+    EXPRESSION, 
+    VARIABLE_DECLARATION, 
+    CALL_EXPRESSION,
+    METHOD_CALL, 
+    CLASS_INSTANCE_CREATION, 
+    ARRAY_CREATION_EXPRESSION, 
+    ASSIGNMENT_EXPRESSION, 
+    UNARY_EXPRESSION, 
+    CASTING_EXPRESSION, 
+    POSTFIX_EXPRESSION, 
+    PREFIX_EXPRESSION, 
+    FUNCTION_CALL, 
+    ARRAY_CREATION, 
+    ARRAY_ACCESS, 
+    ACCESS_FIELD,
+    IF_STATEMENT,
+    FOR_STATEMENT,
+    MATCH_EXPRESSION,
+    RANGE_EXPRESSION,
+    BINARY_EXPRESSION,
+    RETURN_STATEMENT,
+    UNIT,
+    IDENTIFIER,
+    VALUE,
+    ASSIGNMENT,
+    CLASS_BODY
+};
+
 //
 class ASTVisitor;
 class CodeGenerator;
 
 class ASTNode {
 public:
+    ASTNodeType nodeType;
     static CodeGenerator* codeGenerator;
     std::shared_ptr<Type> type;
 
@@ -31,6 +69,10 @@ public:
 
 class ProgramNode : public ASTNode {
 public:
+    ProgramNode() {
+        nodeType = ASTNodeType::PROGRAM;
+    }
+
     std::vector<std::shared_ptr<ASTNode>> statements;
 
     void accept(ASTVisitor& visitor) override;
@@ -42,6 +84,10 @@ public:
 
 class ImportNode : public ASTNode {
 public:
+    ImportNode() {
+        nodeType = ASTNodeType::IMPORT;
+    }
+
     std::vector<std::string> path;
 
     void accept(ASTVisitor& visitor) override;
@@ -54,6 +100,10 @@ public:
 
 class ObjectDeclarationNode : public ASTNode {
 public:
+    ObjectDeclarationNode() {
+        nodeType = ASTNodeType::OBJECT_DECLARATION;
+    }
+
     std::string name;
     std::shared_ptr<ASTNode> body;
 
@@ -68,6 +118,10 @@ class ClassBodyNode;
 
 class ParameterNode : public ASTNode {
 public:
+    ParameterNode() {
+        nodeType = ASTNodeType::PARAMETER;
+    }
+
     std::string name;
     std::shared_ptr<Type> type;
 
@@ -82,6 +136,10 @@ public:
 
 class FunctionDeclarationNode : public ASTNode {
 public:
+    FunctionDeclarationNode() {
+        nodeType = ASTNodeType::FUNCTION_DECLARATION;
+    }
+
     std::string name;
     std::vector<std::shared_ptr<class ParameterNode>> parameters;
     std::shared_ptr<Type> returnType;
@@ -97,6 +155,10 @@ public:
 
 class ClassDeclarationNode : public ASTNode {
 public:
+    ClassDeclarationNode() {
+        nodeType = ASTNodeType::CLASS_DECLARATION;
+    }
+
     std::string name;
     std::vector<std::shared_ptr<ParameterNode>> constructorParams;
     std::string superClassName;
@@ -114,6 +176,10 @@ public:
 
 class BlockNode : public ASTNode {
 public:
+    BlockNode() {
+        nodeType = ASTNodeType::BLOCK;
+    }
+
     std::vector<std::shared_ptr<ASTNode>> statements;
 
     void accept(ASTVisitor& visitor) override;
@@ -127,6 +193,10 @@ public:
 
 class ExpressionNode : public ASTNode {
 public:
+    ExpressionNode() {
+        nodeType = ASTNodeType::EXPRESSION;
+    }
+
     std::string value;
 
     void accept(ASTVisitor& visitor) override;
@@ -137,6 +207,10 @@ public:
 
 class VariableDeclarationNode : public ASTNode {
 public:
+    VariableDeclarationNode() {
+        nodeType = ASTNodeType::VARIABLE_DECLARATION;
+    }
+
     std::string name;
     std::shared_ptr<Type> type;
     std::shared_ptr<ASTNode> initializer;
@@ -153,6 +227,10 @@ public:
 
 class ClassBodyNode : public ASTNode {
 public:
+    ClassBodyNode() {
+        nodeType = ASTNodeType::CLASS_BODY;
+    }
+
     std::vector<std::shared_ptr<VariableDeclarationNode>> fields;
     std::vector<std::shared_ptr<FunctionDeclarationNode>> methods;
 
@@ -175,6 +253,10 @@ public:
 
 class IfStatementNode : public ASTNode {
 public:
+    IfStatementNode() {
+        nodeType = ASTNodeType::IF_STATEMENT;
+    }
+
     std::shared_ptr<ASTNode> condition;
     std::shared_ptr<BlockNode> thenBlock;
     std::shared_ptr<BlockNode> elseBlock;  // else
@@ -189,6 +271,10 @@ public:
 
 class ForStatementNode : public ASTNode {
 public:
+    ForStatementNode() {
+        nodeType = ASTNodeType::FOR_STATEMENT;
+    }
+
     std::string variable;
     std::shared_ptr<ASTNode> iterableExpr;
     bool isRange = false;
@@ -206,6 +292,10 @@ public:
 // MatchExpressionNode ̸
 class MatchExpressionNode : public ASTNode {
 public:
+    MatchExpressionNode() {
+        nodeType = ASTNodeType::MATCH_EXPRESSION;
+    }
+
     std::shared_ptr<ASTNode> expression;
     std::vector<std::pair<std::shared_ptr<ASTNode>, std::shared_ptr<ASTNode>>> cases;
 
@@ -219,6 +309,10 @@ public:
 
 class RangeExpressionNode : public ASTNode {
 public:
+    RangeExpressionNode() {
+        nodeType = ASTNodeType::RANGE_EXPRESSION;
+    }
+
     std::shared_ptr<ASTNode> startExpr;
     std::shared_ptr<ASTNode> endExpr;
     bool isInclusive;  // `to`̸ true, `until`̸ false
@@ -233,6 +327,10 @@ public:
 
 class BinaryExpressionNode : public ASTNode {
 public:
+    BinaryExpressionNode() {
+        nodeType = ASTNodeType::BINARY_EXPRESSION;
+    }
+
     std::shared_ptr<ASTNode> left;
     std::string op;
     std::shared_ptr<ASTNode> right;
@@ -244,6 +342,10 @@ public:
 
 class AssignmentNode : public ASTNode {
 public:
+    AssignmentNode() {
+        nodeType = ASTNodeType::ASSIGNMENT;
+    }
+
     std::string name;
     std::shared_ptr<ASTNode> expression;
 
@@ -257,6 +359,10 @@ public:
 
 class ReturnStatementNode : public ASTNode {
 public:
+    ReturnStatementNode() {
+        nodeType = ASTNodeType::RETURN_STATEMENT;
+    }
+
     std::shared_ptr<ASTNode> expression;
 
     void accept(ASTVisitor& visitor) override;
@@ -269,7 +375,9 @@ public:
 
 class UnitNode : public ASTNode {
 public:
-    UnitNode() {}
+    UnitNode() {
+        nodeType = ASTNodeType::UNIT;
+    }
 
     void accept(ASTVisitor& visitor) override;
 	llvm::Value* codegen() override {
@@ -283,9 +391,11 @@ public:
 
 class IdentifierNode : public ASTNode {
 public:
-	std::string value;
+    IdentifierNode(const std::string& value) : value(value) {
+        nodeType = ASTNodeType::IDENTIFIER;
+    }
 
-    IdentifierNode(const std::string& value) : value(value) {}
+	std::string value;
 
 	void accept(ASTVisitor& visitor) override;
 	llvm::Value* codegen() override;
@@ -298,6 +408,10 @@ enum class ValueType {
 
 class ValueNode : public ASTNode {
 public:
+    ValueNode() {
+        nodeType = ASTNodeType::VALUE;
+    }
+
 	std::string value;
 	TokenType valueType = TokenType::UNKNOWN;
 
@@ -310,6 +424,10 @@ public:
 
 class CallExpressionNode : public ASTNode {
 public:
+    CallExpressionNode() {
+        nodeType = ASTNodeType::CALL_EXPRESSION;
+    }
+
 	std::shared_ptr<ASTNode> callee;
 	std::vector<std::shared_ptr<ASTNode>> arguments;
 
@@ -320,6 +438,10 @@ public:
 
 class MethodCallNode : public ASTNode {
 public:
+    MethodCallNode() {
+        nodeType = ASTNodeType::METHOD_CALL;
+    }
+
     std::shared_ptr<ASTNode> object;  // 메서드를 호출하는 객체
     std::string methodName;
     std::vector<std::shared_ptr<ASTNode>> arguments;
@@ -334,9 +456,13 @@ public:
     std::string className;
     std::vector<std::shared_ptr<ASTNode>> arguments;
 
-	ClassInstanceCreationNode() {}
+	ClassInstanceCreationNode() {
+        nodeType = ASTNodeType::CLASS_INSTANCE_CREATION;
+    }
     ClassInstanceCreationNode(const std::string& className, std::vector<std::shared_ptr<ASTNode>> arguments)
-        : className(className), arguments(arguments) {}
+        : className(className), arguments(arguments) {
+        nodeType = ASTNodeType::CLASS_INSTANCE_CREATION;
+    }
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
@@ -349,9 +475,13 @@ public:
     std::string typeName;
     std::vector<std::shared_ptr<ASTNode>> sizes;
 
-	ArrayCreationExpressionNode() {}
+	ArrayCreationExpressionNode() {
+        nodeType = ASTNodeType::ARRAY_CREATION_EXPRESSION;
+    }
     ArrayCreationExpressionNode(const std::string& typeName, const std::vector<std::shared_ptr<ASTNode>>& sizes)
-        : typeName(typeName), sizes(sizes) {}
+        : typeName(typeName), sizes(sizes) {
+        nodeType = ASTNodeType::ARRAY_CREATION_EXPRESSION;
+    }
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
@@ -363,9 +493,13 @@ public:
 	std::shared_ptr<ASTNode> left;
 	std::shared_ptr<ASTNode> right;
 
-    AssignmentExpressionNode() {}
+    AssignmentExpressionNode() {
+        nodeType = ASTNodeType::ASSIGNMENT_EXPRESSION;
+    }
 	AssignmentExpressionNode(std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right)
-		: left(left), right(right) {};
+		: left(left), right(right) {
+        nodeType = ASTNodeType::ASSIGNMENT_EXPRESSION;
+    }
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
@@ -377,9 +511,13 @@ public:
 	std::string op;
 	std::shared_ptr<ASTNode> expression;
 
-	UnaryExpressionNode() {}
+	UnaryExpressionNode() {
+        nodeType = ASTNodeType::UNARY_EXPRESSION;
+    }
 	UnaryExpressionNode(const std::string& op, std::shared_ptr<ASTNode> expression)
-		: op(op), expression(expression) {}
+		: op(op), expression(expression) {
+        nodeType = ASTNodeType::UNARY_EXPRESSION;
+    }
 
 	void accept(ASTVisitor& visitor) override;
 	llvm::Value* codegen() override;
@@ -391,9 +529,13 @@ public:
 	std::shared_ptr<ASTNode> expression;
 	std::shared_ptr<ASTNode> type;
 
-	CastingExpressionNode() {}
+    CastingExpressionNode() {
+        nodeType = ASTNodeType::CASTING_EXPRESSION;
+    }
 	CastingExpressionNode(std::shared_ptr<ASTNode> expression, std::shared_ptr<ASTNode> type)
-		: expression(expression), type(type) {}
+		: expression(expression), type(type) {
+        nodeType = ASTNodeType::CASTING_EXPRESSION;
+    }
 
 	void accept(ASTVisitor& visitor) override;
 	llvm::Value* codegen() override;
@@ -405,9 +547,13 @@ public:
     std::string op;
     std::shared_ptr<ASTNode> expression;
 
-    PostfixExpressionNode() {}
+    PostfixExpressionNode() {
+        nodeType = ASTNodeType::POSTFIX_EXPRESSION;
+    }
     PostfixExpressionNode(const std::string& op, std::shared_ptr<ASTNode> expression)
-        : op(op), expression(expression) {}
+        : op(op), expression(expression) {
+        nodeType = ASTNodeType::POSTFIX_EXPRESSION;
+    }
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
@@ -419,9 +565,13 @@ public:
     std::string op;
     std::shared_ptr<ASTNode> expression;
 
-    PrefixExpressionNode() {}
+    PrefixExpressionNode() {
+        nodeType = ASTNodeType::PREFIX_EXPRESSION;
+    }
     PrefixExpressionNode(const std::string& op, std::shared_ptr<ASTNode> expression)
-        : op(op), expression(expression) {}
+        : op(op), expression(expression) {
+        nodeType = ASTNodeType::PREFIX_EXPRESSION;
+    }
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
@@ -430,6 +580,10 @@ public:
 
 class FunctionCallNode : public ASTNode {
 public:
+    FunctionCallNode() {
+        nodeType = ASTNodeType::FUNCTION_CALL;
+    }
+
     std::string functionName;
     std::vector<std::shared_ptr<ASTNode>> arguments;
 
@@ -440,6 +594,10 @@ public:
 
 class ArrayCreationNode : public ASTNode {
 public:
+    ArrayCreationNode() {
+        nodeType = ASTNodeType::ARRAY_CREATION;
+    }
+
     std::shared_ptr<GenericType> arrayType;
     std::vector<std::shared_ptr<ASTNode>> elements;
 
@@ -452,6 +610,10 @@ public:
 
 class ArrayAccessNode : public ASTNode {
 public:
+    ArrayAccessNode() {
+        nodeType = ASTNodeType::ARRAY_ACCESS;
+    }
+
     std::shared_ptr<ASTNode> array;
     std::shared_ptr<ASTNode> index;
 
@@ -471,11 +633,17 @@ public:
 
 class AccessFieldNode : public ASTNode {
 public:
+    AccessFieldNode() {
+        nodeType = ASTNodeType::ACCESS_FIELD;
+    }
+
     std::shared_ptr<ASTNode> base;
     std::shared_ptr<ASTNode> field;
 
     AccessFieldNode(std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right)
-        : base(left), field(right) {}
+        : base(left), field(right) {
+        nodeType = ASTNodeType::ACCESS_FIELD;
+    }
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;

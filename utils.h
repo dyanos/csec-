@@ -11,3 +11,8 @@ std::string join(const std::string& sep, T&&...strings);
 std::string join(std::vector<std::string> vec, std::string const& separator);
 
 bool isPrimitiveType(const std::string& type);
+
+template<typename T>
+std::string checkTypeName(T x) {
+    return typeid(decltype(x)).name();
+}

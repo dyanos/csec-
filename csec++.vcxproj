@@ -141,6 +141,7 @@
     <ClCompile Include="codegen.cpp" />
     <ClCompile Include="lexer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mangling.cpp" />
     <ClCompile Include="module_loader.cpp" />
     <ClCompile Include="parser.cpp" />
     <ClCompile Include="symbol_table.cpp" />
@@ -152,6 +153,7 @@
     <ClInclude Include="codegen.h" />
     <ClInclude Include="ast.h" />
     <ClInclude Include="lexer.h" />
+    <ClInclude Include="mangling.h" />
     <ClInclude Include="module_loader.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="symbol.h" />

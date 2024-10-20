@@ -1,35 +1,120 @@
 #include "mangling.h"
 #include "utils.h"
 
-std::string Mangling::mangle(ASTNode &node) {
-    // Itanium C++ Name Mangling에 따라서 구현합니다.
-    // class, object, function, method에 대해서 mangling을 진행합니다.
-    // 입력 node가 class, object, function, method인지를 검토 합니다.
-    
-    // 입력 node가 ClassDeclarationNode인지 검토합니다.
-    if (node.nodeType == ASTNodeType::CLASS_DECLARATION) {
-        return visit(static_cast<ClassDeclarationNode&>(node));
+#include <string>
+#include <vector>
+#include <unordered_map>
+
+
+std::string mangleNamespaces(std::string name) {
+    std::vector<std::string> namespaces = split(name, '.');
+    std::string basename = "N";
+    for (const auto& ns : namespaces) {
+        basename += std::to_string(ns.length()) + ns;
+    }
+    return basename;
+}
+
+std::unordered_map<std::string, std::string> mangle(ClassDeclarationNode &node) {
+    std::string name = node.name;
+    std::string basename = mangleNamespaces(name);
+
+    std::unordered_map<std::string, std::string> cvt_table;
+    for (const auto& member : node.body->methods) {
+        cvt_table[member->name] = "_Z" + basename + mangle(*member);
+    }
+
+    return cvt_table;
+}
+
+std::string mangle(ObjectDeclarationNode &node) {
+}
+
+std::string mangle(FunctionDeclarationNode &node) {
+    std::string name = node.name + "E";
+    for (const auto& param : node.parameters) {
+        name += mangle(*param);
+    }
+    return name;
+}
+
+std::string mangle(ParameterNode &node) {
+    if (node.type->kind == TypeKind::BASIC) {
+        if (node.type->name == "void") {
+            return "v";
+        } 
+        else if (node.type->name == "bool") {
+            return "b";
+        }
+        else if (node.type->name == "char") {   // 1byte
+            return "c";
+        }
+        else if (node.type->name == "byte") {   // 1byte
+            return "h";
+        }
+        else if (node.type->name == "short") {  // 2byte
+            return "s";
+        }
+        else if (node.type->name == "word") {   // 2byte
+            return "t";
+        }
+        else if (node.type->name == "int") {    // 4byte
+            return "i";
+        }
+        else if (node.type->name == "dword") {  // 4byte
+            return "j";
+        }
+        else if (node.type->name == "long") {   // 8byte
+            return "x";
+        }
+        else if (node.type->name == "qword") {  // 8byte
+            return "y";
+        }
+        else if (node.type->name == "__int128") {  // 16byte
+            return "n";
+        }
+        else if (node.type->name == "unsigned __int128") {
+            return "o";
+        }  // 4byte
+        else if (node.type->name == "float") {
+            return "f";
+        }
+        else if (node.type->name == "double") {
+            return "d";
+        }
+        else if (node.type->name == "number") {
+            return mangleNamespaces("System.lang.Number");
+        }
     } 
-    else if (node.nodeType == ASTNodeType::OBJECT_DECLARATION) {
-        return visit(static_cast<ObjectDeclarationNode&>(node));
+    else if (node.type->kind == TypeKind::GENERIC) {
+        return "G" + node.type->name;
+    }   
+    else if (node.type->kind == TypeKind::VALUE) {
+        return "V" + node.type->name;
     }
-    else if (node.nodeType == ASTNodeType::FUNCTION_DECLARATION) {
-        return visit(static_cast<FunctionDeclarationNode&>(node));
+    return "P" + node.type->name + "E";
+}
+
+#ifdef DEBUG
+int main() {
+    ClassDeclarationNode node;
+    node.name = "a.b.c";
+    auto table = mangle(node);
+    for (const auto& pair : table) {
+        std::cout << pair.first << " -> " << pair.second << std::endl;
     }
-    else if (node.nodeType == ASTNodeType::PARAMETER) {
-        return visit(static_cast<ParameterNode&>(node));
+    std::cout << "----------------------------------------" << std::endl;
+    auto func = std::make_shared<FunctionDeclarationNode>();
+    func->name = "test";
+    auto param = std::make_shared<ParameterNode>();
+    param->name = "a";
+    param->type = std::make_shared<Type>();
+    param->type->name = "int";
+    func->parameters.push_back(param);
+    node.body->methods.push_back(func);
+    auto table2 = mangle(node);
+    for (const auto& pair : table2) {
+        std::cout << pair.first << " -> " << pair.second << std::endl;
     }
 }
-
-std::string Mangling::visit(ClassDeclarationNode &node) {
-    
-}
-
-std::string Mangling::visit(ObjectDeclarationNode &node) {
-}
-
-std::string Mangling::visit(FunctionDeclarationNode &node) {
-}
-
-std::string Mangling::visit(ParameterNode &node) {
-}
+#endif

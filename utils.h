@@ -16,3 +16,6 @@ template<typename T>
 std::string checkTypeName(T x) {
     return typeid(decltype(x)).name();
 }
+
+std::vector<std::string> split(const std::string& str, char delimiter);
+

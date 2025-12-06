@@ -28,6 +28,7 @@ std::unordered_map<std::string, std::string> mangle(ClassDeclarationNode &node) 
 }
 
 std::string mangle(ObjectDeclarationNode &node) {
+    return "";
 }
 
 std::string mangle(FunctionDeclarationNode &node) {
@@ -39,60 +40,60 @@ std::string mangle(FunctionDeclarationNode &node) {
 }
 
 std::string mangle(ParameterNode &node) {
-    if (node.type->kind == TypeKind::BASIC) {
-        if (node.type->name == "void") {
+    if (node.type->getKind() == Type::Kind::BASIC) {
+        if (node.type->getName() == "void") {
             return "v";
-        } 
-        else if (node.type->name == "bool") {
+        }
+        else if (node.type->getName() == "bool") {
             return "b";
         }
-        else if (node.type->name == "char") {   // 1byte
+        else if (node.type->getName() == "char") {   // 1byte
             return "c";
         }
-        else if (node.type->name == "byte") {   // 1byte
+        else if (node.type->getName() == "byte") {   // 1byte
             return "h";
         }
-        else if (node.type->name == "short") {  // 2byte
+        else if (node.type->getName() == "short") {  // 2byte
             return "s";
         }
-        else if (node.type->name == "word") {   // 2byte
+        else if (node.type->getName() == "word") {   // 2byte
             return "t";
         }
-        else if (node.type->name == "int") {    // 4byte
+        else if (node.type->getName() == "int") {    // 4byte
             return "i";
         }
-        else if (node.type->name == "dword") {  // 4byte
+        else if (node.type->getName() == "dword") {  // 4byte
             return "j";
         }
-        else if (node.type->name == "long") {   // 8byte
+        else if (node.type->getName() == "long") {   // 8byte
             return "x";
         }
-        else if (node.type->name == "qword") {  // 8byte
+        else if (node.type->getName() == "qword") {  // 8byte
             return "y";
         }
-        else if (node.type->name == "__int128") {  // 16byte
+        else if (node.type->getName() == "__int128") {  // 16byte
             return "n";
         }
-        else if (node.type->name == "unsigned __int128") {
+        else if (node.type->getName() == "unsigned __int128") {
             return "o";
         }  // 4byte
-        else if (node.type->name == "float") {
+        else if (node.type->getName() == "float") {
             return "f";
         }
-        else if (node.type->name == "double") {
+        else if (node.type->getName() == "double") {
             return "d";
         }
-        else if (node.type->name == "number") {
+        else if (node.type->getName() == "number") {
             return mangleNamespaces("System.lang.Number");
         }
-    } 
-    else if (node.type->kind == TypeKind::GENERIC) {
-        return "G" + node.type->name;
-    }   
-    else if (node.type->kind == TypeKind::VALUE) {
-        return "V" + node.type->name;
     }
-    return "P" + node.type->name + "E";
+    else if (node.type->getKind() == Type::Kind::CLASS) {
+        return "G" + node.type->getName();
+    }
+    else if (node.type->getKind() == Type::Kind::VARIABLE) {
+        return "V" + node.type->getName();
+    }
+    return "P" + node.type->getName() + "E";
 }
 
 #ifdef DEBUG

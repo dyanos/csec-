@@ -7,7 +7,7 @@ bool areTypesCompatible(const std::vector<std::shared_ptr<Type>>& paramTypes, co
     }
 
     for (size_t i = 0; i < paramTypes.size(); ++i) {
-        if (!argTypes[i]->equals(paramTypes[i])) {
+        if (!argTypes[i]->equals(paramTypes[i].get())) {
             return false;
         }
     }

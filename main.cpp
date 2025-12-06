@@ -1,4 +1,8 @@
 // main.cpp
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
@@ -11,28 +15,65 @@
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
 
-int main() {
-    std::string code = R"(
-        class Person(name: String, age: Int) {
-            val occupation: String = "Unknown"
+#include <llvm/IR/PassManager.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Transforms/Utils/Mem2Reg.h>
 
-            def greet() {
-                println("Hello, my name is " + name)
-            }
+#include <fstream>
+#include <sstream>
 
-            def getAge(): Int = {
-                age
-            }
-        }
+// 파일 내용을 읽어서 std::string으로 반환하는 함수 구현
+std::string readFileContent(const std::string& filename) {
+    std::ifstream file(filename, std::ios::in | std::ios::binary);
+    if (!file) {
+        return "";
+    }
+    std::ostringstream contents;
+    contents << file.rdbuf();
+    return contents.str();
+}
 
-        object Main {
-            def main(args: Array[String]) {
-                val person = new Person("Alice", 30)
-                person.greet()
-                println(person.getAge())
-            }
-        }
-    )";
+int main(int argc, char** argv) {
+    /*llvm::PassBuilder PB;
+
+    // ModulePassManager 생성
+    llvm::ModulePassManager MPM;
+
+    MPM.addPass(llvm::PromotePass());
+
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
+
+    PB.registerModuleAnalyses(MAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);*/
+
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
+    /*if (argc < 2) {
+        std::cout << "No input file provided." << std::endl;
+        return -1;
+	}
+
+    // 파일이 존재하는지 체크
+    if (FILE* file = fopen(argv[1], "r")) {
+        // 아무것도 하지 않는다.
+    }
+    else {
+        std::cout << "File not found: " << argv[1] << std::endl;
+        return -1;
+	}*/
+
+	std::cout << "get current directory: " << _getcwd(NULL, 0) << std::endl;
+	std::string code = readFileContent("sample2.csec");
+
+    // 코드 생성
+    CodeGenerator codeGen;
+    ASTNode::codeGenerator = &codeGen;
 
     Lexer lexer(code);
     std::vector<Token> tokens = lexer.tokenize();
@@ -51,10 +92,6 @@ int main() {
 
     TypeChecker typeChecker;
     ast->accept(typeChecker);
-
-    // 코드 생성
-    CodeGenerator codeGen;
-    ASTNode::codeGenerator = &codeGen;
 
     codeGen.generateCode(ast);
 
@@ -76,6 +113,9 @@ int main() {
         std::cerr << "Failed to create ExecutionEngine: " << errStr << std::endl;
         return 1;
     }
+
+    //MPM.run(*codeGen.module, MAM);
+
 
     // main 함수 실행
     auto result = engine->runFunction(codeGen.mainFunction, {});

@@ -11,8 +11,8 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
         // 변수의 타입과 초기화 식의 타입 비교
         if (node.type) {
             // 변수 선언 시 타입이 명시된 경우
-            if (!node.type->equals(initType)) {
-                std::cerr << "Type error: Variable '" << node.name << "' declared as '" << node.type->name << "' but initialized with '" << initType->name << "'" << std::endl;
+            if (!node.type->equals(initType.get())) {
+                std::cerr << "Type error: Variable '" << node.name << "' declared as '" << node.type->getName() << "' but initialized with '" << initType->getName() << "'" << std::endl;
             }
         } else {
             // 타입이 명시되지 않은 경우 초기화 식의 타입으로 설정
@@ -42,8 +42,8 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
 
         // 반환 타입과 함수 본문의 타입 비교
         if (node.returnType) {
-            if (!node.returnType->equals(bodyType)) {
-                std::cerr << "Type error: Function '" << node.name << "' declared to return '" << node.returnType->name << "' but returns '" << bodyType->name << "'" << std::endl;
+            if (!node.returnType->equals(bodyType.get())) {
+                std::cerr << "Type error: Function '" << node.name << "' declared to return '" << node.returnType->getName() << "' but returns '" << bodyType->getName() << "'" << std::endl;
             }
         } else {
             // 반환 타입이 명시되지 않은 경우 함수 본문의 타입으로 설정

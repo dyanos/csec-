@@ -1,0 +1,22 @@
+def main(): Int = {
+	var a1: Int = 10;
+	var b1: String = "Hello";
+	var c1: Char = 2;
+	var d1: Boolean = true;
+	var e1: Float = 5.5;
+	var f1: Double = 10.99;
+	var g1: Long = 1000;
+	var h1: Short = 5;
+
+	for (i <- 0 to 5) {
+		a1 = a1 + i;
+	}
+
+	var a: Int = 0;
+	var b: Int = 10;
+	/*for (i <- a to b) {
+		a1 = a1 + i;
+	}*/
+
+	return a1;
+}

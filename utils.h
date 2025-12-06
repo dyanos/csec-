@@ -1,6 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <string>
+#include <sstream>
+#include <llvm/IR/Value.h>
+#include "codegen.h"
 
 inline static bool exist_file(const std::string& name);
 std::string read_file(const std::string& path);
@@ -19,3 +23,9 @@ std::string checkTypeName(T x) {
 
 std::vector<std::string> split(const std::string& str, char delimiter);
 
+// 문자열 타입인지 확인하는 헬퍼 함수
+inline bool isStringTypeFromLLVM(llvm::Value* value, CodeGenerator* codeGenerator) {
+    return value->getType()->isPointerTy() &&
+           ((llvm::PointerType*)value->getType())->isValidElementType(
+               llvm::Type::getInt8Ty(codeGenerator->context));
+}

@@ -17,14 +17,18 @@ public:
     ModuleLoader moduleLoader;
     llvm::Function* mainFunction;
 
-    SymbolTable symbolTable;  // �ɺ� ���̺� �߰�
-    std::string currentClassName;
-    
+	// 현재 스코프 체인: namespace 및 클래스 스코프 추적용 -> body가 시작될때 push, 끝날때 pop
+    std::vector<std::string> scopes;
+
+    SymbolTable symbolTable;
+    // 현재 namespace 또는 클래스, function(or method), block 등을 의미(상위 심볼의 정보도 검색되어야 하는 조건이 있음), nullptr이면 전역 스코프
+	Symbol* currentSymbol;
+
     llvm::LLVMContext& getContext() { return context; }
 
     void generateCode(std::shared_ptr<ProgramNode> program);
     void dumpIR();
-    llvm::Type* getLLVMType(std::shared_ptr<Type> type);
+    llvm::Type* getLLVMType(const Type* type);
 
     llvm::Function* mallocFunction;
     llvm::Function* freeFunction;

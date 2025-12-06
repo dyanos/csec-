@@ -16,27 +16,27 @@
 
 
 enum class ASTNodeType {
-    PROGRAM, 
-    IMPORT, 
-    OBJECT_DECLARATION, 
-    CLASS_DECLARATION, 
-    FUNCTION_DECLARATION, 
-    PARAMETER, 
-    BLOCK, 
-    EXPRESSION, 
-    VARIABLE_DECLARATION, 
+    PROGRAM,
+    IMPORT,
+    OBJECT_DECLARATION,
+    CLASS_DECLARATION,
+    FUNCTION_DECLARATION,
+    PARAMETER,
+    BLOCK,
+    EXPRESSION,
+    VARIABLE_DECLARATION,
     CALL_EXPRESSION,
-    METHOD_CALL, 
-    CLASS_INSTANCE_CREATION, 
-    ARRAY_CREATION_EXPRESSION, 
-    ASSIGNMENT_EXPRESSION, 
-    UNARY_EXPRESSION, 
-    CASTING_EXPRESSION, 
-    POSTFIX_EXPRESSION, 
-    PREFIX_EXPRESSION, 
-    FUNCTION_CALL, 
-    ARRAY_CREATION, 
-    ARRAY_ACCESS, 
+    METHOD_CALL,
+    CLASS_INSTANCE_CREATION,
+    ARRAY_CREATION_EXPRESSION,
+    ASSIGNMENT_EXPRESSION,
+    UNARY_EXPRESSION,
+    CASTING_EXPRESSION,
+    POSTFIX_EXPRESSION,
+    PREFIX_EXPRESSION,
+    FUNCTION_CALL,
+    ARRAY_CREATION,
+    ARRAY_ACCESS,
     ACCESS_FIELD,
     IF_STATEMENT,
     FOR_STATEMENT,
@@ -633,24 +633,25 @@ public:
 
 class AccessFieldNode : public ASTNode {
 public:
-    AccessFieldNode() {
-        nodeType = ASTNodeType::ACCESS_FIELD;
-    }
-
     std::shared_ptr<ASTNode> base;
     std::shared_ptr<ASTNode> field;
 
-    AccessFieldNode(std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right)
-        : base(left), field(right) {
+    AccessFieldNode() {
         nodeType = ASTNodeType::ACCESS_FIELD;
-    }
+	}
+    AccessFieldNode(std::shared_ptr<ASTNode> base, std::shared_ptr<ASTNode> field)
+        : base(base), field(field) {
+        nodeType = ASTNodeType::ACCESS_FIELD;
+	}
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     std::shared_ptr<Type> getType() override;
+
+    int findFieldIndex(ClassSymbol* classSymbol, const std::string& fieldName);
 };
 
-// ASTVisitor Ŭ���� ����
+// ASTVisitor Ŭ
 class ASTVisitor {
 public:
     virtual void visit(ProgramNode& node) = 0;
@@ -664,7 +665,7 @@ public:
     virtual void visit(BlockNode& node) = 0;
     virtual void visit(ExpressionNode& node) = 0;
 
-    // ���ο� �湮 �Լ���
+    // 오브젝트 멤버 변수 방문
     virtual void visit(VariableDeclarationNode& node) = 0;
 	virtual void visit(CallExpressionNode& node) = 0;
 	virtual void visit(MethodCallNode& node) = 0;

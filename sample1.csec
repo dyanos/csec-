@@ -1,0 +1,15 @@
+def add(a: Int, b: Int): Int {
+    var sec = if (a > 100) {
+        a;
+    }
+    else {
+        b;
+    };
+
+    return a + b + sec;
+}
+
+def main(): Int {
+    var result: Int = add(10, 20);
+    return result;
+}

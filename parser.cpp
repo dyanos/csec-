@@ -4,6 +4,7 @@
 #include <iostream>
 #include "utils.h"
 
+// parser에서는 parsing만 담당하고, symbol 등록 및 검색은 codegen할때 담당
 Parser::Parser(const std::vector<Token>& tokens)
 	: tokens(tokens), position(0) {}
 
@@ -43,6 +44,10 @@ bool Parser::check(TokenType type, const std::string& value) const {
 }
 
 bool Parser::match(TokenType type, const std::string& value) {
+	while (tokens[position].type == TokenType::COMMENT) {
+		advance();
+	}
+
 	if (check(type, value)) {
 		advance();
 		return true;
@@ -93,7 +98,7 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 		return nullptr;
 	}
 	else if (match(TokenType::KEYWORD, "class")) {
-		std::vector<std::shared_ptr<ASTNode>> stmts;
+		/*std::vector<std::shared_ptr<ASTNode>> stmts;
 
 		if (!match(TokenType::IDENTIFIER)) {
 			error("Expected class name");
@@ -161,10 +166,14 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 		classNode->name = className;
 		classNode->constructorParams = constructorParams;
 		classNode->body = classBody;
-		return classNode;
+		return classNode;*/
+		return parseClassDeclaration();
 	}
 	else if (match(TokenType::KEYWORD, "object")) {
 		return parseObjectDeclaration();
+	}
+	else if (match(TokenType::KEYWORD, "def")) {
+		return parseFunctionDeclaration();
 	}
 	else {
 		return parseStatement();
@@ -297,20 +306,31 @@ std::shared_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 		if (match(TokenType::OPERATOR, ":")) {
 			varType = parseType();
 		}
+		else {
+			varType = nullptr;
+		}
 
 		if (match(TokenType::OPERATOR, "=")) {
-			initializer = parseSimpleExpression();
+			if (match(TokenType::KEYWORD, "if")) {
+				initializer = parseIfStatement();
+			}
+			else {
+				initializer = parseSimpleExpression();
+			}
 		}
 		else {
 			error("Expected '=' in variable declaration");
 		}
 
+		// TODO: initializer로 부터 타입 추론코드가 오류가 남
+		// if 구문일 경우 타입 추론이 안됨
+		// then, else 구문에서 타입을 추론해야 함
 		if (varType == nullptr) {
 			if (initializer) {
 				varType = initializer->getType();
 
 				if (!varType) {
-					error("Cannot infer type of '" + varName + "'");
+					//error("Cannot infer type of '" + varName + "'");
 					varType = std::make_shared<UnknownType>();
 				}
 			}
@@ -617,8 +637,7 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 			return assignNode;
 		}
 
-		auto exprNode = std::make_shared<IdentifierNode>(pathComponents.back());
-		expr = exprNode;
+		expr = std::make_shared<IdentifierNode>(join(pathComponents, "."));
 	}
 	else if (match(TokenType::INTEGER_LITERAL) ||
 		match(TokenType::FLOAT_LITERAL) ||
@@ -626,7 +645,8 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 		match(TokenType::HEX_LITERAL) ||
 		match(TokenType::BINARY_LITERAL) ||
 		match(TokenType::OCTAL_LITERAL) ||
-		match(TokenType::STRING_LITERAL)) {
+		match(TokenType::STRING_LITERAL) ||
+		match(TokenType::BOOLEAN_LITERAL)) {
 		auto exprNode = std::make_shared<ValueNode>(previous().value, previous().type);
 		expr = exprNode;
 	}
@@ -952,6 +972,8 @@ std::shared_ptr<ASTNode> Parser::parseExpression() {
 
 		expr = matchNode;
 	}
-
+	else {
+		match(TokenType::OPERATOR, ";");
+	}
 	return expr;
 }

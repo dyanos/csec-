@@ -235,7 +235,12 @@ bool Lexer::matchIdentifierOrKeyword(std::vector<Token>& tokens) {
         }
         std::string identifier = source.substr(start, position - start);
         if (keywords.find(identifier) != keywords.end()) {
-            tokens.push_back(Token{ TokenType::KEYWORD, identifier, line, column });
+            if (identifier == "true" || identifier == "false") {
+                tokens.push_back(Token{ TokenType::BOOLEAN_LITERAL, identifier, line, column });
+            }
+            else {
+                tokens.push_back(Token{ TokenType::KEYWORD, identifier, line, column });
+            }
         }
         else {
             tokens.push_back(Token{ TokenType::IDENTIFIER, identifier, line, column });

@@ -14,6 +14,7 @@ enum class TokenType {
 	OCTAL_LITERAL,
     STRING_LITERAL,
     CHAR_LITERAL,
+    BOOLEAN_LITERAL,
     OPERATOR,
     COMMENT,
     NEWLINE,

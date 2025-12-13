@@ -86,6 +86,9 @@ std::shared_ptr<Type> Parser::parseType() {
 }
 
 std::shared_ptr<ASTNode> Parser::parseTopStatement() {
+	std::shared_ptr<ASTNode> attributeNode = parseAttribute();
+
+	std::shared_ptr<ASTNode> node = nullptr;
 	if (match(TokenType::KEYWORD, "import")) {
 		while (!check(TokenType::OPERATOR, ";")) {
 			if (isAtEnd()) {
@@ -167,16 +170,71 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 		classNode->constructorParams = constructorParams;
 		classNode->body = classBody;
 		return classNode;*/
-		return parseClassDeclaration();
+		node = parseClassDeclaration();
 	}
 	else if (match(TokenType::KEYWORD, "object")) {
-		return parseObjectDeclaration();
+		node = parseObjectDeclaration();
 	}
 	else if (match(TokenType::KEYWORD, "def")) {
-		return parseFunctionDeclaration();
+		node = parseFunctionDeclaration();
 	}
 	else {
 		return parseStatement();
+	}
+
+	if (attributeNode) {
+		// attributeNode의 expr를 node에 적용
+		dynamic_cast<AttributeNode*>(attributeNode.get())->target = node;
+		return attributeNode;
+	}
+}
+
+std::shared_ptr<ASTNode> Parser::parseAttribute() {
+	if (match(TokenType::OPERATOR, "[@")) {
+		if (check(TokenType::IDENTIFIER)) {
+			auto simpleExpr = parseAttrSimpleExpression();
+			match(TokenType::OPERATOR, "]");
+			auto attributeNode = std::make_shared<AttributeNode>();
+			attributeNode->expr = simpleExpr;
+			return attributeNode;
+		}
+		else {
+			error("Expected identifier after '@' for attribute");
+			return nullptr;
+		}
+	}
+
+	// attribute는 optional이므로 없으면 그냥 nullptr 반환
+	return nullptr
+}
+
+std::shared_ptr<ASTNode> Parser::parseAttrSimpleExpression() {
+	if (match(TokenType::IDENTIFIER)) {
+		auto identifierNode = std::make_shared<IdentifierNode>();
+		identifierNode->value = previous().value;
+		if (!match(TokenType::OPERATOR, "(")) {
+			return identifierNode;
+		}
+		else {
+			auto callNode = std::make_shared<FunctionCallNode>();
+			callNode->functionName = identifierNode->value;
+			callNode->arguments = parseCallParameterList();
+			return callNode;
+		}
+	}
+	else if (match(TokenType::STRING_LITERAL)) {
+		auto stringNode = std::make_shared<ValueNode>();
+		stringNode->value = previous().value;
+		return stringNode;
+	}
+	else if (match(TokenType::INTEGER_LITERAL)) {
+		auto intNode = std::make_shared<ValueNode>();
+		intNode->value = std::stoi(previous().value);
+		return intNode;
+	}
+	else {
+		error("Expected simple expression in attribute");
+		return nullptr;
 	}
 }
 
@@ -650,6 +708,14 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 		auto exprNode = std::make_shared<ValueNode>(previous().value, previous().type);
 		expr = exprNode;
 	}
+	else if (match(TokenType::OPERATOR, "$")) {
+		expr = parseInlineMathLatex();
+		match(TokenType::OPERATOR, "$");
+	}
+	else if (match(TokenType::OPERATOR, "$$")) {
+		expr = parseBlockMathLatex();
+		match(TokenType::OPERATOR, "$$");
+	}
 	else if (match(TokenType::OPERATOR, "_")) {
 		expr = std::make_shared<UnitNode>();
 	}
@@ -694,6 +760,13 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 	}
 
 	return expr;
+}
+
+std::shared_ptr<ASTNode> Parser::parseInlineMathLatex() {
+
+}
+
+std::shared_ptr<ASTNode> Parser::parseBlockMathLatex() {
 }
 
 std::shared_ptr<ASTNode> Parser::parseAssignmentExpression()

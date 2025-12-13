@@ -48,7 +48,9 @@ enum class ASTNodeType {
     IDENTIFIER,
     VALUE,
     ASSIGNMENT,
-    CLASS_BODY
+    CLASS_BODY,
+    ATTRIBUTE,
+	// ... 기타 노드 타입들
 };
 
 //
@@ -651,11 +653,29 @@ public:
     int findFieldIndex(ClassSymbol* classSymbol, const std::string& fieldName);
 };
 
+class AttributeNode : public ASTNode {
+public:
+    AttributeNode() {
+        nodeType = ASTNodeType::ATTRIBUTE; // 적절한 노드 타입으로 변경 필요
+    }
+
+    std::shared_ptr<ASTNode> expr;
+	std::shared_ptr<ASTNode> target; // attribute를 적용할 대상
+
+    void accept(ASTVisitor& visitor) override;
+
+    llvm::Value* codegen() override;
+    std::shared_ptr<Type> getType() override {
+        return nullptr;
+    }
+};
+
 // ASTVisitor Ŭ
 class ASTVisitor {
 public:
     virtual void visit(ProgramNode& node) = 0;
 
+    virtual void visit(AttributeNode& node) = 0;
     virtual void visit(ImportNode& node) = 0;
     virtual void visit(ClassDeclarationNode& node) = 0;
     virtual void visit(ObjectDeclarationNode& node) = 0;

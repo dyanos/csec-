@@ -27,6 +27,8 @@ private:
     // import, class, object, template....
 	std::shared_ptr<ASTNode> parseTopStatement();
 
+    std::shared_ptr<ASTNode> parseAttribute();
+	std::shared_ptr<ASTNode> parseAttrSimpleExpression();
 	std::shared_ptr<ASTNode> parseImportStatement();
 	std::shared_ptr<ASTNode> parseClassDeclaration();
     std::shared_ptr<ClassBodyNode> parseClassBody();
@@ -40,7 +42,9 @@ private:
     std::shared_ptr<ASTNode> parseIfStatement();
     std::shared_ptr<ASTNode> parseForStatement();
     std::shared_ptr<ASTNode> parseSimpleExpression();
-	std::shared_ptr<ASTNode> parseAssignmentExpression();
+    std::shared_ptr<ASTNode> parseInlineMathLatex();
+    std::shared_ptr<ASTNode> parseBlockMathLatex();
+    std::shared_ptr<ASTNode> parseAssignmentExpression();
 	std::shared_ptr<ASTNode> parsePrimaryExpression();
 	std::shared_ptr<ASTNode> parseMulDivExpression();
 	std::shared_ptr<ASTNode> parseAddSubExpression();

@@ -507,8 +507,13 @@ void ForStatementNode::accept(ASTVisitor& visitor) {
 llvm::Value* ForStatementNode::codegen() {
     llvm::Function* function = codeGenerator->builder.GetInsertBlock()->getParent();
 
+    // for 문은 맨 처음 iteration 변수를 초기화하고,
+	llvm::BasicBlock* beforeLoopBB = codeGenerator->builder.GetInsertBlock();
+
     llvm::Value* startValue;
     llvm::Value* endValue;
+
+    llvm::Value* value_ptr = nullptr;
 
     if (this->isRange) {
         //
@@ -523,48 +528,47 @@ llvm::Value* ForStatementNode::codegen() {
             endValue = codeGenerator->builder.CreateSub(endValue, llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), 1), "untilEnd");
         }
 
-        // iteration 변수를 symbol table에 추가
-        auto varSymbol = new Symbol(this->variable, rangeExpr->startExpr->getType(), codeGenerator->getLLVMType(rangeExpr->startExpr->getType()), false, SymbolType::VARIABLE);
+		// 새로운 integer type의 value를 만들어서 추가
+        value_ptr = codeGenerator->builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
+		// 초기화: startValue의 값을 value에 assign함
+        codeGenerator->builder.CreateStore(startValue, value_ptr);
+
+        // iteration 변수를 symbol table에 추가 : VARIABLE은 ptr임
+        auto varSymbol = new Symbol(this->variable, rangeExpr->startExpr->getType(), value_ptr, false, SymbolType::VARIABLE);
         codeGenerator->symbolTable.addSymbol(this->variable, varSymbol);
     }
     else {
         startValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), 0);
         endValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), 10);
 
+        // 새로운 value를 만들어서 추가
+        value_ptr = codeGenerator->builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
+		codeGenerator->builder.CreateStore(startValue, value_ptr);
+
         // iteration 변수를 symbol table에 추가
-        auto varSymbol = new Symbol(this->variable, std::make_shared<BasicType>("Int"), llvm::Type::getInt32Ty(codeGenerator->context), false, SymbolType::VARIABLE);
+        auto varSymbol = new Symbol(this->variable, std::make_shared<BasicType>("Int"), value_ptr, false, SymbolType::VARIABLE);
         codeGenerator->symbolTable.addSymbol(this->variable, varSymbol);
     }
 
-    llvm::BasicBlock* preheaderBB = codeGenerator->builder.GetInsertBlock();
     llvm::BasicBlock* loopBB = llvm::BasicBlock::Create(codeGenerator->context, "loop", function);
     llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(codeGenerator->context, "afterloop", function);
 
-    codeGenerator->builder.CreateBr(loopBB);
+	codeGenerator->builder.SetInsertPoint(loopBB);
+	this->body->codegen();
 
-    codeGenerator->builder.SetInsertPoint(loopBB);
+    // i를 하나 증가 시킴
+    // next value를 가져오는 함수를 호출해야하지만, 여기서는 일단 단순히 1 증가시킴
+    auto* value = codeGenerator->builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
+    auto* next_value = codeGenerator->builder.CreateAdd(value, codeGenerator->builder.getInt32(1), "next_i");
+    codeGenerator->builder.CreateStore(next_value, value_ptr);
 
-    llvm::PHINode* variableNode = codeGenerator->builder.CreatePHI(llvm::Type::getInt32Ty(codeGenerator->context), 2, variable.c_str());
-    variableNode->addIncoming(startValue, preheaderBB);
+    auto* cond = codeGenerator->builder.CreateICmpSLE(value, endValue, "cond");
+    codeGenerator->builder.CreateCondBr(cond, loopBB /*body and increment*/, afterBB);
 
-    auto varExpr = std::make_shared<ExpressionNode>();
-    varExpr->value = variableNode->getName().str();
-
-    if (!body->codegen()) {
-        return nullptr;
-    }
-
-    llvm::Value* nextValue = codeGenerator->builder.CreateAdd(variableNode, llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), 1), "nextvar");
-
-    llvm::Value* endCond = codeGenerator->builder.CreateICmpSLE(variableNode, endValue, "loopcond");
-
-    codeGenerator->builder.CreateCondBr(endCond, loopBB, afterBB);
-
-    variableNode->addIncoming(nextValue, codeGenerator->builder.GetInsertBlock());
-
+    // jump back to loop
     codeGenerator->builder.SetInsertPoint(afterBB);
 
-    return llvm::Constant::getNullValue(llvm::Type::getInt32Ty(codeGenerator->context));
+    return nullptr;
 }
 
 void MatchExpressionNode::accept(ASTVisitor& visitor) {
@@ -644,77 +648,91 @@ llvm::Value* BinaryExpressionNode::codegen() {
         return nullptr;
     }
 
+    if (leftValue->getType()->isPointerTy()) {
+        leftValue = codeGenerator->builder.CreateLoad(codeGenerator->getLLVMType(left->getType().get()), leftValue, "loadtmp");
+    }
+    if (rightValue->getType()->isPointerTy()) {
+        rightValue = codeGenerator->builder.CreateLoad(codeGenerator->getLLVMType(right->getType().get()), rightValue, "loadtmp");
+    }
+
     if (op == "+") {
-        // If leftValue is a pointer and rightValue is an integer, perform pointer arithmetic
-        if (isStringTypeFromLLVM(leftValue, codeGenerator) && rightValue->getType()->isIntegerTy()) {
-            // To add int to pointer, we need to convert pointer to int64.
-            llvm::Value* int64Pointer = codeGenerator->builder.CreatePtrToInt(rightValue, llvm::Type::getInt64Ty(codeGenerator->context), "int64Pointer");
-            // Then we add int to int64 pointer.
-            llvm::Value* resultPointer = codeGenerator->builder.CreateAdd(int64Pointer, leftValue, "resultPointer");
-            // Then we convert int64 to pointer.
-            return codeGenerator->builder.CreateIntToPtr(resultPointer, llvm::Type::getInt8Ty(codeGenerator->context), "resultPointer");
-        }
-        // If rightValue is a pointer and leftValue is an integer, perform pointer arithmetic
-        else if (isStringTypeFromLLVM(rightValue, codeGenerator) && leftValue->getType()->isIntegerTy()) {
-            // To add int to pointer, we need to convert pointer to int64.
-            llvm::Value* int64Pointer = codeGenerator->builder.CreatePtrToInt(rightValue, llvm::Type::getInt64Ty(codeGenerator->context), "int64Pointer");
-            // Then we add int to int64 pointer.
-            llvm::Value* resultPointer = codeGenerator->builder.CreateAdd(int64Pointer, leftValue, "resultPointer");
-            return resultPointer;
-        }
-        // If leftvalue is string and rightvalue is int, perform string addition
-        else if (isStringTypeFromLLVM(leftValue, codeGenerator) && isStringTypeFromLLVM(rightValue, codeGenerator)) {
-            // To concatenate string and int, we need to convert int to string.
-            // To convert int to string, we need to call toString from int class.
-            // But we can't call method directly from int value, so we need to store int value in a variable.
-            llvm::Value* intToString = codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("toString"), rightValue, "intToString");
-            // Then we call string concatenation method with intToString as argument.
-            return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator+"), std::vector<llvm::Value*>{leftValue, intToString}, "concattmp");
-        }
-        else {
-            // If leftvalue and rightvalue are both numerical primitives type, perform numerical addition.
-            // If leftvalue and rightvalue are both objects based on class, perform method call.
-            // If leftvalue and rightvalue are different types, perform type casting and then addition.
-            // First, we need to check if leftValue and rightValue are both numerical primitives type.
-            if (leftValue->getType()->isIntegerTy() && rightValue->getType()->isIntegerTy()) {
+        // If leftvalue and rightvalue are both numerical primitives type, perform numerical addition.
+        // If leftvalue and rightvalue are both objects based on class, perform method call.
+        // If leftvalue and rightvalue are different types, perform type casting and then addition.
+        // First, we need to check if leftValue and rightValue are both numerical primitives type.
+        if (left->getType()->getName() == right->getType()->getName()) {
+            if (left->getType()->isIntegerTy()) {
                 return codeGenerator->builder.CreateAdd(leftValue, rightValue, "addtmp");
             }
-            else if (leftValue->getType()->isFloatingPointTy() && rightValue->getType()->isFloatingPointTy()) {
+            else if (left->getType()->isFloatTy()) {
                 return codeGenerator->builder.CreateFAdd(leftValue, rightValue, "faddtmp");
             }
-            // If leftvalue and rightvalue are both strings, perform string addition.
-            else if (isStringTypeFromLLVM(leftValue, codeGenerator) && isStringTypeFromLLVM(rightValue, codeGenerator)) {
-                return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator+"), std::vector<llvm::Value*>{leftValue, rightValue}, "concattmp");
-            }
-            // If leftvalue and rightvalue are different types, perform type casting and then addition.
-            else if (leftValue->getType() == rightValue->getType()) {
-                // To cast type, we need to call constructor of that type with value as argument.
-                // But we can't call constructor directly, so we need to store value in a variable.
-                // We can call constructor with variable as argument.
-                // We need to get constructor of that type.
-                // get the type name of leftValue and rightValue.
-                llvm::Function* constructor = codeGenerator->module->getFunction(left->type->getName());
-                if (!constructor) {
-                    std::cerr << "Error: Constructor not found for type '" << right->type->getName() << "' from " << left->type->getName() << std::endl;
-                    return nullptr;
-                }
-                llvm::Value* convertedValue = codeGenerator->builder.CreateCall(constructor, std::vector<llvm::Value*>{rightValue}, "casttmp");
-                return codeGenerator->builder.CreateCall(codeGenerator->module->getFunction("operator+"), std::vector<llvm::Value*>{leftValue, convertedValue}, "addtmp");
-            }
             else {
-                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->type->getName() << "' and '" << right->type->getName() << "'" << std::endl;
+                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
                 return nullptr;
             }
         }
+        else {
+            // TODO: 상속 관계일 경우 비교 연산자가 재정의 되어 있는지 확인 후 해당 메소드 호출
+            // 없다면, 아래 오류 발생
+            std::cerr << "Type error: Left and right expressions have different types for operator '" << op << "'" << std::endl;
+			return nullptr;
+        }
     }
     else if (op == "-") {
-        return nullptr;
+        if (left->getType()->getName() == right->getType()->getName()) {
+            if (left->getType()->isIntegerTy()) {
+                return codeGenerator->builder.CreateSub(leftValue, rightValue, "subtmp");
+            }
+            else if (left->getType()->isFloatTy()) {
+                return codeGenerator->builder.CreateFSub(leftValue, rightValue, "fsubtmp");
+            }
+            else {
+                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
+                return nullptr;
+            }
+        }
+        else {
+            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->type->getName() << "' and '" << right->type->getName() << "'" << std::endl;
+            return nullptr;
+        }
     }
     else if (op == "*") {
-        return nullptr;
+        if (left->getType()->getName() == right->getType()->getName()) {
+            if (left->getType()->isIntegerTy()) {
+                return codeGenerator->builder.CreateMul(leftValue, rightValue, "subtmp");
+            }
+            else if (left->getType()->isFloatTy()) {
+                return codeGenerator->builder.CreateFMul(leftValue, rightValue, "fsubtmp");
+            }
+            else {
+                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
+                return nullptr;
+            }
+        }
+        else {
+            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->type->getName() << "' and '" << right->type->getName() << "'" << std::endl;
+            return nullptr;
+        }
     }
     else if (op == "/") {
-        return codeGenerator->builder.CreateFDiv(leftValue, rightValue, "divtmp");
+        if (left->getType()->getName() == right->getType()->getName()) {
+            if (left->getType()->isIntegerTy()) {
+                // signed?
+                return codeGenerator->builder.CreateSDiv(leftValue, rightValue, "subtmp");
+            }
+            else if (left->getType()->isFloatTy()) {
+                return codeGenerator->builder.CreateFDiv(leftValue, rightValue, "fsubtmp");
+            }
+            else {
+                std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
+                return nullptr;
+            }
+        }
+        else {
+            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->type->getName() << "' and '" << right->type->getName() << "'" << std::endl;
+            return nullptr;
+        }
     }
     else if (op == ">") {
 		return codeGenerator->builder.CreateICmpSGT(leftValue, rightValue, "gttmp");
@@ -2017,3 +2035,51 @@ std::shared_ptr<Type> AccessFieldNode::getType() {
     // left의 type과 동일
 	return field->getType();
 }
+
+void AttributeNode::accept(ASTVisitor& visitor) {
+    visitor.visit(*this);
+}
+
+llvm::Value* AttributeNode::codegen() {
+	// Node가 IdentifierNode이라고 하더라도 FunctionCall로 취급
+    switch(this->expr->nodeType) {
+    case ASTNodeType::FUNCTION_CALL:
+		return this->expr->codegen();
+
+    case ASTNodeType::IDENTIFIER:
+        {
+            auto identifierNode = dynamic_cast<IdentifierNode*>(this->expr.get());
+            if (!identifierNode) {
+                std::cerr << "Error: Invalid identifier node" << std::endl;
+                return nullptr;
+            }
+
+            // Attribute 종류에 따른 처리
+            if (identifierNode->value == "DllImport") {
+				// 이거 다음의 함수는 외부 DLL에서 가져오는 함수로 처리
+            }
+            else if (identifierNode->value == "StaticLibraryImport") {
+				// 이거 다음의 함수는 외부 Static Library에서 가져오는 함수로 처리
+		    }
+            else if (identifierNode->value == "Native") {
+				// 이거 다음의 함수는 네이티브 함수로 처리 = Compiler에서 지원하는 함수
+            }
+            else {
+                // 나머지는 사용자 지정으로 할 예정
+            }
+        }
+        break;
+
+    default:
+        std::cerr << "Error: Unsupported expression type in AttributeNode" << std::endl;
+		break;
+	}
+
+    return nullptr;
+}
+
+std::shared_ptr<Type> AttributeNode::getType() {
+    // left의 type과 동일
+    return nullptr;
+}
+

@@ -205,7 +205,7 @@ std::shared_ptr<ASTNode> Parser::parseAttribute() {
 	}
 
 	// attribute는 optional이므로 없으면 그냥 nullptr 반환
-	return nullptr
+	return nullptr;
 }
 
 std::shared_ptr<ASTNode> Parser::parseAttrSimpleExpression() {

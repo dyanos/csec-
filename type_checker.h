@@ -97,4 +97,5 @@ public:
 	void visit(ArrayCreationNode& node) override;
 
 	void visit(AccessFieldNode& node) override;
+	void visit(AttributeNode& node) override;
 };

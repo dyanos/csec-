@@ -2078,8 +2078,4 @@ llvm::Value* AttributeNode::codegen() {
     return nullptr;
 }
 
-std::shared_ptr<Type> AttributeNode::getType() {
-    // left의 type과 동일
-    return nullptr;
-}
 

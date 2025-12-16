@@ -23,8 +23,15 @@ bool Parser::isAtEnd() const {
 	return position >= tokens.size() || tokens[position].type == TokenType::END_OF_FILE;
 }
 
-const Token& Parser::peek() const {
-	return tokens[position];
+const Token& Parser::peek(int pos) const {
+	if (pos < 0)
+		return tokens[position];
+	else if (position + pos < tokens.size())
+		return tokens[position + pos];
+	else {
+		// END_OF_FILE
+		return tokens[tokens.size() - 1];
+	}
 }
 
 const Token& Parser::advance() {
@@ -210,8 +217,7 @@ std::shared_ptr<ASTNode> Parser::parseAttribute() {
 
 std::shared_ptr<ASTNode> Parser::parseAttrSimpleExpression() {
 	if (match(TokenType::IDENTIFIER)) {
-		auto identifierNode = std::make_shared<IdentifierNode>();
-		identifierNode->value = previous().value;
+		auto identifierNode = std::make_shared<IdentifierNode>(previous().value);
 		if (!match(TokenType::OPERATOR, "(")) {
 			return identifierNode;
 		}
@@ -762,6 +768,11 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 	return expr;
 }
 
+std::shared_ptr<ASTNode> Parser::parseLatexCommand() {
+	auto latexParser = LatexMathEqParser(&tokens, &position);
+	return latexParser.parse();
+}
+
 std::shared_ptr<ASTNode> Parser::parseInlineMathLatex() {
 
 }
@@ -771,15 +782,13 @@ std::shared_ptr<ASTNode> Parser::parseBlockMathLatex() {
 
 std::shared_ptr<ASTNode> Parser::parseAssignmentExpression()
 {
-	if (match(TokenType::OPERATOR, "="))
-	{
+	if (match(TokenType::OPERATOR, "=")) {
 		auto assignNode = std::make_shared<AssignmentExpressionNode>();
 		assignNode->left = parseExpression();
 		assignNode->right = parseExpression();
 		return assignNode;
 	}
-	else
-	{
+	else {
 		return parseSimpleExpression();
 	}
 }
@@ -1050,3 +1059,15 @@ std::shared_ptr<ASTNode> Parser::parseExpression() {
 	}
 	return expr;
 }
+
+const char* functionSymbolTable[] = {
+	"sum", "int", "biguplus", "bigoplus", "bigvee", "prod", "oint", "bigcap", "bigotimes", "bigwedge", "coprod", "iint", "bigcup", "bigodot", "bigsqcup",
+    "arccos", "arcsin", "arctan", "arg",
+    "cos", "cosh", "cot", "coth",
+    "csc", "deg", "det", "dim",
+    "exp", "gcd", "hom", "inf",
+    "ker", "lg", "lim", "liminf",
+    "limsup", "ln", "log", "max",
+    "min", "Pr", "sec", "sin",
+    "sinh", "sup", "tan", "tanh"
+};

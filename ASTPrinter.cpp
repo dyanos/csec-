@@ -195,4 +195,21 @@ public:
     void visit(ValueNode& node) override {
         std::cout << "Value: " << node.value << std::endl;
     }
+
+    void visit(FunctionCallNode& node) override {
+        std::cout << "FunctionCall:" << std::endl;
+        std::cout << "Function Name: " << node.functionName << std::endl;
+        std::cout << "Arguments:" << std::endl;
+        for (auto& arg : node.arguments) {
+            arg->accept(*this);
+        }
+	}
+
+    void visit(AttributeNode& node) override {
+        std::cout << "Attribute:" << std::endl;
+        std::cout << "Target:" << std::endl;
+        node.target->accept(*this);
+        std::cout << "Expression:" << std::endl;
+        node.expr->accept(*this);
+	}
 };

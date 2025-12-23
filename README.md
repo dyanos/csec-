@@ -3,7 +3,7 @@
 **Status: Early Stage**  
 **Language Paradigm:** Functional · Tensor-first · Safe by default
 
-TensorScript is a next-generation programming language that integrates mathematical expressiveness with systems-level performance. It combines familiar Scala and C++ syntax with first-class support for tensor operations and math-native commands inspired by LaTeX.
+TensorScript is a next-generation programming language that integrates mathematical expressiveness with systems-level performance. It combines familiar Scala and C++ syntax with first-class support for tensor operations and LaTeX-style math equation commands.
 
 ---
 
@@ -17,8 +17,10 @@ The core mission is to let developers write code that feels like math — withou
 
 ## 🧠 Key Features
 
-### Math-Native Syntax
-TensorScript supports math equation commands similar to those in LaTeX, allowing you to express algebraic and tensor operations in a natural, readable style.
+### Math-Native Syntax with LaTeX Support
+TensorScript makes mathematical code highly expressive by supporting **LaTeX-style math equation commands** directly in the language. This allows developers to write formulas in a syntax that closely mirrors their LaTeX representations.
+
+For example, operators and expressions like `\sum`, `\prod`, `\frac{}`, and other commonly used LaTeX math commands are supported where logically applicable.
 
 ### Tensor First
 At the language level, tensors are first-class citizens. Tensor computations are core to the language’s syntax and operational semantics. Under the hood, TensorScript uses the Torch C++ API for high-performance execution.
@@ -38,12 +40,13 @@ Using the `unatomic` keyword explicitly disables thread safety for a section of 
 ## 📘 Example (Illustrative)
 
 ```ts
-// Compute a tensor expression using math-native operators
+// Compute a tensor expression using LaTeX-inspired math syntax
 let A = tensor([1, 2, 3])
 let B = tensor([3, 2, 1])
 
-// Math-like syntax
-let C = A ⊗ B + A²
+// LaTeX-style operators
+let C = A ⊗ B + A²         // tensor product and power
+let D = \sum_i (A_i * B_i) // summation using LaTeX-style command
 ````
 
 > *Note: This example is illustrative. Actual syntax may evolve as the language matures.*
@@ -55,7 +58,7 @@ let C = A ⊗ B + A²
 The language is currently in its **initial development phase**:
 
 * [x] Define core grammar: Scala + C++ influences
-* [x] Math-native equations (LaTeX-inspired)
+* [x] LaTeX-style math equation support
 * [ ] Implement tensor type system (language support)
 * [ ] Integrate Torch C++ API for tensor computations
 * [ ] Unsafe pointer support (explicit only)

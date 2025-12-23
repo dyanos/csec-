@@ -1,8 +1,3 @@
-아래는 **추천 옵션 기준**으로 작성한 **영문 GitHub README.md** 초안입니다. 필요하면 바로 수정/확장도 가능합니다.
-
----
-
-````markdown
 # TensorScript
 
 **Status: Early Stage**  

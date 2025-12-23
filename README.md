@@ -57,8 +57,8 @@ let D = \sum_i (A_i * B_i) // summation using LaTeX-style command
 
 The language is currently in its **initial development phase**:
 
-* [x] Define core grammar: Scala + C++ influences
-* [x] LaTeX-style math equation support
+* [ ] Define core grammar: Scala + C++ influences
+* [ ] LaTeX-style math equation support
 * [ ] Implement tensor type system (language support)
 * [ ] Integrate Torch C++ API for tensor computations
 * [ ] Unsafe pointer support (explicit only)

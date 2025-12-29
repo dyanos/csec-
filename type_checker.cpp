@@ -3,6 +3,8 @@
 #include "type_checker.h"
 #include <iostream>
 
+#include "all_ast.h"
+
 void TypeChecker::visit(VariableDeclarationNode& node) {
     if (node.initializer) {
         node.initializer->accept(*this);

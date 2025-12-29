@@ -2,6 +2,8 @@
 #include "ast.h"
 
 
+class BlockNode;
+
 class WhileStatementNode : public ASTNode {
 public:
 	std::shared_ptr<ASTNode> condition;

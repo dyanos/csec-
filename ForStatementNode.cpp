@@ -4,6 +4,10 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Constants.h>
 
+#include "RangeExpressionNode.h"
+#include "symbol.h"
+
+
 // ForStatementNode
 void ForStatementNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);

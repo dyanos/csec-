@@ -22,6 +22,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "ProgramNode.h"
+
 // 파일 내용을 읽어서 std::string으로 반환하는 함수 구현
 std::string readFileContent(const std::string& filename) {
     std::ifstream file(filename, std::ios::in | std::ios::binary);

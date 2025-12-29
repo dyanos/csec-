@@ -5,6 +5,9 @@
 #include <iostream>
 #include <llvm/IR/Function.h>
 
+#include "ParameterNode.h"
+#include "BlockNode.h"
+
 void FunctionDeclarationNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }

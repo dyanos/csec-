@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#include "FunctionDeclarationNode.h"
 
 void MethodCallNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);

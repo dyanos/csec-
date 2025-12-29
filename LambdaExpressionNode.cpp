@@ -11,7 +11,3 @@ void LambdaExpressionNode::accept(ASTVisitor& visitor) {
 llvm::Value* LambdaExpressionNode::codegen() {
     return nullptr;
 }
-
-std::shared_ptr<Type> LambdaExpressionNode::getType() {
-    return nullptr;
-}

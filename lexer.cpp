@@ -15,7 +15,7 @@ void Lexer::initializeKeywords() {
         "import", "lazy", "match", "new", "null", "object", "override",
         "package", "private", "protected", "return", "sealed", "super",
         "this", "throw", "trait", "try", "true", "type", "val", "var",
-        "while", "with", "yield", "to", "val", "var"
+        "while", "with", "yield", "to", "val", "var", "map", "pmap", "reduce", "filter"
     };
     keywords.insert(kws, kws + sizeof(kws) / sizeof(kws[0]));
 }
@@ -40,7 +40,7 @@ std::vector<Token> Lexer::tokenize() {
         if (matchIdentifierOrKeyword(tokens)) continue;
         if (matchOperator(tokens)) continue;
 
-        // ¾Ë ¼ö ¾ø´Â ¹®ÀÚ Ã³¸®
+        // ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
         tokens.push_back(Token{ TokenType::UNKNOWN, std::string(1, source[position]), line, column });
         advance();
     }
@@ -48,7 +48,7 @@ std::vector<Token> Lexer::tokenize() {
     return tokens;
 }
 
-// ÀÌÇÏ °¢ ¸ÅÄª ÇÔ¼öµéÀÇ ±¸Çö (ÀÌÀü ÄÚµå¿Í µ¿ÀÏ)
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Äª ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½Úµï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 void Lexer::advance(int steps) {
     for (int i = 0; i < steps; ++i) {
         if (source[position] == '\n') {
@@ -90,7 +90,7 @@ bool Lexer::matchComment(std::vector<Token>& tokens) {
             }
             advance();
         }
-        advance(2);  // '*/' ½ºÅµ
+        advance(2);  // '*/' ï¿½ï¿½Åµ
         std::string comment = source.substr(start, position - start);
         tokens.push_back(Token{ TokenType::COMMENT, comment, line, column });
         return true;
@@ -129,13 +129,13 @@ bool Lexer::matchStringLiteral(std::vector<Token>& tokens) {
         advance();
         while (peek() != '"' && peek() != '\0') {
             if (peek() == '\\') {
-                advance(2);  // ÀÌ½ºÄÉÀÌÇÁ ¹®ÀÚ ½ºÅµ
+                advance(2);  // ï¿½Ì½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Åµ
             }
             else {
                 advance();
             }
         }
-        advance();  // ´Ý´Â µû¿ÈÇ¥ ½ºÅµ
+        advance();  // ï¿½Ý´ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¥ ï¿½ï¿½Åµ
         std::string strLiteral = source.substr(start, position - start);
         tokens.push_back(Token{ TokenType::STRING_LITERAL, strLiteral, line, column });
         return true;
@@ -148,7 +148,7 @@ bool Lexer::matchCharLiteral(std::vector<Token>& tokens) {
         size_t start = position;
         advance();
         if (peek() == '\\') {
-            advance(2);  // ÀÌ½ºÄÉÀÌÇÁ ¹®ÀÚ
+            advance(2);  // ï¿½Ì½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         }
         else {
             advance();
@@ -159,7 +159,7 @@ bool Lexer::matchCharLiteral(std::vector<Token>& tokens) {
             tokens.push_back(Token{ TokenType::CHAR_LITERAL, charLiteral, line, column });
             return true;
         }
-        // ¹®¹ý ¿À·ù Ã³¸®
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
     }
     return false;
 }
@@ -170,7 +170,7 @@ bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
         while (std::isdigit(peek())) {
             advance();
         }
-        // Áö¼ö ¹× 16Áø¼ö, 2Áø¼ö, 8Áø¼ö ¸®ÅÍ·² Ã³¸®
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ 16ï¿½ï¿½ï¿½ï¿½, 2ï¿½ï¿½ï¿½ï¿½, 8ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í·ï¿½ Ã³ï¿½ï¿½
 		if (peek() == 'e' || peek() == 'E') {
 			advance();
 			if (peek() == '+' || peek() == '-') {
@@ -251,9 +251,9 @@ bool Lexer::matchIdentifierOrKeyword(std::vector<Token>& tokens) {
 }
 
 bool Lexer::matchOperator(std::vector<Token>& tokens) {
-    // ´ÙÁß ¹®ÀÚ ¿¬»êÀÚ Ã³¸®
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
     std::string op = "";
-    size_t maxOpLength = 2;  // ÃÖ´ë ¿¬»êÀÚ ±æÀÌ ¼³Á¤
+    size_t maxOpLength = 2;  // ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     for (size_t len = maxOpLength; len > 0; --len) {
         op = source.substr(position, len);
         if (operators.find(op) != operators.end()) {

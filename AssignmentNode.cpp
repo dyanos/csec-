@@ -1,0 +1,35 @@
+#include "AssignmentNode.h"
+#include "ASTVisitor.h"
+
+#include <iostream>
+
+
+void AssignmentNode::accept(ASTVisitor& visitor) {
+    visitor.visit(*this);
+}
+
+llvm::Value* AssignmentNode::codegen() {
+    // C/C++의 '=' 연산자는 오른쪽 값을 왼쪽에 대입하는 연산자이다.
+    // 왼쪽 값은 변수이어야 한다.
+    // 오른쪽 값은 변수이거나 메서드 호출 결과이어야 한다.
+    auto symbolOpt = codeGenerator->symbolTable.lookup(name);
+    if (!symbolOpt) {
+        std::cerr << "Undefined variable: " << name << std::endl;
+        return nullptr;
+    }
+
+    auto symbol = (*symbolOpt);
+    if (!symbol->isMutable) {
+        std::cerr << "Cannot assign to immutable variable: " << name << std::endl;
+        return nullptr;
+    }
+
+    llvm::Value* exprValue = expression->codegen();
+    if (!exprValue) {
+        return nullptr;
+    }
+
+    codeGenerator->builder.CreateStore(exprValue, symbol->value);
+
+    return exprValue;
+}

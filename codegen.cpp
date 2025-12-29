@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+#include "ProgramNode.h"
+
 
 CodeGenerator::CodeGenerator() : builder(context) {
     module = std::make_unique<llvm::Module>("main", context);

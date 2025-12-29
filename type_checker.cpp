@@ -179,3 +179,35 @@ void TypeChecker::visit(PostfixExpressionNode& node) {
 void TypeChecker::visit(PrefixExpressionNode& node) {
     node.getType();
 }
+
+void TypeChecker::visit(AttributeNode& node) {
+    node.getType();
+}
+
+void TypeChecker::visit(LambdaExpressionNode& node) {
+    node.getType();
+}
+
+void TypeChecker::visit(MapStatementNode& node) {
+    node.getType();
+}
+
+void TypeChecker::visit(PMapStatementNode& node) {
+    node.getType();
+}
+
+void TypeChecker::visit(ReduceStatementNode& node) {
+    node.getType();
+}
+
+void TypeChecker::visit(FilterStatementNode& node) {
+    node.getType();
+}
+
+void TypeChecker::visit(WhileStatementNode& node) {
+    node.getType();
+}
+
+void TypeChecker::visit(ArrayLiteralNode& node) {
+    node.getType();
+}

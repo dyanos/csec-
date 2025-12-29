@@ -1,7 +1,9 @@
-#include "ast.h"
+#include "ASTVisitor.h"
 #include "utils.h"
 
 #include <iostream>
+
+#include "all_ast.h"
 
 class ASTPrinter : public ASTVisitor {
 public:
@@ -211,5 +213,60 @@ public:
         node.target->accept(*this);
         std::cout << "Expression:" << std::endl;
         node.expr->accept(*this);
+	}
+
+    void visit(WhileStatementNode& node) override {
+        std::cout << "WhileStatement:" << std::endl;
+        std::cout << "Condition:" << std::endl;
+        node.condition->accept(*this);
+        std::cout << "Body:" << std::endl;
+        node.body->accept(*this);
+	}
+
+    void visit(LambdaExpressionNode& node) override {
+
+    }
+
+    void visit(MapStatementNode& node) override {
+        std::cout << "MapStatement:" << std::endl;
+        std::cout << "Variable: " << node.variable << std::endl;
+        std::cout << "Iterable Expression:" << std::endl;
+        node.iterableExpr->accept(*this);
+        std::cout << "Body:" << std::endl;
+		node.body->accept(*this);
+    }
+
+    void visit(PMapStatementNode& node) override {
+        std::cout << "PMapStatement:" << std::endl;
+        std::cout << "Variable: " << node.variable << std::endl;
+        std::cout << "Iterable Expression:" << std::endl;
+        node.iterableExpr->accept(*this);
+		std::cout << "Body:" << std::endl;
+    }
+
+    void visit(ReduceStatementNode& node) override {
+        std::cout << "ReduceStatement:" << std::endl;
+        std::cout << "Variable: " << node.variable << std::endl;
+        std::cout << "Iterable Expression:" << std::endl;
+        node.iterableExpr->accept(*this);
+        std::cout << "Body:" << std::endl;
+        node.body->accept(*this);
+        std::cout << "Initial Value:" << std::endl;
+		node.initialValue->accept(*this);
+    }
+
+    void visit(FilterStatementNode& node) override {
+        std::cout << "FilterStatement:" << std::endl;
+        std::cout << "Variable: " << node.variable << std::endl;
+        std::cout << "Iterable Expression:" << std::endl;
+        node.iterableExpr->accept(*this);
+		std::cout << "Body:" << std::endl;
+    }
+
+    void visit(ArrayLiteralNode& node) override {
+        std::cout << "ArrayLiteral:" << std::endl;
+        for (auto& element : node.elements) {
+            element->accept(*this);
+        }
 	}
 };

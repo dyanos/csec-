@@ -7,6 +7,9 @@ def main(): Int = {
 	var f1: Double = 10.99;
 	var g1: Long = 1000;
 	var h1: Short = 5;
+	var a2 = $$1+2$$;
+	var a3 = $$\sin(x) + \sum_{t=1}^{4} t$$;
+	var a4 = $$\sum_{t=1}^{a2+1}(t+4)$$;
 
 	for (i <- 0 to 5) {
 		a1 = a1 + i;

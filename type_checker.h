@@ -4,6 +4,8 @@
 
 #include "ast.h"
 
+#include "ASTVisitor.h"
+
 // TypeChecker 클래스는 AST를 방문하여 타입 검사를 수행합니다.
 class TypeChecker : public ASTVisitor {
 public:
@@ -98,4 +100,12 @@ public:
 
 	void visit(AccessFieldNode& node) override;
 	void visit(AttributeNode& node) override;
+
+	void visit(LambdaExpressionNode& node) override;
+    void visit(MapStatementNode& node) override;
+	void visit(PMapStatementNode& node) override;
+	void visit(ReduceStatementNode& node) override;
+	void visit(FilterStatementNode& node) override;
+	void visit(ArrayLiteralNode& node) override;
+	void visit(WhileStatementNode& node) override;
 };

@@ -8,6 +8,8 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 
+class ProgramNode;
+
 class CodeGenerator {
 public:
     CodeGenerator();

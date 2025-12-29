@@ -8,6 +8,12 @@
 #include <vector>
 #include <memory>
 
+class ClassBodyNode;
+class FunctionDeclarationNode;
+class VariableDeclarationNode;
+class ParameterNode;
+class BlockNode;
+
 class Parser {
 public:
     Parser(const std::vector<Token>& tokens);
@@ -16,6 +22,7 @@ public:
 private:
     const std::vector<Token>& tokens;
     size_t position;
+    std::vector<size_t> positionStack;
 
     bool isAtEnd() const;
     const Token& peek(int pos = -1) const;
@@ -23,6 +30,9 @@ private:
     const Token& previous() const;
     bool check(TokenType type, const std::string& value = "") const;
     bool match(TokenType type, const std::string& value = "");
+    // ÌòÑÏû¨ Token position Ï†ÄÏû•/Î≥µÏõê
+    bool saveTokenPosition();
+    void restoreTokenPosition();
 
     // import, class, object, template....
 	std::shared_ptr<ASTNode> parseTopStatement();
@@ -41,6 +51,12 @@ private:
 	std::shared_ptr<VariableDeclarationNode> parseVariableDeclaration(bool isMutable);
     std::shared_ptr<ASTNode> parseIfStatement();
     std::shared_ptr<ASTNode> parseForStatement();
+    std::shared_ptr<ASTNode> parseWhileStatement();
+    std::shared_ptr<ASTNode> parseMapStatement();
+    std::shared_ptr<ASTNode> parsePMapStatement();
+    std::shared_ptr<ASTNode> parseReduceStatement();
+    std::shared_ptr<ASTNode> parseFilterStatement();
+    std::shared_ptr<ASTNode> parseLambdaExpression();
     std::shared_ptr<ASTNode> parseSimpleExpression();
     std::shared_ptr<ASTNode> parseInlineMathLatex();
     std::shared_ptr<ASTNode> parseBlockMathLatex();
@@ -73,84 +89,4 @@ private:
     void expect(TokenType type, const std::string& value = "");
     void error(const std::string& message);
     std::string tokenTypeToString(TokenType type) const;
-};
-
-// LatexMathEqParser ≈¨∑°Ω∫¿« ∞£¥‹«— º±æ π◊ ¡§¿« √ﬂ∞° (parser.cpp ªÛ¥‹ ∂«¥¬ ∫∞µµ ∆ƒ¿œ∑Œ ∫–∏Æ ∞°¥…)
-class LatexMathEqParser {
-public:
-    LatexMathEqParser(const std::vector<Token>* tokens, size_t* position)
-        : tokens(tokens), position(position) {
-    }
-
-private:
-    const std::vector<Token>* tokens;
-    size_t* position;
-
-public:
-    std::shared_ptr<ASTNode> parse() {
-        // Ω«¡¶ LaTeX ∆ƒΩÃ ∑Œ¡˜¿∫ √ﬂ»ƒ ±∏«ˆ
-        // ¿”Ω√∑Œ ValueNode π›»Ø
-        auto node = std::make_shared<ValueNode>();
-        node->value = "latex_equation";
-        node->valueType = TokenType::STRING_LITERAL;
-        return node;
-    }
-
-    bool isAtEnd() const {
-        return *position >= (*tokens).size() || (*tokens)[*position].type == TokenType::END_OF_FILE;
-    }
-
-    const Token& peek(int pos) const {
-        if (pos < 0)
-            return (*tokens)[*position];
-        else if (*position + pos < (*tokens).size())
-            return (*tokens)[*position + pos];
-        else {
-            // END_OF_FILE
-            return (*tokens)[(*tokens).size() - 1];
-        }
-    }
-
-    const Token& advance() {
-        if (!isAtEnd()) (*position)++;
-        return previous();
-    }
-
-    const Token& previous() const {
-        return (*tokens)[*position - 1];
-    }
-
-    bool check(TokenType type, const std::string& value) const {
-        if (isAtEnd()) return false;
-        if ((*tokens)[*position].type != type) return false;
-        if (!value.empty() && (*tokens)[*position].value != value) return false;
-        return true;
-    }
-
-    bool match(TokenType type, const std::string& value) {
-        while ((*tokens)[*position].type == TokenType::COMMENT) {
-            advance();
-        }
-
-        if (check(type, value)) {
-            advance();
-            return true;
-        }
-        return false;
-    }
-
-    std::shared_ptr<ASTNode> parseCmd() {
-        // \command «¸Ωƒ¿« ∞Õ¿ª parsing«’¥œ¥Ÿ.
-        if ((*tokens)[*position].type == TokenType::OPERATOR) {
-
-        }
-
-        return nullptr;
-    }
-
-    std::shared_ptr<ASTNode> parseMathExpression() {
-        // +, * µÓ √º≈©
-
-    }
-
 };

@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "ArrayCreationExpressionNode.h"
 #include "ASTVisitor.h"
 
@@ -12,19 +13,19 @@ llvm::Value* ArrayCreationExpressionNode::codegen() {
     // sizes로 배열 크기를 받아서 처리하는데 이들은 4차원이 최대이므로, 이들을 곱한다.
     llvm::Value* array_size = sizes[0]->codegen();
     for (int i = 1; i < sizes.size(); i++) {
-        array_size = codeGenerator->builder.CreateMul(array_size, sizes[i]->codegen());
+        array_size = CodeGenerator::getInstance().builder.CreateMul(array_size, sizes[i]->codegen());
     }
 
     // primitive type인지, class type인지 확인, template type인지 확인
     if (isPrimitiveType(typeName)) {
-        llvm::Type* type = codeGenerator->getLLVMType(new BasicType(typeName));
-        return codeGenerator->builder.CreateAlloca(type, array_size, typeName);
+        llvm::Type* type = CodeGenerator::getInstance().getLLVMType(new BasicType(typeName));
+        return CodeGenerator::getInstance().builder.CreateAlloca(type, array_size, typeName);
     }
 
     // Template Class인지 확인은 나중에 코드 추가되면...
 
     // 클래스 심볼 찾기
-    auto classSymbolOpt = codeGenerator->symbolTable.lookupClass(typeName);
+    auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(typeName);
     if (!classSymbolOpt) {
         std::cerr << "Error: Class '" << typeName << "' not found" << std::endl;
         return nullptr;
@@ -36,18 +37,18 @@ llvm::Value* ArrayCreationExpressionNode::codegen() {
     llvm::StructType* classType = (llvm::StructType*)classSymbol->classType;
 
     // 메모리 할당
-    llvm::Value* allocSize = codeGenerator->builder.CreateStructGEP(classType, nullptr, 0);
-    llvm::Value* allocatedMemory = codeGenerator->builder.CreateAlloca(classType, array_size, typeName);
+    llvm::Value* allocSize = CodeGenerator::getInstance().builder.CreateStructGEP(classType, nullptr, 0);
+    llvm::Value* allocatedMemory = CodeGenerator::getInstance().builder.CreateAlloca(classType, array_size, typeName);
 
     // 객체 초기화 (생성자 호출)
     std::string constructorName = typeName + "_constructor";
-    llvm::Function* constructorFunc = codeGenerator->module->getFunction(constructorName);
+    llvm::Function* constructorFunc = CodeGenerator::getInstance().module->getFunction(constructorName);
     if (constructorFunc) {
         std::vector<llvm::Value*> constructorArgs = { allocatedMemory };
         for (auto& arg : sizes) {
             constructorArgs.push_back(arg->codegen());
         }
-        codeGenerator->builder.CreateCall(constructorFunc, constructorArgs);
+        CodeGenerator::getInstance().builder.CreateCall(constructorFunc, constructorArgs);
     }
     else {
         std::cerr << "Warning: Constructor for class '" << typeName << "' not found" << std::endl;
@@ -56,6 +57,6 @@ llvm::Value* ArrayCreationExpressionNode::codegen() {
     return allocatedMemory;
 }
 
-std::shared_ptr<Type> ArrayCreationExpressionNode::getType() {
-    return std::make_shared<ClassType>(typeName);
+std::unique_ptr<Type> ArrayCreationExpressionNode::getType() {
+    return std::make_unique<ClassType>(typeName);
 }

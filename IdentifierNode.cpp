@@ -1,3 +1,5 @@
+#include "codegen.h"
+
 #include "IdentifierNode.h"
 #include "ASTVisitor.h"
 
@@ -9,7 +11,7 @@ void IdentifierNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* IdentifierNode::codegen() {
 	// symbolTable에서의 symbol 검색은 symbolTable의 scopes를 역순으로 해서 따라가면서 symbol을 lookup한다.
-	auto symbolOpt = codeGenerator->symbolTable.lookup(value);
+	auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
 	if (!symbolOpt) {
 		std::cerr << "Undefined variable: " << value << std::endl;
 		return nullptr;
@@ -22,16 +24,13 @@ llvm::Value* IdentifierNode::codegen() {
 	return symbol->value;
 }
 
-std::shared_ptr<Type> IdentifierNode::getType() {
-	if (type) return type;
+std::unique_ptr<Type> IdentifierNode::getType() {
+	if (type) return std::make_unique<Type>(type.get());
 
-	auto symbolOpt = codeGenerator->symbolTable.lookup(value);
+	auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
 	if (symbolOpt) {
-		auto symbol = (*symbolOpt);
-		type = symbol->type;
-		return type;
+		return std::make_unique<Type>((*symbolOpt)->type.get());
 	}
 
-	type = std::make_shared<UnknownType>();
-	return type;
+	return std::make_unique<UnknownType>();
 }

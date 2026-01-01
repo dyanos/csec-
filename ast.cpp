@@ -5,6 +5,3 @@
 #include "utils.h"
 
 #include <iostream>
-
-
-CodeGenerator* ASTNode::codeGenerator = nullptr;

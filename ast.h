@@ -2,17 +2,12 @@
 #pragma once
 
 #include "type.h"
-#include "token.h"
-#include "symbol.h"
-#include "codegen.h"
 
-#include <string>
-#include <vector>
-#include <memory>
 #include <llvm/IR/Value.h>
 
 
 enum class ASTNodeType {
+    NONE,
     PROGRAM,
     IMPORT,
     OBJECT_DECLARATION,
@@ -52,16 +47,14 @@ enum class ASTNodeType {
 
 //
 class ASTVisitor;
-class CodeGenerator;
 
 class ASTNode {
 public:
-    ASTNodeType nodeType;
-    static CodeGenerator* codeGenerator;
-    std::shared_ptr<Type> type;
+    ASTNodeType nodeType = ASTNodeType::NONE;
+    std::unique_ptr<Type> type;
 
     virtual ~ASTNode() = default;
     virtual void accept(ASTVisitor& visitor) = 0;
     virtual llvm::Value* codegen() = 0;
-    virtual std::shared_ptr<Type> getType() = 0;
+    virtual std::unique_ptr<Type> getType() = 0;
 };

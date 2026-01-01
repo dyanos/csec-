@@ -24,8 +24,4 @@ std::string checkTypeName(T x) {
 std::vector<std::string> split(const std::string& str, char delimiter);
 
 // 문자열 타입인지 확인하는 헬퍼 함수
-inline bool isStringTypeFromLLVM(llvm::Value* value, CodeGenerator* codeGenerator) {
-    return value->getType()->isPointerTy() &&
-           ((llvm::PointerType*)value->getType())->isValidElementType(
-               llvm::Type::getInt8Ty(codeGenerator->context));
-}
+inline bool isStringTypeFromLLVM(llvm::Value* value, CodeGenerator* codeGenerator);

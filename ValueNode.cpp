@@ -1,5 +1,9 @@
+#include "codegen.h"
+
 #include "ValueNode.h"
 #include "ASTVisitor.h"
+
+#include "token.h"
 
 #include <iostream>
 
@@ -12,29 +16,29 @@ void ValueNode::accept(ASTVisitor& visitor) {
 llvm::Value* ValueNode::codegen() {
 	if (valueType == TokenType::INTEGER_LITERAL) {
 		// long, short, int, char, byte ���� Ÿ�� ó���� �ʿ�
-		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), std::stoi(value));
+		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), std::stoi(value));
 	}
 	else if (valueType == TokenType::FLOAT_LITERAL) {
-		return llvm::ConstantFP::get(llvm::Type::getFloatTy(codeGenerator->context), std::stof(value));
+		return llvm::ConstantFP::get(llvm::Type::getFloatTy(CodeGenerator::getInstance().context), std::stof(value));
 	}
 	else if (valueType == TokenType::BINARY_LITERAL) {
-		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), std::stoi(value.substr(2), nullptr, 2));
+		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), std::stoi(value.substr(2), nullptr, 2));
 	}
 	else if (valueType == TokenType::HEX_LITERAL) {
-		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), std::stoi(value.substr(2), nullptr, 16));
+		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), std::stoi(value.substr(2), nullptr, 16));
 	}
 	else if (valueType == TokenType::OCTAL_LITERAL) {
-		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), std::stoi(value.substr(2), nullptr, 8));
+		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), std::stoi(value.substr(2), nullptr, 8));
 	}
 	else if (valueType == TokenType::STRING_LITERAL) {
-		return codeGenerator->builder.CreateGlobalStringPtr(value);
+		return CodeGenerator::getInstance().builder.CreateGlobalStringPtr(value);
 	}
 	else if (valueType == TokenType::BOOLEAN_LITERAL) {
 		if (value == "true") {
-			return llvm::ConstantInt::get(llvm::Type::getInt1Ty(codeGenerator->context), 1);
+			return llvm::ConstantInt::get(llvm::Type::getInt1Ty(CodeGenerator::getInstance().context), 1);
 		}
 		else {
-			return llvm::ConstantInt::get(llvm::Type::getInt1Ty(codeGenerator->context), 0);
+			return llvm::ConstantInt::get(llvm::Type::getInt1Ty(CodeGenerator::getInstance().context), 0);
 		}
 	}
 	else {
@@ -43,18 +47,15 @@ llvm::Value* ValueNode::codegen() {
 	}
 }
 
-std::shared_ptr<Type> ValueNode::getType() {
-	if (type) return type;
+std::unique_ptr<Type> ValueNode::getType() {
+	if (type) return std::make_unique<Type>(type.get());
 
 	if (value.front() == '"' && value.back() == '"') {
-		type = std::make_shared<ClassType>("String");
-		return type;
+		return std::make_unique<ClassType>("String");
 	}
 	if (std::all_of(value.begin(), value.end(), ::isdigit)) {
-		type = std::make_shared<BasicType>("Int");
-		return type;
+		return std::make_unique<BasicType>("Int");
 	}
 
-	type = std::make_shared<UnknownType>();
-	return type;
+	return std::make_unique<UnknownType>();
 }

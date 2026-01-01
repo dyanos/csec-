@@ -13,7 +13,7 @@ public:
 
     llvm::Value* codegen() override;
 
-    std::shared_ptr<Type> getType() override {
-        return nullptr;
+    std::unique_ptr<Type> getType() override {
+		return std::unique_ptr<UnknownType>();
     }
 };

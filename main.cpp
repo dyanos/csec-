@@ -5,8 +5,8 @@
 
 #include "lexer.h"
 #include "parser.h"
-#include "codegen.h"
 #include "ast.h"
+#include "codegen.h"
 #include "type_checker.h"
 
 #include <iostream>
@@ -74,9 +74,6 @@ int main(int argc, char** argv) {
 	std::string code = readFileContent("sample2.csec");
 
     // 코드 생성
-    CodeGenerator codeGen;
-    ASTNode::codeGenerator = &codeGen;
-
     Lexer lexer(code);
     std::vector<Token> tokens = lexer.tokenize();
 
@@ -94,11 +91,10 @@ int main(int argc, char** argv) {
 
     TypeChecker typeChecker;
     ast->accept(typeChecker);
-
-    codeGen.generateCode(ast);
+    ast->codegen();
 
     // LLVM IR 출력
-    codeGen.dumpIR();
+    CodeGenerator::getInstance().dumpIR();
 
     // 실행 엔진 초기화
     llvm::InitializeNativeTarget();
@@ -106,7 +102,7 @@ int main(int argc, char** argv) {
     llvm::InitializeNativeTargetAsmParser();
 
     std::string errStr;
-    auto engine = llvm::EngineBuilder(std::move(codeGen.module))
+    auto engine = llvm::EngineBuilder(std::move(CodeGenerator::getInstance().module))
         .setErrorStr(&errStr)
         .setOptLevel(llvm::CodeGenOpt::getLevel(0).value())
         .create();
@@ -120,7 +116,7 @@ int main(int argc, char** argv) {
 
 
     // main 함수 실행
-    auto result = engine->runFunction(codeGen.mainFunction, {});
+    auto result = engine->runFunction(CodeGenerator::getInstance().mainFunction, {});
 
     return 0;
 }

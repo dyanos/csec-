@@ -1,5 +1,3 @@
-// module_loader.h
-
 #pragma once
 
 #include <string>

@@ -18,12 +18,12 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
             }
         } else {
             // 타입이 명시되지 않은 경우 초기화 식의 타입으로 설정
-            node.type = initType;
+            node.type = std::make_unique<Type>(initType.get());
         }
     } else {
         if (!node.type) {
             std::cerr << "Type error: Variable '" << node.name << "' has no type and no initializer" << std::endl;
-            node.type = std::make_shared<UnknownType>();
+            node.type = std::make_unique<UnknownType>();
         }
     }
 }
@@ -33,7 +33,7 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
     for (auto& param : node.parameters) {
         if (!param->type) {
             std::cerr << "Type error: Parameter '" << param->name << "' has no type" << std::endl;
-            param->type = std::make_shared<UnknownType>();
+            param->type = std::make_unique<UnknownType>();
         }
     }
 
@@ -49,7 +49,7 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
             }
         } else {
             // 반환 타입이 명시되지 않은 경우 함수 본문의 타입으로 설정
-            node.returnType = bodyType;
+            node.returnType = std::make_unique<Type>(bodyType.get());
         }
     }
 }

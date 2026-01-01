@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 // NamespaceSymbol을 이용해야할 듯
 #include "symbol.h"
@@ -19,22 +20,20 @@ public:
 		init();
 	}
 
-	Context(const Context& ref) {}
-	Context& operator=(const Context& ref) {};
+	Context(const Context& ref) = delete;
+	Context& operator=(const Context& ref) = delete;
 	~Context() {}
 
 private:
-	// 현재 symbol이 어떤 namespace에 속하는지를 담습니다.
-	// namespace는 multi-stage로 되어 있기 때문에 vector로 관리합니다.
-	NamespaceSymbol rootSymbol; // root symbol
+	std::unique_ptr<NamespaceSymbol> rootSymbol; // root symbol을 포인터로 관리
 	std::vector<Symbol*> m_path; // 현재 작업중인 namespace 경로
 
 public:
 	// Public methods to manage the context
 	void init() {
-		// root symbol을 만들고 m_path에 넣어줍니다.
-		this->rootSymbol = NamespaceSymbol("");
-		this->m_path.push_back(&this->rootSymbol);
+		rootSymbol = std::make_unique<NamespaceSymbol>("");
+		m_path.clear();
+		m_path.push_back(rootSymbol.get());
 		// Initialization code here
 		//m_path.push_back(this->rootSymbol); // Add the root namespace
 	}
@@ -55,14 +54,14 @@ public:
 	}
 
 	Symbol* getRootNamespace() {
-		return &this->rootSymbol; // Return the root namespace
+		return rootSymbol.get(); // Return the root namespace
 	}
 
 	const std::vector<Symbol*>& getNamespaces() const {
-		return this->m_path; // Return the current namespaces
+		return m_path; // Return the current namespaces
 	}
 
-	const std::vector<Symbol*>& getNamespacesReverse() const {
+	std::vector<Symbol*> getNamespacesReverse() const {
 		return std::vector<Symbol*>(m_path.rbegin(), m_path.rend()); // Return the current namespaces in reverse order
 	}
 

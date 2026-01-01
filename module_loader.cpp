@@ -68,7 +68,7 @@ llvm::Function* ModuleLoader::loadFunction(const std::string& name, llvm::Module
 bool ModuleLoader::parseModuleFile(const std::string& filepath, std::shared_ptr<SymbolTable>& moduleSymbols) {
 	// c/c++과 호환할 것이므로, c/c++의 표준 라이브러리를 로드하는 코드를 작성해야 합니다.
 	// TODO: 표준 라이브러리를 로드하는 코드가 들어있어야 합니다.
-   
+
     // 파일을 읽어들입니다.
     std::ifstream file(filepath);
     if (!file) {
@@ -89,14 +89,11 @@ bool ModuleLoader::parseModuleFile(const std::string& filepath, std::shared_ptr<
     auto ast = parser.parse();
 
     // 코드 생성기를 생성하고 모듈 심볼 테이블을 사용합니다.
-    CodeGenerator codeGen;
-    codeGen.symbolTable = *moduleSymbols;
-    ASTNode::codeGenerator = &codeGen;
-
-    codeGen.generateCode(ast);
+    CodeGenerator::getInstance().symbolTable = *moduleSymbols;
+    ast->codegen();
 
     // 모듈의 심볼 테이블을 반환
-    *moduleSymbols = codeGen.symbolTable;
+    *moduleSymbols = CodeGenerator::getInstance().symbolTable;
 
     return true;
 }

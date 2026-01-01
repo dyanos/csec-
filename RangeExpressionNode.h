@@ -10,12 +10,12 @@ public:
 
     std::shared_ptr<ASTNode> startExpr;
     std::shared_ptr<ASTNode> endExpr;
-    bool isInclusive;  // `to`̸ true, `until`̸ false
+    bool isInclusive = true;  // `to`̸ true, `until`̸ false
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
 
-    std::shared_ptr<Type> getType() override {
-        return nullptr;
+    std::unique_ptr<Type> getType() override {
+        return std::make_unique<UnknownType>();
     }
 };

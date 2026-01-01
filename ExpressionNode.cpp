@@ -1,3 +1,5 @@
+#include "codegen.h"
+
 #include "ExpressionNode.h"
 #include "ASTVisitor.h"
 
@@ -8,49 +10,45 @@ void ExpressionNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ExpressionNode::codegen() {
-    auto symbolOpt = codeGenerator->symbolTable.lookup(value);
+    auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
     if (symbolOpt) {
         Symbol* symbol = (*symbolOpt);
-        return codeGenerator->builder.CreateLoad(codeGenerator->getLLVMType(symbol->type.get()), symbol->value, value.c_str());
+        return CodeGenerator::getInstance().builder.CreateLoad(CodeGenerator::getInstance().getLLVMType(symbol->type.get()), symbol->value, value.c_str());
     }
     if (value.find('"') != std::string::npos) {
         std::string str = value.substr(1, value.length() - 2);
-        return codeGenerator->builder.CreateGlobalStringPtr(str);
+        return CodeGenerator::getInstance().builder.CreateGlobalStringPtr(str);
     }
 
     if (value.front() == '"' && value.back() == '"') {
         std::string str = value.substr(1, value.length() - 2);
-        return codeGenerator->builder.CreateGlobalStringPtr(str);
+        return CodeGenerator::getInstance().builder.CreateGlobalStringPtr(str);
     }
 
     if (std::all_of(value.begin(), value.end(), ::isdigit)) {
-        return llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(32, std::stoi(value)));
+        return llvm::ConstantInt::get(CodeGenerator::getInstance().context, llvm::APInt(32, std::stoi(value)));
     }
 
     std::cerr << "Undefined variable or invalid expression: " << value << std::endl;
     return nullptr;
 }
 
-std::shared_ptr<Type> ExpressionNode::getType() {
-    if (type) return type;
+std::unique_ptr<Type> ExpressionNode::getType() {
+    if (type) return std::make_unique<Type>(type.get());
 
-    auto symbolOpt = codeGenerator->symbolTable.lookup(value);
+    auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
     if (symbolOpt) {
         Symbol* symbol = (*symbolOpt);
-        type = symbol->type;
-        return type;
+		return std::make_unique<Type>(symbol->type.get());
     }
 
     if (value.front() == '"' && value.back() == '"') {
-        type = std::make_shared<ClassType>("String");
-        return type;
+        return std::make_unique<ClassType>("String");
     }
 
     if (std::all_of(value.begin(), value.end(), ::isdigit)) {
-        type = std::make_shared<BasicType>("Int");
-        return type;
+        return std::make_unique<BasicType>("Int");
     }
 
-    type = std::make_shared<UnknownType>();
-    return type;
+    return std::make_unique<UnknownType>();
 }

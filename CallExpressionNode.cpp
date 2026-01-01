@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "CallExpressionNode.h"
 #include "ASTVisitor.h"
 
@@ -10,7 +11,7 @@ void CallExpressionNode::accept(ASTVisitor& visitor) {
 llvm::Value* CallExpressionNode::codegen() {
 	auto name = callee->codegen()->getName();
 	//std::cout << "name: " << name.str() << std::endl;
-	llvm::Function* function = codeGenerator->module->getFunction(name);
+	llvm::Function* function = CodeGenerator::getInstance().module->getFunction(name);
 	if (!function) {
 		std::cerr << "Function not found: " << name.str() << std::endl;
 		return nullptr;
@@ -21,22 +22,21 @@ llvm::Value* CallExpressionNode::codegen() {
 		args.push_back(arg->codegen());
 	}
 
-	return codeGenerator->builder.CreateCall(function, args, "calltmp");
+	return CodeGenerator::getInstance().builder.CreateCall(function, args, "calltmp");
 }
 
-std::shared_ptr<Type> CallExpressionNode::getType() {
-	if (type) return type;
+std::unique_ptr<Type> CallExpressionNode::getType() {
+	if (type) return std::make_unique<Type>(type.get());
 
 	auto name = callee->codegen()->getName();
-	llvm::Function* function = codeGenerator->module->getFunction(name);
+	llvm::Function* function = CodeGenerator::getInstance().module->getFunction(name);
 	if (!function) {
 		std::cerr << "Function not found: " << name.str() << std::endl;
-		type = std::make_shared<UnknownType>();
-		return type;
+		return std::make_unique<UnknownType>();
 	}
 
 	//llvm::Type* returnType = function->getReturnType();
-	//type = codeGenerator->getLLVMType(returnType);
+	//type = CodeGenerator::getInstance().getLLVMType(returnType);
 
-	return std::make_shared<BasicType>("");
+	return std::make_unique<BasicType>("");
 }

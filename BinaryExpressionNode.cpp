@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "BinaryExpressionNode.h"
 #include "ASTVisitor.h"
 
@@ -9,7 +10,7 @@ void BinaryExpressionNode::accept(ASTVisitor& visitor) {
 }
 
 /*bool isStringTypeFromLLVM(llvm::Value* value, CodeGenerator* codeGenerator) {
-    return value->getType()->isPointerTy() && ((llvm::PointerType*)value->getType())->isValidElementType(llvm::Type::getInt8Ty(codeGenerator->context));
+    return value->getType()->isPointerTy() && ((llvm::PointerType*)value->getType())->isValidElementType(llvm::Type::getInt8Ty(CodeGenerator::getInstance().context));
 }*/
 
 llvm::Value* BinaryExpressionNode::codegen() {
@@ -20,10 +21,10 @@ llvm::Value* BinaryExpressionNode::codegen() {
     }
 
     if (leftValue->getType()->isPointerTy()) {
-        leftValue = codeGenerator->builder.CreateLoad(codeGenerator->getLLVMType(left->getType().get()), leftValue, "loadtmp");
+        leftValue = CodeGenerator::getInstance().builder.CreateLoad(CodeGenerator::getInstance().getLLVMType(left->getType().get()), leftValue, "loadtmp");
     }
     if (rightValue->getType()->isPointerTy()) {
-        rightValue = codeGenerator->builder.CreateLoad(codeGenerator->getLLVMType(right->getType().get()), rightValue, "loadtmp");
+        rightValue = CodeGenerator::getInstance().builder.CreateLoad(CodeGenerator::getInstance().getLLVMType(right->getType().get()), rightValue, "loadtmp");
     }
 
     if (op == "+") {
@@ -33,10 +34,10 @@ llvm::Value* BinaryExpressionNode::codegen() {
         // First, we need to check if leftValue and rightValue are both numerical primitives type.
         if (left->getType()->getName() == right->getType()->getName()) {
             if (left->getType()->isIntegerTy()) {
-                return codeGenerator->builder.CreateAdd(leftValue, rightValue, "addtmp");
+                return CodeGenerator::getInstance().builder.CreateAdd(leftValue, rightValue, "addtmp");
             }
             else if (left->getType()->isFloatTy()) {
-                return codeGenerator->builder.CreateFAdd(leftValue, rightValue, "faddtmp");
+                return CodeGenerator::getInstance().builder.CreateFAdd(leftValue, rightValue, "faddtmp");
             }
             else {
                 std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
@@ -53,10 +54,10 @@ llvm::Value* BinaryExpressionNode::codegen() {
     else if (op == "-") {
         if (left->getType()->getName() == right->getType()->getName()) {
             if (left->getType()->isIntegerTy()) {
-                return codeGenerator->builder.CreateSub(leftValue, rightValue, "subtmp");
+                return CodeGenerator::getInstance().builder.CreateSub(leftValue, rightValue, "subtmp");
             }
             else if (left->getType()->isFloatTy()) {
-                return codeGenerator->builder.CreateFSub(leftValue, rightValue, "fsubtmp");
+                return CodeGenerator::getInstance().builder.CreateFSub(leftValue, rightValue, "fsubtmp");
             }
             else {
                 std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
@@ -71,10 +72,10 @@ llvm::Value* BinaryExpressionNode::codegen() {
     else if (op == "*") {
         if (left->getType()->getName() == right->getType()->getName()) {
             if (left->getType()->isIntegerTy()) {
-                return codeGenerator->builder.CreateMul(leftValue, rightValue, "subtmp");
+                return CodeGenerator::getInstance().builder.CreateMul(leftValue, rightValue, "subtmp");
             }
             else if (left->getType()->isFloatTy()) {
-                return codeGenerator->builder.CreateFMul(leftValue, rightValue, "fsubtmp");
+                return CodeGenerator::getInstance().builder.CreateFMul(leftValue, rightValue, "fsubtmp");
             }
             else {
                 std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
@@ -90,10 +91,10 @@ llvm::Value* BinaryExpressionNode::codegen() {
         if (left->getType()->getName() == right->getType()->getName()) {
             if (left->getType()->isIntegerTy()) {
                 // signed?
-                return codeGenerator->builder.CreateSDiv(leftValue, rightValue, "subtmp");
+                return CodeGenerator::getInstance().builder.CreateSDiv(leftValue, rightValue, "subtmp");
             }
             else if (left->getType()->isFloatTy()) {
-                return codeGenerator->builder.CreateFDiv(leftValue, rightValue, "fsubtmp");
+                return CodeGenerator::getInstance().builder.CreateFDiv(leftValue, rightValue, "fsubtmp");
             }
             else {
                 std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
@@ -106,19 +107,19 @@ llvm::Value* BinaryExpressionNode::codegen() {
         }
     }
     else if (op == ">") {
-        return codeGenerator->builder.CreateICmpSGT(leftValue, rightValue, "gttmp");
+        return CodeGenerator::getInstance().builder.CreateICmpSGT(leftValue, rightValue, "gttmp");
     }
     else if (op == "<") {
-        return codeGenerator->builder.CreateICmpSLT(leftValue, rightValue, "lttmp");
+        return CodeGenerator::getInstance().builder.CreateICmpSLT(leftValue, rightValue, "lttmp");
     }
     else if (op == "==") {
-        return codeGenerator->builder.CreateICmpEQ(leftValue, rightValue, "eqtmp");
+        return CodeGenerator::getInstance().builder.CreateICmpEQ(leftValue, rightValue, "eqtmp");
     }
     else if (op == ">=") {
-        return codeGenerator->builder.CreateICmpSGE(leftValue, rightValue, "getmp");
+        return CodeGenerator::getInstance().builder.CreateICmpSGE(leftValue, rightValue, "getmp");
     }
     else if (op == "<=") {
-        return codeGenerator->builder.CreateICmpSLE(leftValue, rightValue, "letmp");
+        return CodeGenerator::getInstance().builder.CreateICmpSLE(leftValue, rightValue, "letmp");
     }
     else {
         std::cerr << "Unsupported binary operator: " << op << std::endl;
@@ -126,35 +127,31 @@ llvm::Value* BinaryExpressionNode::codegen() {
     }
 }
 
-std::shared_ptr<Type> BinaryExpressionNode::getType() {
-    if (type) return type;
+std::unique_ptr<Type> BinaryExpressionNode::getType() {
+    if (type) return std::make_unique<Type>(type.get());
 
-    auto leftType = left->getType().get();
-    auto rightType = right->getType().get();
+    auto leftType = left->getType();
+    auto rightType = right->getType();
 
-    if (!leftType->equals(rightType)) {
+    if (!leftType->equals(rightType.get())) {
         std::cerr << "Type error: Left and right expressions have different types" << std::endl;
-        type = std::make_shared<UnknownType>();
-        return type;
+        return std::make_unique<UnknownType>();
     }
 
     if (op == "+" || op == "-" || op == "*" || op == "/") {
         if (leftType->getName() == "Int" || leftType->getName() == "Float" || leftType->getName() == "Double") {
             // 기존 raw 포인터를 이용해 새 객체를 만들지 않고,
             // 서브식이 갖고 있는 shared_ptr을 그대로 재사용하여 타입을 설정.
-            type = left->getType();
-            return type;
+            return left->getType();
         }
         else {
             std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << leftType->getName() << "'" << std::endl;
-            type = std::make_shared<UnknownType>();
-            return type;
+            return std::make_unique<UnknownType>();
         }
     }
     else {
         // 다른 연산자 추가 시 처리 예정
     }
 
-    type = std::make_shared<UnknownType>();
-    return type;
+    return std::make_unique<UnknownType>();
 }

@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "AssignmentExpressionNode.h"
 #include "ASTVisitor.h"
 
@@ -17,12 +18,11 @@ llvm::Value* AssignmentExpressionNode::codegen() {
     }
 
     // 메모리 사이의 이동은 CreateStore로
-    codeGenerator->builder.CreateStore(rightValue, leftValue);
+    CodeGenerator::getInstance().builder.CreateStore(rightValue, leftValue);
 
     return leftValue;
 }
 
-std::shared_ptr<Type> AssignmentExpressionNode::getType()
-{
+std::unique_ptr<Type> AssignmentExpressionNode::getType() {
     return left->getType();
 }

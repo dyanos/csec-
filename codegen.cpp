@@ -10,15 +10,15 @@
 
 
 CodeGenerator::CodeGenerator() : builder(context) {
-    module = std::make_unique<llvm::Module>("main", context);
+    this->module = std::make_unique<llvm::Module>("main", context);
 
-    llvm::FunctionType* funcType = llvm::FunctionType::get(builder.getInt32Ty(), false);
-    mainFunction = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module.get());
+    llvm::FunctionType* funcType = llvm::FunctionType::get(this->builder.getInt32Ty(), false);
+    this->mainFunction = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module.get());
 
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", mainFunction);
-    builder.SetInsertPoint(entry);
+    this->builder.SetInsertPoint(entry);
 
-    mallocFunction = module->getFunction("malloc");
+    this->mallocFunction = module->getFunction("malloc");
     if (!mallocFunction) {
         mallocFunction = llvm::Function::Create(
             llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::Type::getInt64Ty(context) }, false),
@@ -28,7 +28,7 @@ CodeGenerator::CodeGenerator() : builder(context) {
         );
     }
 
-    freeFunction = module->getFunction("free");
+    this->freeFunction = module->getFunction("free");
     if (!freeFunction) {
         freeFunction = llvm::Function::Create(
             llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
@@ -38,7 +38,7 @@ CodeGenerator::CodeGenerator() : builder(context) {
         );
     }
 
-    symbolTable.initializeBuiltInTypes(context);
+    this->symbolTable.initializeBuiltInTypes(context);
 
 	// int클래스에 추가된 toString메서드의 llvm 코드 생성
 	auto initClassSymbolOpt = symbolTable.lookupClass("Int");
@@ -75,12 +75,8 @@ CodeGenerator::CodeGenerator() : builder(context) {
         "println",
         module.get()
     );
-}
 
-void CodeGenerator::generateCode(std::shared_ptr<ProgramNode> program) {
-    program->codegen();
-
-    builder.CreateRet(builder.getInt32(0));
+    this->currentSymbol = nullptr;
 }
 
 void CodeGenerator::dumpIR() {

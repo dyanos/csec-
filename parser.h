@@ -17,7 +17,7 @@ class BlockNode;
 class Parser {
 public:
     Parser(const std::vector<Token>& tokens);
-    std::shared_ptr<ProgramNode> parse();
+    std::shared_ptr<ASTNode> parse();
 
 private:
     const std::vector<Token>& tokens;
@@ -37,8 +37,8 @@ private:
     // import, class, object, template....
 	std::shared_ptr<ASTNode> parseTopStatement();
 
-    std::shared_ptr<ASTNode> parseAttribute();
-	std::shared_ptr<ASTNode> parseAttrSimpleExpression();
+    std::shared_ptr<ASTNode> parseAnnotationStatement();
+	std::shared_ptr<ASTNode> parseAnnotationExpression();
 	std::shared_ptr<ASTNode> parseImportStatement();
 	std::shared_ptr<ASTNode> parseClassDeclaration();
     std::shared_ptr<ClassBodyNode> parseClassBody();

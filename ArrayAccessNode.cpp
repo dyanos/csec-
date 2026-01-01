@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "ArrayAccessNode.h"
 #include "ASTVisitor.h"
 
@@ -14,14 +15,14 @@ llvm::Value* ArrayAccessNode::codegen() {
         return nullptr;
     }
 
-    llvm::Type* elementType = codeGenerator->getLLVMType(getType().get());
+    llvm::Type* elementType = CodeGenerator::getInstance().getLLVMType(getType().get());
     if (!elementType) {
         std::cerr << "Error: Invalid array element type" << std::endl;
         return nullptr;
     }
 
     // 요소 포인터 계산
-    llvm::Value* elemPtr = codeGenerator->builder.CreateGEP(elementType, arrayValue, indexValue, "arrayelem");
+    llvm::Value* elemPtr = CodeGenerator::getInstance().builder.CreateGEP(elementType, arrayValue, indexValue, "arrayelem");
     // 요소 로드
-    return codeGenerator->builder.CreateLoad(elementType, elemPtr, "arrayload");
+    return CodeGenerator::getInstance().builder.CreateLoad(elementType, elemPtr, "arrayload");
 }

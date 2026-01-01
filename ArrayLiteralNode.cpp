@@ -9,6 +9,6 @@ llvm::Value* ArrayLiteralNode::codegen() {
 	return nullptr;
 }
 
-std::shared_ptr<Type> ArrayLiteralNode::getType() {
-	return type;
+std::unique_ptr<Type> ArrayLiteralNode::getType() {
+	return std::make_unique<Type>(type.get());
 }

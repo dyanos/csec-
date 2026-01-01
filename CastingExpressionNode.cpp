@@ -9,6 +9,6 @@ llvm::Value* CastingExpressionNode::codegen() {
     return nullptr;
 }
 
-std::shared_ptr<Type> CastingExpressionNode::getType() {
-    return std::shared_ptr<Type>();
+std::unique_ptr<Type> CastingExpressionNode::getType() {
+    return std::unique_ptr<UnknownType>();
 }

@@ -1,3 +1,5 @@
+#include "codegen.h"
+
 #include "MethodCallNode.h"
 #include "ASTVisitor.h"
 
@@ -24,7 +26,7 @@ llvm::Value* MethodCallNode::codegen() {
     }
 
     // 클래스 심볼 가져오기
-    auto symbol = codeGenerator->symbolTable.lookupClass(objectType->getName());
+    auto symbol = CodeGenerator::getInstance().symbolTable.lookupClass(objectType->getName());
     if (!symbol) {
         std::cerr << "Error: Undefined class type '" << objectType->getName() << "'" << std::endl;
         return nullptr;
@@ -33,7 +35,7 @@ llvm::Value* MethodCallNode::codegen() {
     ClassSymbol* classSymbol = (*symbol);
 
     // 메서드 룩업
-    auto methodSymbolOpt = codeGenerator->symbolTable.lookupMethod(*classSymbol, methodName);
+    auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName);
     if (!methodSymbolOpt) {
         std::cerr << "Error: Method '" << methodName << "' not found in class '" << objectType->getName() << "'" << std::endl;
         return nullptr;
@@ -42,10 +44,10 @@ llvm::Value* MethodCallNode::codegen() {
     auto methodSymbol = (*methodSymbolOpt);
 
     // 함수 타입과 LLVM 함수 가져오기
-    auto funcType = std::dynamic_pointer_cast<FunctionType>(methodSymbol->type);
+    auto funcType = (FunctionType*)(methodSymbol->type.get());
     llvm::Function* function = static_cast<llvm::Function*>(methodSymbol->value);
     if (!function) {
-        auto symbol = codeGenerator->symbolTable.lookupClass(objectType->getName());
+        auto symbol = CodeGenerator::getInstance().symbolTable.lookupClass(objectType->getName());
         if (!symbol) {
             std::cerr << "Error: Undefined class type '" << objectType->getName() << "'" << std::endl;
             return nullptr;
@@ -57,11 +59,10 @@ llvm::Value* MethodCallNode::codegen() {
             return nullptr;
         }
         // 해당 method가 구현되어 있지 않다면, 구한다.
-        auto method = classSymbol->methodBodies[methodName];
-        method->codegen();
-        function = codeGenerator->module->getFunction(methodName);
+        classSymbol->methodBodies[methodName]->codegen();
+        function = CodeGenerator::getInstance().module->getFunction(methodName);
         methodSymbol->value = function;
-        codeGenerator->symbolTable.addSymbol(methodName, methodSymbol);
+        CodeGenerator::getInstance().symbolTable.addSymbol(methodName, methodSymbol);
     }
 
     if (!funcType || !function) {
@@ -86,9 +87,8 @@ llvm::Value* MethodCallNode::codegen() {
         }
 
         // 인자의 타입 검사
-        auto expectedType = funcType->parameterTypes[i];
         std::shared_ptr<Type> actualType = arguments[i]->getType();
-        if (!actualType->equals(expectedType)) {
+        if (!actualType->equals(funcType->parameterTypes[i].get())) {
             std::cerr << "Type error: Argument type mismatch in method call '" << methodName << "'" << std::endl;
             return nullptr;
         }
@@ -97,46 +97,41 @@ llvm::Value* MethodCallNode::codegen() {
     }
 
     // 함수 호출 생성
-    llvm::Value* result = codeGenerator->builder.CreateCall(function, argValues);
+    llvm::Value* result = CodeGenerator::getInstance().builder.CreateCall(function, argValues);
     return result;
 }
 
-std::shared_ptr<Type> MethodCallNode::getType() {
+std::unique_ptr<Type> MethodCallNode::getType() {
     // 메서드의 반환 타입을 반환
-    if (type) return type;
+    if (type) return std::make_unique<Type>(type.get());
 
     // 객체의 타입 가져오기
     std::shared_ptr<Type> objectType = object->getType();
     if (!objectType || objectType->getKind() != Type::Kind::CLASS) {
-        type = std::make_shared<UnknownType>();
-        return type;
+        return std::make_unique<UnknownType>();
     }
 
     // 클래스 심볼 가져오기
-    auto classSymbolOpt = codeGenerator->symbolTable.lookupClass(objectType->getName());
+    auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(objectType->getName());
     if (!classSymbolOpt) {
-        type = std::make_shared<UnknownType>();
-        return type;
+        return std::make_unique<UnknownType>();
     }
 
     auto classSymbol = *classSymbolOpt;
 
     // 메서드 룩업
-    auto methodSymbolOpt = codeGenerator->symbolTable.lookupMethod(*classSymbol, methodName);
+    auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName);
     if (!methodSymbolOpt) {
-        type = std::make_shared<UnknownType>();
-        return type;
+        return std::make_unique<UnknownType>();
     }
 
     auto methodSymbol = *methodSymbolOpt;
 
     // 함수 타입 가져오기
-    auto funcType = std::dynamic_pointer_cast<FunctionType>(methodSymbol->type);
+    auto funcType = (FunctionType*)(methodSymbol->type.get());
     if (funcType) {
-        type = std::make_shared<Type>(*funcType->returnType);
-        return type;
+        return std::make_unique<Type>(*funcType->returnType.get());
     }
 
-    type = std::make_shared<UnknownType>();
-    return type;
+    return std::make_unique<UnknownType>();
 }

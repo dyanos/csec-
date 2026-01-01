@@ -9,6 +9,7 @@
 
 #include <optional>
 #include <functional>
+#include <memory> // shared_ptr 사용을 위해 추가
 
 // SymbolTable 구현
 // scope에 따른 다단계 네임스페이스 지원 필요
@@ -50,19 +51,20 @@ SymbolTable::SymbolTable(const SymbolTable& other) {
 }
 
 void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
+    auto& ctxt = Context::getInstance();
+
     // 최상위 타입 Any
     auto anyType = std::make_shared<ClassType>("Any");
-    auto& ctxt = Context::getInstance();
 
     //addTypeSymbol("Any", anyType);
 	// root -> namespace symbol이므로 강제 캐스팅
-    this->currentScope->symbols["Any"] = new ClassSymbol("Any", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["Any"] = std::make_unique<ClassSymbol>("Any", llvm::Type::getInt32Ty(context), "System.lang.Object");
     //((NamespaceSymbol*)&root)->classes["Any"] = ClassSymbol("Any", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
     // 값 타입 AnyVal
-    auto anyValType = std::make_shared<ClassType>("AnyVal", anyType);
+    //auto anyValType = std::make_shared<ClassType>("AnyVal", anyType);
     //addTypeSymbol("AnyVal", anyValType);
-    this->currentScope->symbols["AnyVal"] = new ClassSymbol("AnyVal", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["AnyVal"] = std::make_unique<ClassSymbol>("AnyVal", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
     // 기본 타입 등록
     //addTypeSymbol("Int", std::make_shared<BasicType>("Int", anyValType));
@@ -70,34 +72,33 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
     //addTypeSymbol("Double", std::make_shared<BasicType>("Double", anyValType));
     //addTypeSymbol("Char", std::make_shared<BasicType>("Char", anyValType));
     //addTypeSymbol("Boolean", std::make_shared<BasicType>("Boolean", anyValType));
-	this->currentScope->symbols["Short"] = new ClassSymbol("Short", llvm::Type::getInt16Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Int"] = new ClassSymbol("Int", llvm::Type::getInt32Ty(context), "System.lang.Object");
-	this->currentScope->symbols["Long"] = new ClassSymbol("Long", llvm::Type::getInt64Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Float"] = new ClassSymbol("Float", llvm::Type::getInt32Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Double"] = new ClassSymbol("Double", llvm::Type::getInt32Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Char"] = new ClassSymbol("Char", llvm::Type::getInt32Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Boolean"] = new ClassSymbol("Boolean", llvm::Type::getInt32Ty(context), "System.lang.Object");
+	this->currentScope->symbols["Short"] = std::make_unique<ClassSymbol>("Short", llvm::Type::getInt16Ty(context), "System.lang.Object");
+    this->currentScope->symbols["Int"] = std::make_unique<ClassSymbol>("Int", llvm::Type::getInt32Ty(context), "System.lang.Object");
+	this->currentScope->symbols["Long"] = std::make_unique<ClassSymbol>("Long", llvm::Type::getInt64Ty(context), "System.lang.Object");
+    this->currentScope->symbols["Float"] = std::make_unique<ClassSymbol>("Float", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["Double"] = std::make_unique<ClassSymbol>("Double", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["Char"] = std::make_unique<ClassSymbol>("Char", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["Boolean"] = std::make_unique<ClassSymbol>("Boolean", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
     // 참조 타입 AnyRef
     auto anyRefType = std::make_shared<ClassType>("AnyRef", anyType);
     //addTypeSymbol("AnyRef", anyRefType);
-    this->currentScope->symbols["AnyRef"] = new ClassSymbol("AnyRef", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["AnyRef"] = std::make_unique<ClassSymbol>("AnyRef", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
     // String 타입
     //addTypeSymbol("String", std::make_shared<ClassType>("String", anyRefType));
-    this->currentScope->symbols["String"] = new ClassSymbol("String", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["String"] = std::make_unique<ClassSymbol>("String", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
     // Unit 타입 (void)
     //addTypeSymbol("Unit", std::make_shared<BasicType>("Unit", anyValType));
-    this->currentScope->symbols["Unit"] = new ClassSymbol("Unit", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["Unit"] = std::make_unique<ClassSymbol>("Unit", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
     // Int 타입의 메서드 등록
     //auto& intClassSymbol = classSymbols["Int"];
 
     // 예를 들어, toString 메서드 등록
     auto toStringType = std::make_shared<FunctionType>(std::vector<Type*>{}, new BasicType("String", anyRefType));
-    Symbol* toStringSymbol = new Symbol("toString", toStringType, nullptr, false, SymbolType::METHOD);
-    ((ClassSymbol*)(this->currentScope->symbols["String"]))->methods["toString"] = toStringSymbol;
+    ((ClassSymbol*)(this->currentScope->symbols["String"].get()))->methods["toString"] = std::make_unique<Symbol>("toString", toStringType.get(), nullptr, false, SymbolType::METHOD);
 }
 
 SymbolTable::~SymbolTable() {
@@ -115,7 +116,7 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
 
     if (this->currentSymbol == nullptr) {
         this->currentSymbol = const_cast<Symbol*>(symbol);  // currentSymbol은 메모리 해제하면 안됨!!!
-		this->currentScope->symbols[name] = const_cast<Symbol*>(symbol);
+		this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
 		return true;
     }
 
@@ -130,8 +131,8 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
                 if (target->variables.count(name) != 0)
                     return false;
 
-                target->variables[name] = const_cast<Symbol*>(symbol);
-                this->currentScope->symbols[name] = const_cast<Symbol*>(symbol);
+                target->variables[name] = std::make_unique<Symbol>(symbol);
+                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
 
             case SymbolType::FUNCTION:
@@ -139,24 +140,24 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
                 if (target->functions.count(name) != 0)
                     return false;
 
-                target->functions[name] = const_cast<Symbol*>(symbol);
-                this->currentScope->symbols[name] = const_cast<Symbol*>(symbol);
+                target->functions[name] = std::make_unique<Symbol>(symbol);
+                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
 
             case SymbolType::CLASS:
                 if (target->classes.count(name) != 0)
                     return false;
 
-                target->classes[name] = (ClassSymbol*)symbol;
-                this->currentScope->symbols[name] = const_cast<Symbol*>(symbol);
+                target->classes[name] = std::make_unique<ClassSymbol>(symbol);
+                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
 
             case SymbolType::NAMESPACE:
                 if (target->namespaces.count(name) != 0)
                     return false;
 
-                target->namespaces[name] = (NamespaceSymbol*)symbol;
-                this->currentScope->symbols[name] = const_cast<Symbol*>(symbol);
+				target->namespaces[name] = std::make_unique<NamespaceSymbol>((NamespaceSymbol*)symbol);
+                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
 
             default:
@@ -176,8 +177,8 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
                 if (target->fields.count(name) != 0)
                     return false;
 
-                target->fields[name] = const_cast<Symbol*>(symbol);
-                this->currentScope->symbols[name] = const_cast<Symbol*>(symbol);
+                target->fields[name] = std::make_unique<Symbol>(symbol);
+                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
 
             case SymbolType::FUNCTION:
@@ -185,8 +186,8 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
                 if (target->methods.count(name) != 0)
                     return false;
 
-                target->methods[name] = const_cast<Symbol*>(symbol);
-                this->currentScope->symbols[name] = const_cast<Symbol*>(symbol);
+                target->methods[name] = std::make_unique<Symbol>(symbol);
+                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
 
             default:
@@ -204,7 +205,7 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
             case SymbolType::FIELD:
                 // 타입을 맞춰서 push_back
                 target->symbols.push_back(const_cast<Symbol*>(symbol));
-				this->currentScope->symbols[name] = const_cast<Symbol*>(symbol);
+				this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
             default:
                 printf("Unsupported symbol type for function: %d\n", (int)symbol->symbolType);
@@ -229,19 +230,19 @@ std::optional<Symbol*> checkSymbol(Symbol* symbol, const std::string& name) {
         auto target = (NamespaceSymbol*)symbol;
 
         if (target->namespaces.count(name) != 0) {
-            return target->namespaces[name];
+            return target->namespaces[name].get();
         }
 
         if (target->classes.count(name) != 0) {
-            return target->classes[name];
+            return target->classes[name].get();
         }
 
         if (target->functions.count(name) != 0) {
-            return target->functions[name];
+            return target->functions[name].get();
         }
 
         if (target->variables.count(name) != 0) {
-            return target->variables[name];
+            return target->variables[name].get();
         }
 
         return std::nullopt;
@@ -252,10 +253,10 @@ std::optional<Symbol*> checkSymbol(Symbol* symbol, const std::string& name) {
     {
         auto target = (ClassSymbol*)symbol;
         if (target->methods.count(name) != 0) {
-            return target->methods[name];
+            return target->methods[name].get();
         }
         if (target->fields.count(name) != 0) {
-            return target->fields[name];
+            return target->fields[name].get();
         }
         return std::nullopt;
     }
@@ -284,7 +285,7 @@ std::optional<Symbol*> SymbolTable::lookup(const std::string& name) {
                 continue;
             }
 
-            return pair.second;
+            return pair.second.get();
         }
 
         curScope = curScope->outer;
@@ -417,10 +418,9 @@ void SymbolTable::exitScope() {
     printf("entering exitScope\n");
 	auto* temp = this->currentScope;
     this->currentScope = this->currentScope->outer;
-    /*for (auto& pair : temp->symbols) {
-        delete pair.second;
-        pair.second = nullptr;
-    }*/
+    for (auto& pair : temp->symbols) {
+        delete pair.second.get();
+    }
     temp->outer = nullptr;
     delete temp;
 	this->currentScopeLevel -= 1;
@@ -442,7 +442,7 @@ void SymbolTable::print(std::ostream& os, int indent) const {
         }
         for (const auto& classPair : ns->classes) {
             os << indentStr << "  Class: " << classPair.first << "\n";
-            auto* classSym = classPair.second;
+            auto* classSym = classPair.second.get();
             for (const auto& fieldPair : classSym->fields) {
                 os << indentStr << "    Field: " << fieldPair.first << "\n";
             }
@@ -451,7 +451,7 @@ void SymbolTable::print(std::ostream& os, int indent) const {
             }
         }
         for (const auto& nsPair : ns->namespaces) {
-            printNamespace(nsPair.second, level + 1);
+            printNamespace(nsPair.second.get(), level + 1);
         }
     };
     printNamespace(root, indent);

@@ -1,3 +1,5 @@
+#include "codegen.h"
+
 #include "VariableDeclarationNode.h"
 #include "ASTVisitor.h"
 
@@ -19,28 +21,28 @@ llvm::Value* VariableDeclarationNode::codegen() {
         }
     }
     else {
-        initValue = llvm::Constant::getNullValue(codeGenerator->getLLVMType(type.get()));
+        initValue = llvm::Constant::getNullValue(CodeGenerator::getInstance().getLLVMType(type.get()));
     }
 
     if (this->type->getKind() == Type::Kind::UNKNOWN && initValue != nullptr) {
         // �ʱ�ȭ ���� Ÿ������ ���� Ÿ�� �߷�
         if (initValue->getType()->isIntegerTy(32)) {
-            this->type = std::make_shared<BasicType>("Int");
+            this->type = std::make_unique<BasicType>("Int");
         }
         else if (initValue->getType()->isFloatTy()) {
-            this->type = std::make_shared<BasicType>("Float");
+            this->type = std::make_unique<BasicType>("Float");
         }
         else if (initValue->getType()->isDoubleTy()) {
-            this->type = std::make_shared<BasicType>("Double");
+            this->type = std::make_unique<BasicType>("Double");
         }
         else if (initValue->getType()->isStructTy()) {
             std::string structName = initValue->getType()->getStructName().str();
-            this->type = std::make_shared<ClassType>(structName);
+            this->type = std::make_unique<ClassType>(structName);
         }
         // string type
         else if (initValue->getType()->isPointerTy() &&
             initValue->getType()->isIntegerTy(1)) {
-            this->type = std::make_shared<BasicType>("String");
+            this->type = std::make_unique<BasicType>("String");
         }
         /*else if (initValue->getType()->isPointerTy()) {
             this->type = std::make_shared<PointerType>(std::make_shared<UnknownType>());
@@ -51,18 +53,18 @@ llvm::Value* VariableDeclarationNode::codegen() {
         }
     }
 
-    llvm::Type* varType = codeGenerator->getLLVMType(type.get());
+    llvm::Type* varType = CodeGenerator::getInstance().getLLVMType(type.get());
     if (!varType) {
         std::cerr << "Error: Unsupported variable type '" << type->getName() << "'" << std::endl;
         return nullptr;
     }
 
-    llvm::AllocaInst* alloc = codeGenerator->builder.CreateAlloca(varType, nullptr, name.c_str());
+    llvm::AllocaInst* alloc = CodeGenerator::getInstance().builder.CreateAlloca(varType, nullptr, name.c_str());
 
-    codeGenerator->builder.CreateStore(initValue, alloc);
+    CodeGenerator::getInstance().builder.CreateStore(initValue, alloc);
 
-    Symbol* symbol = new Symbol(name, type, alloc, isMutable, SymbolType::VARIABLE);
-    codeGenerator->symbolTable.addSymbol(name, symbol);
+    Symbol* symbol = new Symbol(name, type.get(), alloc, isMutable, SymbolType::VARIABLE);
+    CodeGenerator::getInstance().symbolTable.addSymbol(name, symbol);
 
     return alloc;
 }

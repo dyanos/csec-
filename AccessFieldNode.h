@@ -1,5 +1,6 @@
 #pragma once
 #include "ast.h"
+#include "symbol.h"
 
 class AccessFieldNode : public ASTNode {
 public:
@@ -16,7 +17,7 @@ public:
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
-    std::shared_ptr<Type> getType() override;
+    std::unique_ptr<Type> getType() override;
 
     int findFieldIndex(ClassSymbol* classSymbol, const std::string& fieldName);
 };

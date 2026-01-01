@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "BlockNode.h"
 #include "ASTVisitor.h"
 
@@ -7,14 +8,14 @@ void BlockNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* BlockNode::codegen() {
-    codeGenerator->symbolTable.enterScope();
+    CodeGenerator::getInstance().symbolTable.enterScope();
 
     llvm::Value* last = nullptr;
     for (auto& stmt : statements) {
         last = stmt->codegen();
     }
 
-    codeGenerator->symbolTable.exitScope();
+    CodeGenerator::getInstance().symbolTable.exitScope();
 
     return last;
 }

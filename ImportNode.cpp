@@ -1,6 +1,9 @@
-﻿#include "ImportNode.h"
+﻿#include "codegen.h"
+
+#include "ImportNode.h"
 #include "ASTVisitor.h"
 
+#include "module_loader.h"
 #include <iostream>
 
 
@@ -9,10 +12,11 @@ void ImportNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ImportNode::codegen() {
-    auto moduleSymbols = codeGenerator->moduleLoader.loadModule(path);
+	ModuleLoader* moduleLoader = new ModuleLoader();
+    auto moduleSymbols = moduleLoader->loadModule(path);
     if (moduleSymbols) {
         //  ɺ  ɺ ̺
-        codeGenerator->symbolTable.merge(*moduleSymbols);
+        CodeGenerator::getInstance().symbolTable.merge(*moduleSymbols);
     }
     else {
         std::cerr << "Error: Failed to import module ";

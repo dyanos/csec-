@@ -113,6 +113,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -161,6 +162,8 @@
     <ClCompile Include="ClassDeclarationNode.cpp" />
     <ClCompile Include="ClassInstanceCreationNode.cpp" />
     <ClCompile Include="codegen.cpp" />
+    <ClCompile Include="Declaration.cpp" />
+    <ClCompile Include="Expression.cpp" />
     <ClCompile Include="ExpressionNode.cpp" />
     <ClCompile Include="FilterStatementNode.cpp" />
     <ClCompile Include="ForStatementNode.cpp" />
@@ -189,7 +192,9 @@
     <ClCompile Include="RangeExpressionNode.cpp" />
     <ClCompile Include="ReduceStatementNode.cpp" />
     <ClCompile Include="ReturnStatementNode.cpp" />
+    <ClCompile Include="Statement.cpp" />
     <ClCompile Include="symbol_table.cpp" />
+    <ClCompile Include="Token.cpp" />
     <ClCompile Include="type.cpp" />
     <ClCompile Include="type_checker.cpp" />
     <ClCompile Include="type_utils.cpp" />

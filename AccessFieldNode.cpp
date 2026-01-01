@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "AccessFieldNode.h"
 #include "ASTVisitor.h"
 #include "utils.h"
@@ -30,7 +31,7 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
 
-    auto classSymbolOpt = codeGenerator->symbolTable.lookupClass(baseType->getName());
+    auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(baseType->getName());
     if (!classSymbolOpt) {
         std::cerr << "Error: Class '" << baseType->getName() << "' not found" << std::endl;
         return nullptr;
@@ -38,7 +39,7 @@ llvm::Value* AccessFieldNode::codegen() {
 
     auto classSymbol = *classSymbolOpt;
 
-    auto thisSymbolOpt = codeGenerator->symbolTable.lookup(((IdentifierNode*)leftValue.get())->value);
+    auto thisSymbolOpt = CodeGenerator::getInstance().symbolTable.lookup(((IdentifierNode*)leftValue.get())->value);
     if (!thisSymbolOpt) {
         std::cerr << "Error: Base object not found" << std::endl;
         return nullptr;
@@ -56,8 +57,8 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
 
-    return codeGenerator->builder.CreateStructGEP(
-        codeGenerator->getLLVMType(field->getType().get()),
+    return CodeGenerator::getInstance().builder.CreateStructGEP(
+        CodeGenerator::getInstance().getLLVMType(field->getType().get()),
         thisSymbol->value,
         fieldIndex + 1, // +1 for this pointer
         targetName
@@ -87,7 +88,7 @@ int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string&
     return -1;
 }
 
-std::shared_ptr<Type> AccessFieldNode::getType() {
+std::unique_ptr<Type> AccessFieldNode::getType() {
     // left의 type과 동일
     return field->getType();
 }

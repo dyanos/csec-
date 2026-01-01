@@ -1,3 +1,4 @@
+#include "codegen.h"
 #include "AssignmentNode.h"
 #include "ASTVisitor.h"
 
@@ -12,7 +13,7 @@ llvm::Value* AssignmentNode::codegen() {
     // C/C++의 '=' 연산자는 오른쪽 값을 왼쪽에 대입하는 연산자이다.
     // 왼쪽 값은 변수이어야 한다.
     // 오른쪽 값은 변수이거나 메서드 호출 결과이어야 한다.
-    auto symbolOpt = codeGenerator->symbolTable.lookup(name);
+    auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(name);
     if (!symbolOpt) {
         std::cerr << "Undefined variable: " << name << std::endl;
         return nullptr;
@@ -29,7 +30,7 @@ llvm::Value* AssignmentNode::codegen() {
         return nullptr;
     }
 
-    codeGenerator->builder.CreateStore(exprValue, symbol->value);
+    CodeGenerator::getInstance().builder.CreateStore(exprValue, symbol->value);
 
     return exprValue;
 }

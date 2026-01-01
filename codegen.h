@@ -1,22 +1,23 @@
 // codegen.h
 #pragma once
 
-#include "ast.h"
 #include "symbol_table.h"
-#include "module_loader.h"
+
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 
-class ProgramNode;
-
 class CodeGenerator {
 public:
+    static CodeGenerator& getInstance() {
+        static CodeGenerator instance; // Guaranteed to be destroyed
+        return instance;          // Instantiated on first use
+    }
+
     CodeGenerator();
     llvm::LLVMContext context;
     llvm::IRBuilder<> builder;
     std::unique_ptr<llvm::Module> module;
-    ModuleLoader moduleLoader;
     llvm::Function* mainFunction;
 
 	// 현재 스코프 체인: namespace 및 클래스 스코프 추적용 -> body가 시작될때 push, 끝날때 pop
@@ -28,7 +29,6 @@ public:
 
     llvm::LLVMContext& getContext() { return context; }
 
-    void generateCode(std::shared_ptr<ProgramNode> program);
     void dumpIR();
     llvm::Type* getLLVMType(const Type* type);
 

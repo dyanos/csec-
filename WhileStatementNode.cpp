@@ -1,3 +1,5 @@
+#include "codegen.h"
+
 #include "WhileStatementNode.h"
 #include "ASTVisitor.h"
 
@@ -12,6 +14,6 @@ llvm::Value* WhileStatementNode::codegen() {
 	return nullptr;
 }
 
-std::shared_ptr<Type> WhileStatementNode::getType() {
-	return std::shared_ptr<Type>();
+std::unique_ptr<Type> WhileStatementNode::getType() {
+	return std::unique_ptr<UnknownType>();
 }

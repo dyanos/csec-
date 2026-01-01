@@ -9,12 +9,12 @@ public:
         nodeType = ASTNodeType::ARRAY_CREATION;
     }
 
-    std::shared_ptr<GenericType> arrayType;
-    std::vector<std::shared_ptr<ASTNode>> elements;
+    std::unique_ptr<GenericType> arrayType;
+    std::vector<std::unique_ptr<ASTNode>> elements;
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
-    std::shared_ptr<Type> getType() override {
-        return arrayType;
+    std::unique_ptr<Type> getType() override {
+        return std::make_unique<Type>(arrayType.get());
     }
 };

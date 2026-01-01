@@ -1,5 +1,8 @@
 #pragma once
 #include "ast.h"
+#include "symbol.h"
+
+#include "FunctionDeclarationNode.h"
 #include "ParameterNode.h"
 #include "ClassBodyNode.h"
 
@@ -19,7 +22,7 @@ public:
 
     void declareMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol);
 
-    std::shared_ptr<Type> getType() override {
-        return nullptr;
+    std::unique_ptr<Type> getType() override {
+        return std::make_unique<UnknownType>();
     }
 };

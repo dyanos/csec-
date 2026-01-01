@@ -1,4 +1,6 @@
-﻿#include "ClassInstanceCreationNode.h"
+﻿#include "codegen.h"
+
+#include "ClassInstanceCreationNode.h"
 #include "ASTVisitor.h"
 
 #include <iostream>
@@ -16,21 +18,21 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         // new로 시작한 것이므로, malloc사용
         BasicType basicType(className);
 
-        llvm::Type* type = codeGenerator->getLLVMType(&basicType);
+        llvm::Type* type = CodeGenerator::getInstance().getLLVMType(&basicType);
 
         // type을 메모리 당할때 필요한 메모리 크기를 계산
         llvm::DataLayout dataLayout;
         uint64_t typeSize = dataLayout.getTypeAllocSize(type);
-        llvm::Value* allocSize = llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(64, typeSize));
+        llvm::Value* allocSize = llvm::ConstantInt::get(CodeGenerator::getInstance().context, llvm::APInt(64, typeSize));
 
         // malloc함수 호출
-        return codeGenerator->builder.CreateCall(codeGenerator->mallocFunction, allocSize, "malloc");
+        return CodeGenerator::getInstance().builder.CreateCall(CodeGenerator::getInstance().mallocFunction, allocSize, "malloc");
     }
 
     // Template Class인지 확인은 나중에 코드 추가되면...
 
     // 클래스 심볼 찾기
-    auto classSymbolOpt = codeGenerator->symbolTable.lookupClass(className);
+    auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(className);
     if (!classSymbolOpt) {
         std::cerr << "Error: Class '" << className << "' not found" << std::endl;
         return nullptr;
@@ -53,11 +55,11 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         ctorArgTys.push_back(classPtrTy); // this 포인터 추가
         for (auto& field : classSymbol->constructorParams) {
             if (field.first.compare("this") == 0) continue;
-            ctorArgTys.push_back(codeGenerator->getLLVMType(field.second->type.get()));
+            ctorArgTys.push_back(CodeGenerator::getInstance().getLLVMType(field.second->type.get()));
         }
 
         llvm::FunctionType* ctorFT = llvm::FunctionType::get(
-            /*Result=*/llvm::Type::getVoidTy(codeGenerator->context),
+            /*Result=*/llvm::Type::getVoidTy(CodeGenerator::getInstance().context),
             ctorArgTys,
             /*isVarArg=*/false
         );
@@ -67,7 +69,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
             ctorFT,
             llvm::Function::ExternalLinkage,
             functionName,
-            *codeGenerator->module
+            *CodeGenerator::getInstance().module
         );
 
         auto argIt = ctorF->arg_begin();
@@ -78,8 +80,8 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         }
 
         // 3. BasicBlock 만들고 IRBuilder 삽입 위치 지정
-        llvm::BasicBlock* bb = llvm::BasicBlock::Create(codeGenerator->context, "entry", ctorF);
-        codeGenerator->builder.SetInsertPoint(bb);
+        llvm::BasicBlock* bb = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "entry", ctorF);
+        CodeGenerator::getInstance().builder.SetInsertPoint(bb);
 
         // 4. this_ptr->a = p_a; this_ptr->b = p_b;
         llvm::Value* thisPtr = ctorF->getArg(0);
@@ -88,7 +90,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         for (auto& field : classSymbol->constructorParams) {
             if (field.first.compare("this") == 0) continue;
 
-            llvm::Value* fieldPtr = codeGenerator->builder.CreateStructGEP(classType, thisPtr, fieldIndex, field.first + "_ptr");
+            llvm::Value* fieldPtr = CodeGenerator::getInstance().builder.CreateStructGEP(classType, thisPtr, fieldIndex, field.first + "_ptr");
             llvm::Value* paramValue = nullptr;
             for (auto& arg : ctorF->args()) {
                 if (arg.getName() == "p_" + field.first) {
@@ -97,39 +99,39 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
                 }
             }
             if (paramValue) {
-                codeGenerator->builder.CreateStore(paramValue, fieldPtr);
+                CodeGenerator::getInstance().builder.CreateStore(paramValue, fieldPtr);
             }
             fieldIndex++;
         }
 
         // 5. return void
-        codeGenerator->builder.CreateRetVoid();
+        CodeGenerator::getInstance().builder.CreateRetVoid();
     }
 
     {
         // TODO: 어디다 생성할지 정하는 로직 필요
         // “객체 생성 + 생성자 호출” 예제
-        llvm::FunctionType* useFT = llvm::FunctionType::get(llvm::Type::getVoidTy(codeGenerator->context), {}, false);
-        llvm::Function* useF = llvm::Function::Create(useFT, llvm::Function::ExternalLinkage, "use", *codeGenerator->module);
-        llvm::BasicBlock* bb = llvm::BasicBlock::Create(codeGenerator->context, "entry", useF);
-        codeGenerator->builder.SetInsertPoint(bb);
+        llvm::FunctionType* useFT = llvm::FunctionType::get(llvm::Type::getVoidTy(CodeGenerator::getInstance().context), {}, false);
+        llvm::Function* useF = llvm::Function::Create(useFT, llvm::Function::ExternalLinkage, "use", *CodeGenerator::getInstance().module);
+        llvm::BasicBlock* bb = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "entry", useF);
+        CodeGenerator::getInstance().builder.SetInsertPoint(bb);
 
         // alloca — 스택에 MyStruct 공간 할당
-        llvm::Value* obj = codeGenerator->builder.CreateAlloca(classType, nullptr, "obj");
+        llvm::Value* obj = CodeGenerator::getInstance().builder.CreateAlloca(classType, nullptr, "obj");
 
         // 생성자 호출
-        llvm::Function* ctorF = codeGenerator->module->getFunction(className + "_ctor");
+        llvm::Function* ctorF = CodeGenerator::getInstance().module->getFunction(className + "_ctor");
         // 인자: this, int, double
-        llvm::Value* arg_int = llvm::ConstantInt::get(codeGenerator->context, llvm::APInt(32, 123));
-        llvm::Value* arg_double = llvm::ConstantFP::get(codeGenerator->context, llvm::APFloat(3.1415));
-        codeGenerator->builder.CreateCall(ctorF, { obj, arg_int, arg_double });
+        llvm::Value* arg_int = llvm::ConstantInt::get(CodeGenerator::getInstance().context, llvm::APInt(32, 123));
+        llvm::Value* arg_double = llvm::ConstantFP::get(CodeGenerator::getInstance().context, llvm::APFloat(3.1415));
+        CodeGenerator::getInstance().builder.CreateCall(ctorF, { obj, arg_int, arg_double });
 
-        codeGenerator->builder.CreateRetVoid();
+        CodeGenerator::getInstance().builder.CreateRetVoid();
     }
 
     return nullptr;
 }
 
-std::shared_ptr<Type> ClassInstanceCreationNode::getType() {
-    return std::make_shared<ClassType>(className);
+std::unique_ptr<Type> ClassInstanceCreationNode::getType() {
+    return std::make_unique<ClassType>(className);
 }

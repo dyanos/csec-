@@ -37,7 +37,7 @@ bool Type::checkFunctionSubtype(const Type* other) {
         }
     }
     // 반환타입 공변 검사
-    if (!this->returnType->isSubtypeOf(otherFuncType->returnType)) {
+    if (!this->returnType->isSubtypeOf(otherFuncType->returnType.get())) {
         return false;
     }
     return true;

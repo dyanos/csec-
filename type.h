@@ -37,6 +37,16 @@ public:
             baseTypes.push_back(parentType.get());
 		}
     }
+    Type(Type* type)
+        : kind(type->kind), name(type->name),
+          baseTypes(type->baseTypes),
+          fields(type->fields),
+          returnType(type->returnType),
+          paramTypes(type->paramTypes),
+          elementType(type->elementType),
+          arraySize(type->arraySize),
+		typeArgs(type->typeArgs) {
+	}
 
     virtual ~Type() = default;
 
@@ -173,20 +183,25 @@ public:
 
 class FunctionType : public Type, public std::enable_shared_from_this<FunctionType> {
 public:
-    std::vector<Type*> parameterTypes;
-    Type* returnType = nullptr;
+    std::vector<std::unique_ptr<Type>> parameterTypes;
+    std::unique_ptr<Type> returnType;
 
 	FunctionType() : Type(Kind::FUNCTION, "function") {}
     FunctionType(const std::vector<Type*> parameterTypes, Type* returnType)
-        : Type(Kind::FUNCTION, "function"), parameterTypes(parameterTypes), returnType(returnType) {}
+        : Type(Kind::FUNCTION, "function") {
+        this->returnType = std::unique_ptr<Type>(returnType);
+        for (auto pt : parameterTypes) {
+            this->parameterTypes.push_back(std::unique_ptr<Type>(pt));
+        }
+    }
 
     bool equals(const Type* other) override {
         if (other->getKind() != Kind::FUNCTION) return false;
         auto otherFuncType = (FunctionType*)other;
-        if (!returnType->equals(otherFuncType->returnType)) return false;
+        if (!returnType->equals(otherFuncType->returnType.get())) return false;
         if (parameterTypes.size() != otherFuncType->parameterTypes.size()) return false;
         for (size_t i = 0; i < parameterTypes.size(); ++i) {
-            if (!parameterTypes[i]->equals(otherFuncType->parameterTypes[i])) return false;
+            if (!parameterTypes[i]->equals(otherFuncType->parameterTypes[i].get())) return false;
         }
         return true;
     }
@@ -205,12 +220,24 @@ public:
 
 class GenericType : public Type, public std::enable_shared_from_this<GenericType> {
 public:
-    std::shared_ptr<Type> baseType;  // �⺻ Ÿ�� (��: Array)
-    std::vector<std::shared_ptr<Type>> typeArguments;  // Ÿ�� ���� (��: [String])
+    std::unique_ptr<Type> baseType;  // �⺻ Ÿ�� (��: Array)
+    std::vector<std::unique_ptr<Type>> typeArguments;  // Ÿ�� ���� (��: [String])
 
 	GenericType() : Type(Kind::GENERIC, "generic") {}
-    GenericType(std::shared_ptr<Type> baseType, const std::vector<std::shared_ptr<Type>>& typeArguments)
-        : Type(Kind::GENERIC, baseType->getName()), baseType(baseType), typeArguments(typeArguments) {}
+    GenericType(Type* baseType, const std::vector<Type*>& typeArguments)
+        : Type(Kind::GENERIC, baseType->getName()) {
+        this->baseType = std::unique_ptr<Type>(baseType);
+        for (auto pt : typeArguments) {
+            this->typeArguments.push_back(std::unique_ptr<Type>(pt));
+        }
+    }
+    GenericType(GenericType* other)
+        : Type(Kind::GENERIC, other->baseType->getName()) {
+        this->baseType = std::unique_ptr<Type>(other->baseType.get());
+        for (const auto& arg : other->typeArguments) {
+            this->typeArguments.push_back(std::unique_ptr<Type>(arg.get()));
+        }
+	}
 
     bool equals(const Type* other) override {
         if (other->getKind() != Kind::GENERIC) return false;

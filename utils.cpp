@@ -73,3 +73,9 @@ std::vector<std::string> split(const std::string& str, char delimiter) {
 
     return result;
 }
+
+inline bool isStringTypeFromLLVM(llvm::Value* value, CodeGenerator* codeGenerator) {
+	return value->getType()->isPointerTy() &&
+		((llvm::PointerType*)value->getType())->isValidElementType(
+			llvm::Type::getInt8Ty(CodeGenerator::getInstance().context));
+}

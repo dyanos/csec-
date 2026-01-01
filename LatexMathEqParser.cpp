@@ -8,6 +8,7 @@
 #include "UnitNode.h"
 #include "UnaryExpressionNode.h"
 
+#include <iostream>
 
 std::shared_ptr<ASTNode> LatexMathEqParser::parse() {
 	// 현재 위치의 토큰이 LATEX_INLINE임을 확인

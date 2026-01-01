@@ -31,9 +31,9 @@ class CodeGenerator;
 // 심볼 테이블 확장 시에는 새로운 심볼 타입 및 속성 추가 지원
 
 struct Scope {
-	std::unordered_map<std::string, Symbol*> symbols;
-	Scope* outer;
-	int count;
+	std::unordered_map<std::string, std::unique_ptr<Symbol>> symbols;
+	Scope* outer = nullptr;
+	int count = 0;
 };
 
 class SymbolTable {

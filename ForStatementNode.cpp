@@ -1,3 +1,5 @@
+#include "codegen.h"
+
 #include "ForStatementNode.h"
 #include "ASTVisitor.h"
 
@@ -14,10 +16,10 @@ void ForStatementNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ForStatementNode::codegen() {
-    llvm::Function* function = codeGenerator->builder.GetInsertBlock()->getParent();
+    llvm::Function* function = CodeGenerator::getInstance().builder.GetInsertBlock()->getParent();
 
     // for ���� �� ó�� iteration ������ �ʱ�ȭ�ϰ�,
-    llvm::BasicBlock* beforeLoopBB = codeGenerator->builder.GetInsertBlock();
+    llvm::BasicBlock* beforeLoopBB = CodeGenerator::getInstance().builder.GetInsertBlock();
 
     llvm::Value* startValue;
     llvm::Value* endValue;
@@ -34,48 +36,48 @@ llvm::Value* ForStatementNode::codegen() {
         }
 
         if (!rangeExpr->isInclusive) {
-            endValue = codeGenerator->builder.CreateSub(endValue, llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), 1), "untilEnd");
+            endValue = CodeGenerator::getInstance().builder.CreateSub(endValue, llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 1), "untilEnd");
         }
 
         // ���ο� integer type�� value�� ���� �߰�
-        value_ptr = codeGenerator->builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
+        value_ptr = CodeGenerator::getInstance().builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
         // �ʱ�ȭ: startValue�� ���� value�� assign��
-        codeGenerator->builder.CreateStore(startValue, value_ptr);
+        CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
 
         // iteration ������ symbol table�� �߰� : VARIABLE�� ptr��
-        auto varSymbol = new Symbol(this->variable, rangeExpr->startExpr->getType(), value_ptr, false, SymbolType::VARIABLE);
-        codeGenerator->symbolTable.addSymbol(this->variable, varSymbol);
+        auto varSymbol = new Symbol(this->variable, rangeExpr->startExpr->getType().get(), value_ptr, false, SymbolType::VARIABLE);
+        CodeGenerator::getInstance().symbolTable.addSymbol(this->variable, varSymbol);
     }
     else {
-        startValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), 0);
-        endValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGenerator->context), 10);
+        startValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 0);
+        endValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 10);
 
         // ���ο� value�� ���� �߰�
-        value_ptr = codeGenerator->builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
-        codeGenerator->builder.CreateStore(startValue, value_ptr);
+        value_ptr = CodeGenerator::getInstance().builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
+        CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
 
         // iteration ������ symbol table�� �߰�
-        auto varSymbol = new Symbol(this->variable, std::make_shared<BasicType>("Int"), value_ptr, false, SymbolType::VARIABLE);
-        codeGenerator->symbolTable.addSymbol(this->variable, varSymbol);
+        auto varSymbol = new Symbol(this->variable, new BasicType("Int"), value_ptr, false, SymbolType::VARIABLE);
+        CodeGenerator::getInstance().symbolTable.addSymbol(this->variable, varSymbol);
     }
 
-    llvm::BasicBlock* loopBB = llvm::BasicBlock::Create(codeGenerator->context, "loop", function);
-    llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(codeGenerator->context, "afterloop", function);
+    llvm::BasicBlock* loopBB = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "loop", function);
+    llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "afterloop", function);
 
-    codeGenerator->builder.SetInsertPoint(loopBB);
+    CodeGenerator::getInstance().builder.SetInsertPoint(loopBB);
     this->body->codegen();
 
     // i�� �ϳ� ���� ��Ŵ
     // next value�� �������� �Լ��� ȣ���ؾ�������, ���⼭�� �ϴ� �ܼ��� 1 ������Ŵ
-    auto* value = codeGenerator->builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
-    auto* next_value = codeGenerator->builder.CreateAdd(value, codeGenerator->builder.getInt32(1), "next_i");
-    codeGenerator->builder.CreateStore(next_value, value_ptr);
+    auto* value = CodeGenerator::getInstance().builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
+    auto* next_value = CodeGenerator::getInstance().builder.CreateAdd(value, CodeGenerator::getInstance().builder.getInt32(1), "next_i");
+    CodeGenerator::getInstance().builder.CreateStore(next_value, value_ptr);
 
-    auto* cond = codeGenerator->builder.CreateICmpSLE(value, endValue, "cond");
-    codeGenerator->builder.CreateCondBr(cond, loopBB /*body and increment*/, afterBB);
+    auto* cond = CodeGenerator::getInstance().builder.CreateICmpSLE(value, endValue, "cond");
+    CodeGenerator::getInstance().builder.CreateCondBr(cond, loopBB /*body and increment*/, afterBB);
 
     // jump back to loop
-    codeGenerator->builder.SetInsertPoint(afterBB);
+    CodeGenerator::getInstance().builder.SetInsertPoint(afterBB);
 
     return nullptr;
 }

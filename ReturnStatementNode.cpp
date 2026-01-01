@@ -1,3 +1,5 @@
+#include "codegen.h"
+
 #include "ReturnStatementNode.h"
 #include "ASTVisitor.h"
 
@@ -14,11 +16,11 @@ llvm::Value* ReturnStatementNode::codegen() {
         returnValue = expression->codegen();
     }
 
-    llvm::Function* currentFunction = codeGenerator->builder.GetInsertBlock()->getParent();
+    llvm::Function* currentFunction = CodeGenerator::getInstance().builder.GetInsertBlock()->getParent();
     llvm::Type* returnType = currentFunction->getReturnType();
 
     if (returnType->isVoidTy()) {
-        codeGenerator->builder.CreateRetVoid();
+        CodeGenerator::getInstance().builder.CreateRetVoid();
     }
     else {
         if (!returnValue) {
@@ -31,7 +33,7 @@ llvm::Value* ReturnStatementNode::codegen() {
             return nullptr;
         }
 
-        codeGenerator->builder.CreateRet(returnValue);
+        CodeGenerator::getInstance().builder.CreateRet(returnValue);
     }
 
     return nullptr;

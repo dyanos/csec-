@@ -1,3 +1,5 @@
+#include "codegen.h"
+
 #include "ParameterNode.h"
 #include "ASTVisitor.h"
 
@@ -15,13 +17,13 @@ llvm::Value* ParameterNode::codegen() {
         return nullptr;
     }
 
-    llvm::Type* paramType = codeGenerator->getLLVMType(type.get());
+    llvm::Type* paramType = CodeGenerator::getInstance().getLLVMType(type.get());
     if (!paramType) {
         std::cerr << "Error: Unsupported parameter type '" << type->getName() << "' in parameter '" << name << "'" << std::endl;
         return nullptr;
     }
 
-    auto symbol = codeGenerator->symbolTable.lookup(name);
+    auto symbol = CodeGenerator::getInstance().symbolTable.lookup(name);
     if (!symbol) {
         std::cerr << "Error: Symbol not found for parameter '" << name << "'" << std::endl;
         return nullptr;

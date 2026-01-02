@@ -1,7 +1,7 @@
 #include "parser.h"
 #include "all_ast.h"
 
-std::shared_ptr<ASTNode> Parser::parseStatement() {
+std::unique_ptr<ASTNode> Parser::parseStatement() {
 	if (match(TokenType::KEYWORD, "val") || match(TokenType::KEYWORD, "var")) {
 		bool isMutable = previous().value == "var";
 		auto expr = parseVariableDeclaration(isMutable);
@@ -18,13 +18,13 @@ std::shared_ptr<ASTNode> Parser::parseStatement() {
 		return parseFunctionDeclaration();
 	}
 	else if (match(TokenType::KEYWORD, "return")) {
-		std::shared_ptr<ASTNode> expr = nullptr;
+		std::unique_ptr<ASTNode> expr = nullptr;
 		if (!check(TokenType::END_OF_FILE) && !check(TokenType::OPERATOR, ";")) {
 			expr = parseExpression();
 		}
 		match(TokenType::OPERATOR, ";");
-		auto returnNode = std::make_shared<ReturnStatementNode>();
-		returnNode->expression = expr;
+		auto returnNode = std::make_unique<ReturnStatementNode>();
+		returnNode->expression = std::move(expr);
 		return returnNode;
 	}
 	else if (match(TokenType::KEYWORD, "while")) {
@@ -52,8 +52,8 @@ std::shared_ptr<ASTNode> Parser::parseStatement() {
 	}
 }
 
-std::shared_ptr<BlockNode> Parser::parseBlock() {
-	auto block = std::make_shared<BlockNode>();
+std::unique_ptr<BlockNode> Parser::parseBlock() {
+	auto block = std::make_unique<BlockNode>();
 	while (!match(TokenType::OPERATOR, "}")) {
 		if (isAtEnd()) {
 			error("Unterminated block");
@@ -61,14 +61,14 @@ std::shared_ptr<BlockNode> Parser::parseBlock() {
 		}
 		auto stmt = parseStatement();
 		if (stmt) {
-			block->statements.push_back(stmt);
+			block->statements.push_back(std::move(stmt));
 		}
 	}
 	return block;
 }
 
-std::shared_ptr<ASTNode> Parser::parseIfStatement() {
-	auto ifNode = std::make_shared<IfStatementNode>();
+std::unique_ptr<ASTNode> Parser::parseIfStatement() {
+	auto ifNode = std::make_unique<IfStatementNode>();
 
 	expect(TokenType::OPERATOR, "(");
 	ifNode->condition = parseExpression();
@@ -93,8 +93,8 @@ std::shared_ptr<ASTNode> Parser::parseIfStatement() {
 	return ifNode;
 }
 
-std::shared_ptr<ASTNode> Parser::parseForStatement() {
-	auto forNode = std::make_shared<ForStatementNode>();
+std::unique_ptr<ASTNode> Parser::parseForStatement() {
+	auto forNode = std::make_unique<ForStatementNode>();
 
 	expect(TokenType::OPERATOR, "(");
 
@@ -110,15 +110,15 @@ std::shared_ptr<ASTNode> Parser::parseForStatement() {
 
 				auto endExpr = parseExpression();
 
-				auto rangeExpr = std::make_shared<RangeExpressionNode>();
-				rangeExpr->startExpr = startExpr;
-				rangeExpr->endExpr = endExpr;
+				auto rangeExpr = std::make_unique<RangeExpressionNode>();
+				rangeExpr->startExpr = std::move(startExpr);
+				rangeExpr->endExpr = std::move(endExpr);
 				rangeExpr->isInclusive = forNode->isInclusive;
 
-				forNode->iterableExpr = rangeExpr;
+				forNode->iterableExpr = std::move(rangeExpr);
 			}
 			else {
-				forNode->iterableExpr = startExpr;
+				forNode->iterableExpr = std::move(startExpr);
 			}
 		}
 		else {
@@ -141,8 +141,8 @@ std::shared_ptr<ASTNode> Parser::parseForStatement() {
 	return forNode;
 }
 
-std::shared_ptr<ASTNode> Parser::parseWhileStatement() {
-	auto whileNode = std::make_shared<WhileStatementNode>();
+std::unique_ptr<ASTNode> Parser::parseWhileStatement() {
+	auto whileNode = std::make_unique<WhileStatementNode>();
 
 	expect(TokenType::OPERATOR, "(");
 	whileNode->condition = parseExpression();
@@ -158,8 +158,8 @@ std::shared_ptr<ASTNode> Parser::parseWhileStatement() {
 	return whileNode;
 }
 
-std::shared_ptr<ASTNode> Parser::parseMapStatement() {
-	auto mapNode = std::make_shared<MapStatementNode>();
+std::unique_ptr<ASTNode> Parser::parseMapStatement() {
+	auto mapNode = std::make_unique<MapStatementNode>();
 
 	expect(TokenType::OPERATOR, "(");
 
@@ -167,7 +167,7 @@ std::shared_ptr<ASTNode> Parser::parseMapStatement() {
 		mapNode->variable = previous().value;
 
 		if (match(TokenType::OPERATOR, "<-")) {
-			mapNode->iterableExpr = parseExpression();
+			mapNode->iterableExpr = std::move(parseExpression());
 		}
 		else {
 			error("Expected '<-' in map statement");
@@ -189,8 +189,8 @@ std::shared_ptr<ASTNode> Parser::parseMapStatement() {
 	return mapNode;
 }
 
-std::shared_ptr<ASTNode> Parser::parsePMapStatement() {
-	auto pmapNode = std::make_shared<PMapStatementNode>();
+std::unique_ptr<ASTNode> Parser::parsePMapStatement() {
+	auto pmapNode = std::make_unique<PMapStatementNode>();
 
 	expect(TokenType::OPERATOR, "(");
 
@@ -220,8 +220,8 @@ std::shared_ptr<ASTNode> Parser::parsePMapStatement() {
 	return pmapNode;
 }
 
-std::shared_ptr<ASTNode> Parser::parseReduceStatement() {
-	auto reduceNode = std::make_shared<ReduceStatementNode>();
+std::unique_ptr<ASTNode> Parser::parseReduceStatement() {
+	auto reduceNode = std::make_unique<ReduceStatementNode>();
 
 	expect(TokenType::OPERATOR, "(");
 
@@ -251,8 +251,8 @@ std::shared_ptr<ASTNode> Parser::parseReduceStatement() {
 	return reduceNode;
 }
 
-std::shared_ptr<ASTNode> Parser::parseFilterStatement() {
-	auto filterNode = std::make_shared<FilterStatementNode>();
+std::unique_ptr<ASTNode> Parser::parseFilterStatement() {
+	auto filterNode = std::make_unique<FilterStatementNode>();
 
 	expect(TokenType::OPERATOR, "(");
 

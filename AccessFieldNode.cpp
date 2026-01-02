@@ -13,19 +13,17 @@ void AccessFieldNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* AccessFieldNode::codegen() {
-    auto leftValue = base;
-    auto rightValue = field;
-    if (!leftValue || !rightValue) {
+    if (!this->base || !this->field) {
         return nullptr;
     }
 
     // base가 IdentifierNode가 아닐 수 있으므로 타입 체크 필요
-    if (!dynamic_cast<IdentifierNode*>(leftValue.get())) {
+    if (!dynamic_cast<IdentifierNode*>(this->base.get())) {
         std::cerr << "Error: Base must be an identifier" << std::endl;
         return nullptr;
     }
 
-    auto baseType = ((IdentifierNode*)leftValue.get())->getType();
+    auto baseType = ((IdentifierNode*)this->base.get())->getType();
     if (!baseType || baseType->getKind() != Type::Kind::CLASS) {
         std::cerr << "Error: Base must be a class type" << std::endl;
         return nullptr;
@@ -39,7 +37,7 @@ llvm::Value* AccessFieldNode::codegen() {
 
     auto classSymbol = *classSymbolOpt;
 
-    auto thisSymbolOpt = CodeGenerator::getInstance().symbolTable.lookup(((IdentifierNode*)leftValue.get())->value);
+    auto thisSymbolOpt = CodeGenerator::getInstance().symbolTable.lookup(((IdentifierNode*)this->base.get())->value);
     if (!thisSymbolOpt) {
         std::cerr << "Error: Base object not found" << std::endl;
         return nullptr;
@@ -47,7 +45,7 @@ llvm::Value* AccessFieldNode::codegen() {
 
     auto thisSymbol = *thisSymbolOpt;
 
-    auto targetName = ((IdentifierNode*)rightValue.get())->value;
+    auto targetName = ((IdentifierNode*)this->field.get())->value;
 
     // 필드 위치 찾기를 별도 함수로 분리
     int fieldIndex = findFieldIndex(classSymbol, targetName);

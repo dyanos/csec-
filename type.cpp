@@ -3,84 +3,84 @@
 
 #include "type.h"
 
-Type* Type::makeBasic(const std::string& name) {
-	return new Type(Kind::BASIC, name);
+std::unique_ptr<Type> Type::makeBasic(const std::string& name) {
+	return std::make_unique<Type>(Kind::BASIC, name);
 }
 
-Type* Type::makePointer(Type* base) {
-	return new Type(Type::Kind::POINTER, base->getName() + "*");
+std::unique_ptr<Type> Type::makePointer(std::unique_ptr<Type> base) {
+	return std::make_unique<Type>(Type::Kind::POINTER, base->getName() + "*");
 }
 
-Type* Type::makeArray(Type* base, int size) {
-	return new Type(Type::Kind::ARRAY, base->getName() + "[]");
+std::unique_ptr<Type> Type::makeArray(std::unique_ptr<Type> base, int size) {
+	return std::make_unique<Type>(Type::Kind::ARRAY, base->getName() + "[]");
 }
 
-Type* Type::makeStruct(const std::string& name,
-	const std::vector<std::pair<std::string, Type*>>& fields) {
-	return new Type(Type::Kind::STRUCT, name);
+std::unique_ptr<Type> Type::makeStruct(const std::string& name,
+	const std::vector<std::pair<std::string, std::unique_ptr<Type>>>& fields) {
+	return std::make_unique<Type>(Type::Kind::STRUCT, name);
 }
 
-Type* Type::makeFunction(Type* ret, const std::vector<Type*>& params) {
-	return new Type(Type::Kind::FUNCTION, "function");
+std::unique_ptr<Type> Type::makeFunction(std::unique_ptr<Type> ret, const std::vector<std::unique_ptr<Type>>& params) {
+	return std::make_unique<Type>(Type::Kind::FUNCTION, "function");
 }
 
-bool Type::checkFunctionSubtype(const Type* other) {
-    auto otherFuncType = (FunctionType*)(other);
+bool Type::checkFunctionSubtype(const std::unique_ptr<Type>& other) {
+    auto otherFuncType = (FunctionType*)(other.get());
     if (!otherFuncType) return false;
-    // ¸Å°³º¯¼ö °³¼ö °Ë»ç
+    // ï¿½Å°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ë»ï¿½
     if (this->paramTypes.size() !=
         otherFuncType->paramTypes.size()) return false;
-    // ¸Å°³º¯¼ö Å¸ÀÔ ¹Ý°øº¯ °Ë»ç
+    // ï¿½Å°ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½Ý°ï¿½ï¿½ï¿½ ï¿½Ë»ï¿½
     for (size_t i = 0; i < this->paramTypes.size(); ++i) {
         if (!otherFuncType->paramTypes[i]->isSubtypeOf(this->paramTypes[i])) {
             return false;
         }
     }
-    // ¹ÝÈ¯Å¸ÀÔ °øº¯ °Ë»ç
-    if (!this->returnType->isSubtypeOf(otherFuncType->returnType.get())) {
+    // ï¿½ï¿½È¯Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ë»ï¿½
+    if (!this->returnType->isSubtypeOf(otherFuncType->returnType)) {
         return false;
     }
     return true;
 }
 
-bool Type::isSubtypeOf(const Type* other) {
-    // 1. µ¿ÀÏ Å¸ÀÔÀÌ¸é true (¹Ý»ç¼º)
-    if (this == other) return true;
+bool Type::isSubtypeOf(const std::unique_ptr<Type>& other) {
+    // 1. ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ï¿½Ì¸ï¿½ true (ï¿½Ý»ç¼º)
+    if (*this == other) return true;
 
-    // 2. other°¡ ¡°¹«Á¾(type) ¶Ç´Â ÃÖ»óÀ§ Å¸ÀÔ¡±(¿¹: Any)¶ó¸é true
+    // 2. otherï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(type) ï¿½Ç´ï¿½ ï¿½Ö»ï¿½ï¿½ï¿½ Å¸ï¿½Ô¡ï¿½(ï¿½ï¿½: Any)ï¿½ï¿½ï¿½ true
     if (other->isTopType()) return true;
 
-    // 3. kind°¡ ´Ù¸£¸é ´ëºÎºÐ false (ÇÏÁö¸¸ ¿¹¿Ü Á¸Àç: ¿¹ÄÁ´ë ±âº»Çü°£ »óÈ£ º¯È¯)
+    // 3. kindï¿½ï¿½ ï¿½Ù¸ï¿½ï¿½ï¿½ ï¿½ï¿½Îºï¿½ false (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½âº»ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ ï¿½ï¿½È¯)
     if (getKind() != other->getKind()) {
-        // ¿¹¿Ü Ã³¸®: ¿¹ÄÁ´ë ¹è¿­ Å¸ÀÔÀÌ¶ó¸é elementType ºñ±³ etc
-        // ¶Ç´Â BASIC Å¸ÀÔ°£ÀÇ ¾Ï¹¬Àû º¯È¯ Çã¿ë µî
+        // ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½è¿­ Å¸ï¿½ï¿½ï¿½Ì¶ï¿½ï¿½ elementType ï¿½ï¿½ etc
+        // ï¿½Ç´ï¿½ BASIC Å¸ï¿½Ô°ï¿½ï¿½ï¿½ ï¿½Ï¹ï¿½ï¿½ï¿½ ï¿½ï¿½È¯ ï¿½ï¿½ï¿½ ï¿½ï¿½
     }
 
-    // 4. kindº°·Î ¼¼ºÎ °Ë»ç
+    // 4. kindï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ë»ï¿½
     switch (getKind()) {
     case Kind::CLASS:
     case Kind::STRUCT:
-        // ¸í¸íÀû: this->nameÀÌ other->name°ú °°°Å³ª thisÀÇ »óÀ§ Å¬·¡½º Áß¿¡ other->nameÀÌ ÀÖ´Ù
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: this->nameï¿½ï¿½ other->nameï¿½ï¿½ ï¿½ï¿½ï¿½Å³ï¿½ thisï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ß¿ï¿½ other->nameï¿½ï¿½ ï¿½Ö´ï¿½
         if (this->hasSuperClass(other)) return true;
-        // ±¸Á¶Àû: other ÇÊµå/¸Þ¼­µå°¡ ¸ðµÎ this¿¡ Á¸ÀçÇÏ°í Å¸ÀÔ È£È¯ÀÌ¸é true
-        if (structuralCheck(this, other)) return true;
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: other ï¿½Êµï¿½/ï¿½Þ¼ï¿½ï¿½å°¡ ï¿½ï¿½ï¿½ thisï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ Å¸ï¿½ï¿½ È£È¯ï¿½Ì¸ï¿½ true
+        if (structuralCheck(other)) return true;
         return false;
 
     case Kind::FUNCTION:
-        // ÇÔ¼ö Å¸ÀÔ A¡æB °¡ C¡æD ÀÇ ¼­ºêÅ¸ÀÔÀÌ·Á¸é:
-        // ¸Å°³º¯¼ö Å¸ÀÔÀÌ ¹Ý°øº¯(¸Å°³º¯¼öº°·Î Cparam_i <: Aparam_i)ÀÌ°í
-        // ¹ÝÈ¯Å¸ÀÔÀÌ °øº¯(Areturn <: Dreturn)
+        // ï¿½Ô¼ï¿½ Å¸ï¿½ï¿½ Aï¿½ï¿½B ï¿½ï¿½ Cï¿½ï¿½D ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Å¸ï¿½ï¿½ï¿½Ì·ï¿½ï¿½ï¿½:
+        // ï¿½Å°ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½Ý°ï¿½ï¿½ï¿½(ï¿½Å°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Cparam_i <: Aparam_i)ï¿½Ì°ï¿½
+        // ï¿½ï¿½È¯Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Areturn <: Dreturn)
         return this->checkFunctionSubtype(other);
 
     case Kind::ARRAY:
-        // º¸Åë °øº¯ È¤Àº ºÒ°øº¯depending on ¾ð¾î
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È¤ï¿½ï¿½ ï¿½Ò°ï¿½ï¿½ï¿½depending on ï¿½ï¿½ï¿½
         return this->elementType->isSubtypeOf(other->elementType) && this->arraySize == other->arraySize;
 
     case Kind::POINTER:
     {
-        // ¾ð¾î¿¡ µû¶ó ÂüÁ¶ ¼­ºêÅ¸ÀÔ °ü°è°¡ ´Þ¶óÁü
+        // ï¿½ï¿½î¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½è°¡ ï¿½Þ¶ï¿½ï¿½ï¿½
         bool flag = false;
-        for (auto baseType : this->baseTypes) {
+        for (auto& baseType : this->baseTypes) {
             if (baseType->isSubtypeOf(other)) {
                 flag = true;
                 break;
@@ -91,12 +91,12 @@ bool Type::isSubtypeOf(const Type* other) {
     }
 
     case Kind::GENERIC:
-        // Á¦³×¸¯ Å¸ÀÔÀÇ °æ¿ì Å¸ÀÔ ÀÎÀÚº° variance °Ë»ç ÇÊ¿ä
+        // ï¿½ï¿½ï¿½×¸ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½Úºï¿½ variance ï¿½Ë»ï¿½ ï¿½Ê¿ï¿½
         return this->checkGenericSubtype(other);
 
     case Kind::BASIC:
-        // ¿¹: int <: float Çã¿ëÇÏ¸é Æ¯º° ·ê ±¸Çö
-        return checkBasicConversion(this, other);
+        // ï¿½ï¿½: int <: float ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ Æ¯ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        return checkBasicConversion(other);
 
     default:
         return false;

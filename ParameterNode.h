@@ -6,11 +6,17 @@ public:
     ParameterNode() {
         nodeType = ASTNodeType::PARAMETER;
     }
+    ParameterNode(const std::string& name, std::unique_ptr<Type> type)
+        : name(name) {
+        nodeType = ASTNodeType::PARAMETER;
+		this->type = std::move(type);
+	}
     ParameterNode(ParameterNode* other) {
         nodeType = ASTNodeType::PARAMETER;
         name = other->name;
-        type = std::make_unique<Type>(other->type.get());
+        type = std::move(other->type);
 	}
+	~ParameterNode() = default;
 
     std::string name;
     std::unique_ptr<Type> type;
@@ -20,6 +26,10 @@ public:
     llvm::Value* codegen() override;
 
     std::unique_ptr<Type> getType() override {
-        return std::make_unique<Type>(type.get());
+        return type->clone();
     }
+
+    std::unique_ptr<ASTNode> clone() override {
+        return std::make_unique<ParameterNode>(this);
+	}
 };

@@ -28,7 +28,7 @@ llvm::Value* ForStatementNode::codegen() {
 
     if (this->isRange) {
         //
-        auto rangeExpr = std::dynamic_pointer_cast<RangeExpressionNode>(this->iterableExpr);
+        auto rangeExpr = (RangeExpressionNode*)(this->iterableExpr.get());
         startValue = rangeExpr->startExpr->codegen();
         endValue = rangeExpr->endExpr->codegen();
         if (!startValue || !endValue) {
@@ -57,7 +57,7 @@ llvm::Value* ForStatementNode::codegen() {
         CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
 
         // iteration ������ symbol table�� �߰�
-        auto varSymbol = new Symbol(this->variable, new BasicType("Int"), value_ptr, false, SymbolType::VARIABLE);
+        auto varSymbol = new Symbol(this->variable, new BasicType(std::string("Int")), value_ptr, false, SymbolType::VARIABLE);
         CodeGenerator::getInstance().symbolTable.addSymbol(this->variable, varSymbol);
     }
 

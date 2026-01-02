@@ -26,7 +26,7 @@ llvm::Value* CallExpressionNode::codegen() {
 }
 
 std::unique_ptr<Type> CallExpressionNode::getType() {
-	if (type) return std::make_unique<Type>(type.get());
+	if (type) return type->clone();
 
 	auto name = callee->codegen()->getName();
 	llvm::Function* function = CodeGenerator::getInstance().module->getFunction(name);
@@ -38,5 +38,5 @@ std::unique_ptr<Type> CallExpressionNode::getType() {
 	//llvm::Type* returnType = function->getReturnType();
 	//type = CodeGenerator::getInstance().getLLVMType(returnType);
 
-	return std::make_unique<BasicType>("");
+	return std::make_unique<BasicType>(std::string(""));
 }

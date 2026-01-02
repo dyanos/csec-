@@ -48,13 +48,13 @@ llvm::Value* ValueNode::codegen() {
 }
 
 std::unique_ptr<Type> ValueNode::getType() {
-	if (type) return std::make_unique<Type>(type.get());
+	if (type) return type->clone();
 
 	if (value.front() == '"' && value.back() == '"') {
-		return std::make_unique<ClassType>("String");
+		return std::make_unique<ClassType>(std::string("String"));
 	}
 	if (std::all_of(value.begin(), value.end(), ::isdigit)) {
-		return std::make_unique<BasicType>("Int");
+		return std::make_unique<BasicType>(std::string("Int"));
 	}
 
 	return std::make_unique<UnknownType>();

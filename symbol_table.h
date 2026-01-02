@@ -48,7 +48,7 @@ public:
 	std::optional<Symbol*> lookup(const std::string& name);
 	std::optional<ClassSymbol*> lookupClass(const std::string& name);
 	std::optional<NamespaceSymbol*> lookupNamespace(const std::string& name);
-	std::optional<Symbol*> lookupFunction(const std::string& name, std::vector<std::shared_ptr<Type>>& argTypes);
+	std::optional<Symbol*> lookupFunction(const std::string& name, std::vector<std::unique_ptr<Type>>& argTypes);
 	std::optional<Symbol*> lookupMethod(const ClassSymbol& symbol, const std::string& methodName);
 	void merge(const SymbolTable& other);
 	void print(std::ostream& os, int indent = 0) const;

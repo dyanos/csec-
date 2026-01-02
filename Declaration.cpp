@@ -1,13 +1,13 @@
 ﻿#include "parser.h"
 #include "all_ast.h"
 
-std::shared_ptr<ASTNode> Parser::parseAnnotationStatement() {
+std::unique_ptr<ASTNode> Parser::parseAnnotationStatement() {
 	if (match(TokenType::OPERATOR, "[@")) {
 		if (check(TokenType::IDENTIFIER)) {
 			auto simpleExpr = parseAnnotationExpression();
 			match(TokenType::OPERATOR, "]");
-			auto attributeNode = std::make_shared<AttributeNode>();
-			attributeNode->expr = simpleExpr;
+			auto attributeNode = std::make_unique<AttributeNode>();
+			attributeNode->expr = std::move(simpleExpr);
 			return attributeNode;
 		}
 		else {
@@ -20,7 +20,7 @@ std::shared_ptr<ASTNode> Parser::parseAnnotationStatement() {
 	return nullptr;
 }
 
-std::shared_ptr<ASTNode> Parser::parseImportStatement() {
+std::unique_ptr<ASTNode> Parser::parseImportStatement() {
 	std::vector<std::string> pathComponents;
 
 	do {
@@ -33,16 +33,16 @@ std::shared_ptr<ASTNode> Parser::parseImportStatement() {
 		}
 	} while (match(TokenType::OPERATOR, "."));
 
-	auto importNode = std::make_shared<ImportNode>();
+	auto importNode = std::make_unique<ImportNode>();
 	importNode->path = pathComponents;
 	return importNode;
 }
 
-std::shared_ptr<ASTNode> Parser::parseClassDeclaration() {
+std::unique_ptr<ASTNode> Parser::parseClassDeclaration() {
 	if (match(TokenType::IDENTIFIER)) {
 		std::string className = previous().value;
 
-		std::vector<std::shared_ptr<ParameterNode>> constructorParams;
+		std::vector<std::unique_ptr<ParameterNode>> constructorParams;
 		if (match(TokenType::OPERATOR, "(")) {
 			constructorParams = parseParameterList();
 			expect(TokenType::OPERATOR, ")");
@@ -58,7 +58,7 @@ std::shared_ptr<ASTNode> Parser::parseClassDeclaration() {
 			}
 		}
 
-		std::shared_ptr<ClassBodyNode> classBody;
+		std::unique_ptr<ClassBodyNode> classBody;
 		if (match(TokenType::OPERATOR, "{")) {
 			classBody = parseClassBody();
 			expect(TokenType::OPERATOR, "}");
@@ -67,13 +67,7 @@ std::shared_ptr<ASTNode> Parser::parseClassDeclaration() {
 			error("Expected '{' after class declaration");
 		}
 
-		auto classDecl = std::make_shared<ClassDeclarationNode>();
-		classDecl->name = className;
-		classDecl->constructorParams = constructorParams;
-		classDecl->superClassName = superClassName;
-		classDecl->body = classBody;
-
-		return classDecl;
+		return std::make_unique<ClassDeclarationNode>(className, constructorParams, superClassName, classBody);
 	}
 	else {
 		error("Expected class name after 'class'");
@@ -81,11 +75,11 @@ std::shared_ptr<ASTNode> Parser::parseClassDeclaration() {
 	}
 }
 
-std::shared_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool isMutable) {
+std::unique_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool isMutable) {
 	if (match(TokenType::IDENTIFIER)) {
 		std::string varName = previous().value;
-		std::shared_ptr<Type> varType;
-		std::shared_ptr<ASTNode> initializer;
+		std::unique_ptr<Type> varType;
+		std::unique_ptr<ASTNode> initializer;
 
 		if (match(TokenType::OPERATOR, ":")) {
 			varType = parseType();
@@ -115,15 +109,15 @@ std::shared_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 
 				if (!varType) {
 					//error("Cannot infer type of '" + varName + "'");
-					varType = std::make_shared<UnknownType>();
+					varType = std::make_unique<UnknownType>();
 				}
 			}
 		}
 
-		auto varDecl = std::make_shared<VariableDeclarationNode>();
+		auto varDecl = std::make_unique<VariableDeclarationNode>();
 		varDecl->name = varName;
-		varDecl->type = std::unique_ptr<Type>(varType.get());
-		varDecl->initializer = std::unique_ptr<ASTNode>(initializer.get());
+		varDecl->type = std::move(varType);
+		varDecl->initializer = std::move(initializer);
 		varDecl->isMutable = isMutable;
 
 		return varDecl;
@@ -134,7 +128,7 @@ std::shared_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 	}
 }
 
-std::shared_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration() {
+std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration() {
 	expect(TokenType::IDENTIFIER);
 	std::string functionName = previous().value;
 
@@ -142,49 +136,43 @@ std::shared_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration() {
 	auto parameters = parseParameterList();
 	expect(TokenType::OPERATOR, ")");
 
-	std::shared_ptr<Type> returnType;
+	std::unique_ptr<Type> returnType;
 	if (match(TokenType::OPERATOR, ":")) {
 		returnType = parseType();
 	}
 	else {
-		returnType = std::make_shared<BasicType>("Unit");
+		returnType = std::make_unique<BasicType>("Unit");
 	}
 
-	std::shared_ptr<BlockNode> body = nullptr;
+	std::unique_ptr<BlockNode> body = nullptr;
 	if (match(TokenType::OPERATOR, "{")) {
 		body = parseBlock();
 	}
 	else if (match(TokenType::OPERATOR, "=")) {
 		auto expr = parseExpression();
-		body = std::make_shared<BlockNode>();
-		body->statements.push_back(expr);
+		body = std::make_unique<BlockNode>();
+		body->statements.push_back(std::move(expr));
 	}
 	else {
 		error("Expected '{' or '=' after function declaration");
 	}
 
-	auto functionDecl = std::make_shared<FunctionDeclarationNode>();
-	functionDecl->name = functionName;
-	functionDecl->parameters = parameters;
-	functionDecl->returnType = returnType;
-	functionDecl->body = body;
-
-	return functionDecl;
+	return std::make_unique<FunctionDeclarationNode>(functionName, parameters, returnType, body);
 }
 
-std::shared_ptr<ASTNode> Parser::parseObjectDeclaration() {
+std::unique_ptr<ASTNode> Parser::parseObjectDeclaration() {
 	if (match(TokenType::IDENTIFIER)) {
 		std::string objectName = previous().value;
-		std::shared_ptr<ASTNode> body;
+		std::unique_ptr<ASTNode> body;
 		if (match(TokenType::OPERATOR, "{")) {
 			body = parseBlock();
 		}
 		else {
 			error("Expected '{' after object declaration");
 		}
-		auto objDecl = std::make_shared<ObjectDeclarationNode>();
+		auto objDecl = std::make_unique<ObjectDeclarationNode>();
 		objDecl->name = objectName;
-		objDecl->body = body;
+		objDecl->body = std::move(body);
 		return objDecl;
 	}
 	else {

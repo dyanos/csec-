@@ -11,23 +11,23 @@ void FunctionCallNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* FunctionCallNode::codegen() {
-    // ÀÎÀÚ °ª »ý¼º ¹× Å¸ÀÔ ¼öÁý
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     std::vector<llvm::Value*> argValues;
-    std::vector<std::shared_ptr<Type>> argTypes;
+    std::vector<std::unique_ptr<Type>> argTypes;
     for (auto& arg : arguments) {
         llvm::Value* argValue = arg->codegen();
         if (!argValue) {
             return nullptr;
         }
         argValues.push_back(argValue);
-        argTypes.push_back(arg->getType());
+        argTypes.push_back(arg->getType()->clone());
     }
 
-    // ÇÔ¼ö ½Éº¼ Ã£±â
+    // ï¿½Ô¼ï¿½ ï¿½Éºï¿½ Ã£ï¿½ï¿½
     auto functionSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupFunction(functionName, argTypes);
     if (functionSymbolOpt) {
         auto functionSymbol = *functionSymbolOpt;
-        // ÇÔ¼ö Å¸ÀÔ°ú LLVM ÇÔ¼ö °¡Á®¿À±â
+        // ï¿½Ô¼ï¿½ Å¸ï¿½Ô°ï¿½ LLVM ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         auto funcType = (FunctionType*)(functionSymbol->type.get());
         llvm::Function* function = static_cast<llvm::Function*>(functionSymbol->value);
         if (!funcType || !function) {
@@ -35,11 +35,11 @@ llvm::Value* FunctionCallNode::codegen() {
             return nullptr;
         }
 
-        // ÇÔ¼ö È£Ãâ »ý¼º
+        // ï¿½Ô¼ï¿½ È£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         llvm::Value* result = CodeGenerator::getInstance().builder.CreateCall(function, argValues, "calltmp");
 
-        // Å¸ÀÔ ¼³Á¤
-        type = std::make_unique<Type>(*funcType->returnType);
+        // Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        type = std::move(funcType->returnType);
         return result;
     }
     else {
@@ -56,12 +56,12 @@ llvm::Value* FunctionCallNode::codegen() {
 }
 
 std::unique_ptr<Type> FunctionCallNode::getType() {
-    if (type) return std::make_unique<Type>(type.get());
+    if (type) return type->clone();
 
-    // ÇÔ¼ö ½Éº¼ Ã£±â
-    std::vector<std::shared_ptr<Type>> argTypes;
+    // ï¿½Ô¼ï¿½ ï¿½Éºï¿½ Ã£ï¿½ï¿½
+    std::vector<std::unique_ptr<Type>> argTypes;
     for (auto& arg : arguments) {
-        argTypes.push_back(arg->getType());
+        argTypes.push_back(arg->getType()->clone());
     }
 
     auto functionSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupFunction(functionName, argTypes);
@@ -74,7 +74,7 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
 
     auto funcType = (FunctionType*)(functionSymbol->type.get());
     if (funcType) {
-        return std::make_unique<Type>(funcType->returnType.get());
+        return funcType->returnType->clone();
     }
 
     return std::make_unique<UnknownType>();

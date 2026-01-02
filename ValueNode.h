@@ -12,6 +12,12 @@ public:
 	ValueNode() {
 		nodeType = ASTNodeType::VALUE;
 	}
+	ValueNode(ValueNode* other) {
+		this->nodeType = other->nodeType;
+		this->type = other->type ? std::move(other->type) : nullptr;
+		this->value = other->value;
+		this->valueType = other->valueType;
+	}
 
 	std::string value;
 	TokenType valueType = TokenType::UNKNOWN;
@@ -21,4 +27,7 @@ public:
 	void accept(ASTVisitor& visitor) override;
 	llvm::Value* codegen() override;
 	std::unique_ptr<Type> getType() override;
+	std::unique_ptr<ASTNode> clone() override {
+		return std::make_unique<ValueNode>(this);
+	}
 };

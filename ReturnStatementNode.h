@@ -6,8 +6,14 @@ public:
     ReturnStatementNode() {
         nodeType = ASTNodeType::RETURN_STATEMENT;
     }
+    ReturnStatementNode(ReturnStatementNode* other) {
+        nodeType = ASTNodeType::RETURN_STATEMENT;
+        if (other->expression) {
+            expression = std::move(other->expression);
+		}
+    }
 
-    std::shared_ptr<ASTNode> expression;
+    std::unique_ptr<ASTNode> expression;
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
@@ -15,4 +21,7 @@ public:
     std::unique_ptr<Type> getType() override {
         return std::make_unique<UnknownType>();
     }
+    std::unique_ptr<ASTNode> clone() override {
+        return std::make_unique<ReturnStatementNode>(this);
+	}
 };

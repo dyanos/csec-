@@ -1,5 +1,5 @@
-#include "token.h"
 #include "ast.h"
+#include "token.h"
 
 #include <vector>
 #include <memory>
@@ -24,11 +24,11 @@ public:
     bool match(TokenType type, const std::string& value = "");
 
     // Latex ���� �Ľ� �޼���
-    std::shared_ptr<ASTNode> parse();
-	std::shared_ptr<ASTNode> parseExpr();
-    std::shared_ptr<ASTNode> parseTerminal();
-	std::shared_ptr<ASTNode> parseArg(bool isBrace = false);
-    std::shared_ptr<ASTNode> parseSimpleExpr();
+    std::unique_ptr<ASTNode> parse();
+	std::unique_ptr<ASTNode> parseExpr();
+    std::unique_ptr<ASTNode> parseTerminal();
+	std::unique_ptr<ASTNode> parseArg(bool isBrace = false);
+    std::unique_ptr<ASTNode> parseSimpleExpr();
 
     // LaTeX 심볼 인식 함수
     bool isRelationalOperator(const std::string& symbol) const;

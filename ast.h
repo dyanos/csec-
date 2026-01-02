@@ -42,10 +42,9 @@ enum class ASTNodeType {
     ASSIGNMENT,
     CLASS_BODY,
     ATTRIBUTE,
-	// ... 기타 노드 타입들
+    ARRAY_LITERAL,
 };
 
-//
 class ASTVisitor;
 
 class ASTNode {
@@ -57,4 +56,5 @@ public:
     virtual void accept(ASTVisitor& visitor) = 0;
     virtual llvm::Value* codegen() = 0;
     virtual std::unique_ptr<Type> getType() = 0;
+    virtual std::unique_ptr<ASTNode> clone() = 0;
 };

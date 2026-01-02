@@ -12,20 +12,20 @@ void MethodCallNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* MethodCallNode::codegen() {
-    // °´Ã¼ÀÇ °ªÀ» »ý¼º
+    // ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     llvm::Value* objectValue = object->codegen();
     if (!objectValue) {
         return nullptr;
     }
 
-    // °´Ã¼ÀÇ Å¸ÀÔ °¡Á®¿À±â
-    std::shared_ptr<Type> objectType = object->getType();
+    // ï¿½ï¿½Ã¼ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    auto* objectType = object->getType().get();
     if (!objectType || objectType->getKind() != Type::Kind::CLASS) {
         std::cerr << "Error: Method call on non-class type" << std::endl;
         return nullptr;
     }
 
-    // Å¬·¡½º ½Éº¼ °¡Á®¿À±â
+    // Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½Éºï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     auto symbol = CodeGenerator::getInstance().symbolTable.lookupClass(objectType->getName());
     if (!symbol) {
         std::cerr << "Error: Undefined class type '" << objectType->getName() << "'" << std::endl;
@@ -34,7 +34,7 @@ llvm::Value* MethodCallNode::codegen() {
 
     ClassSymbol* classSymbol = (*symbol);
 
-    // ¸Þ¼­µå ·è¾÷
+    // ï¿½Þ¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName);
     if (!methodSymbolOpt) {
         std::cerr << "Error: Method '" << methodName << "' not found in class '" << objectType->getName() << "'" << std::endl;
@@ -43,7 +43,7 @@ llvm::Value* MethodCallNode::codegen() {
 
     auto methodSymbol = (*methodSymbolOpt);
 
-    // ÇÔ¼ö Å¸ÀÔ°ú LLVM ÇÔ¼ö °¡Á®¿À±â
+    // ï¿½Ô¼ï¿½ Å¸ï¿½Ô°ï¿½ LLVM ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     auto funcType = (FunctionType*)(methodSymbol->type.get());
     llvm::Function* function = static_cast<llvm::Function*>(methodSymbol->value);
     if (!function) {
@@ -58,7 +58,7 @@ llvm::Value* MethodCallNode::codegen() {
             std::cerr << "Error: Method '" << methodName << "' not found in class '" << objectType->getName() << "'" << std::endl;
             return nullptr;
         }
-        // ÇØ´ç method°¡ ±¸ÇöµÇ¾î ÀÖÁö ¾Ê´Ù¸é, ±¸ÇÑ´Ù.
+        // ï¿½Ø´ï¿½ methodï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´Ù¸ï¿½, ï¿½ï¿½ï¿½Ñ´ï¿½.
         classSymbol->methodBodies[methodName]->codegen();
         function = CodeGenerator::getInstance().module->getFunction(methodName);
         methodSymbol->value = function;
@@ -70,9 +70,9 @@ llvm::Value* MethodCallNode::codegen() {
         return nullptr;
     }
 
-    // ÀÎÀÚ °ª »ý¼º
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     std::vector<llvm::Value*> argValues;
-    // Ã¹ ¹øÂ° ÀÎÀÚ·Î °´Ã¼ Æ÷ÀÎÅÍ Àü´Þ (this Æ÷ÀÎÅÍ)
+    // Ã¹ ï¿½ï¿½Â° ï¿½ï¿½ï¿½Ú·ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (this ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
     argValues.push_back(objectValue);
 
     if (arguments.size() + 1 != funcType->parameterTypes.size()) {
@@ -86,9 +86,8 @@ llvm::Value* MethodCallNode::codegen() {
             return nullptr;
         }
 
-        // ÀÎÀÚÀÇ Å¸ÀÔ °Ë»ç
-        std::shared_ptr<Type> actualType = arguments[i]->getType();
-        if (!actualType->equals(funcType->parameterTypes[i].get())) {
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½Ë»ï¿½
+        if (!arguments[i]->getType()->equals(funcType->parameterTypes[i])) {
             std::cerr << "Type error: Argument type mismatch in method call '" << methodName << "'" << std::endl;
             return nullptr;
         }
@@ -96,22 +95,22 @@ llvm::Value* MethodCallNode::codegen() {
         argValues.push_back(argValue);
     }
 
-    // ÇÔ¼ö È£Ãâ »ý¼º
+    // ï¿½Ô¼ï¿½ È£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     llvm::Value* result = CodeGenerator::getInstance().builder.CreateCall(function, argValues);
     return result;
 }
 
 std::unique_ptr<Type> MethodCallNode::getType() {
-    // ¸Þ¼­µåÀÇ ¹ÝÈ¯ Å¸ÀÔÀ» ¹ÝÈ¯
-    if (type) return std::make_unique<Type>(type.get());
+    // ï¿½Þ¼ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
+    if (type) return type->clone();
 
-    // °´Ã¼ÀÇ Å¸ÀÔ °¡Á®¿À±â
-    std::shared_ptr<Type> objectType = object->getType();
+    // ï¿½ï¿½Ã¼ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    auto* objectType = object->getType().get();
     if (!objectType || objectType->getKind() != Type::Kind::CLASS) {
         return std::make_unique<UnknownType>();
     }
 
-    // Å¬·¡½º ½Éº¼ °¡Á®¿À±â
+    // Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½Éºï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(objectType->getName());
     if (!classSymbolOpt) {
         return std::make_unique<UnknownType>();
@@ -119,7 +118,7 @@ std::unique_ptr<Type> MethodCallNode::getType() {
 
     auto classSymbol = *classSymbolOpt;
 
-    // ¸Þ¼­µå ·è¾÷
+    // ï¿½Þ¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName);
     if (!methodSymbolOpt) {
         return std::make_unique<UnknownType>();
@@ -127,10 +126,10 @@ std::unique_ptr<Type> MethodCallNode::getType() {
 
     auto methodSymbol = *methodSymbolOpt;
 
-    // ÇÔ¼ö Å¸ÀÔ °¡Á®¿À±â
+    // ï¿½Ô¼ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     auto funcType = (FunctionType*)(methodSymbol->type.get());
     if (funcType) {
-        return std::make_unique<Type>(*funcType->returnType.get());
+        return funcType->returnType->clone();
     }
 
     return std::make_unique<UnknownType>();

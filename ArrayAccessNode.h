@@ -6,6 +6,11 @@ public:
     ArrayAccessNode() {
         nodeType = ASTNodeType::ARRAY_ACCESS;
     }
+    ArrayAccessNode(ArrayAccessNode* other) {
+        nodeType = ASTNodeType::ARRAY_ACCESS;
+        array = std::move(other->array);
+        index = std::move(other->index);
+	}
 
     std::unique_ptr<ASTNode> array;
     std::unique_ptr<ASTNode> index;
@@ -21,5 +26,8 @@ public:
         else {
             return std::make_unique<UnknownType>();
         }
+    }
+    std::unique_ptr<ASTNode> clone() override {
+        return std::make_unique<ArrayAccessNode>(this);
     }
 };

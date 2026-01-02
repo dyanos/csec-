@@ -12,51 +12,53 @@
 Parser::Parser(const std::vector<Token>& tokens)
 	: tokens(tokens), position(0) {}
 
-std::shared_ptr<ASTNode> Parser::parse() {
-	auto program = std::make_shared<ProgramNode>();
+std::unique_ptr<ASTNode> Parser::parse() {
+	auto program = std::make_unique<ProgramNode>();
 	while (!isAtEnd()) {
 		auto stmt = parseTopStatement();
 		if (stmt) {
-			program->statements.push_back(stmt);
+			program->statements.push_back(std::move(stmt));
 		}
 	}
 	return program;
 }
 
-std::shared_ptr<Type> Parser::parseType() {
+std::unique_ptr<Type> Parser::parseType() {
 	if (match(TokenType::IDENTIFIER)) {
 		std::string typeName = previous().value;
 
-		std::shared_ptr<Type> baseType;
+		std::unique_ptr<Type> baseType;
 		if (typeName == "Int" || typeName == "Float" || typeName == "Double" || typeName == "Unit") {
-			baseType = std::make_shared<BasicType>(typeName);
+			baseType = std::make_unique<BasicType>(typeName);
 		}
 		else if (typeName == "String") {
-			baseType = std::make_shared<ClassType>(typeName);
+			baseType = std::make_unique<ClassType>(typeName);
 		}
 		else {
-			baseType = std::make_shared<ClassType>(typeName);
+			baseType = std::make_unique<ClassType>(typeName);
 		}
 
-		std::shared_ptr<Type> tempArgsType = nullptr;
+		std::unique_ptr<Type> tempArgsType = nullptr;
 		if (match(TokenType::OPERATOR, "[")) {
 			auto tempArgsType = parseType();
 			expect(TokenType::OPERATOR, "]");
-			return std::make_shared<GenericType>(baseType.get(), std::vector<Type*>{tempArgsType.get()});
+			std::vector<std::unique_ptr<Type>> typeArgs;
+			typeArgs.push_back(tempArgsType->clone());
+			return std::make_unique<GenericType>(baseType, typeArgs);
 		}
 
 		return baseType;
 	}
 	else {
 		error("Expected type after ':'");
-		return std::make_shared<UnknownType>();
+		return std::make_unique<UnknownType>();
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseTopStatement() {
-	std::shared_ptr<ASTNode> attributeNode = parseAnnotationStatement();
+std::unique_ptr<ASTNode> Parser::parseTopStatement() {
+	std::unique_ptr<ASTNode> attributeNode = parseAnnotationStatement();
 
-	std::shared_ptr<ASTNode> node = nullptr;
+	std::unique_ptr<ASTNode> node = nullptr;
 	if (match(TokenType::KEYWORD, "import")) {
 		while (!check(TokenType::OPERATOR, ";")) {
 			if (isAtEnd()) {
@@ -83,33 +85,33 @@ std::shared_ptr<ASTNode> Parser::parseTopStatement() {
 
 	if (attributeNode) {
 		// attributeNode�� expr�� node�� ����
-		dynamic_cast<AttributeNode*>(attributeNode.get())->target = node;
+		dynamic_cast<AttributeNode*>(attributeNode.get())->target = std::move(node);
 		return attributeNode;
 	}
 
 	return node;
 }
 
-std::shared_ptr<ASTNode> Parser::parseAnnotationExpression() {
+std::unique_ptr<ASTNode> Parser::parseAnnotationExpression() {
 	if (match(TokenType::IDENTIFIER)) {
-		auto identifierNode = std::make_shared<IdentifierNode>(previous().value);
+		auto identifierNode = std::make_unique<IdentifierNode>(previous().value);
 		if (!match(TokenType::OPERATOR, "(")) {
 			return identifierNode;
 		}
 		else {
-			auto callNode = std::make_shared<FunctionCallNode>();
+			auto callNode = std::make_unique<FunctionCallNode>();
 			callNode->functionName = identifierNode->value;
 			callNode->arguments = parseCallParameterList();
 			return callNode;
 		}
 	}
 	else if (match(TokenType::STRING_LITERAL)) {
-		auto stringNode = std::make_shared<ValueNode>();
+		auto stringNode = std::make_unique<ValueNode>();
 		stringNode->value = previous().value;
 		return stringNode;
 	}
 	else if (match(TokenType::INTEGER_LITERAL)) {
-		auto intNode = std::make_shared<ValueNode>();
+		auto intNode = std::make_unique<ValueNode>();
 		intNode->value = std::stoi(previous().value);
 		return intNode;
 	}
@@ -119,8 +121,8 @@ std::shared_ptr<ASTNode> Parser::parseAnnotationExpression() {
 	}
 }
 
-std::shared_ptr<ClassBodyNode> Parser::parseClassBody() {
-	auto classBody = std::make_shared<ClassBodyNode>();
+std::unique_ptr<ClassBodyNode> Parser::parseClassBody() {
+	auto classBody = std::make_unique<ClassBodyNode>();
 	while (!check(TokenType::OPERATOR, "}")) {
 		if (isAtEnd()) {
 			error("Unterminated class body");
@@ -128,13 +130,11 @@ std::shared_ptr<ClassBodyNode> Parser::parseClassBody() {
 		}
 
 		if (match(TokenType::KEYWORD, "def")) {
-			auto method = parseFunctionDeclaration();
-			classBody->methods.push_back(method);
+			classBody->methods.push_back(parseFunctionDeclaration());
 		}
 		else if (match(TokenType::KEYWORD, "val") || match(TokenType::KEYWORD, "var")) {
 			bool isMutable = previous().value == "var";
-			auto field = parseVariableDeclaration(isMutable);
-			classBody->fields.push_back(field);
+			classBody->fields.push_back(parseVariableDeclaration(isMutable));
 		}
 		else {
 			error("Unexpected token in class body");
@@ -144,16 +144,16 @@ std::shared_ptr<ClassBodyNode> Parser::parseClassBody() {
 	return classBody;
 }
 
-std::vector<std::shared_ptr<ASTNode>> Parser::parseCallParameterList()
+std::vector<std::unique_ptr<ASTNode>> Parser::parseCallParameterList()
 {
-	std::vector<std::shared_ptr<ASTNode>> arguments;
+	std::vector<std::unique_ptr<ASTNode>> arguments;
 	while (!check(TokenType::OPERATOR, ")")) {
 		if (isAtEnd()) {
 			error("Unterminated argument list");
-			return std::vector<std::shared_ptr<ASTNode>>();
+			return std::vector<std::unique_ptr<ASTNode>>();
 		}
-		auto arg = parseExpression();
-		arguments.push_back(arg);
+
+		arguments.push_back(parseExpression());
 		if (!match(TokenType::OPERATOR, ",")) {
 			break;
 		}
@@ -164,8 +164,8 @@ std::vector<std::shared_ptr<ASTNode>> Parser::parseCallParameterList()
 	return arguments;
 }
 
-std::vector<std::shared_ptr<ParameterNode>> Parser::parseParameterList() {
-	std::vector<std::shared_ptr<ParameterNode>> parameters;
+std::vector<std::unique_ptr<ParameterNode>> Parser::parseParameterList() {
+	std::vector<std::unique_ptr<ParameterNode>> parameters;
 
 	if (!check(TokenType::OPERATOR, ")")) {
 		do {
@@ -173,24 +173,21 @@ std::vector<std::shared_ptr<ParameterNode>> Parser::parseParameterList() {
 			std::string paramName = previous().value;
 
 			expect(TokenType::OPERATOR, ":");
-			std::shared_ptr<Type> paramType = parseType();
+			std::unique_ptr<Type> paramType = parseType();
 
-			auto paramNode = std::make_shared<ParameterNode>();
-			paramNode->name = paramName;
-			paramNode->type = std::make_unique<Type>(paramType.get());
-			parameters.push_back(paramNode);
+			parameters.push_back(std::make_unique<ParameterNode>(paramName, std::make_unique<Type>(paramType.get())));
 		} while (match(TokenType::OPERATOR, ","));
 	}
 
 	return parameters;
 }
 
-std::shared_ptr<ParameterNode> Parser::parseParameter() {
+std::unique_ptr<ParameterNode> Parser::parseParameter() {
 	if (match(TokenType::IDENTIFIER)) {
 		std::string paramName = previous().value;
 		expect(TokenType::OPERATOR, ":");
-		std::shared_ptr<Type> paramType = parseType();
-		auto param = std::make_shared<ParameterNode>();
+		std::unique_ptr<Type> paramType = parseType();
+		auto param = std::make_unique<ParameterNode>();
 		param->name = paramName;
 		param->type = std::make_unique<Type>(paramType.get());
 		return param;
@@ -201,29 +198,28 @@ std::shared_ptr<ParameterNode> Parser::parseParameter() {
 	}
 }
 
-std::vector<std::shared_ptr<ASTNode>> Parser::parseArgumentList() {
-	std::vector<std::shared_ptr<ASTNode>> arguments;
+std::vector<std::unique_ptr<ASTNode>> Parser::parseArgumentList() {
+	std::vector<std::unique_ptr<ASTNode>> arguments;
 	if (!check(TokenType::OPERATOR, ")")) {
 		do {
-			auto arg = parseExpression();
-			arguments.push_back(arg);
+			arguments.push_back(parseExpression());
 		} while (match(TokenType::OPERATOR, ","));
 		expect(TokenType::OPERATOR, ")");
 	}
 	return arguments;
 }
 
-std::shared_ptr<ASTNode> Parser::parseLatexCommand() {
+std::unique_ptr<ASTNode> Parser::parseLatexCommand() {
 	auto latexParser = LatexMathEqParser(&tokens, &position);
 	return latexParser.parse();
 }
 
-std::shared_ptr<ASTNode> Parser::parseInlineMathLatex() {
+std::unique_ptr<ASTNode> Parser::parseInlineMathLatex() {
 	auto latexParser = LatexMathEqParser(&tokens, &position);
 	return latexParser.parse();
 }
 
-std::shared_ptr<ASTNode> Parser::parseBlockMathLatex() {
+std::unique_ptr<ASTNode> Parser::parseBlockMathLatex() {
 	auto latexParser = LatexMathEqParser(&tokens, &position);
 	return latexParser.parse();
 }

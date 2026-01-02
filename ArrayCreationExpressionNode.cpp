@@ -18,7 +18,8 @@ llvm::Value* ArrayCreationExpressionNode::codegen() {
 
     // primitive type인지, class type인지 확인, template type인지 확인
     if (isPrimitiveType(typeName)) {
-        llvm::Type* type = CodeGenerator::getInstance().getLLVMType(new BasicType(typeName));
+		BasicType basicType(typeName);
+        llvm::Type* type = CodeGenerator::getInstance().getLLVMType(&basicType);
         return CodeGenerator::getInstance().builder.CreateAlloca(type, array_size, typeName);
     }
 

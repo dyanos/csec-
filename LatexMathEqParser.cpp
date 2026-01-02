@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-std::shared_ptr<ASTNode> LatexMathEqParser::parse() {
+std::unique_ptr<ASTNode> LatexMathEqParser::parse() {
 	// 현재 위치의 토큰이 LATEX_INLINE임을 확인
 	if (isAtEnd()) {
 		throw std::runtime_error("Unexpected end of input while parsing LaTeX expression.");
@@ -173,7 +173,7 @@ const char* calligraphicFontSymbolTable[] = {
 	"textit", "textbf", "texttt", "textsf"
 };
 
-std::shared_ptr<ASTNode> LatexMathEqParser::parseExpr() {
+std::unique_ptr<ASTNode> LatexMathEqParser::parseExpr() {
 	auto left = parseSimpleExpr();
 
 	while (true) {
@@ -200,18 +200,14 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseExpr() {
 
 		auto right = parseSimpleExpr();
 
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = left;
-		binaryNode->op = op;
-		binaryNode->right = right;
-
-		left = binaryNode;
+		auto binaryNode = std::make_unique<BinaryExpressionNode>(left, op, right);
+		left = std::move(binaryNode);
 	}
 
 	return left;
 }
 
-std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
+std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 	if (match(TokenType::OPERATOR, "\\")) {
 		if (check(TokenType::IDENTIFIER)) {
 			std::string command = advance().value;
@@ -229,9 +225,9 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 			// 폰트 명령어 처리 (예: \mathbf, \mathcal)
 			if (isCalligraphicFont(command)) {
 				auto arg = parseArg(true);
-				auto node = std::make_shared<FunctionCallNode>();
+				auto node = std::make_unique<FunctionCallNode>();
 				node->functionName = command;
-				node->arguments.push_back(arg);
+				node->arguments.push_back(std::move(arg));
 				return node;
 			}
 
@@ -241,10 +237,10 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 					auto firstArg = parseArg();
 					auto secondArg = parseArg();
 
-					auto node = std::make_shared<FunctionCallNode>();
+					auto node = std::make_unique<FunctionCallNode>();
 					node->functionName = command;
-					node->arguments.push_back(firstArg);
-					node->arguments.push_back(secondArg);
+					node->arguments.push_back(std::move(firstArg));
+					node->arguments.push_back(std::move(secondArg));
 					return node;
 				}
 			}
@@ -254,9 +250,9 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 				if (command == functionOneArgSymbolTable[i]) {
 					auto arg = parseArg();
 
-					auto node = std::make_shared<FunctionCallNode>();
+					auto node = std::make_unique<FunctionCallNode>();
 					node->functionName = command;
-					node->arguments.push_back(arg);
+					node->arguments.push_back(std::move(arg));
 					return node;
 				}
 			}
@@ -264,50 +260,50 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 			// 그릭 문자 처리
 			for (int i = 0; i < sizeof(greekLetterSymbolTable) / sizeof(greekLetterSymbolTable[0]); ++i) {
 				if (command == greekLetterSymbolTable[i]) {
-					return std::make_shared<IdentifierNode>(command);
+					return std::make_unique<IdentifierNode>(command);
 				}
 			}
 
 			// 상수 처리
 			for (int i = 0; i < sizeof(constantSymbolTable) / sizeof(constantSymbolTable[0]); ++i) {
 				if (command == constantSymbolTable[i]) {
-					return std::make_shared<IdentifierNode>(command);
+					return std::make_unique<IdentifierNode>(command);
 				}
 			}
 
 			// 관계 연산자 처리
 			if (isRelationalOperator(command)) {
-				return std::make_shared<IdentifierNode>(command);
+				return std::make_unique<IdentifierNode>(command);
 			}
 
 			// 이항 연산자 처리
 			if (isBinaryOperator(command)) {
-				return std::make_shared<IdentifierNode>(command);
+				return std::make_unique<IdentifierNode>(command);
 			}
 
 			// 화살표 처리
 			if (isArrow(command)) {
-				return std::make_shared<IdentifierNode>(command);
+				return std::make_unique<IdentifierNode>(command);
 			}
 
 			// 논리 연산자 처리
 			if (isLogicalOperator(command)) {
-				return std::make_shared<IdentifierNode>(command);
+				return std::make_unique<IdentifierNode>(command);
 			}
 
 			// 기타 심볼 처리 (infty, emptyset, partial, nabla 등)
 			if (isMiscSymbol(command)) {
-				return std::make_shared<IdentifierNode>(command);
+				return std::make_unique<IdentifierNode>(command);
 			}
 
 			// 집계 함수 처리 (sum, int, prod 등)
 			for (int i = 0; i < sizeof(aggregateFunctionSymbolTable) / sizeof(aggregateFunctionSymbolTable[0]); ++i) {
 				if (command == aggregateFunctionSymbolTable[i]) {
 					if (command == "sum") {
-						auto node = std::make_shared<ForStatementNode>();
+						auto node = std::make_unique<ForStatementNode>();
 
 						// upper / lower limit 처리
-						std::unordered_map<std::string, std::shared_ptr<ASTNode>> argsMap;
+						std::unordered_map<std::string, std::unique_ptr<ASTNode>> argsMap;
 						argsMap["upper"] = nullptr;
 						argsMap["lower"] = nullptr;
 
@@ -322,12 +318,12 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 
 						if (argsMap["lower"]) {
 							if (argsMap["lower"]->nodeType == ASTNodeType::BINARY_EXPRESSION) {
-								auto binExpr = std::dynamic_pointer_cast<BinaryExpressionNode>(argsMap["lower"]);
+								auto binExpr = (BinaryExpressionNode*)(argsMap["lower"].get());
 								if (binExpr->op == "=") {
 									if (binExpr->left->nodeType == ASTNodeType::IDENTIFIER) {
-										auto idNode = std::dynamic_pointer_cast<IdentifierNode>(binExpr->left);
+										auto idNode = (IdentifierNode*)(binExpr->left.get());
 										node->variable = idNode->value;
-										node->iterableExpr = binExpr->right;
+										node->iterableExpr = std::move(binExpr->right);
 									}
 									else {
 										throw std::runtime_error("Expected identifier on the left side of '=' in lower limit.");
@@ -338,9 +334,9 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 								}
 							}
 							else if (argsMap["lower"]->nodeType == ASTNodeType::IDENTIFIER) {
-								auto forStmt = std::dynamic_pointer_cast<ForStatementNode>(argsMap["lower"]);
+								auto forStmt = (ForStatementNode*)(argsMap["lower"].get());
 								node->variable = forStmt->variable;
-								node->iterableExpr = forStmt->iterableExpr;
+								node->iterableExpr = std::move(forStmt->iterableExpr);
 							}
 							else {
 								throw std::runtime_error("Expected binary expression in lower limit.");
@@ -348,29 +344,29 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 						}
 						else {
 							node->variable = "_";
-							node->iterableExpr = std::make_shared<UnitNode>();
+							node->iterableExpr = std::make_unique<UnitNode>();
 						}
 
 						if (argsMap["upper"]) {
-							node->iterableExpr = argsMap["upper"];
+							node->iterableExpr = std::move(argsMap["upper"]);
 						}
 						else {
-							node->iterableExpr = std::make_shared<UnitNode>();
+							node->iterableExpr = std::make_unique<UnitNode>();
 						}
 
-						auto blockNode = std::make_shared<BlockNode>();
+						auto blockNode = std::make_unique<BlockNode>();
 						blockNode->statements.push_back(parseSimpleExpr());
-						node->body = blockNode;
+						node->body = std::move(blockNode);
 
 						return node;
 					}
 					else {
-						auto node = std::make_shared<FunctionCallNode>();
+						auto node = std::make_unique<FunctionCallNode>();
 
 						node->functionName = command;
 
 						// upper / lower limit 처리
-						std::unordered_map<std::string, std::shared_ptr<ASTNode>> argsMap;
+						std::unordered_map<std::string, std::unique_ptr<ASTNode>> argsMap;
 						argsMap["upper"] = nullptr;
 						argsMap["lower"] = nullptr;
 
@@ -384,21 +380,20 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 						}
 
 						if (argsMap["lower"]) {
-							node->arguments.push_back(argsMap["lower"]);
+							node->arguments.push_back(std::move(argsMap["lower"]));
 						}
 						else {
-							node->arguments.push_back(std::make_shared<UnitNode>());
+							node->arguments.push_back(std::make_unique<UnitNode>());
 						}
 
 						if (argsMap["upper"]) {
-							node->arguments.push_back(argsMap["upper"]);
+							node->arguments.push_back(std::move(argsMap["upper"]));
 						}
 						else {
-							node->arguments.push_back(std::make_shared<UnitNode>());
+							node->arguments.push_back(std::make_unique<UnitNode>());
 						}
 
-						auto body = parseSimpleExpr();
-						node->arguments.push_back(body);
+						node->arguments.push_back(parseSimpleExpr());
 
 						return node;
 					}
@@ -439,16 +434,16 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 		}
 
 		std::string value = std::to_string(v);
-		return std::make_shared<ValueNode>(value, TokenType::FLOAT_LITERAL);
+		return std::make_unique<ValueNode>(value, TokenType::FLOAT_LITERAL);
 	}
 	else if (match(TokenType::IDENTIFIER)) {
 		// 식별자 처리
-		return std::make_shared<IdentifierNode>(previous().value);
+		return std::make_unique<IdentifierNode>(previous().value);
 	}
 	return nullptr;
 }
 
-std::shared_ptr<ASTNode> LatexMathEqParser::parseSimpleExpr() {
+std::unique_ptr<ASTNode> LatexMathEqParser::parseSimpleExpr() {
 	if (match(TokenType::OPERATOR, "(")) {
 		auto expr = parseExpr();
 		match(TokenType::OPERATOR, ")");
@@ -456,16 +451,14 @@ std::shared_ptr<ASTNode> LatexMathEqParser::parseSimpleExpr() {
 	}
 	else if (match(TokenType::OPERATOR, "-") ||
 		match(TokenType::OPERATOR, "+")) {
-		auto unaryNode = std::make_shared<UnaryExpressionNode>();
-		unaryNode->op = previous().value;
-		unaryNode->expression = parseSimpleExpr();
-		return unaryNode;
+		auto rightCopy = parseSimpleExpr();
+		return std::make_unique<UnaryExpressionNode>(previous().value, rightCopy);
 	}
 
 	return parseTerminal();
 }
 
-std::shared_ptr<ASTNode> LatexMathEqParser::parseArg(bool isBrace) {
+std::unique_ptr<ASTNode> LatexMathEqParser::parseArg(bool isBrace) {
 	// 파라미터 파싱 함수 선택
 	if (isBrace && !check(TokenType::OPERATOR, "{")) {
 		throw std::runtime_error("Expected '{' to start argument.");

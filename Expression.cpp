@@ -3,8 +3,8 @@
 #include "all_ast.h"
 #include "utils.h"
 
-std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
-	std::shared_ptr<ASTNode> expr;
+std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
+	std::unique_ptr<ASTNode> expr;
 
 	if (match(TokenType::IDENTIFIER)) {
 		std::vector<std::string> pathComponents;
@@ -21,18 +21,18 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 
 		if (match(TokenType::OPERATOR, "(")) {
 			if (pathComponents.size() == 1) {
-				auto callNode = std::make_shared<FunctionCallNode>();
+				auto callNode = std::make_unique<FunctionCallNode>();
 				callNode->functionName = pathComponents[0];
 				callNode->arguments = parseCallParameterList();
 				return callNode;
 			}
 			else {
-				auto callNode = std::make_shared<MethodCallNode>();
+				auto callNode = std::make_unique<MethodCallNode>();
 
 				std::vector<std::string> result;
 				std::copy(pathComponents.begin(), pathComponents.end() - 1, std::back_inserter(result));
 
-				callNode->object = std::make_shared<IdentifierNode>(join(result, "."));
+				callNode->object = std::make_unique<IdentifierNode>(join(result, "."));
 				callNode->methodName = pathComponents.back();
 				callNode->arguments = parseCallParameterList();
 
@@ -40,13 +40,13 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 			}
 		}
 		else if (match(TokenType::OPERATOR, "=") || match(TokenType::OPERATOR, "<-")) {
-			auto assignNode = std::make_shared<AssignmentExpressionNode>();
-			assignNode->left = std::make_shared<IdentifierNode>(join(pathComponents, "."));
+			auto assignNode = std::make_unique<AssignmentExpressionNode>();
+			assignNode->left = std::make_unique<IdentifierNode>(join(pathComponents, "."));
 			assignNode->right = parseExpression();
 			return assignNode;
 		}
 
-		expr = std::make_shared<IdentifierNode>(join(pathComponents, "."));
+		return std::make_unique<IdentifierNode>(join(pathComponents, "."));
 	}
 	else if (match(TokenType::INTEGER_LITERAL) ||
 		match(TokenType::FLOAT_LITERAL) ||
@@ -56,72 +56,67 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 		match(TokenType::OCTAL_LITERAL) ||
 		match(TokenType::STRING_LITERAL) ||
 		match(TokenType::BOOLEAN_LITERAL)) {
-		auto exprNode = std::make_shared<ValueNode>(previous().value, previous().type);
-		expr = exprNode;
+		return std::make_unique<ValueNode>(previous().value, previous().type);
 	}
 	else if (match(TokenType::OPERATOR, "$")) {
 		expr = parseInlineMathLatex();
 		match(TokenType::OPERATOR, "$");
+		return expr;
 	}
 	else if (match(TokenType::OPERATOR, "$$")) {
 		expr = parseBlockMathLatex();
 		match(TokenType::OPERATOR, "$$");
+		return expr;
 	}
 	else if (match(TokenType::OPERATOR, "_")) {
-		expr = std::make_shared<UnitNode>();
+		return std::make_unique<UnitNode>();
 	}
 	else if (match(TokenType::OPERATOR, "{")) {
-		expr = parseBlock();
+		return parseBlock();
 	}
 	else if (check(TokenType::OPERATOR, "[")) {
 		saveTokenPosition();
 		auto lambdaExpr = parseLambdaExpression();
 		if (lambdaExpr) {
-			expr = lambdaExpr;
+			expr = std::move(lambdaExpr);
 		}
 		else {
 			restoreTokenPosition();
 			// Array literal parsing code commented out for future implementation
 			advance(); // consume '['
-			std::vector<std::shared_ptr<ASTNode>> elements;
+			std::vector<std::unique_ptr<ASTNode>> elements;
 			if (!check(TokenType::OPERATOR, "]")) {
 				do {
-					auto element = parseExpression();
-					elements.push_back(element);
+					elements.push_back(parseExpression());
 				} while (match(TokenType::OPERATOR, ","));
 			}
 			expect(TokenType::OPERATOR, "]");
-			auto arrayNode = std::make_shared<ArrayLiteralNode>();
-			arrayNode->elements = elements;
-			expr = arrayNode;
+			auto node = std::make_unique<ArrayLiteralNode>();
+			node->elements = std::move(elements);
+			return node;
 		}
 	}
 	else if (match(TokenType::KEYWORD, "new")) {
 		if (match(TokenType::IDENTIFIER)) {
 			auto id = previous().value;
 			if (match(TokenType::OPERATOR, "[")) {
-				std::vector<std::shared_ptr<ASTNode>> sizes;
+				std::vector<std::unique_ptr<ASTNode>> sizes;
 				while (!check(TokenType::OPERATOR, "]")) {
-					auto size = parseExpression();
-					sizes.push_back(size);
+					sizes.push_back(parseExpression());
 					if (!match(TokenType::OPERATOR, ",")) {
 						break;
 					}
 				}
 				expect(TokenType::OPERATOR, "]");
-				auto newArrayExpr = std::make_shared<ArrayCreationExpressionNode>(id, sizes);
-				return newArrayExpr;
+				auto node = std::make_unique<ArrayCreationExpressionNode>(id);
+				node->sizes = std::move(sizes);
+				return node;
 			}
 			else if (match(TokenType::OPERATOR, "(")) {
-				std::shared_ptr<ClassInstanceCreationNode> newExpr = std::make_shared<ClassInstanceCreationNode>();
-				newExpr->className = id;
-				newExpr->arguments = parseArgumentList();
-				return newExpr;
+				return std::make_unique<ClassInstanceCreationNode>(id, parseArgumentList());
 			}
 			else {
-				std::shared_ptr<ClassInstanceCreationNode> newExpr = std::make_shared<ClassInstanceCreationNode>();
-				newExpr->className = id;
-				return newExpr;
+				return std::make_unique<ClassInstanceCreationNode>(id);
 			}
 		}
 		else {
@@ -136,20 +131,17 @@ std::shared_ptr<ASTNode> Parser::parseSimpleExpression() {
 	return expr;
 }
 
-std::shared_ptr<ASTNode> Parser::parseAssignmentExpression() {
+std::unique_ptr<ASTNode> Parser::parseAssignmentExpression() {
 	if (match(TokenType::OPERATOR, "=")) {
-		auto assignNode = std::make_shared<AssignmentExpressionNode>();
-		assignNode->left = parseExpression();
-		assignNode->right = parseExpression();
-		return assignNode;
+		return std::make_unique<AssignmentExpressionNode>(parseExpression(), parseExpression());
 	}
 	else {
 		return parseSimpleExpression();
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parsePrimaryExpression() {
-	std::shared_ptr<ASTNode> expr = parseSimpleExpression();
+std::unique_ptr<ASTNode> Parser::parsePrimaryExpression() {
+	std::unique_ptr<ASTNode> expr = parseSimpleExpression();
 	if (expr != nullptr) {
 		return expr;
 	}
@@ -159,231 +151,184 @@ std::shared_ptr<ASTNode> Parser::parsePrimaryExpression() {
 		expect(TokenType::OPERATOR, ")");
 		auto expr = parseExpression();
 
-		auto castexpr = std::make_shared<CastingExpressionNode>();
-		castexpr->type = casting;
-		castexpr->expression = expr;
-		return castexpr;
+		return std::make_unique<CastingExpressionNode>(expr, casting);
 	}
 	else if (match(TokenType::OPERATOR, "-") ||
 		match(TokenType::OPERATOR, "+") ||
 		match(TokenType::OPERATOR, "~")) {
-		auto unaryNode = std::make_shared<UnaryExpressionNode>();
-		unaryNode->op = previous().value;
-		unaryNode->expression = parsePrimaryExpression();
-		return unaryNode;
+		auto rightCopy = parsePrimaryExpression();
+		return std::make_unique<UnaryExpressionNode>(previous().value, rightCopy);
 	}
 	else if (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
-		auto unaryNode = std::make_shared<PrefixExpressionNode>();
-		unaryNode->op = previous().value;
-		unaryNode->expression = parsePrimaryExpression();
-		return unaryNode;
+		auto rightCopy = parsePrimaryExpression();
+		return std::make_unique<PrefixExpressionNode>(previous().value, rightCopy);
 	}
 	else if (match(TokenType::OPERATOR, "!")) {
-		auto unaryNode = std::make_shared<UnaryExpressionNode>();
-		unaryNode->op = "!";
-		unaryNode->expression = parsePrimaryExpression();
-		return unaryNode;
+		auto rightCopy = parsePrimaryExpression();
+		return std::make_unique<UnaryExpressionNode>("!", rightCopy);
 	}
 	else {
 		return parseSimpleExpression();
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseMulDivExpression() {
-	std::shared_ptr<ASTNode> expr = parsePrimaryExpression();
+std::unique_ptr<ASTNode> Parser::parseMulDivExpression() {
+	std::unique_ptr<ASTNode> expr = parsePrimaryExpression();
 	while (match(TokenType::OPERATOR, "*") || match(TokenType::OPERATOR, "/") || match(TokenType::OPERATOR, "%")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parsePrimaryExpression();
-		expr = binaryNode;
+		auto rightCopy = parsePrimaryExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	return expr;
 }
 
-std::shared_ptr<ASTNode> Parser::parseAddSubExpression() {
-	std::shared_ptr<ASTNode> expr = parseMulDivExpression();
+std::unique_ptr<ASTNode> Parser::parseAddSubExpression() {
+	std::unique_ptr<ASTNode> expr = parseMulDivExpression();
 	if (match(TokenType::OPERATOR, "+") || match(TokenType::OPERATOR, "-")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseMulDivExpression();
-		return binaryNode;
+		auto rigthCopy = parseMulDivExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rigthCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseComparisonExpression() {
-	std::shared_ptr<ASTNode> expr = parseShiftExpression();
+std::unique_ptr<ASTNode> Parser::parseComparisonExpression() {
+	std::unique_ptr<ASTNode> expr = parseShiftExpression();
 	if (match(TokenType::OPERATOR, "<") || match(TokenType::OPERATOR, ">") ||
 		match(TokenType::OPERATOR, "<=") || match(TokenType::OPERATOR, ">=")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseShiftExpression();
-		return binaryNode;
+		auto rightCopy = parseShiftExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseShiftExpression() {
-	std::shared_ptr<ASTNode> expr = parseAddSubExpression();
+std::unique_ptr<ASTNode> Parser::parseShiftExpression() {
+	std::unique_ptr<ASTNode> expr = parseAddSubExpression();
 	if (match(TokenType::OPERATOR, "<<") || match(TokenType::OPERATOR, ">>")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseAddSubExpression();
-		return binaryNode;
+		auto rightCopy = parseAddSubExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseEqualityExpression() {
-	std::shared_ptr<ASTNode> expr = parseComparisonExpression();
+std::unique_ptr<ASTNode> Parser::parseEqualityExpression() {
+	std::unique_ptr<ASTNode> expr = parseComparisonExpression();
 	if (match(TokenType::OPERATOR, "==") || match(TokenType::OPERATOR, "!=")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseComparisonExpression();
-		return binaryNode;
+		auto rightCopy = parseComparisonExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseConditionExpression() {
+std::unique_ptr<ASTNode> Parser::parseConditionExpression() {
 	if (match(TokenType::KEYWORD, "and") || match(TokenType::KEYWORD, "or") || match(TokenType::KEYWORD, "xor")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = parseEqualityExpression();
-		binaryNode->op = previous().value;
-		binaryNode->right = parseEqualityExpression();
-		return binaryNode;
+		auto leftCopy = parseEqualityExpression();
+		auto rightCopy = parseEqualityExpression();
+		return std::make_unique<BinaryExpressionNode>(leftCopy, previous().value, rightCopy);
 	}
 	else {
 		return parseEqualityExpression();
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseOrExpression() {
-	std::shared_ptr<ASTNode> expr = parseAndExpression();
+std::unique_ptr<ASTNode> Parser::parseOrExpression() {
+	std::unique_ptr<ASTNode> expr = parseAndExpression();
 	if (match(TokenType::KEYWORD, "or")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseAndExpression();
-		return binaryNode;
+		auto rightCopy = parseAndExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseAndExpression() {
-	std::shared_ptr<ASTNode> expr = parseBitwiseOrExpression();
+std::unique_ptr<ASTNode> Parser::parseAndExpression() {
+	std::unique_ptr<ASTNode> expr = parseBitwiseOrExpression();
 	if (match(TokenType::KEYWORD, "and")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseBitwiseOrExpression();
-		return binaryNode;
+		auto rightCopy = parseBitwiseOrExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseXorExpression() {
-	std::shared_ptr<ASTNode> expr = parseBitwiseAndExpression();
+std::unique_ptr<ASTNode> Parser::parseXorExpression() {
+	std::unique_ptr<ASTNode> expr = parseBitwiseAndExpression();
 	if (match(TokenType::KEYWORD, "xor")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseBitwiseAndExpression();
-		return binaryNode;
+		auto rightCopy = parseBitwiseAndExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseBitwiseOrExpression() {
-	std::shared_ptr<ASTNode> expr = parseXorExpression();
+std::unique_ptr<ASTNode> Parser::parseBitwiseOrExpression() {
+	std::unique_ptr<ASTNode> expr = parseXorExpression();
 	if (match(TokenType::OPERATOR, "|")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseXorExpression();
-		return binaryNode;
+		auto rightCopy = parseXorExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseBitwiseAndExpression() {
-	std::shared_ptr<ASTNode> expr = parseEqualityExpression();
+std::unique_ptr<ASTNode> Parser::parseBitwiseAndExpression() {
+	std::unique_ptr<ASTNode> expr = parseEqualityExpression();
 	if (match(TokenType::OPERATOR, "|")) {
-		auto binaryNode = std::make_shared<BinaryExpressionNode>();
-		binaryNode->left = expr;
-		binaryNode->op = previous().value;
-		binaryNode->right = parseEqualityExpression();
-		return binaryNode;
+		auto rightCopy = parseEqualityExpression();
+		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
 	}
 	else {
 		return expr;
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseUnaryExpression() {
+std::unique_ptr<ASTNode> Parser::parseUnaryExpression() {
 	if (match(TokenType::OPERATOR, "-") || match(TokenType::OPERATOR, "!")) {
-		auto unaryNode = std::make_shared<UnaryExpressionNode>();
-		unaryNode->op = previous().value;
-		unaryNode->expression = parseUnaryExpression();
-		return unaryNode;
+		auto rightCopy = parseUnaryExpression();
+		return std::make_unique<UnaryExpressionNode>(previous().value, rightCopy);
 	}
 	else {
 		return parseXorExpression();
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parsePostfixExpression() {
+std::unique_ptr<ASTNode> Parser::parsePostfixExpression() {
 	if (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
-		auto unaryNode = std::make_shared<PostfixExpressionNode>();
-		unaryNode->op = previous().value;
-		unaryNode->expression = parsePostfixExpression();
-		return unaryNode;
+		auto rightCopy = parsePostfixExpression();
+		return std::make_unique<PostfixExpressionNode>(previous().value, rightCopy);
 	}
 	else {
 		return parseUnaryExpression();
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parsePrefixExpression()
+std::unique_ptr<ASTNode> Parser::parsePrefixExpression()
 {
 	if (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
-		auto unaryNode = std::make_shared<PrefixExpressionNode>();
-		unaryNode->op = previous().value;
-		unaryNode->expression = parsePrefixExpression();
-		return unaryNode;
+		auto rightCopy = parsePrefixExpression();
+		return std::make_unique<PrefixExpressionNode>(previous().value, rightCopy);
 	}
 	else {
 		return parsePostfixExpression();
 	}
 }
 
-std::shared_ptr<ASTNode> Parser::parseExpression() {
-	std::shared_ptr<ASTNode> expr = parseOrExpression();
+std::unique_ptr<ASTNode> Parser::parseExpression() {
+	std::unique_ptr<ASTNode> expr = parseOrExpression();
 
 	if (match(TokenType::KEYWORD, "match")) {
-		auto matchNode = std::make_shared<MatchExpressionNode>();
-		matchNode->expression = expr;
+		auto matchNode = std::make_unique<MatchExpressionNode>();
+		matchNode->expression = std::move(expr);
 
 		expect(TokenType::OPERATOR, "{");
 
@@ -401,12 +346,12 @@ std::shared_ptr<ASTNode> Parser::parseExpression() {
 
 			auto caseResult = parseExpression();
 
-			matchNode->cases.push_back(std::make_pair(casePattern, caseResult));
+			matchNode->cases.emplace_back(std::move(casePattern), std::move(caseResult));
 		}
 
 		expect(TokenType::OPERATOR, "}");
 
-		expr = matchNode;
+		expr = std::move(matchNode);
 	}
 	else {
 		match(TokenType::OPERATOR, ";");
@@ -414,10 +359,10 @@ std::shared_ptr<ASTNode> Parser::parseExpression() {
 	return expr;
 }
 
-std::shared_ptr<ASTNode> Parser::parseLambdaExpression() {
-	// C++ÀÇ ¶÷´Ù½Ä°ú À¯»çÇÑ ±¸¹®À» °¡Á¤
-	// ¿¹: [&](x: Int, y: Int) -> { x + y }
-	auto lambdaNode = std::make_shared<LambdaExpressionNode>();
+std::unique_ptr<ASTNode> Parser::parseLambdaExpression() {
+	// C++ï¿½ï¿½ ï¿½ï¿½ï¿½Ù½Ä°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// ï¿½ï¿½: [&](x: Int, y: Int) -> { x + y }
+	auto lambdaNode = std::make_unique<LambdaExpressionNode>();
 
 	expect(TokenType::OPERATOR, "[");
 	if (match(TokenType::OPERATOR, "&")) {
@@ -443,12 +388,15 @@ std::shared_ptr<ASTNode> Parser::parseLambdaExpression() {
 	expect(TokenType::OPERATOR, "]");
 
 	expect(TokenType::OPERATOR, "(");
-	lambdaNode->arguments = parseCallParameterList();
+	auto params = parseCallParameterList();
+	for (auto& arg : params) {
+		lambdaNode->arguments.push_back(std::move(arg));
+	}
 	expect(TokenType::OPERATOR, ")");
 
 	expect(TokenType::OPERATOR, "->");
 	if (match(TokenType::OPERATOR, "{")) {
-		lambdaNode->body = parseBlock();
+		lambdaNode->body = std::move(parseBlock());
 	}
 	else {
 		error("Expected '{' after '->' in lambda expression");

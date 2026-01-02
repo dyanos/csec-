@@ -34,6 +34,10 @@ struct Symbol {
     Symbol(const std::string& name, Type* type, llvm::Value* value, bool isMutable, SymbolType symbolType)
 		: name(name), type(std::make_unique<Type>(type)), value(value), function(nullptr), isMutable(isMutable), symbolType(symbolType) {
 	} // 'function' �ʱ�ȭ
+    Symbol(const std::string& name, std::unique_ptr<Type> type, llvm::Value* value, bool isMutable, SymbolType symbolType)
+        : name(name), type(std::move(type)), value(value), function(nullptr), isMutable(isMutable), symbolType(symbolType) {
+
+    }
     Symbol(const Symbol* other) {
 		copyFrom(*other);
     }

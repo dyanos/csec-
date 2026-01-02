@@ -7,6 +7,9 @@ public:
     UnitNode() {
         nodeType = ASTNodeType::UNIT;
     }
+    UnitNode(UnitNode* other) {
+        nodeType = other->nodeType;
+	}
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override {
@@ -16,4 +19,7 @@ public:
     std::unique_ptr<Type> getType() override {
         return std::make_unique<UnknownType>();
     }
+    std::unique_ptr<ASTNode> clone() override {
+        return std::make_unique<UnitNode>(this);
+	}
 };

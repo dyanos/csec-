@@ -49,8 +49,8 @@ llvm::Value* FunctionDeclarationNode::codegen() {
     // 함수 인자 심볼 추가
     int cnt = 0;
     for (auto& arg : this->parameters) {
-        Symbol* paramSymbol = new Symbol(arg->name, arg->getType().get(), function->getArg(cnt), false, SymbolType::VARIABLE);
-        CodeGenerator::getInstance().symbolTable.addSymbol(arg->name, paramSymbol);
+        Symbol* paramSymbol = new Symbol(((ParameterNode*)arg.get())->name, arg->getType().get(), function->getArg(cnt), false, SymbolType::VARIABLE);
+        CodeGenerator::getInstance().symbolTable.addSymbol(((ParameterNode*)arg.get())->name, paramSymbol);
         cnt += 1;
     }
 

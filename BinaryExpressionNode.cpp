@@ -45,8 +45,8 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
         else {
-            // TODO: »ó¼Ó °ü°èÀÏ °æ¿ì ºñ±³ ¿¬»êÀÚ°¡ ÀçÁ¤ÀÇ µÇ¾î ÀÖ´ÂÁö È®ÀÎ ÈÄ ÇØ´ç ¸Þ¼Òµå È£Ãâ
-            // ¾ø´Ù¸é, ¾Æ·¡ ¿À·ù ¹ß»ý
+            // TODO: ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ú°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ç¾ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½ ï¿½ï¿½ ï¿½Ø´ï¿½ ï¿½Þ¼Òµï¿½ È£ï¿½ï¿½
+            // ï¿½ï¿½ï¿½Ù¸ï¿½, ï¿½Æ·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½
             std::cerr << "Type error: Left and right expressions have different types for operator '" << op << "'" << std::endl;
             return nullptr;
         }
@@ -128,20 +128,20 @@ llvm::Value* BinaryExpressionNode::codegen() {
 }
 
 std::unique_ptr<Type> BinaryExpressionNode::getType() {
-    if (type) return std::make_unique<Type>(type.get());
+    if (type) return type->clone();
 
     auto leftType = left->getType();
     auto rightType = right->getType();
 
-    if (!leftType->equals(rightType.get())) {
+    if (!leftType->equals(rightType)) {
         std::cerr << "Type error: Left and right expressions have different types" << std::endl;
         return std::make_unique<UnknownType>();
     }
 
     if (op == "+" || op == "-" || op == "*" || op == "/") {
         if (leftType->getName() == "Int" || leftType->getName() == "Float" || leftType->getName() == "Double") {
-            // ±âÁ¸ raw Æ÷ÀÎÅÍ¸¦ ÀÌ¿ëÇØ »õ °´Ã¼¸¦ ¸¸µéÁö ¾Ê°í,
-            // ¼­ºê½ÄÀÌ °®°í ÀÖ´Â shared_ptrÀ» ±×´ë·Î Àç»ç¿ëÇÏ¿© Å¸ÀÔÀ» ¼³Á¤.
+            // ï¿½ï¿½ï¿½ï¿½ raw ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½Ì¿ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½,
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ shared_ptrï¿½ï¿½ ï¿½×´ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
             return left->getType();
         }
         else {
@@ -150,7 +150,7 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
         }
     }
     else {
-        // ´Ù¸¥ ¿¬»êÀÚ Ãß°¡ ½Ã Ã³¸® ¿¹Á¤
+        // ï¿½Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ ï¿½ï¿½ Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     }
 
     return std::make_unique<UnknownType>();

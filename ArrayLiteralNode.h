@@ -8,12 +8,23 @@
 // ¿¹: [1, 2, x]
 class ArrayLiteralNode : public ASTNode {
 public:
-    std::vector<std::shared_ptr<ASTNode>> elements;
+    std::vector<std::unique_ptr<ASTNode>> elements;
 
-    ArrayLiteralNode() = default;
+    ArrayLiteralNode() {
+        elements.clear();
+    }
+    ArrayLiteralNode(ArrayLiteralNode* other) {
+        for (const auto& elem : other->elements) {
+            this->elements.push_back(elem->clone());
+        }
+        nodeType = ASTNodeType::ARRAY_LITERAL;
+    }
     virtual ~ArrayLiteralNode() = default;
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override;
+    std::unique_ptr<ASTNode> clone() override {
+        return std::make_unique<ArrayLiteralNode>(this);
+	}
 };

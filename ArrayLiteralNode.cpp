@@ -10,5 +10,5 @@ llvm::Value* ArrayLiteralNode::codegen() {
 }
 
 std::unique_ptr<Type> ArrayLiteralNode::getType() {
-	return std::make_unique<Type>(type.get());
+	return type->clone();
 }

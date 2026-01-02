@@ -17,7 +17,7 @@ class BlockNode;
 class Parser {
 public:
     Parser(const std::vector<Token>& tokens);
-    std::shared_ptr<ASTNode> parse();
+    std::unique_ptr<ASTNode> parse();
 
 private:
     const std::vector<Token>& tokens;
@@ -35,56 +35,55 @@ private:
     void restoreTokenPosition();
 
     // import, class, object, template....
-	std::shared_ptr<ASTNode> parseTopStatement();
+	std::unique_ptr<ASTNode> parseTopStatement();
 
-    std::shared_ptr<ASTNode> parseAnnotationStatement();
-	std::shared_ptr<ASTNode> parseAnnotationExpression();
-	std::shared_ptr<ASTNode> parseImportStatement();
-	std::shared_ptr<ASTNode> parseClassDeclaration();
-    std::shared_ptr<ClassBodyNode> parseClassBody();
-    std::shared_ptr<ASTNode> parseObjectDeclaration();
+    std::unique_ptr<ASTNode> parseAnnotationStatement();
+	std::unique_ptr<ASTNode> parseAnnotationExpression();
+	std::unique_ptr<ASTNode> parseImportStatement();
+	std::unique_ptr<ASTNode> parseClassDeclaration();
+    std::unique_ptr<ClassBodyNode> parseClassBody();
+    std::unique_ptr<ASTNode> parseObjectDeclaration();
 
 
-    std::shared_ptr<ASTNode> parseStatement();
-    std::shared_ptr<FunctionDeclarationNode> parseFunctionDeclaration();
+    std::unique_ptr<ASTNode> parseStatement();
+    std::unique_ptr<FunctionDeclarationNode> parseFunctionDeclaration();
+	std::unique_ptr<VariableDeclarationNode> parseVariableDeclaration(bool isMutable);
+    std::unique_ptr<ASTNode> parseIfStatement();
+    std::unique_ptr<ASTNode> parseForStatement();
+    std::unique_ptr<ASTNode> parseWhileStatement();
+    std::unique_ptr<ASTNode> parseMapStatement();
+    std::unique_ptr<ASTNode> parsePMapStatement();
+    std::unique_ptr<ASTNode> parseReduceStatement();
+    std::unique_ptr<ASTNode> parseFilterStatement();
+    std::unique_ptr<ASTNode> parseLambdaExpression();
+    std::unique_ptr<ASTNode> parseSimpleExpression();
+    std::unique_ptr<ASTNode> parseInlineMathLatex();
+    std::unique_ptr<ASTNode> parseBlockMathLatex();
+    std::unique_ptr<ASTNode> parseLatexCommand();
+    std::unique_ptr<ASTNode> parseAssignmentExpression();
+	std::unique_ptr<ASTNode> parsePrimaryExpression();
+	std::unique_ptr<ASTNode> parseMulDivExpression();
+	std::unique_ptr<ASTNode> parseAddSubExpression();
+	std::unique_ptr<ASTNode> parseComparisonExpression();
+    std::unique_ptr<ASTNode> parseShiftExpression();
+	std::unique_ptr<ASTNode> parseEqualityExpression();
+    std::unique_ptr<ASTNode> parseConditionExpression();
+	std::unique_ptr<ASTNode> parseAndExpression();
+	std::unique_ptr<ASTNode> parseOrExpression();
+	std::unique_ptr<ASTNode> parseXorExpression();
+    std::unique_ptr<ASTNode> parseBitwiseOrExpression();
+    std::unique_ptr<ASTNode> parseBitwiseAndExpression();
+	std::unique_ptr<ASTNode> parseUnaryExpression();
+	std::unique_ptr<ASTNode> parsePostfixExpression();
+	std::unique_ptr<ASTNode> parsePrefixExpression();
+    std::unique_ptr<ASTNode> parseExpression();
+    std::vector<std::unique_ptr<ASTNode>> parseArgumentList();
 
-	std::shared_ptr<VariableDeclarationNode> parseVariableDeclaration(bool isMutable);
-    std::shared_ptr<ASTNode> parseIfStatement();
-    std::shared_ptr<ASTNode> parseForStatement();
-    std::shared_ptr<ASTNode> parseWhileStatement();
-    std::shared_ptr<ASTNode> parseMapStatement();
-    std::shared_ptr<ASTNode> parsePMapStatement();
-    std::shared_ptr<ASTNode> parseReduceStatement();
-    std::shared_ptr<ASTNode> parseFilterStatement();
-    std::shared_ptr<ASTNode> parseLambdaExpression();
-    std::shared_ptr<ASTNode> parseSimpleExpression();
-    std::shared_ptr<ASTNode> parseInlineMathLatex();
-    std::shared_ptr<ASTNode> parseBlockMathLatex();
-    std::shared_ptr<ASTNode> parseLatexCommand();
-    std::shared_ptr<ASTNode> parseAssignmentExpression();
-	std::shared_ptr<ASTNode> parsePrimaryExpression();
-	std::shared_ptr<ASTNode> parseMulDivExpression();
-	std::shared_ptr<ASTNode> parseAddSubExpression();
-	std::shared_ptr<ASTNode> parseComparisonExpression();
-    std::shared_ptr<ASTNode> parseShiftExpression();
-	std::shared_ptr<ASTNode> parseEqualityExpression();
-    std::shared_ptr<ASTNode> parseConditionExpression();
-	std::shared_ptr<ASTNode> parseAndExpression();
-	std::shared_ptr<ASTNode> parseOrExpression();
-	std::shared_ptr<ASTNode> parseXorExpression();
-    std::shared_ptr<ASTNode> parseBitwiseOrExpression();
-    std::shared_ptr<ASTNode> parseBitwiseAndExpression();
-	std::shared_ptr<ASTNode> parseUnaryExpression();
-	std::shared_ptr<ASTNode> parsePostfixExpression();
-	std::shared_ptr<ASTNode> parsePrefixExpression();
-    std::shared_ptr<ASTNode> parseExpression();
-    std::vector<std::shared_ptr<ASTNode>> parseArgumentList();
-
-    std::vector<std::shared_ptr<ASTNode>> parseCallParameterList();
-    std::vector<std::shared_ptr<ParameterNode>> parseParameterList();
-    std::shared_ptr<ParameterNode> parseParameter();
-    std::shared_ptr<Type> parseType();
-    std::shared_ptr<BlockNode> parseBlock();
+    std::vector<std::unique_ptr<ASTNode>> parseCallParameterList();
+    std::vector<std::unique_ptr<ParameterNode>> parseParameterList();
+    std::unique_ptr<ParameterNode> parseParameter();
+    std::unique_ptr<Type> parseType();
+    std::unique_ptr<BlockNode> parseBlock();
 
     void expect(TokenType type, const std::string& value = "");
     void error(const std::string& message);

@@ -34,20 +34,20 @@ llvm::Value* ExpressionNode::codegen() {
 }
 
 std::unique_ptr<Type> ExpressionNode::getType() {
-    if (type) return std::make_unique<Type>(type.get());
+    if (type) return type->clone();
 
     auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
     if (symbolOpt) {
         Symbol* symbol = (*symbolOpt);
-		return std::make_unique<Type>(symbol->type.get());
+		return symbol->type->clone();
     }
 
     if (value.front() == '"' && value.back() == '"') {
-        return std::make_unique<ClassType>("String");
+        return std::make_unique<ClassType>(std::string("String"));
     }
 
     if (std::all_of(value.begin(), value.end(), ::isdigit)) {
-        return std::make_unique<BasicType>("Int");
+        return std::make_unique<BasicType>(std::string("Int"));
     }
 
     return std::make_unique<UnknownType>();

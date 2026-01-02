@@ -48,19 +48,21 @@ llvm::Value* ClassDeclarationNode::codegen() {
             return nullptr;
         }
 
-        Symbol* fieldSymbol = new Symbol(field->name, field->type.get(), nullptr, false, SymbolType::FIELD);
-        classSymbol->constructorParams[field->name] = std::make_unique<Symbol>(fieldSymbol);
+        auto f = (ParameterNode*)(field.get());
+        Symbol* fieldSymbol = new Symbol(f->name, f->type.get(), nullptr, false, SymbolType::FIELD);
+        classSymbol->constructorParams[f->name] = std::make_unique<Symbol>(fieldSymbol);
     }
 
-    for (auto& field : body->fields) {
+    for (auto& field : ((ClassBodyNode*)(body.get()))->fields) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(field->type.get());
         if (!fieldType) {
             std::cerr << "Error: Unsupported field type '" << field->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
 
-        Symbol* fieldSymbol = new Symbol(field->name, field->type.get(), nullptr, field->isMutable, SymbolType::FIELD);
-        classSymbol->fields[field->name] = std::make_unique<Symbol>(fieldSymbol);
+		auto f = dynamic_cast<VariableDeclarationNode*>(field.get());
+        Symbol* fieldSymbol = new Symbol(f->name, field->type.get(), nullptr, f->isMutable, SymbolType::FIELD);
+        classSymbol->fields[f->name] = std::make_unique<Symbol>(fieldSymbol);
     }
 
     // 클래스 타입 생성
@@ -89,8 +91,9 @@ llvm::Value* ClassDeclarationNode::codegen() {
     classSymbol->classType = classType;
 
     // 메서드 선언 생성 (실제 코드 생성은 나중에 수행)
-    for (auto& method : body->methods) {
-        declareMethod(method.get(), classSymbol);
+    for (auto& method : ((ClassBodyNode*)(body.get()))->methods) {
+		auto md = dynamic_cast<FunctionDeclarationNode*>(method.get());
+        declareMethod(md, classSymbol);
     }
 
     // 심볼 테이블에 클래스 심볼 추가
@@ -122,14 +125,14 @@ void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassS
     std::string methodName = name + "_" + method->name; // 클래스 이름을 접두사로 사용
     llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, methodName, CodeGenerator::getInstance().module.get());
 
-    std::vector<Type*> types;
-    types.push_back(new ClassType(name));
+    std::vector<std::unique_ptr<Type>> types;
+    types.push_back(std::make_unique<ClassType>(name));
     for (auto& param : method->parameters) {
-        types.push_back(param->getType().get());
+        types.push_back(param->getType()->clone());
     }
 
     // 메서드 심볼 업데이트
-    Symbol* methodSymbol = new Symbol(method->name, new FunctionType(types, method->returnType.get()), function, false, SymbolType::METHOD);
+    Symbol* methodSymbol = new Symbol(method->name, new FunctionType(types, method->returnType), function, false, SymbolType::METHOD);
     classSymbol->methods[method->name] = std::make_unique<Symbol>(methodSymbol);
 
     // 메서드 본문 생성을 지연시키기 위해 FunctionDeclarationNode를 저장

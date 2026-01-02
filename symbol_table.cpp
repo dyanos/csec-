@@ -54,7 +54,7 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
     auto& ctxt = Context::getInstance();
 
     // 최상위 타입 Any
-    auto anyType = std::make_shared<ClassType>("Any");
+    auto anyType = std::make_unique<ClassType>("Any");
 
     //addTypeSymbol("Any", anyType);
 	// root -> namespace symbol이므로 강제 캐스팅
@@ -81,7 +81,7 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
     this->currentScope->symbols["Boolean"] = std::make_unique<ClassSymbol>("Boolean", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
     // 참조 타입 AnyRef
-    auto anyRefType = std::make_shared<ClassType>("AnyRef", anyType);
+    auto anyRefType = std::make_unique<ClassType>("AnyRef");
     //addTypeSymbol("AnyRef", anyRefType);
     this->currentScope->symbols["AnyRef"] = std::make_unique<ClassSymbol>("AnyRef", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
@@ -97,8 +97,14 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
     //auto& intClassSymbol = classSymbols["Int"];
 
     // 예를 들어, toString 메서드 등록
-    auto toStringType = std::make_shared<FunctionType>(std::vector<Type*>{}, new BasicType("String", anyRefType));
-    ((ClassSymbol*)(this->currentScope->symbols["String"].get()))->methods["toString"] = std::make_unique<Symbol>("toString", toStringType.get(), nullptr, false, SymbolType::METHOD);
+    std::vector<std::unique_ptr<Type>> emptyParams;
+    auto rightCopy = std::make_unique<Type>(Type::Kind::BASIC, std::string("String"));
+    ((ClassSymbol*)(this->currentScope->symbols["String"].get()))->methods["toString"] = std::make_unique<Symbol>(
+        std::string("toString"),
+        std::make_unique<FunctionType>(emptyParams, rightCopy),
+        nullptr,
+        false,
+        SymbolType::METHOD);
 }
 
 SymbolTable::~SymbolTable() {
@@ -388,7 +394,7 @@ std::optional<NamespaceSymbol*> SymbolTable::lookupNamespace(const std::string& 
     return std::nullopt;
 }
 
-std::optional<Symbol*> SymbolTable::lookupFunction(const std::string& name, std::vector<std::shared_ptr<Type>>& argTypes) {
+std::optional<Symbol*> SymbolTable::lookupFunction(const std::string& name, std::vector<std::unique_ptr<Type>>& argTypes) {
     auto symbol = lookup(name);
     if (symbol && (*symbol)->symbolType == SymbolType::FUNCTION) {
         return (Symbol*)(*symbol);
@@ -418,9 +424,6 @@ void SymbolTable::exitScope() {
     printf("entering exitScope\n");
 	auto* temp = this->currentScope;
     this->currentScope = this->currentScope->outer;
-    for (auto& pair : temp->symbols) {
-        delete pair.second.get();
-    }
     temp->outer = nullptr;
     delete temp;
 	this->currentScopeLevel -= 1;

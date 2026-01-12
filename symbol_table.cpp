@@ -9,34 +9,11 @@
 
 #include <optional>
 #include <functional>
-#include <memory> // shared_ptr 사용을 위해 추가
+#include <memory> 
 
-// SymbolTable 구현
-// scope에 따른 다단계 네임스페이스 지원 필요
-// 1단계: 전역 심볼 테이블
-// 2~n단계: namespace, class, 함수 내부 등
-// namespace는 중첩이 가능
-// class는 현재로써는 중첩 불가
-// 함수 내부는 지역 변수만 관리
-// 심볼 검색 시에는 현재 스코프부터 시작하여 상위 스코프로 올라가며 검색
-// 심볼 추가 시에는 현재 스코프에만 추가
-// 심볼 충돌 시 에러 처리 필요
-// 심볼 삭제 시에는 현재 스코프에서만 삭제
-// 심볼 테이블 병합 시에는 충돌 처리 필요
-// 심볼 테이블 복사 시에는 깊은 복사 필요
-// 심볼 테이블 출력 시에는 계층 구조로 출력
-// 심볼 테이블 초기화 시에는 기본 타입 및 내장 심볼 추가
-// 심볼 테이블 정리 시에는 메모리 해제 및 리소스 정리
-// 심볼 테이블 디버깅 시에는 심볼 검색 경로 출력
-// 심볼 테이블 최적화 시에는 검색 속도 향상 기법 적용
-// 심볼 테이블 확장 시에는 새로운 심볼 타입 및 속성 추가 지원
-// 심볼 테이블 동기화 시에는 멀티스레드 환경에서의 안전성 보장
 
 SymbolTable::SymbolTable() {
-    // 전역 범위 생성
-	// Context::getInstance에 기본적으로 root가 생성되어 있음
     //enterScope();
-    // root는 맨 처음 scope
     this->currentScope = new Scope();
     this->currentScope->outer = nullptr;
     this->currentScope->count = 0;
@@ -44,29 +21,22 @@ SymbolTable::SymbolTable() {
 }
 
 SymbolTable::SymbolTable(const SymbolTable& other) {
-	// 복사 생성자
-	// other을 그대로 복사하면 메모리 문제가 발생하므로, 참조 형식으로 가져올 수 있을까? 그런데 그러면 원본은 어떻게 하지?
-    // properties를 그대로 복사합니다.
 	printf("Called SymbolTable copy constructor\n");
 }
 
 void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
-    auto& ctxt = Context::getInstance();
+    //auto& ctxt = Context::getInstance();
 
-    // 최상위 타입 Any
     auto anyType = std::make_unique<ClassType>("Any");
 
     //addTypeSymbol("Any", anyType);
-	// root -> namespace symbol이므로 강제 캐스팅
     this->currentScope->symbols["Any"] = std::make_unique<ClassSymbol>("Any", llvm::Type::getInt32Ty(context), "System.lang.Object");
     //((NamespaceSymbol*)&root)->classes["Any"] = ClassSymbol("Any", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
-    // 값 타입 AnyVal
     //auto anyValType = std::make_shared<ClassType>("AnyVal", anyType);
     //addTypeSymbol("AnyVal", anyValType);
     this->currentScope->symbols["AnyVal"] = std::make_unique<ClassSymbol>("AnyVal", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
-    // 기본 타입 등록
     //addTypeSymbol("Int", std::make_shared<BasicType>("Int", anyValType));
     //addTypeSymbol("Float", std::make_shared<BasicType>("Float", anyValType));
     //addTypeSymbol("Double", std::make_shared<BasicType>("Double", anyValType));
@@ -80,23 +50,18 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
     this->currentScope->symbols["Char"] = std::make_unique<ClassSymbol>("Char", llvm::Type::getInt32Ty(context), "System.lang.Object");
     this->currentScope->symbols["Boolean"] = std::make_unique<ClassSymbol>("Boolean", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
-    // 참조 타입 AnyRef
     auto anyRefType = std::make_unique<ClassType>("AnyRef");
     //addTypeSymbol("AnyRef", anyRefType);
     this->currentScope->symbols["AnyRef"] = std::make_unique<ClassSymbol>("AnyRef", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
-    // String 타입
     //addTypeSymbol("String", std::make_shared<ClassType>("String", anyRefType));
     this->currentScope->symbols["String"] = std::make_unique<ClassSymbol>("String", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
-    // Unit 타입 (void)
     //addTypeSymbol("Unit", std::make_shared<BasicType>("Unit", anyValType));
     this->currentScope->symbols["Unit"] = std::make_unique<ClassSymbol>("Unit", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
-    // Int 타입의 메서드 등록
     //auto& intClassSymbol = classSymbols["Int"];
 
-    // 예를 들어, toString 메서드 등록
     std::vector<std::unique_ptr<Type>> emptyParams;
     auto rightCopy = std::make_unique<Type>(Type::Kind::BASIC, std::string("String"));
     ((ClassSymbol*)(this->currentScope->symbols["String"].get()))->methods["toString"] = std::make_unique<Symbol>(
@@ -108,7 +73,6 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
 }
 
 SymbolTable::~SymbolTable() {
-    // 현재 스코프부터 모든 스코프를 해제
     for (int i = 0; i < this->currentScopeLevel; ++i) {
         exitScope();
 	}
@@ -121,7 +85,7 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
     auto current = ctxt.getCurrentNamespace();
 
     if (this->currentSymbol == nullptr) {
-        this->currentSymbol = const_cast<Symbol*>(symbol);  // currentSymbol은 메모리 해제하면 안됨!!!
+        this->currentSymbol = const_cast<Symbol*>(symbol); 
 		this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
 		return true;
     }
@@ -209,7 +173,7 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
             switch (symbol->symbolType) {
             case SymbolType::VARIABLE:
             case SymbolType::FIELD:
-                // 타입을 맞춰서 push_back
+                // 타占쏙옙占쏙옙 占쏙옙占썹서 push_back
                 target->symbols.push_back(const_cast<Symbol*>(symbol));
 				this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
@@ -221,7 +185,7 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
 		break;
 
     default:
-        // 오류
+        // 占쏙옙占쏙옙
 		printf("Unsupported current symbol type: %d\n", (int)current->symbolType);
         break;
     }
@@ -277,13 +241,13 @@ std::optional<Symbol*> checkSymbol(Symbol* symbol, const std::string& name) {
 }
 
 std::optional<Symbol*> SymbolTable::lookup(const std::string& name) {
-    // TODO : name이 path(A.B.C)일 경우 처리 필요
+    // TODO : name占쏙옙 path(A.B.C)占쏙옙 占쏙옙占� 처占쏙옙 占십울옙
     auto& ctxt = Context::getInstance();
-	auto root = static_cast<NamespaceSymbol*>(ctxt.getRootNamespace());
+	//auto root = static_cast<NamespaceSymbol*>(ctxt.getRootNamespace());
 
 	auto names = split(name, '.');
 
-	// 현재 스코프부터 시작하여 상위 스코프로 올라가며 검색
+	// 占쏙옙占쏙옙 占쏙옙占쏙옙占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙占싹울옙 占쏙옙占쏙옙 占쏙옙占쏙옙占쏙옙占쏙옙 占시라가몌옙 占싯삼옙
 	Scope* curScope = this->currentScope;
     while (curScope != nullptr) {
         for (auto& pair : curScope->symbols) {
@@ -430,7 +394,6 @@ void SymbolTable::exitScope() {
 }
 
 void SymbolTable::print(std::ostream& os, int indent) const {
-    // 심볼 테이블 출력
     auto& ctxt = Context::getInstance();
     auto root = static_cast<NamespaceSymbol*>(ctxt.getRootNamespace());
     std::function<void(const NamespaceSymbol*, int)> printNamespace;

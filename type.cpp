@@ -1,6 +1,3 @@
-#pragma once
-
-
 #include "type.h"
 
 std::unique_ptr<Type> Type::makeBasic(const std::string& name) {

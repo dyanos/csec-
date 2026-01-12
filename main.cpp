@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);*/
 
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    _CrtSetBreakAlloc(3404);
+    //_CrtSetBreakAlloc(3404);
 
     /*if (argc < 2) {
         std::cout << "No input file provided." << std::endl;

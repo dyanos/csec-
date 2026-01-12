@@ -17,12 +17,12 @@ llvm::Value* ExpressionNode::codegen() {
     }
     if (value.find('"') != std::string::npos) {
         std::string str = value.substr(1, value.length() - 2);
-        return CodeGenerator::getInstance().builder.CreateGlobalStringPtr(str);
+        return CodeGenerator::getInstance().builder.CreateGlobalString(str);
     }
 
     if (value.front() == '"' && value.back() == '"') {
         std::string str = value.substr(1, value.length() - 2);
-        return CodeGenerator::getInstance().builder.CreateGlobalStringPtr(str);
+        return CodeGenerator::getInstance().builder.CreateGlobalString(str);
     }
 
     if (std::all_of(value.begin(), value.end(), ::isdigit)) {

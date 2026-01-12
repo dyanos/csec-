@@ -167,7 +167,7 @@ std::unique_ptr<ASTNode> Parser::parseMapStatement() {
 		mapNode->variable = previous().value;
 
 		if (match(TokenType::OPERATOR, "<-")) {
-			mapNode->iterableExpr = std::move(parseExpression());
+			mapNode->iterableExpr = parseExpression();
 		}
 		else {
 			error("Expected '<-' in map statement");

@@ -80,7 +80,7 @@ public:
 
     // Ÿ�� �񱳸� ���� �Լ�
     virtual bool equals(const std::unique_ptr<Type>& other) {
-        return *this == std::unique_ptr<Type>(other.get());
+        return *this == other.get();
     }
 
     bool isTopType() const {
@@ -90,7 +90,7 @@ public:
 
     bool hasSuperClass(const std::unique_ptr<Type>& other) const {
         for (auto& base : this->baseTypes) {
-            if (*base == std::unique_ptr<Type>(other.get())) return true;
+            if (*base == other) return true;
             // 재귀적으로 상위 클래스 검사
             if (base->hasSuperClass(other)) return true;
         }

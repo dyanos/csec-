@@ -396,7 +396,7 @@ std::unique_ptr<ASTNode> Parser::parseLambdaExpression() {
 
 	expect(TokenType::OPERATOR, "->");
 	if (match(TokenType::OPERATOR, "{")) {
-		lambdaNode->body = std::move(parseBlock());
+		lambdaNode->body = parseBlock();
 	}
 	else {
 		error("Expected '{' after '->' in lambda expression");

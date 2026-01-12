@@ -31,7 +31,7 @@ llvm::Value* ValueNode::codegen() {
 		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), std::stoi(value.substr(2), nullptr, 8));
 	}
 	else if (valueType == TokenType::STRING_LITERAL) {
-		return CodeGenerator::getInstance().builder.CreateGlobalStringPtr(value);
+		return CodeGenerator::getInstance().builder.CreateGlobalString(value);
 	}
 	else if (valueType == TokenType::BOOLEAN_LITERAL) {
 		if (value == "true") {

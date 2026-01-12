@@ -18,27 +18,22 @@ llvm::Value* IfStatementNode::codegen() {
         return nullptr;
     }
 
-    // conditionValue�� ���� Ÿ���� ��� 0�� ���Ͽ� boolean���� ��ȯ �� �б� ó��
     if (conditionValue->getType()->isIntegerTy()) {
         conditionValue = CodeGenerator::getInstance().builder.CreateICmpNE(
             conditionValue, llvm::ConstantInt::get(CodeGenerator::getInstance().context, llvm::APInt(conditionValue->getType()->getIntegerBitWidth(), 0)), "ifcond");
     }
-    // conditionValue�� pointer Ÿ���� ��� null�� ���Ͽ� boolean���� ��ȯ �� �б� ó��
     else if (conditionValue->getType()->isPointerTy()) {
         conditionValue = CodeGenerator::getInstance().builder.CreateICmpNE(
             conditionValue, llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(conditionValue->getType())), "ifcond");
     }
-    // conditionValue�� boolean Ÿ���� �ƴ� ��� ���� ó��
     else if (!conditionValue->getType()->isIntegerTy(1)) {
         std::cerr << "Error: Condition is not a boolean expression." << std::endl;
         return nullptr;
     }
 
-    // ���� current block�� ����
     auto* currentFunction = CodeGenerator::getInstance().builder.GetInsertBlock()->getParent();
-    auto* currBlock = CodeGenerator::getInstance().builder.GetInsertBlock();
+    //auto* currBlock = CodeGenerator::getInstance().builder.GetInsertBlock();
 
-    // then ���ϰ� else ������ ���� �� �� ���� ���� current block���� ���ǿ� ���� �б�
     llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "then", currentFunction);
     llvm::BasicBlock* elseBB = nullptr;
     if (this->elseBlock != nullptr) {
@@ -46,10 +41,8 @@ llvm::Value* IfStatementNode::codegen() {
     }
     llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "ifcont", currentFunction);
 
-    // if else �϶� ������ expression(�Ǵ� statement)�� ���� ���� instruction���� ����� �� �ֵ��� PHI ��� ����
     if (this->elseBlock != nullptr) {
         CodeGenerator::getInstance().builder.CreateCondBr(conditionValue, thenBB, elseBB);
-        // then ���� �ڵ� ����
         CodeGenerator::getInstance().builder.SetInsertPoint(thenBB);
         llvm::Value* thenValue = thenBlock->codegen();
         if (!thenValue) {
@@ -57,7 +50,6 @@ llvm::Value* IfStatementNode::codegen() {
         }
         CodeGenerator::getInstance().builder.CreateBr(mergeBB);
         thenBB = CodeGenerator::getInstance().builder.GetInsertBlock();
-        // else ���� �ڵ� ����
         CodeGenerator::getInstance().builder.SetInsertPoint(elseBB);
         llvm::Value* elseValue = elseBlock->codegen();
         if (!elseValue) {
@@ -69,7 +61,6 @@ llvm::Value* IfStatementNode::codegen() {
         CodeGenerator::getInstance().builder.SetInsertPoint(mergeBB);
 
         auto* phi = CodeGenerator::getInstance().builder.CreatePHI(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 2, "result");
-        // then �� else ��� ����
         phi->addIncoming(thenValue, thenBB);
         phi->addIncoming(elseValue, elseBB);
 
@@ -88,7 +79,6 @@ llvm::Value* IfStatementNode::codegen() {
         CodeGenerator::getInstance().builder.SetInsertPoint(mergeBB);
 
         /*auto* phi = CodeGenerator::getInstance().builder.CreatePHI(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 2, "result");
-        // then �� else ��� ����
         phi->addIncoming(thenValue, thenBB);
         phi->addIncoming(elseValue, elseBB);*/
         // null ��ȯ

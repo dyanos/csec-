@@ -38,7 +38,6 @@ llvm::Value* ArrayCreationExpressionNode::codegen() {
     llvm::StructType* classType = (llvm::StructType*)classSymbol->classType;
 
     // 메모리 할당
-    llvm::Value* allocSize = CodeGenerator::getInstance().builder.CreateStructGEP(classType, nullptr, 0);
     llvm::Value* allocatedMemory = CodeGenerator::getInstance().builder.CreateAlloca(classType, array_size, typeName);
 
     // 객체 초기화 (생성자 호출)

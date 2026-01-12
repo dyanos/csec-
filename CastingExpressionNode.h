@@ -5,19 +5,19 @@
 class CastingExpressionNode : public ASTNode {
 public:
 	std::unique_ptr<ASTNode> expression;
-	std::unique_ptr<ASTNode> type;
+	std::unique_ptr<ASTNode> typeNode;
 
 	CastingExpressionNode() {
 		nodeType = ASTNodeType::CASTING_EXPRESSION;
 	}
 	CastingExpressionNode(std::unique_ptr<ASTNode>& expression, std::unique_ptr<ASTNode>& type) {
 		this->expression = std::move(expression);
-		this->type = std::move(type);
+		this->typeNode = std::move(type);
 		nodeType = ASTNodeType::CASTING_EXPRESSION;
 	}
 	CastingExpressionNode(CastingExpressionNode* other) {
 		this->expression = std::move(other->expression);
-		this->type = std::move(other->type);
+		this->typeNode = std::move(other->typeNode);
 		this->nodeType = other->nodeType;
 	}
 

@@ -167,7 +167,7 @@ public:
 
 	void visit(CastingExpressionNode& node) override {
 		std::cout << "CastingExpression:" << std::endl;
-		std::cout << "Type: " << node.type << std::endl;
+		std::cout << "Type: " << node.typeNode << std::endl;
 		std::cout << "Expression:" << std::endl;
 		node.expression->accept(*this);
 	}

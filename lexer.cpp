@@ -100,7 +100,7 @@ bool Lexer::matchComment(std::vector<Token>& tokens) {
 
 bool Lexer::matchWhitespace(std::vector<Token>& tokens) {
     if (std::isspace(peek()) && peek() != '\n') {
-        size_t start = position;
+        //size_t start = position;
         while (std::isspace(peek()) && peek() != '\n') {
             advance();
         }

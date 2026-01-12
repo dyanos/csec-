@@ -24,16 +24,16 @@ enum class SymbolType {
 
 struct Symbol {
     std::string name;
-    std::unique_ptr<Type> type;  // Ÿ���� std::string���� llvm::Type*���� ����
+    std::unique_ptr<Type> type;
     llvm::Value* value;
-    llvm::Function* function; // 'function' ��� �߰�
+    llvm::Function* function;
     bool isMutable;
     SymbolType symbolType;
 
 	Symbol() : name(""), type(nullptr), value(nullptr), function(nullptr), isMutable(false), symbolType(SymbolType::NOSYMBOL) {}
     Symbol(const std::string& name, Type* type, llvm::Value* value, bool isMutable, SymbolType symbolType)
 		: name(name), type(std::make_unique<Type>(type)), value(value), function(nullptr), isMutable(isMutable), symbolType(symbolType) {
-	} // 'function' �ʱ�ȭ
+	} 
     Symbol(const std::string& name, std::unique_ptr<Type> type, llvm::Value* value, bool isMutable, SymbolType symbolType)
         : name(name), type(std::move(type)), value(value), function(nullptr), isMutable(isMutable), symbolType(symbolType) {
 
@@ -45,15 +45,20 @@ struct Symbol {
 		copyFrom(other);
     }
     virtual void copyFrom(const Symbol& other) {
+		copyHelper(other);
+	}
+
+    virtual ~Symbol() {
+    }
+
+protected:
+    void copyHelper(const Symbol& other) {
         this->name = other.name;
         this->type = std::make_unique<Type>(other.type.get());
         this->value = other.value;
         this->function = other.function;
-		this->isMutable = other.isMutable;
-		this->symbolType = other.symbolType;
-	}
-
-    virtual ~Symbol() {
+        this->isMutable = other.isMutable;
+        this->symbolType = other.symbolType;
     }
 };
 
@@ -169,36 +174,18 @@ struct ClassSymbol : public Symbol {
     }
 
     ClassSymbol(const Symbol* other) {
-        copyFrom(*other);
+        copyHelper(*other);
 	}
     ClassSymbol(const ClassSymbol* other) noexcept {
-        copyFrom(*other);
+        copyHelper(*other);
     }
 
     ClassSymbol(ClassSymbol& other) noexcept {
-		copyFrom(other);
+        copyHelper(other);
 	}
 
     void copyFrom(const Symbol& other) override {
-        const ClassSymbol& classOther = static_cast<const ClassSymbol&>(other);
-        this->name = classOther.name;
-        this->classType = classOther.classType;
-        this->isMutable = classOther.isMutable;
-        this->symbolType = SymbolType::CLASS;
-        this->superClassName = classOther.superClassName;
-        this->superClassSymbol = classOther.superClassSymbol;
-        this->constructorParams.clear();
-        for (const auto& pair : classOther.constructorParams) {
-			this->constructorParams[pair.first] = std::make_unique<Symbol>(pair.second.get());
-        }
-        this->fields.clear();
-        for (const auto& pair : classOther.fields) {
-			this->fields[pair.first] = std::make_unique<Symbol>(pair.second.get());
-        }
-        this->methods.clear();
-		for (const auto& pair : classOther.methods) {
-            this->methods[pair.first] = std::make_unique<Symbol>(pair.second.get());
-		}
+        copyHelper(other);
 	}
 
     ~ClassSymbol() {
@@ -217,6 +204,29 @@ struct ClassSymbol : public Symbol {
 		}
 		return nullptr;
 	}
+
+protected:
+    void copyHelper(const Symbol& other) {
+        const ClassSymbol& classOther = static_cast<const ClassSymbol&>(other);
+        this->name = classOther.name;
+        this->classType = classOther.classType;
+        this->isMutable = classOther.isMutable;
+        this->symbolType = SymbolType::CLASS;
+        this->superClassName = classOther.superClassName;
+        this->superClassSymbol = classOther.superClassSymbol;
+        this->constructorParams.clear();
+        for (const auto& pair : classOther.constructorParams) {
+            this->constructorParams[pair.first] = std::make_unique<Symbol>(pair.second.get());
+        }
+        this->fields.clear();
+        for (const auto& pair : classOther.fields) {
+            this->fields[pair.first] = std::make_unique<Symbol>(pair.second.get());
+        }
+        this->methods.clear();
+        for (const auto& pair : classOther.methods) {
+            this->methods[pair.first] = std::make_unique<Symbol>(pair.second.get());
+        }
+    }
 };
 
 struct NamespaceSymbol : public Symbol {
@@ -232,15 +242,20 @@ struct NamespaceSymbol : public Symbol {
         this->symbolType = SymbolType::NAMESPACE;
     }
     NamespaceSymbol(const NamespaceSymbol* other) noexcept {
-        copyFrom(*other);
+        copyHelper(*other);
 	}
     NamespaceSymbol(NamespaceSymbol& other) noexcept {
-        copyFrom(other);
+        copyHelper(other);
 	}
     ~NamespaceSymbol() {
 	}
 
     void copyFrom(const Symbol& other) override {
+        copyHelper(other);
+    }
+
+protected:
+    void copyHelper(const Symbol& other) {
         const NamespaceSymbol& nsOther = static_cast<const NamespaceSymbol&>(other);
         this->name = nsOther.name;
         this->isMutable = nsOther.isMutable;

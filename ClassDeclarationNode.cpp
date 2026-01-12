@@ -14,16 +14,15 @@ void ClassDeclarationNode::accept(ASTVisitor& visitor) {
 llvm::Value* ClassDeclarationNode::codegen() {
     // 상위 클래스 심볼 찾기
     ClassSymbol* superClassSymbol = nullptr;
-    if (!superClassName.empty()) {
-        auto superClassSymbolOpt = CodeGenerator::getInstance().symbolTable.lookup(superClassName);
-        if (superClassSymbolOpt) {
-            superClassSymbol = static_cast<ClassSymbol*>(*superClassSymbolOpt);
-        }
 
-        if (!superClassSymbol) {
-            std::cerr << "Error: Undefined superclass '" << superClassName << "' for class '" << name << "'" << std::endl;
-            return nullptr;
-        }
+    auto superClassSymbolOpt = CodeGenerator::getInstance().symbolTable.lookup(superClassName);
+    if (superClassSymbolOpt) {
+        superClassSymbol = static_cast<ClassSymbol*>(*superClassSymbolOpt);
+    }
+
+    if (!superClassSymbol) {
+        std::cerr << "Error: Undefined superclass '" << superClassName << "' for class '" << name << "'" << std::endl;
+        return nullptr;
     }
 
     // 클래스 심볼 생성 및 클래스 타입 저장
@@ -44,25 +43,25 @@ llvm::Value* ClassDeclarationNode::codegen() {
     for (auto& field : constructorParams) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(field->type.get());
         if (!fieldType) {
+            delete classSymbol;
             std::cerr << "Error: Unsupported field type '" << field->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
 
         auto f = (ParameterNode*)(field.get());
-        Symbol* fieldSymbol = new Symbol(f->name, f->type.get(), nullptr, false, SymbolType::FIELD);
-        classSymbol->constructorParams[f->name] = std::make_unique<Symbol>(fieldSymbol);
+        classSymbol->constructorParams[f->name] = std::make_unique<Symbol>(new Symbol(f->name, f->type.get(), nullptr, false, SymbolType::FIELD));
     }
 
     for (auto& field : ((ClassBodyNode*)(body.get()))->fields) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(field->type.get());
         if (!fieldType) {
+            delete classSymbol;
             std::cerr << "Error: Unsupported field type '" << field->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
 
 		auto f = dynamic_cast<VariableDeclarationNode*>(field.get());
-        Symbol* fieldSymbol = new Symbol(f->name, field->type.get(), nullptr, f->isMutable, SymbolType::FIELD);
-        classSymbol->fields[f->name] = std::make_unique<Symbol>(fieldSymbol);
+        classSymbol->fields[f->name] = std::make_unique<Symbol>(new Symbol(f->name, field->type.get(), nullptr, f->isMutable, SymbolType::FIELD));
     }
 
     // 클래스 타입 생성
@@ -71,6 +70,7 @@ llvm::Value* ClassDeclarationNode::codegen() {
     for (auto& fieldEntry : classSymbol->constructorParams) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(fieldEntry.second->type.get());
         if (!fieldType) {
+            delete classSymbol;
             std::cerr << "Error: Unsupported field type '" << fieldEntry.second->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
@@ -81,6 +81,7 @@ llvm::Value* ClassDeclarationNode::codegen() {
     for (auto& fieldEntry : classSymbol->fields) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(fieldEntry.second->type.get());
         if (!fieldType) {
+            delete classSymbol;
             std::cerr << "Error: Unsupported field type '" << fieldEntry.second->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
@@ -104,7 +105,7 @@ llvm::Value* ClassDeclarationNode::codegen() {
 
 void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol) {
     std::vector<llvm::Type*> paramTypes;
-    paramTypes.push_back(classSymbol->classType->getPointerTo()); // this 포인터 타입
+    paramTypes.push_back(((llvm::PointerType*)classSymbol->classType)->get(CodeGenerator::getInstance().context, 0)); // this 포인터 타입
 
     for (auto& param : method->parameters) {
         llvm::Type* paramType = CodeGenerator::getInstance().getLLVMType(param->type.get());

@@ -18,8 +18,7 @@ void ForStatementNode::accept(ASTVisitor& visitor) {
 llvm::Value* ForStatementNode::codegen() {
     llvm::Function* function = CodeGenerator::getInstance().builder.GetInsertBlock()->getParent();
 
-    // for ���� �� ó�� iteration ������ �ʱ�ȭ�ϰ�,
-    llvm::BasicBlock* beforeLoopBB = CodeGenerator::getInstance().builder.GetInsertBlock();
+    //llvm::BasicBlock* beforeLoopBB = CodeGenerator::getInstance().builder.GetInsertBlock();
 
     llvm::Value* startValue;
     llvm::Value* endValue;
@@ -39,12 +38,9 @@ llvm::Value* ForStatementNode::codegen() {
             endValue = CodeGenerator::getInstance().builder.CreateSub(endValue, llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 1), "untilEnd");
         }
 
-        // ���ο� integer type�� value�� ���� �߰�
         value_ptr = CodeGenerator::getInstance().builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
-        // �ʱ�ȭ: startValue�� ���� value�� assign��
         CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
 
-        // iteration ������ symbol table�� �߰� : VARIABLE�� ptr��
         auto varSymbol = new Symbol(this->variable, rangeExpr->startExpr->getType().get(), value_ptr, false, SymbolType::VARIABLE);
         CodeGenerator::getInstance().symbolTable.addSymbol(this->variable, varSymbol);
     }
@@ -52,11 +48,9 @@ llvm::Value* ForStatementNode::codegen() {
         startValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 0);
         endValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 10);
 
-        // ���ο� value�� ���� �߰�
         value_ptr = CodeGenerator::getInstance().builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
         CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
 
-        // iteration ������ symbol table�� �߰�
         auto varSymbol = new Symbol(this->variable, new BasicType(std::string("Int")), value_ptr, false, SymbolType::VARIABLE);
         CodeGenerator::getInstance().symbolTable.addSymbol(this->variable, varSymbol);
     }
@@ -67,8 +61,6 @@ llvm::Value* ForStatementNode::codegen() {
     CodeGenerator::getInstance().builder.SetInsertPoint(loopBB);
     this->body->codegen();
 
-    // i�� �ϳ� ���� ��Ŵ
-    // next value�� �������� �Լ��� ȣ���ؾ�������, ���⼭�� �ϴ� �ܼ��� 1 ������Ŵ
     auto* value = CodeGenerator::getInstance().builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
     auto* next_value = CodeGenerator::getInstance().builder.CreateAdd(value, CodeGenerator::getInstance().builder.getInt32(1), "next_i");
     CodeGenerator::getInstance().builder.CreateStore(next_value, value_ptr);

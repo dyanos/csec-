@@ -35,6 +35,8 @@ public:
 		body = std::move(other->body);
     }
 
+	bool isExternal = false;
+
     std::string name;
     std::vector<std::unique_ptr<ASTNode>> parameters;
     std::unique_ptr<Type> returnType;

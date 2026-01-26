@@ -18,6 +18,8 @@ public:
         nodeType = ASTNodeType::OBJECT_DECLARATION;
 	}
 
+	bool isExternal = false;
+
     std::string name;
     std::unique_ptr<ASTNode> body;
 

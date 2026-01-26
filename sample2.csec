@@ -1,3 +1,13 @@
+external def println(s: String): Void;
+external def sin(x: Double): Double;
+def sum(f: (Int) => Int, start: Int, end: Int): Int = {
+	var result: Int = 0;
+	for (i <- start to end) {
+		result = result + f(i);
+	}
+	return result;
+}
+
 def main(): Int = {
 	var a1: Int = 10;
 	var b1: String = "Hello";

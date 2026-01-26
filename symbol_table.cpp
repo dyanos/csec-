@@ -9,7 +9,7 @@
 
 #include <optional>
 #include <functional>
-#include <memory> 
+#include <memory>
 
 
 SymbolTable::SymbolTable() {
@@ -59,6 +59,7 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
 
     //addTypeSymbol("Unit", std::make_shared<BasicType>("Unit", anyValType));
     this->currentScope->symbols["Unit"] = std::make_unique<ClassSymbol>("Unit", llvm::Type::getInt32Ty(context), "System.lang.Object");
+	this->currentScope->symbols["Void"] = std::make_unique<ClassSymbol>("Void", llvm::Type::getVoidTy(context), "System.lang.Object");
 
     //auto& intClassSymbol = classSymbols["Int"];
 
@@ -85,7 +86,7 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
     auto current = ctxt.getCurrentNamespace();
 
     if (this->currentSymbol == nullptr) {
-        this->currentSymbol = const_cast<Symbol*>(symbol); 
+        this->currentSymbol = const_cast<Symbol*>(symbol);
 		this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
 		return true;
     }
@@ -173,8 +174,11 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
             switch (symbol->symbolType) {
             case SymbolType::VARIABLE:
             case SymbolType::FIELD:
-                // Ÿ���� ���缭 push_back
                 target->symbols.push_back(const_cast<Symbol*>(symbol));
+				this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+                break;
+            case SymbolType::FUNCTION:
+				target->symbols.push_back(const_cast<FunctionSymbol*>(static_cast<const FunctionSymbol*>(symbol)));
 				this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
                 break;
             default:

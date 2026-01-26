@@ -15,6 +15,22 @@ void FunctionDeclarationNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* FunctionDeclarationNode::codegen() {
+    if (this->isExternal) {
+        // 외부 함수인 경우 심볼 테이블에만 추가하고 코드 생성은 하지 않음
+        Symbol* functionSymbol = new FunctionSymbol(this->name, this->getType().get(), nullptr, true, SymbolType::FUNCTION);
+        CodeGenerator::getInstance().symbolTable.addSymbol(this->name, functionSymbol);
+        llvm::FunctionType* funcType = llvm::FunctionType::get(
+            CodeGenerator::getInstance().getLLVMType(this->returnType.get()),
+            false);
+        llvm::Function * function = llvm::Function::Create(
+            funcType,
+            llvm::Function::ExternalLinkage,
+            this->name,
+            CodeGenerator::getInstance().module.get()
+		);
+		return function;
+	}
+
     std::vector<llvm::Type*> paramTypes;
 
     for (auto& param : this->parameters) {

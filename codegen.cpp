@@ -134,6 +134,52 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         std::cerr << "Error: Unsupported generic type '" << genericType->baseType->getName() << "'" << std::endl;
         return nullptr;
     }
+    else if (type->getKind() == Type::Kind::STRUCT) {
+        auto structSymbolOpt = symbolTable.lookup(type->getName());
+        if (structSymbolOpt) {
+            return static_cast<ClassSymbol*>(*structSymbolOpt)->classType;
+        }
+        else {
+            std::cerr << "Error: Undefined struct type '" << type->getName() << "'" << std::endl;
+            return nullptr;
+        }
+	}
+    else if (type->getKind() == Type::Kind::FUNCTION) {
+        auto functionType = (FunctionType*)(type);
+        std::vector<llvm::Type*> paramLLVMTypes;
+        for (const auto& paramType : functionType->parameterTypes) {
+            auto llvmParamType = getLLVMType(paramType.get());
+            if (!llvmParamType) {
+                std::cerr << "Error: Invalid parameter type in function" << std::endl;
+                return nullptr;
+            }
+            paramLLVMTypes.push_back(llvmParamType);
+        }
+        auto returnLLVMType = getLLVMType(functionType->returnType.get());
+        if (!returnLLVMType) {
+            std::cerr << "Error: Invalid return type in function" << std::endl;
+            return nullptr;
+        }
+		return llvm::FunctionType::get(returnLLVMType, paramLLVMTypes, false);
+    }
+    else if (type->getKind() == Type::Kind::ARRAY) {
+        auto arrayType = (ArrayType*)(type);
+        auto elementLLVMType = getLLVMType(arrayType->elementType.get());
+        if (!elementLLVMType) {
+            std::cerr << "Error: Invalid element type in array" << std::endl;
+            return nullptr;
+        }
+        return llvm::ArrayType::get(elementLLVMType, arrayType->size);
+	}
+    else if (type->getKind() == Type::Kind::POINTER) {
+        auto pointerType = (PointerType*)(type);
+        auto baseLLVMType = getLLVMType(pointerType->baseType.get());
+        if (!baseLLVMType) {
+            std::cerr << "Error: Invalid base type for pointer" << std::endl;
+            return nullptr;
+        }
+        return llvm::PointerType::getUnqual(baseLLVMType);
+	}
     else if (type->getKind() == Type::Kind::UNKNOWN) {
         std::cerr << "Error: Unknown type '" << type->getName() << "'" << std::endl;
         return nullptr;

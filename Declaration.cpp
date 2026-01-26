@@ -16,7 +16,6 @@ std::unique_ptr<ASTNode> Parser::parseAnnotationStatement() {
 		}
 	}
 
-	// attribute�� optional�̹Ƿ� ������ �׳� nullptr ��ȯ
 	return nullptr;
 }
 
@@ -38,7 +37,7 @@ std::unique_ptr<ASTNode> Parser::parseImportStatement() {
 	return importNode;
 }
 
-std::unique_ptr<ASTNode> Parser::parseClassDeclaration() {
+std::unique_ptr<ASTNode> Parser::parseClassDeclaration(bool isExternal) {
 	if (match(TokenType::IDENTIFIER)) {
 		std::string className = previous().value;
 
@@ -58,13 +57,15 @@ std::unique_ptr<ASTNode> Parser::parseClassDeclaration() {
 			}
 		}
 
-		std::unique_ptr<ClassBodyNode> classBody;
-		if (match(TokenType::OPERATOR, "{")) {
-			classBody = parseClassBody();
-			expect(TokenType::OPERATOR, "}");
-		}
-		else {
-			error("Expected '{' after class declaration");
+		std::unique_ptr<ClassBodyNode> classBody = nullptr;
+		if (isExternal == false) {
+			if (match(TokenType::OPERATOR, "{")) {
+				classBody = parseClassBody();
+				expect(TokenType::OPERATOR, "}");
+			}
+			else {
+				error("Expected '{' after class declaration");
+			}
 		}
 
 		return std::make_unique<ClassDeclarationNode>(className, constructorParams, superClassName, classBody);
@@ -101,8 +102,6 @@ std::unique_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 		}
 
 		// TODO: initializer�� ���� Ÿ�� �߷��ڵ尡 ������ ��
-		// if ������ ��� Ÿ�� �߷��� �ȵ�
-		// then, else �������� Ÿ���� �߷��ؾ� ��
 		if (varType == nullptr) {
 			if (initializer) {
 				varType = initializer->getType();
@@ -128,7 +127,7 @@ std::unique_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 	}
 }
 
-std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration() {
+std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration(bool isExternal) {
 	expect(TokenType::IDENTIFIER);
 	std::string functionName = previous().value;
 
@@ -145,30 +144,40 @@ std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration() {
 	}
 
 	std::unique_ptr<BlockNode> body = nullptr;
-	if (match(TokenType::OPERATOR, "{")) {
-		body = parseBlock();
-	}
-	else if (match(TokenType::OPERATOR, "=")) {
-		auto expr = parseExpression();
-		body = std::make_unique<BlockNode>();
-		body->statements.push_back(std::move(expr));
-	}
-	else {
-		error("Expected '{' or '=' after function declaration");
+	if (isExternal == false) {
+		if (match(TokenType::OPERATOR, "{")) {
+			body = parseBlock();
+		}
+		else if (match(TokenType::OPERATOR, "=")) {
+			auto expr = parseExpression();
+			body = std::make_unique<BlockNode>();
+			body->statements.push_back(std::move(expr));
+		}
+		else {
+			error("Expected '{' or '=' after function declaration");
+		}
 	}
 
 	return std::make_unique<FunctionDeclarationNode>(functionName, parameters, returnType, body);
 }
 
-std::unique_ptr<ASTNode> Parser::parseObjectDeclaration() {
+std::unique_ptr<ASTNode> Parser::parseObjectDeclaration(bool isExternal) {
 	if (match(TokenType::IDENTIFIER)) {
 		std::string objectName = previous().value;
-		std::unique_ptr<ASTNode> body;
-		if (match(TokenType::OPERATOR, "{")) {
-			body = parseBlock();
-		}
-		else {
-			error("Expected '{' after object declaration");
+		std::unique_ptr<ASTNode> body = nullptr;
+		if (isExternal == false) {
+			if (match(TokenType::OPERATOR, "{")) {
+				body = parseBlock();
+			}
+			else if (match(TokenType::OPERATOR, "=")) {
+				auto expr = parseExpression();
+				auto blockNode = std::make_unique<BlockNode>();
+				blockNode->statements.push_back(std::move(expr));
+				body = std::move(blockNode);
+			}
+			else {
+				error("Expected '{' after object declaration");
+			}
 		}
 		auto objDecl = std::make_unique<ObjectDeclarationNode>();
 		objDecl->name = objectName;

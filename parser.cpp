@@ -49,6 +49,20 @@ std::unique_ptr<Type> Parser::parseType() {
 
 		return baseType;
 	}
+	else if (match(TokenType::OPERATOR, "(")) {
+		// 함수 타입 파싱
+		std::vector<std::unique_ptr<Type>> paramTypes;
+		if (!check(TokenType::OPERATOR, ")")) {
+			do {
+				auto paramType = parseType();
+				paramTypes.push_back(std::move(paramType));
+			} while (match(TokenType::OPERATOR, ","));
+		}
+		expect(TokenType::OPERATOR, ")");
+		expect(TokenType::OPERATOR, "=>");
+		auto returnType = parseType();
+		return std::make_unique<FunctionType>(paramTypes, returnType);
+	}
 	else {
 		error("Expected type after ':'");
 		return std::make_unique<UnknownType>();
@@ -58,33 +72,46 @@ std::unique_ptr<Type> Parser::parseType() {
 std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 	std::unique_ptr<ASTNode> attributeNode = parseAnnotationStatement();
 
+	bool isExternal = false;
+	if (check(TokenType::KEYWORD, "external")) {
+		isExternal = true;
+		advance();
+	}
+
 	std::unique_ptr<ASTNode> node = nullptr;
 	if (match(TokenType::KEYWORD, "import")) {
-		while (!check(TokenType::OPERATOR, ";")) {
-			if (isAtEnd()) {
-				error("Unterminated import statement");
-				return nullptr;
-			}
-			advance();
+		if (isExternal) {
+			error("Import statement cannot be marked as external");
 		}
-		advance();
-		return nullptr;
+
+		if (attributeNode) {
+			error("Import statement cannot have attributes");
+		}
+
+		node = parseImportStatement();
 	}
 	else if (match(TokenType::KEYWORD, "class")) {
-		node = parseClassDeclaration();
+		node = parseClassDeclaration(isExternal);
+
+		ClassDeclarationNode* classNode = dynamic_cast<ClassDeclarationNode*>(node.get());
+		classNode->isExternal = isExternal;
 	}
 	else if (match(TokenType::KEYWORD, "object")) {
-		node = parseObjectDeclaration();
+		node = parseObjectDeclaration(isExternal);
+
+		ObjectDeclarationNode* objectNode = dynamic_cast<ObjectDeclarationNode*>(node.get());
+		objectNode->isExternal = isExternal;
 	}
 	else if (match(TokenType::KEYWORD, "def")) {
-		node = parseFunctionDeclaration();
+		auto targetNode = parseFunctionDeclaration(isExternal);
+		targetNode->isExternal = isExternal;
+		node = std::move(targetNode);
 	}
 	else {
 		return parseStatement();
 	}
 
 	if (attributeNode) {
-		// attributeNode�� expr�� node�� ����
 		dynamic_cast<AttributeNode*>(attributeNode.get())->target = std::move(node);
 		return attributeNode;
 	}

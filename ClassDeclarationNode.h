@@ -32,6 +32,8 @@ public:
         body = std::move(other->body);
 	}
 
+	bool isExternal = false;
+
     std::string name;
     std::vector<std::unique_ptr<ASTNode>> constructorParams;
     std::string superClassName;

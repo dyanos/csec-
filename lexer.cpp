@@ -15,7 +15,7 @@ void Lexer::initializeKeywords() {
         "import", "lazy", "match", "new", "null", "object", "override",
         "package", "private", "protected", "return", "sealed", "super",
         "this", "throw", "trait", "try", "true", "type", "val", "var",
-        "while", "with", "yield", "to", "val", "var", "map", "pmap", "reduce", "filter"
+		"while", "with", "yield", "to", "val", "var", "map", "pmap", "reduce", "filter", "external", "inline", "constexpr"
     };
     keywords.insert(kws, kws + sizeof(kws) / sizeof(kws[0]));
 }

@@ -40,13 +40,13 @@ private:
     std::unique_ptr<ASTNode> parseAnnotationStatement();
 	std::unique_ptr<ASTNode> parseAnnotationExpression();
 	std::unique_ptr<ASTNode> parseImportStatement();
-	std::unique_ptr<ASTNode> parseClassDeclaration();
+	std::unique_ptr<ASTNode> parseClassDeclaration(bool isExternal=false);
     std::unique_ptr<ClassBodyNode> parseClassBody();
-    std::unique_ptr<ASTNode> parseObjectDeclaration();
+    std::unique_ptr<ASTNode> parseObjectDeclaration(bool isExternal=false);
 
 
     std::unique_ptr<ASTNode> parseStatement();
-    std::unique_ptr<FunctionDeclarationNode> parseFunctionDeclaration();
+    std::unique_ptr<FunctionDeclarationNode> parseFunctionDeclaration(bool isExternal=false);
 	std::unique_ptr<VariableDeclarationNode> parseVariableDeclaration(bool isMutable);
     std::unique_ptr<ASTNode> parseIfStatement();
     std::unique_ptr<ASTNode> parseForStatement();

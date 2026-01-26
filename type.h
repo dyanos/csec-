@@ -40,25 +40,35 @@ public:
             this->baseTypes.push_back(parentType->clone());
         }
     }
+    Type(Kind kind,
+        const std::string& name,
+        const std::unique_ptr<Type> returnType,
+        const std::vector<std::unique_ptr<Type>> paramTypes) {
+        this->kind = kind;
+        this->name = name;
+        this->returnType = returnType ? std::unique_ptr<Type>(returnType->clone()) : nullptr;
+        for (const auto& p : paramTypes) {
+            this->paramTypes.push_back(p ? p->clone() : nullptr);
+        }
+    }
     Type(Type* type)
         : kind(type->kind), name(type->name),
-          returnType(std::move(type->returnType)),
-          elementType(std::move(type->elementType)),
+          returnType(type->returnType ? type->returnType->clone() : nullptr),
+          elementType(type->elementType ? type->elementType->clone() : nullptr),
           arraySize(type->arraySize) {
         for (auto& b : type->baseTypes) {
-            this->baseTypes.push_back(b->clone());
+            this->baseTypes.push_back(b ? b->clone() : nullptr);
         }
         for (auto& f : type->fields) {
-            this->fields.push_back({ f.first, f.second->clone() });
+            this->fields.push_back({ f.first, f.second ? f.second->clone() : nullptr });
         }
         for (auto& p : type->paramTypes) {
-            this->paramTypes.push_back(p->clone());
+            this->paramTypes.push_back(p ? p->clone() : nullptr);
         }
         for (auto& t : type->typeArgs) {
-            this->typeArgs.push_back(t->clone());
-		}
-
-	}
+            this->typeArgs.push_back(t ? t->clone() : nullptr);
+        }
+    }
 
     virtual ~Type() = default;
 
@@ -68,7 +78,7 @@ public:
     static std::unique_ptr<Type> makeArray(std::unique_ptr<Type> base, int size);
     static std::unique_ptr<Type> makeStruct(const std::string& name,
         const std::vector<std::pair<std::string, std::unique_ptr<Type>>>& fields);
-    static std::unique_ptr<Type> makeFunction(std::unique_ptr<Type> ret, const std::vector<std::unique_ptr<Type>>& params);
+    static std::unique_ptr<Type> makeFunction(std::unique_ptr<Type>& ret, const std::vector<std::unique_ptr<Type>>& params);
 
 	Kind getKind() const { return kind; }
 	std::string getName() const { return name; }
@@ -80,7 +90,7 @@ public:
 
     // Ÿ�� �񱳸� ���� �Լ�
     virtual bool equals(const std::unique_ptr<Type>& other) {
-        return *this == other.get();
+        return *this == other;
     }
 
     bool isTopType() const {
@@ -291,5 +301,52 @@ public:
 
     std::unique_ptr<Type> clone() {
         return std::make_unique<GenericType>(this);
+    }
+};
+
+class ArrayType : public Type {
+public:
+    std::unique_ptr<Type> elementType;
+    int size;
+    ArrayType() : Type(Kind::ARRAY, "array"), size(0) {}
+    ArrayType(std::unique_ptr<Type>& elementType, int size)
+        : Type(Kind::ARRAY, "array") {
+        this->elementType = elementType->clone();
+        this->size = size;
+    }
+    ArrayType(ArrayType* other)
+        : Type(Kind::ARRAY, "array") {
+        this->elementType = other->elementType->clone();
+        this->size = other->size;
+    }
+    bool equals(const std::unique_ptr<Type>& other) override {
+        if (other->getKind() != Kind::ARRAY) return false;
+        auto otherArray = (ArrayType*)other.get();
+        return elementType->equals(otherArray->elementType) && size == otherArray->size;
+    }
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<ArrayType>(this);
+    }
+};
+
+class PointerType : public Type {
+public:
+    std::unique_ptr<Type> baseType;
+    PointerType() : Type(Kind::POINTER, "pointer") {}
+    PointerType(std::unique_ptr<Type>& baseType)
+        : Type(Kind::POINTER, "pointer") {
+        this->baseType = baseType->clone();
+    }
+    PointerType(PointerType* other)
+        : Type(Kind::POINTER, "pointer") {
+        this->baseType = other->baseType->clone();
+    }
+    bool equals(const std::unique_ptr<Type>& other) override {
+        if (other->getKind() != Kind::POINTER) return false;
+        auto otherPtr = (PointerType*)other.get();
+        return baseType->equals(otherPtr->baseType);
+    }
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<PointerType>(this);
     }
 };

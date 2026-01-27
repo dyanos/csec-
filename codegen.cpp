@@ -160,7 +160,8 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
             std::cerr << "Error: Invalid return type in function" << std::endl;
             return nullptr;
         }
-		return llvm::FunctionType::get(returnLLVMType, paramLLVMTypes, false);
+		auto tp = llvm::FunctionType::get(returnLLVMType, paramLLVMTypes, false);
+        return llvm::PointerType::getUnqual(tp);
     }
     else if (type->getKind() == Type::Kind::ARRAY) {
         auto arrayType = (ArrayType*)(type);

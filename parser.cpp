@@ -202,7 +202,7 @@ std::vector<std::unique_ptr<ParameterNode>> Parser::parseParameterList() {
 			expect(TokenType::OPERATOR, ":");
 			std::unique_ptr<Type> paramType = parseType();
 
-			parameters.push_back(std::make_unique<ParameterNode>(paramName, std::make_unique<Type>(paramType.get())));
+			parameters.push_back(std::make_unique<ParameterNode>(paramName, paramType->clone()));
 		} while (match(TokenType::OPERATOR, ","));
 	}
 

@@ -1,56 +1,57 @@
-#include "type.h"
+﻿#include "type.h"
 
 std::unique_ptr<Type> Type::makeBasic(const std::string& name) {
-	return std::make_unique<Type>(Kind::BASIC, name);
+    return std::make_unique<BasicType>(name);
 }
 
 std::unique_ptr<Type> Type::makePointer(std::unique_ptr<Type> base) {
-	return std::make_unique<Type>(Type::Kind::POINTER, base->getName() + "*");
+    return std::make_unique<PointerType>(base);
 }
 
 std::unique_ptr<Type> Type::makeArray(std::unique_ptr<Type> base, int size) {
-	return std::make_unique<Type>(Type::Kind::ARRAY, base->getName() + "[]");
+    return std::make_unique<ArrayType>(base, size);
 }
 
 std::unique_ptr<Type> Type::makeStruct(const std::string& name,
-	const std::vector<std::pair<std::string, std::unique_ptr<Type>>>& fields) {
-	return std::make_unique<Type>(Type::Kind::STRUCT, name);
+    const std::vector<std::pair<std::string, std::unique_ptr<Type>>>& fields) {
+    return std::make_unique<StructType>(name);
 }
 
-std::unique_ptr<Type> Type::makeFunction(std::unique_ptr<Type>& ret, const std::vector<std::unique_ptr<Type>>& params) {
-    auto function = std::make_unique<Type>(Type::Kind::FUNCTION, "function");
-    function->returnType = ret->clone();
-	for (const auto& p : params) {
-        function->paramTypes.push_back(p->clone());
-    }
-	return function;
+std::unique_ptr<Type> Type::makeFunction(const std::unique_ptr<Type>& ret,
+    const std::vector<std::unique_ptr<Type>>& params) {
+    return std::make_unique<FunctionType>(params, ret);
 }
 
-bool Type::checkFunctionSubtype(const std::unique_ptr<Type>& other) {
-    auto otherFuncType = (FunctionType*)(other.get());
+bool Type::checkFunctionSubtype(const Type& other) const {
+    auto otherFuncType = dynamic_cast<const FunctionType*>(&other);
     if (!otherFuncType) return false;
 
-    if (this->paramTypes.size() !=
-        otherFuncType->paramTypes.size()) return false;
+    if (!this->returnType || !otherFuncType->returnType) return false;
+    if (this->paramTypes.size() != otherFuncType->paramTypes.size()) return false;
 
     for (size_t i = 0; i < this->paramTypes.size(); ++i) {
-        if (!otherFuncType->paramTypes[i]->isSubtypeOf(this->paramTypes[i])) {
+        if (!this->paramTypes[i] || !otherFuncType->paramTypes[i]) return false;
+        if (!otherFuncType->paramTypes[i]->isSubtypeOf(*this->paramTypes[i])) {
             return false;
         }
     }
 
-    if (!this->returnType->isSubtypeOf(otherFuncType->returnType)) {
+    if (!this->returnType->isSubtypeOf(*otherFuncType->returnType)) {
         return false;
     }
     return true;
 }
 
-bool Type::isSubtypeOf(const std::unique_ptr<Type>& other) {
+bool Type::checkFunctionSubtype(const std::unique_ptr<Type>& other) const {
+    return other && checkFunctionSubtype(*other);
+}
+
+bool Type::isSubtypeOf(const Type& other) const {
     if (*this == other) return true;
 
-    if (other->isTopType()) return true;
+    if (other.isTopType()) return true;
 
-    if (getKind() != other->getKind()) {
+    if (getKind() != other.getKind()) {
     }
 
     switch (getKind()) {
@@ -64,12 +65,14 @@ bool Type::isSubtypeOf(const std::unique_ptr<Type>& other) {
         return this->checkFunctionSubtype(other);
 
     case Kind::ARRAY:
-        return this->elementType->isSubtypeOf(other->elementType) && this->arraySize == other->arraySize;
+        if (!this->elementType || !other.elementType) return false;
+        return this->elementType->isSubtypeOf(*other.elementType) && this->arraySize == other.arraySize;
 
     case Kind::POINTER:
     {
         bool flag = false;
-        for (auto& baseType : this->baseTypes) {
+        for (const auto& baseType : this->baseTypes) {
+            if (!baseType) continue;
             if (baseType->isSubtypeOf(other)) {
                 flag = true;
                 break;
@@ -88,4 +91,8 @@ bool Type::isSubtypeOf(const std::unique_ptr<Type>& other) {
     default:
         return false;
     }
+}
+
+bool Type::isSubtypeOf(const std::unique_ptr<Type>& other) const {
+    return other && isSubtypeOf(*other);
 }

@@ -12,7 +12,7 @@ void ExpressionNode::accept(ASTVisitor& visitor) {
 llvm::Value* ExpressionNode::codegen() {
     auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
     if (symbolOpt) {
-        Symbol* symbol = (*symbolOpt);
+        Symbol* symbol = symbolOpt;
         return CodeGenerator::getInstance().builder.CreateLoad(CodeGenerator::getInstance().getLLVMType(symbol->type.get()), symbol->value, value.c_str());
     }
     if (value.find('"') != std::string::npos) {
@@ -38,7 +38,7 @@ std::unique_ptr<Type> ExpressionNode::getType() {
 
     auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
     if (symbolOpt) {
-        Symbol* symbol = (*symbolOpt);
+        Symbol* symbol = symbolOpt;
 		return symbol->type->clone();
     }
 

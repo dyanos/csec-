@@ -9,21 +9,30 @@ public:
     PostfixExpressionNode() {
         nodeType = ASTNodeType::POSTFIX_EXPRESSION;
     }
-    PostfixExpressionNode(const std::string& op, std::unique_ptr<ASTNode>& expression) {
+    PostfixExpressionNode(const std::string& op, std::unique_ptr<ASTNode> expression) {
 		this->op = op;
 		this->expression = std::move(expression);
         nodeType = ASTNodeType::POSTFIX_EXPRESSION;
     }
-    PostfixExpressionNode(PostfixExpressionNode* other) {
-        nodeType = other->nodeType;
-        op = other->op;
-		expression = std::move(other->expression); // shallow copy
+    PostfixExpressionNode(const PostfixExpressionNode& other) {
+        nodeType = other.nodeType;
+        op = other.op;
+		expression = other.expression ? other.expression->clone() : nullptr;
+    }
+    PostfixExpressionNode& operator=(const PostfixExpressionNode& other) {
+        if (this != &other) {
+            nodeType = other.nodeType;
+            op = other.op;
+            expression = other.expression ? other.expression->clone() : nullptr;
+        }
+        return *this;
     }
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override;
     std::unique_ptr<ASTNode> clone() override {
-		return std::make_unique<PostfixExpressionNode>(this);
+		return std::make_unique<PostfixExpressionNode>(*this);
     }
 };
+

@@ -4,19 +4,28 @@
 class FilterStatementNode : public ASTNode {
 public:
     FilterStatementNode() {
-        nodeType = ASTNodeType::EXPRESSION; // 적절한 노드 타입으로 변경 필요
+        nodeType = ASTNodeType::FILTER_STATEMENT;
     }
     FilterStatementNode(const std::string& var,
                         std::unique_ptr<ASTNode> iterable,
                         std::unique_ptr<ASTNode> bodyStmt)
         : variable(var), iterableExpr(std::move(iterable)), body(std::move(bodyStmt)) {
-        nodeType = ASTNodeType::EXPRESSION; // 적절한 노드 타입으로 변경 필요
-	}
-    FilterStatementNode(FilterStatementNode* other)
-        : variable(other->variable),
-        iterableExpr(other->iterableExpr ? std::move(other->iterableExpr) : nullptr),
-        body(other->body ? std::move(other->body) : nullptr) {
-        nodeType = ASTNodeType::EXPRESSION; // 적절한 노드 타입으로 변경 필요
+        nodeType = ASTNodeType::FILTER_STATEMENT;
+    }
+    FilterStatementNode(const FilterStatementNode& other)
+        : variable(other.variable),
+          iterableExpr(other.iterableExpr ? other.iterableExpr->clone() : nullptr),
+          body(other.body ? other.body->clone() : nullptr) {
+        nodeType = ASTNodeType::FILTER_STATEMENT;
+    }
+    FilterStatementNode& operator=(const FilterStatementNode& other) {
+        if (this != &other) {
+            variable = other.variable;
+            iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
+            body = other.body ? other.body->clone() : nullptr;
+            nodeType = ASTNodeType::FILTER_STATEMENT;
+        }
+        return *this;
     }
 
     std::string variable;
@@ -30,6 +39,6 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<FilterStatementNode>(this);
-	}
+        return std::make_unique<FilterStatementNode>(*this);
+    }
 };

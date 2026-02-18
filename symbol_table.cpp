@@ -7,21 +7,59 @@
 
 #include "context.h"
 
-#include <optional>
 #include <functional>
+#include <iostream>
 #include <memory>
+
+namespace {
+std::string makeUniqueKey(const std::unordered_map<std::string, std::unique_ptr<Symbol>>& table, const std::string& base) {
+    if (table.count(base) == 0) {
+        return base;
+    }
+
+    int suffix = 1;
+    std::string candidate;
+    do {
+        candidate = base + "#" + std::to_string(suffix++);
+    } while (table.count(candidate) != 0);
+    return candidate;
+}
+
+bool matchesFunctionArguments(const Symbol* symbol, const std::string& name, const std::vector<std::unique_ptr<Type>>& argTypes) {
+    if (!symbol || symbol->symbolType != SymbolType::FUNCTION || symbol->name != name) {
+        return false;
+    }
+
+    auto* funcType = dynamic_cast<FunctionType*>(symbol->type.get());
+    if (!funcType) {
+        return false;
+    }
+
+    if (funcType->parameterTypes.size() != argTypes.size()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < argTypes.size(); ++i) {
+        if (!argTypes[i] || !funcType->parameterTypes[i]) {
+            return false;
+        }
+        if (!argTypes[i]->equals(funcType->parameterTypes[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+}
 
 
 SymbolTable::SymbolTable() {
     //enterScope();
-    this->currentScope = new Scope();
-    this->currentScope->outer = nullptr;
-    this->currentScope->count = 0;
+    auto rootScope = std::make_unique<Scope>();
+    rootScope->outer = nullptr;
+    rootScope->count = 0;
+    this->currentScope = rootScope.get();
+    this->ownedScopes.push_back(std::move(rootScope));
     this->currentScopeLevel = 1;
-}
-
-SymbolTable::SymbolTable(const SymbolTable& other) {
-	printf("Called SymbolTable copy constructor\n");
 }
 
 void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
@@ -31,7 +69,7 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
 
     //addTypeSymbol("Any", anyType);
     this->currentScope->symbols["Any"] = std::make_unique<ClassSymbol>("Any", llvm::Type::getInt32Ty(context), "System.lang.Object");
-    //((NamespaceSymbol*)&root)->classes["Any"] = ClassSymbol("Any", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    //(static_cast<NamespaceSymbol*>(&root))->classes["Any"] = ClassSymbol("Any", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
     //auto anyValType = std::make_shared<ClassType>("AnyVal", anyType);
     //addTypeSymbol("AnyVal", anyValType);
@@ -45,8 +83,8 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
 	this->currentScope->symbols["Short"] = std::make_unique<ClassSymbol>("Short", llvm::Type::getInt16Ty(context), "System.lang.Object");
     this->currentScope->symbols["Int"] = std::make_unique<ClassSymbol>("Int", llvm::Type::getInt32Ty(context), "System.lang.Object");
 	this->currentScope->symbols["Long"] = std::make_unique<ClassSymbol>("Long", llvm::Type::getInt64Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Float"] = std::make_unique<ClassSymbol>("Float", llvm::Type::getInt32Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Double"] = std::make_unique<ClassSymbol>("Double", llvm::Type::getInt32Ty(context), "System.lang.Object");
+    this->currentScope->symbols["Float"] = std::make_unique<ClassSymbol>("Float", llvm::Type::getFloatTy(context), "System.lang.Object");
+    this->currentScope->symbols["Double"] = std::make_unique<ClassSymbol>("Double", llvm::Type::getDoubleTy(context), "System.lang.Object");
     this->currentScope->symbols["Char"] = std::make_unique<ClassSymbol>("Char", llvm::Type::getInt32Ty(context), "System.lang.Object");
     this->currentScope->symbols["Boolean"] = std::make_unique<ClassSymbol>("Boolean", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
@@ -64,8 +102,8 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
     //auto& intClassSymbol = classSymbols["Int"];
 
     std::vector<std::unique_ptr<Type>> emptyParams;
-    auto rightCopy = std::make_unique<Type>(Type::Kind::BASIC, std::string("String"));
-    ((ClassSymbol*)(this->currentScope->symbols["String"].get()))->methods["toString"] = std::make_unique<Symbol>(
+    std::unique_ptr<Type> rightCopy = std::make_unique<BasicType>(std::string("String"));
+    (static_cast<ClassSymbol*>(this->currentScope->symbols["String"].get()))->methods["toString"] = std::make_unique<Symbol>(
         std::string("toString"),
         std::make_unique<FunctionType>(emptyParams, rightCopy),
         nullptr,
@@ -81,58 +119,90 @@ SymbolTable::~SymbolTable() {
     this->currentScope = nullptr;
 }
 
-bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
+bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> symbol) {
+    if (!symbol || !this->currentScope) {
+        return false;
+    }
+
+    Symbol* rawSymbol = symbol.get();
     auto& ctxt = Context::getInstance();
     auto current = ctxt.getCurrentNamespace();
 
     if (this->currentSymbol == nullptr) {
-        this->currentSymbol = const_cast<Symbol*>(symbol);
-		this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+        std::string key = name;
+        if (rawSymbol->symbolType == SymbolType::FUNCTION || rawSymbol->symbolType == SymbolType::METHOD) {
+            key = makeUniqueKey(this->currentScope->symbols, name);
+        }
+        else if (this->currentScope->symbols.count(name) != 0) {
+            return false;
+        }
+
+		this->currentScope->symbols[key] = std::move(symbol);
+        this->currentSymbol = this->currentScope->symbols[key].get();
 		return true;
     }
 
     switch (this->currentSymbol->symbolType) {
     case SymbolType::NAMESPACE:
         {
-            auto target = (NamespaceSymbol*)this->currentSymbol;
+            auto* target = dynamic_cast<NamespaceSymbol*>(this->currentSymbol);
+            if (!target) {
+                std::cerr << "Error: Current symbol is not a namespace" << std::endl;
+                return false;
+            }
 
-            switch (symbol->symbolType) {
+            switch (rawSymbol->symbolType) {
             case SymbolType::VARIABLE:
             case SymbolType::FIELD:
                 if (target->variables.count(name) != 0)
                     return false;
 
-                target->variables[name] = std::make_unique<Symbol>(symbol);
-                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+                target->variables[name] = rawSymbol->clone();
+                this->currentScope->symbols[name] = std::move(symbol);
                 break;
 
             case SymbolType::FUNCTION:
             case SymbolType::METHOD:
-                if (target->functions.count(name) != 0)
-                    return false;
-
-                target->functions[name] = std::make_unique<Symbol>(symbol);
-                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+            {
+                auto functionKey = makeUniqueKey(target->functions, name);
+                auto scopeKey = makeUniqueKey(this->currentScope->symbols, name);
+                target->functions[functionKey] = rawSymbol->clone();
+                this->currentScope->symbols[scopeKey] = std::move(symbol);
                 break;
+            }
 
             case SymbolType::CLASS:
+            {
                 if (target->classes.count(name) != 0)
                     return false;
 
-                target->classes[name] = std::make_unique<ClassSymbol>(symbol);
-                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+                auto* classRaw = dynamic_cast<ClassSymbol*>(rawSymbol);
+                if (!classRaw) {
+                    std::cerr << "Error: Symbol marked as CLASS is not a ClassSymbol" << std::endl;
+                    return false;
+                }
+                target->classes[name] = std::make_unique<ClassSymbol>(*classRaw);
+                this->currentScope->symbols[name] = std::move(symbol);
                 break;
+            }
 
             case SymbolType::NAMESPACE:
+            {
                 if (target->namespaces.count(name) != 0)
                     return false;
 
-				target->namespaces[name] = std::make_unique<NamespaceSymbol>((NamespaceSymbol*)symbol);
-                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+                auto* nsRaw = dynamic_cast<NamespaceSymbol*>(rawSymbol);
+                if (!nsRaw) {
+                    std::cerr << "Error: Symbol marked as NAMESPACE is not a NamespaceSymbol" << std::endl;
+                    return false;
+                }
+                target->namespaces[name] = std::make_unique<NamespaceSymbol>(*nsRaw);
+                this->currentScope->symbols[name] = std::move(symbol);
                 break;
+            }
 
             default:
-                printf("Unsupported symbol type for namespace: %d\n", (int)symbol->symbolType);
+                std::cerr << "Unsupported symbol type for namespace: " << (int)rawSymbol->symbolType << std::endl;
                 break;
             }
         }
@@ -141,28 +211,34 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
 
     case SymbolType::CLASS:
         {
-            auto* target = (ClassSymbol*)this->currentSymbol;
-            switch (symbol->symbolType) {
+            auto* target = dynamic_cast<ClassSymbol*>(this->currentSymbol);
+            if (!target) {
+                std::cerr << "Error: Current symbol is not a class" << std::endl;
+                return false;
+            }
+
+            switch (rawSymbol->symbolType) {
             case SymbolType::VARIABLE:
             case SymbolType::FIELD:
                 if (target->fields.count(name) != 0)
                     return false;
 
-                target->fields[name] = std::make_unique<Symbol>(symbol);
-                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+                target->fields[name] = rawSymbol->clone();
+                this->currentScope->symbols[name] = std::move(symbol);
                 break;
 
             case SymbolType::FUNCTION:
             case SymbolType::METHOD:
-                if (target->methods.count(name) != 0)
-                    return false;
-
-                target->methods[name] = std::make_unique<Symbol>(symbol);
-                this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+            {
+                auto methodKey = makeUniqueKey(target->methods, name);
+                auto scopeKey = makeUniqueKey(this->currentScope->symbols, name);
+                target->methods[methodKey] = rawSymbol->clone();
+                this->currentScope->symbols[scopeKey] = std::move(symbol);
                 break;
+            }
 
             default:
-                printf("Unsupported symbol type for class: %d\n", (int)symbol->symbolType);
+                std::cerr << "Unsupported symbol type for class: " << (int)rawSymbol->symbolType << std::endl;
                 break;
             }
         }
@@ -170,38 +246,35 @@ bool SymbolTable::addSymbol(const std::string& name, const Symbol* symbol) {
 
     case SymbolType::FUNCTION:
         {
-		    auto* target = (FunctionSymbol*)this->currentSymbol;
-            switch (symbol->symbolType) {
+            switch (rawSymbol->symbolType) {
             case SymbolType::VARIABLE:
             case SymbolType::FIELD:
-                target->symbols.push_back(const_cast<Symbol*>(symbol));
-				this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+				this->currentScope->symbols[name] = std::move(symbol);
                 break;
             case SymbolType::FUNCTION:
-				target->symbols.push_back(const_cast<FunctionSymbol*>(static_cast<const FunctionSymbol*>(symbol)));
-				this->currentScope->symbols[name] = std::make_unique<Symbol>(symbol);
+				this->currentScope->symbols[name] = std::move(symbol);
                 break;
             default:
-                printf("Unsupported symbol type for function: %d\n", (int)symbol->symbolType);
+                std::cerr << "Unsupported symbol type for function: " << (int)rawSymbol->symbolType << std::endl;
                 break;
             }
         }
 		break;
 
     default:
-        // ����
-		printf("Unsupported current symbol type: %d\n", (int)current->symbolType);
+        std::cerr << "Unsupported current symbol type: " << (int)current->symbolType << std::endl;
         break;
     }
 
     return true;
 }
 
-std::optional<Symbol*> checkSymbol(Symbol* symbol, const std::string& name) {
+Symbol* checkSymbol(Symbol* symbol, const std::string& name) {
     switch (symbol->symbolType) {
     case SymbolType::NAMESPACE:
     {
-        auto target = (NamespaceSymbol*)symbol;
+        auto* target = dynamic_cast<NamespaceSymbol*>(symbol);
+        if (!target) return nullptr;
 
         if (target->namespaces.count(name) != 0) {
             return target->namespaces[name].get();
@@ -219,39 +292,41 @@ std::optional<Symbol*> checkSymbol(Symbol* symbol, const std::string& name) {
             return target->variables[name].get();
         }
 
-        return std::nullopt;
+        return nullptr;
     }
     break;
 
     case SymbolType::CLASS:
     {
-        auto target = (ClassSymbol*)symbol;
+        auto* target = dynamic_cast<ClassSymbol*>(symbol);
+        if (!target) return nullptr;
+
         if (target->methods.count(name) != 0) {
             return target->methods[name].get();
         }
         if (target->fields.count(name) != 0) {
             return target->fields[name].get();
         }
-        return std::nullopt;
+        return nullptr;
     }
     break;
 
     default:
-        printf("Unsupported symbol type for lookup: %d\n", (int)symbol->symbolType);
+        std::cerr << "Unsupported symbol type for lookup: " << (int)symbol->symbolType << std::endl;
         break;
     }
 
-    return std::nullopt;
+    return nullptr;
 }
 
-std::optional<Symbol*> SymbolTable::lookup(const std::string& name) {
-    // TODO : name�� path(A.B.C)�� ��� ó�� �ʿ�
+Symbol* SymbolTable::lookup(const std::string& name) {
+    // TODO : name?? path(A.B.C)?? ??? o?? ???
     auto& ctxt = Context::getInstance();
-	//auto root = static_cast<NamespaceSymbol*>(ctxt.getRootNamespace());
+	//auto root = ctxt.getRootNamespace();
 
 	auto names = split(name, '.');
 
-	// ���� ���������� �����Ͽ� ���� �������� �ö󰡸� �˻�
+	// ???? ?????????? ??????? ???? ???????? ?o??? ???
 	Scope* curScope = this->currentScope;
     while (curScope != nullptr) {
         for (auto& pair : curScope->symbols) {
@@ -266,7 +341,7 @@ std::optional<Symbol*> SymbolTable::lookup(const std::string& name) {
     }
     /*        switch (pair.second->symbolType) {
             case SymbolType::NAMESPACE:
-                root = (NamespaceSymbol*)pair.second;
+                root = static_cast<NamespaceSymbol*>(pair.second);
 
                 for (auto& function : root->functions) {
                     if (function.first == name) {
@@ -296,7 +371,7 @@ std::optional<Symbol*> SymbolTable::lookup(const std::string& name) {
 
             case SymbolType::CLASS:
             {
-                auto classSymbol = (ClassSymbol*)pair.second;
+                auto classSymbol = static_cast<ClassSymbol*>(pair.second);
                 for (auto& method : classSymbol->methods) {
                     if (method.first == name) {
                         return method.second;
@@ -312,7 +387,7 @@ std::optional<Symbol*> SymbolTable::lookup(const std::string& name) {
 
             case SymbolType::FUNCTION:
             {
-                auto functionSymbol = (FunctionSymbol*)pair.second;
+                auto functionSymbol = static_cast<FunctionSymbol*>(pair.second);
                 for (auto& symbol : functionSymbol->symbols) {
                     if (symbol->name == name) {
                         return symbol;
@@ -323,7 +398,7 @@ std::optional<Symbol*> SymbolTable::lookup(const std::string& name) {
 
             case SymbolType::METHOD:
             {
-                auto methodSymbol = (FunctionSymbol*)pair.second;
+                auto methodSymbol = static_cast<FunctionSymbol*>(pair.second);
                 for (auto& symbol : methodSymbol->symbols) {
                     if (symbol->name == name) {
                         return symbol;
@@ -340,40 +415,69 @@ std::optional<Symbol*> SymbolTable::lookup(const std::string& name) {
         curScope = curScope->outer;
     }*/
 
-    return std::nullopt;
+    return nullptr;
 }
 
-std::optional<ClassSymbol*> SymbolTable::lookupClass(const std::string& name) {
+ClassSymbol* SymbolTable::lookupClass(const std::string& name) {
 	auto symbol = lookup(name);
-	printf("SymbolTable::lookupClass: Looking up class '%s'\n", name.c_str());
-	printf("SymbolTable::lookupClass: Symbol found: %s\n", symbol ? "yes" : "no");
-	printf("SymbolTable::lookupClass: Symbol type: %d\n", symbol ? (int)((*symbol)->symbolType) : -1);
-    if (symbol && (*symbol)->symbolType == SymbolType::CLASS) {
-        return static_cast<ClassSymbol*>(*symbol);
+    if (symbol && symbol->symbolType == SymbolType::CLASS) {
+        return static_cast<ClassSymbol*>(symbol);
 	}
-	return std::nullopt;
+	return nullptr;
 }
 
-std::optional<NamespaceSymbol*> SymbolTable::lookupNamespace(const std::string& name) {
+StructSymbol* SymbolTable::lookupStruct(const std::string& name) {
     auto symbol = lookup(name);
-    if (symbol && (*symbol)->symbolType == SymbolType::NAMESPACE) {
-        return (NamespaceSymbol*)(*symbol);
+    if (symbol && symbol->symbolType == SymbolType::STRUCT) {
+        return static_cast<StructSymbol*>(symbol);
     }
-    return std::nullopt;
+    return nullptr;
 }
 
-std::optional<Symbol*> SymbolTable::lookupFunction(const std::string& name, std::vector<std::unique_ptr<Type>>& argTypes) {
+NamespaceSymbol* SymbolTable::lookupNamespace(const std::string& name) {
     auto symbol = lookup(name);
-    if (symbol && (*symbol)->symbolType == SymbolType::FUNCTION) {
-        return (Symbol*)(*symbol);
+    if (symbol && symbol->symbolType == SymbolType::NAMESPACE) {
+        return static_cast<NamespaceSymbol*>(symbol);
     }
-    return std::nullopt;
+    return nullptr;
 }
 
-std::optional<Symbol*> SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& methodName)
+FunctionSymbol* SymbolTable::lookupFunction(const std::string& name, const std::vector<std::unique_ptr<Type>>& argTypes) {
+    Scope* curScope = this->currentScope;
+    while (curScope != nullptr) {
+        for (const auto& pair : curScope->symbols) {
+            Symbol* candidate = pair.second.get();
+            if (!matchesFunctionArguments(candidate, name, argTypes)) {
+                continue;
+            }
+
+            auto* functionSymbol = dynamic_cast<FunctionSymbol*>(candidate);
+            if (functionSymbol) {
+                return functionSymbol;
+            }
+        }
+        curScope = curScope->outer;
+    }
+
+    auto symbol = lookup(name);
+    if (symbol && symbol->symbolType == SymbolType::FUNCTION) {
+        return dynamic_cast<FunctionSymbol*>(symbol);
+    }
+
+    return nullptr;
+}
+
+Symbol* SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& methodName)
 {
-	printf("SymbolTable::lookupMethod is not implemented yet.\n");
-    return std::nullopt;
+    const ClassSymbol* current = &symbol;
+    while (current) {
+        auto methodIt = current->methods.find(methodName);
+        if (methodIt != current->methods.end()) {
+            return methodIt->second.get();
+        }
+        current = current->superClassSymbol;
+    }
+    return nullptr;
 }
 
 void SymbolTable::merge(const SymbolTable& other) {
@@ -381,25 +485,24 @@ void SymbolTable::merge(const SymbolTable& other) {
 }
 
 void SymbolTable::enterScope() {
-	printf("entering enterScope\n");
-    Scope* newScope = new Scope();
+    auto newScope = std::make_unique<Scope>();
     newScope->outer = this->currentScope;
-	this->currentScope = newScope;
+    this->currentScope = newScope.get();
+    this->ownedScopes.push_back(std::move(newScope));
     this->currentScopeLevel += 1;
 }
 
 void SymbolTable::exitScope() {
-    printf("entering exitScope\n");
-	auto* temp = this->currentScope;
+	if (this->currentScope == nullptr) {
+        return;
+    }
     this->currentScope = this->currentScope->outer;
-    temp->outer = nullptr;
-    delete temp;
-	this->currentScopeLevel -= 1;
+    this->currentScopeLevel -= 1;
 }
 
 void SymbolTable::print(std::ostream& os, int indent) const {
     auto& ctxt = Context::getInstance();
-    auto root = static_cast<NamespaceSymbol*>(ctxt.getRootNamespace());
+    auto root = ctxt.getRootNamespace();
     std::function<void(const NamespaceSymbol*, int)> printNamespace;
     printNamespace = [&](const NamespaceSymbol* ns, int level) {
         std::string indentStr(level * 2, ' ');
@@ -426,3 +529,5 @@ void SymbolTable::print(std::ostream& os, int indent) const {
     };
     printNamespace(root, indent);
 }
+
+

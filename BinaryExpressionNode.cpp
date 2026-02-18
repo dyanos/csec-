@@ -10,7 +10,7 @@ void BinaryExpressionNode::accept(ASTVisitor& visitor) {
 }
 
 /*bool isStringTypeFromLLVM(llvm::Value* value, CodeGenerator* codeGenerator) {
-    return value->getType()->isPointerTy() && ((llvm::PointerType*)value->getType())->isValidElementType(llvm::Type::getInt8Ty(CodeGenerator::getInstance().context));
+    return value->getType()->isPointerTy() && (static_cast<llvm::PointerType*>(value->getType()))->isValidElementType(llvm::Type::getInt8Ty(CodeGenerator::getInstance().context));
 }*/
 
 llvm::Value* BinaryExpressionNode::codegen() {
@@ -45,8 +45,8 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
         else {
-            // TODO: ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ú°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ç¾ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½ ï¿½ï¿½ ï¿½Ø´ï¿½ ï¿½Ş¼Òµï¿½ È£ï¿½ï¿½
-            // ï¿½ï¿½ï¿½Ù¸ï¿½, ï¿½Æ·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½
+            // TODO: ? ì™?™å ?? ì™?™å ?™ì˜™? ì™??? ì™?™å ?? ì™??? ì™?™å ?™ì˜™? ìŒ˜ê³¤ì˜™ ? ì™?™å ?™ì˜™? ì™??? ì‹¤?µì˜™ ? ìŒ?ì˜™? ì™???•å ?™ì˜™ ? ì™??? ìŒ”?ì˜™ ? ìŒ¨?Œë“¸???¸å ?™ì˜™
+            // ? ì™?™å ?•ëªŒ?? ? ì‹£ë¤„ì˜™ ? ì™?™å ?™ì˜™ ? ìŒ©?¼ì˜™
             std::cerr << "Type error: Left and right expressions have different types for operator '" << op << "'" << std::endl;
             return nullptr;
         }
@@ -65,7 +65,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
         else {
-            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->type->getName() << "' and '" << right->type->getName() << "'" << std::endl;
+            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
             return nullptr;
         }
     }
@@ -83,7 +83,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
         else {
-            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->type->getName() << "' and '" << right->type->getName() << "'" << std::endl;
+            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
             return nullptr;
         }
     }
@@ -102,24 +102,30 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
         else {
-            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->type->getName() << "' and '" << right->type->getName() << "'" << std::endl;
+            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << left->getType()->getName() << "' and '" << right->getType()->getName() << "'" << std::endl;
             return nullptr;
         }
     }
-    else if (op == ">") {
-        return CodeGenerator::getInstance().builder.CreateICmpSGT(leftValue, rightValue, "gttmp");
-    }
-    else if (op == "<") {
-        return CodeGenerator::getInstance().builder.CreateICmpSLT(leftValue, rightValue, "lttmp");
-    }
-    else if (op == "==") {
-        return CodeGenerator::getInstance().builder.CreateICmpEQ(leftValue, rightValue, "eqtmp");
-    }
-    else if (op == ">=") {
-        return CodeGenerator::getInstance().builder.CreateICmpSGE(leftValue, rightValue, "getmp");
-    }
-    else if (op == "<=") {
-        return CodeGenerator::getInstance().builder.CreateICmpSLE(leftValue, rightValue, "letmp");
+    else if (op == ">" || op == "<" || op == "==" || op == "!=" || op == ">=" || op == "<=") {
+        const bool isFloatCompare = left->getType()->isFloatTy() || left->getType()->isDoubleTy();
+        if (isFloatCompare) {
+            if (op == ">") return CodeGenerator::getInstance().builder.CreateFCmpOGT(leftValue, rightValue, "gttmp");
+            if (op == "<") return CodeGenerator::getInstance().builder.CreateFCmpOLT(leftValue, rightValue, "lttmp");
+            if (op == "==") return CodeGenerator::getInstance().builder.CreateFCmpOEQ(leftValue, rightValue, "eqtmp");
+            if (op == "!=") return CodeGenerator::getInstance().builder.CreateFCmpONE(leftValue, rightValue, "netmp");
+            if (op == ">=") return CodeGenerator::getInstance().builder.CreateFCmpOGE(leftValue, rightValue, "getmp");
+            if (op == "<=") return CodeGenerator::getInstance().builder.CreateFCmpOLE(leftValue, rightValue, "letmp");
+        }
+        else {
+            if (op == ">") return CodeGenerator::getInstance().builder.CreateICmpSGT(leftValue, rightValue, "gttmp");
+            if (op == "<") return CodeGenerator::getInstance().builder.CreateICmpSLT(leftValue, rightValue, "lttmp");
+            if (op == "==") return CodeGenerator::getInstance().builder.CreateICmpEQ(leftValue, rightValue, "eqtmp");
+            if (op == "!=") return CodeGenerator::getInstance().builder.CreateICmpNE(leftValue, rightValue, "netmp");
+            if (op == ">=") return CodeGenerator::getInstance().builder.CreateICmpSGE(leftValue, rightValue, "getmp");
+            if (op == "<=") return CodeGenerator::getInstance().builder.CreateICmpSLE(leftValue, rightValue, "letmp");
+        }
+        std::cerr << "Unsupported comparison operator: " << op << std::endl;
+        return nullptr;
     }
     else {
         std::cerr << "Unsupported binary operator: " << op << std::endl;
@@ -133,6 +139,11 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
     auto leftType = left->getType();
     auto rightType = right->getType();
 
+    if (!leftType || !rightType) {
+        std::cerr << "Type error: Cannot determine type of operand in binary expression" << std::endl;
+        return std::make_unique<UnknownType>();
+    }
+
     if (!leftType->equals(rightType)) {
         std::cerr << "Type error: Left and right expressions have different types" << std::endl;
         return std::make_unique<UnknownType>();
@@ -140,8 +151,8 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
 
     if (op == "+" || op == "-" || op == "*" || op == "/") {
         if (leftType->getName() == "Int" || leftType->getName() == "Float" || leftType->getName() == "Double") {
-            // ï¿½ï¿½ï¿½ï¿½ raw ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½Ì¿ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½,
-            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ shared_ptrï¿½ï¿½ ï¿½×´ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
+            // ? ì™?™å ?™ì˜™ raw ? ì™?™å ?™ì˜™? ì‹¶ëªŒì˜™ ? ì‹±?¸ì˜™? ì™??? ì™??? ì™?™ì²´? ì™??? ì™?™å ?™ì˜™? ì™??? ì‹­ê³¤ì˜™,
+            // ? ì™?™å ?™ì˜™? ì™?™å ?? ì™?™å ?™ì˜™ ? ìŒ?ì˜™ shared_ptr? ì™??? ìŒ“?ì˜™??? ì™?™å ?™ì˜™? ì‹¹?¸ì˜™ ?€? ì™?™å ?™ì˜™ ? ì™?™å ?™ì˜™.
             return left->getType();
         }
         else {
@@ -149,9 +160,11 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
             return std::make_unique<UnknownType>();
         }
     }
-    else {
-        // ï¿½Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ ï¿½ï¿½ Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    else if (op == ">" || op == "<" || op == "==" || op == "!=" || op == ">=" || op == "<=") {
+        return std::make_unique<BasicType>("Boolean");
     }
 
     return std::make_unique<UnknownType>();
 }
+
+

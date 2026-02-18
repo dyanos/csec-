@@ -1,10 +1,12 @@
+#pragma once
+
 #include "ast.h"
 #include "token.h"
 
 #include <vector>
 #include <memory>
 
-// LatexMathEqParser Ŭ������ ������ ���� �� ���� �߰� (parser.cpp ��� �Ǵ� ���� ���Ϸ� �и� ����)
+// LatexMathEqParser 클래스: LaTeX 수식을 AST로 파싱 (parser.cpp에서 호출)
 class LatexMathEqParser {
 public:
     LatexMathEqParser(const std::vector<Token>* tokens, size_t* position)
@@ -23,12 +25,19 @@ public:
     bool check(TokenType type, const std::string& value = "") const;
     bool match(TokenType type, const std::string& value = "");
 
-    // Latex ���� �Ľ� �޼���
+    // Latex 수식 파싱 메서드
     std::unique_ptr<ASTNode> parse();
 	std::unique_ptr<ASTNode> parseExpr();
+    std::unique_ptr<ASTNode> parseRelational();
+    std::unique_ptr<ASTNode> parseAdditive();
+    std::unique_ptr<ASTNode> parseMultiplicative();
+    std::unique_ptr<ASTNode> parsePostfix();
     std::unique_ptr<ASTNode> parseTerminal();
 	std::unique_ptr<ASTNode> parseArg(bool isBrace = false);
     std::unique_ptr<ASTNode> parseSimpleExpr();
+
+    // LaTeX 명령어 피킹 (\ + command 형태 확인)
+    std::string tryPeekLatexCommand() const;
 
     // LaTeX 심볼 인식 함수
     bool isRelationalOperator(const std::string& symbol) const;

@@ -1,4 +1,4 @@
-#include "codegen.h"
+癤�#include "codegen.h"
 #include "AccessFieldNode.h"
 #include "ASTVisitor.h"
 #include "utils.h"
@@ -6,7 +6,6 @@
 #include "IdentifierNode.h"
 
 #include <iostream>
-
 
 void AccessFieldNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -17,37 +16,38 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
 
-    // base가 IdentifierNode가 아닐 수 있으므로 타입 체크 필요
-    if (!dynamic_cast<IdentifierNode*>(this->base.get())) {
+    auto* baseIdentifier = dynamic_cast<IdentifierNode*>(this->base.get());
+    if (!baseIdentifier) {
         std::cerr << "Error: Base must be an identifier" << std::endl;
         return nullptr;
     }
 
-    auto baseType = ((IdentifierNode*)this->base.get())->getType();
+    auto* fieldIdentifier = dynamic_cast<IdentifierNode*>(this->field.get());
+    if (!fieldIdentifier) {
+        std::cerr << "Error: Field must be an identifier" << std::endl;
+        return nullptr;
+    }
+
+    auto baseType = baseIdentifier->getType();
     if (!baseType || baseType->getKind() != Type::Kind::CLASS) {
         std::cerr << "Error: Base must be a class type" << std::endl;
         return nullptr;
     }
 
-    auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(baseType->getName());
-    if (!classSymbolOpt) {
+    auto* classSymbol = CodeGenerator::getInstance().symbolTable.lookupClass(baseType->getName());
+    if (!classSymbol) {
         std::cerr << "Error: Class '" << baseType->getName() << "' not found" << std::endl;
         return nullptr;
     }
 
-    auto classSymbol = *classSymbolOpt;
-
-    auto thisSymbolOpt = CodeGenerator::getInstance().symbolTable.lookup(((IdentifierNode*)this->base.get())->value);
-    if (!thisSymbolOpt) {
+    auto* thisSymbol = CodeGenerator::getInstance().symbolTable.lookup(baseIdentifier->value);
+    if (!thisSymbol) {
         std::cerr << "Error: Base object not found" << std::endl;
         return nullptr;
     }
 
-    auto thisSymbol = *thisSymbolOpt;
+    auto targetName = fieldIdentifier->value;
 
-    auto targetName = ((IdentifierNode*)this->field.get())->value;
-
-    // 필드 위치 찾기를 별도 함수로 분리
     int fieldIndex = findFieldIndex(classSymbol, targetName);
     if (fieldIndex == -1) {
         std::cerr << "Error: Field '" << targetName << "' not found in class '"
@@ -58,16 +58,14 @@ llvm::Value* AccessFieldNode::codegen() {
     return CodeGenerator::getInstance().builder.CreateStructGEP(
         CodeGenerator::getInstance().getLLVMType(field->getType().get()),
         thisSymbol->value,
-        fieldIndex + 1, // +1 for this pointer
+        fieldIndex + 1,
         targetName
     );
 }
 
-// 필드 인덱스를 찾는 헬퍼 함수 추가
 int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string& fieldName) {
     int idx = 0;
 
-    // 생성 파라미터에서 검색
     for (auto& field : classSymbol->constructorParams) {
         if (field.first == fieldName) {
             return idx;
@@ -75,7 +73,6 @@ int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string&
         idx++;
     }
 
-    // 일반 필드에서 검색
     for (auto& field : classSymbol->fields) {
         if (field.first == fieldName) {
             return idx;
@@ -87,6 +84,5 @@ int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string&
 }
 
 std::unique_ptr<Type> AccessFieldNode::getType() {
-    // left의 type과 동일
     return field->getType();
 }

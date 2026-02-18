@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 
-// NamespaceSymbolÀ» ÀÌ¿ëÇØ¾ßÇÒ µí
+// NamespaceSymbolì„ ì´ìš©í•´ì•¼í•  ë“¯
 #include "symbol.h"
 
 // Singleton class to manage the context of the application
@@ -25,8 +25,8 @@ public:
 	~Context() {}
 
 private:
-	std::unique_ptr<NamespaceSymbol> rootSymbol; // root symbolÀ» Æ÷ÀÎÅÍ·Î °ü¸®
-	std::vector<Symbol*> m_path; // ÇöÀç ÀÛ¾÷ÁßÀÎ namespace °æ·Î
+	std::unique_ptr<NamespaceSymbol> rootSymbol; // root symbolì„ í¬ì¸í„°ë¡œ ê´€ë¦¬
+	std::vector<NamespaceSymbol*> m_path; // non-owning namespace path
 
 public:
 	// Public methods to manage the context
@@ -43,7 +43,7 @@ public:
 		m_path.clear();
 	}
 
-	void pushNamespace(Symbol& ns) {
+	void pushNamespace(NamespaceSymbol& ns) {
 		m_path.push_back(&ns);
 	}
 
@@ -53,23 +53,23 @@ public:
 		}
 	}
 
-	Symbol* getRootNamespace() {
+	NamespaceSymbol* getRootNamespace() {
 		return rootSymbol.get(); // Return the root namespace
 	}
 
-	const std::vector<Symbol*>& getNamespaces() const {
+	const std::vector<NamespaceSymbol*>& getNamespaces() const {
 		return m_path; // Return the current namespaces
 	}
 
-	std::vector<Symbol*> getNamespacesReverse() const {
-		return std::vector<Symbol*>(m_path.rbegin(), m_path.rend()); // Return the current namespaces in reverse order
+	std::vector<NamespaceSymbol*> getNamespacesReverse() const {
+		return std::vector<NamespaceSymbol*>(m_path.rbegin(), m_path.rend()); // Return the current namespaces in reverse order
 	}
 
-    Symbol* getCurrentNamespace() {
+    NamespaceSymbol* getCurrentNamespace() {
 		return m_path.back(); // Return the current namespace
     }
 
-    Symbol* getCurrentNamespaceReverse() {
+    NamespaceSymbol* getCurrentNamespaceReverse() {
 		return m_path.front(); // Return the current namespace in reverse order
     }
 };

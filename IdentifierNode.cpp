@@ -10,17 +10,26 @@ void IdentifierNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* IdentifierNode::codegen() {
-	// symbolTable������ symbol �˻��� symbolTable�� scopes�� �������� �ؼ� ���󰡸鼭 symbol�� lookup�Ѵ�.
 	auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
 	if (!symbolOpt) {
 		std::cerr << "Undefined variable: " << value << std::endl;
 		return nullptr;
 	}
 
-	auto symbol = (*symbolOpt);
+	auto* symbol = symbolOpt;
+	if (!symbol->value) {
+		return nullptr;
+	}
 
-	// this ������ �Ǵ� parameter, class�� field�� ���� CreateLoad�� ���� �ʾƾ� ��. llvm::Value�� �ֱ� ������
-	// local ������?
+	if ((symbol->symbolType == SymbolType::VARIABLE || symbol->symbolType == SymbolType::FIELD) &&
+		symbol->value->getType()->isPointerTy()) {
+		auto valueType = CodeGenerator::getInstance().getLLVMType(symbol->type.get());
+		if (!valueType) {
+			return nullptr;
+		}
+		return CodeGenerator::getInstance().builder.CreateLoad(valueType, symbol->value, value + ".load");
+	}
+
 	return symbol->value;
 }
 
@@ -29,7 +38,7 @@ std::unique_ptr<Type> IdentifierNode::getType() {
 
 	auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
 	if (symbolOpt) {
-		return (*symbolOpt)->type->clone();
+		return symbolOpt->type->clone();
 	}
 
 	return std::make_unique<UnknownType>();

@@ -147,25 +147,25 @@ std::unique_ptr<ASTNode> Parser::parsePrimaryExpression() {
 	}
 
 	if (match(TokenType::OPERATOR, "(")) {
-		auto casting = parseExpression();
+		auto grouped = parseExpression();
 		expect(TokenType::OPERATOR, ")");
-		auto expr = parseExpression();
-
-		return std::make_unique<CastingExpressionNode>(expr, casting);
+		return grouped;
 	}
 	else if (match(TokenType::OPERATOR, "-") ||
 		match(TokenType::OPERATOR, "+") ||
 		match(TokenType::OPERATOR, "~")) {
+		std::string op = previous().value;
 		auto rightCopy = parsePrimaryExpression();
-		return std::make_unique<UnaryExpressionNode>(previous().value, rightCopy);
+		return std::make_unique<UnaryExpressionNode>(op, std::move(rightCopy));
 	}
 	else if (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
+		std::string op = previous().value;
 		auto rightCopy = parsePrimaryExpression();
-		return std::make_unique<PrefixExpressionNode>(previous().value, rightCopy);
+		return std::make_unique<PrefixExpressionNode>(op, std::move(rightCopy));
 	}
 	else if (match(TokenType::OPERATOR, "!")) {
 		auto rightCopy = parsePrimaryExpression();
-		return std::make_unique<UnaryExpressionNode>("!", rightCopy);
+		return std::make_unique<UnaryExpressionNode>("!", std::move(rightCopy));
 	}
 	else {
 		return parseSimpleExpression();
@@ -175,127 +175,119 @@ std::unique_ptr<ASTNode> Parser::parsePrimaryExpression() {
 std::unique_ptr<ASTNode> Parser::parseMulDivExpression() {
 	std::unique_ptr<ASTNode> expr = parsePrimaryExpression();
 	while (match(TokenType::OPERATOR, "*") || match(TokenType::OPERATOR, "/") || match(TokenType::OPERATOR, "%")) {
+		std::string op = previous().value;
 		auto rightCopy = parsePrimaryExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
 	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseAddSubExpression() {
 	std::unique_ptr<ASTNode> expr = parseMulDivExpression();
-	if (match(TokenType::OPERATOR, "+") || match(TokenType::OPERATOR, "-")) {
-		auto rigthCopy = parseMulDivExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rigthCopy);
+	while (match(TokenType::OPERATOR, "+") || match(TokenType::OPERATOR, "-")) {
+		std::string op = previous().value;
+		auto rightCopy = parseMulDivExpression();
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseComparisonExpression() {
 	std::unique_ptr<ASTNode> expr = parseShiftExpression();
-	if (match(TokenType::OPERATOR, "<") || match(TokenType::OPERATOR, ">") ||
+	while (match(TokenType::OPERATOR, "<") || match(TokenType::OPERATOR, ">") ||
 		match(TokenType::OPERATOR, "<=") || match(TokenType::OPERATOR, ">=")) {
+		std::string op = previous().value;
 		auto rightCopy = parseShiftExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseShiftExpression() {
 	std::unique_ptr<ASTNode> expr = parseAddSubExpression();
-	if (match(TokenType::OPERATOR, "<<") || match(TokenType::OPERATOR, ">>")) {
+	while (match(TokenType::OPERATOR, "<<") || match(TokenType::OPERATOR, ">>")) {
+		std::string op = previous().value;
 		auto rightCopy = parseAddSubExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseEqualityExpression() {
 	std::unique_ptr<ASTNode> expr = parseComparisonExpression();
-	if (match(TokenType::OPERATOR, "==") || match(TokenType::OPERATOR, "!=")) {
+	while (match(TokenType::OPERATOR, "==") || match(TokenType::OPERATOR, "!=")) {
+		std::string op = previous().value;
 		auto rightCopy = parseComparisonExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseConditionExpression() {
-	if (match(TokenType::KEYWORD, "and") || match(TokenType::KEYWORD, "or") || match(TokenType::KEYWORD, "xor")) {
-		auto leftCopy = parseEqualityExpression();
+	auto expr = parseEqualityExpression();
+	while (match(TokenType::KEYWORD, "and") || match(TokenType::KEYWORD, "or") || match(TokenType::KEYWORD, "xor")) {
+		std::string op = previous().value;
 		auto rightCopy = parseEqualityExpression();
-		return std::make_unique<BinaryExpressionNode>(leftCopy, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return parseEqualityExpression();
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseOrExpression() {
 	std::unique_ptr<ASTNode> expr = parseAndExpression();
-	if (match(TokenType::KEYWORD, "or")) {
+	while (match(TokenType::KEYWORD, "or")) {
+		std::string op = previous().value;
 		auto rightCopy = parseAndExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseAndExpression() {
 	std::unique_ptr<ASTNode> expr = parseBitwiseOrExpression();
-	if (match(TokenType::KEYWORD, "and")) {
+	while (match(TokenType::KEYWORD, "and")) {
+		std::string op = previous().value;
 		auto rightCopy = parseBitwiseOrExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseXorExpression() {
 	std::unique_ptr<ASTNode> expr = parseBitwiseAndExpression();
-	if (match(TokenType::KEYWORD, "xor")) {
+	while (match(TokenType::KEYWORD, "xor")) {
+		std::string op = previous().value;
 		auto rightCopy = parseBitwiseAndExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseBitwiseOrExpression() {
 	std::unique_ptr<ASTNode> expr = parseXorExpression();
-	if (match(TokenType::OPERATOR, "|")) {
+	while (match(TokenType::OPERATOR, "|")) {
+		std::string op = previous().value;
 		auto rightCopy = parseXorExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseBitwiseAndExpression() {
 	std::unique_ptr<ASTNode> expr = parseEqualityExpression();
-	if (match(TokenType::OPERATOR, "|")) {
+	while (match(TokenType::OPERATOR, "&")) {
+		std::string op = previous().value;
 		auto rightCopy = parseEqualityExpression();
-		return std::make_unique<BinaryExpressionNode>(expr, previous().value, rightCopy);
+		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
-	else {
-		return expr;
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parseUnaryExpression() {
 	if (match(TokenType::OPERATOR, "-") || match(TokenType::OPERATOR, "!")) {
+		std::string op = previous().value;
 		auto rightCopy = parseUnaryExpression();
-		return std::make_unique<UnaryExpressionNode>(previous().value, rightCopy);
+		return std::make_unique<UnaryExpressionNode>(op, std::move(rightCopy));
 	}
 	else {
 		return parseXorExpression();
@@ -303,20 +295,20 @@ std::unique_ptr<ASTNode> Parser::parseUnaryExpression() {
 }
 
 std::unique_ptr<ASTNode> Parser::parsePostfixExpression() {
-	if (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
-		auto rightCopy = parsePostfixExpression();
-		return std::make_unique<PostfixExpressionNode>(previous().value, rightCopy);
+	auto expr = parseUnaryExpression();
+	while (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
+		std::string op = previous().value;
+		expr = std::make_unique<PostfixExpressionNode>(op, std::move(expr));
 	}
-	else {
-		return parseUnaryExpression();
-	}
+	return expr;
 }
 
 std::unique_ptr<ASTNode> Parser::parsePrefixExpression()
 {
 	if (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
+		std::string op = previous().value;
 		auto rightCopy = parsePrefixExpression();
-		return std::make_unique<PrefixExpressionNode>(previous().value, rightCopy);
+		return std::make_unique<PrefixExpressionNode>(op, std::move(rightCopy));
 	}
 	else {
 		return parsePostfixExpression();
@@ -392,7 +384,6 @@ std::unique_ptr<ASTNode> Parser::parseLambdaExpression() {
 	for (auto& arg : params) {
 		lambdaNode->arguments.push_back(std::move(arg));
 	}
-	expect(TokenType::OPERATOR, ")");
 
 	expect(TokenType::OPERATOR, "->");
 	if (match(TokenType::OPERATOR, "{")) {
@@ -404,3 +395,4 @@ std::unique_ptr<ASTNode> Parser::parseLambdaExpression() {
 
 	return lambdaNode;
 }
+

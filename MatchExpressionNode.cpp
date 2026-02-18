@@ -1,4 +1,4 @@
-﻿#include "codegen.h"
+#include "codegen.h"
 
 #include "MatchExpressionNode.h"
 #include "ASTVisitor.h"
@@ -47,7 +47,7 @@ llvm::Value* MatchExpressionNode::codegen() {
 
         CodeGenerator::getInstance().builder.CreateBr(afterBB);
 
-        //  ̽
+        //  ?
         if (nextCaseBB != afterBB) {
             CodeGenerator::getInstance().builder.SetInsertPoint(nextCaseBB);
         }

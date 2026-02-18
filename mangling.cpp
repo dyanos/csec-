@@ -18,22 +18,22 @@ struct TypeNode;
 
 struct TypeNode {
     std::string base_name;
-    std::vector<std::shared_ptr<TypeNode>> template_args;
+    std::vector<std::unique_ptr<TypeNode>> template_args;
     std::vector<std::string> modifiers; // "const", "*", "&", "const_pre"
-    std::vector<std::shared_ptr<TypeNode>> scopes;
+    std::vector<std::unique_ptr<TypeNode>> scopes;
 
     TypeNode(std::string name) : base_name(name) {}
 };
 
 struct FunctionSignature {
     std::string name;
-    std::vector<std::shared_ptr<TypeNode>> params;
-    std::shared_ptr<TypeNode> return_type;
-    std::vector<std::shared_ptr<TypeNode>> scopes;
+    std::vector<std::unique_ptr<TypeNode>> params;
+    std::unique_ptr<TypeNode> return_type;
+    std::vector<std::unique_ptr<TypeNode>> scopes;
     bool is_const_method = false;
 
-    FunctionSignature(std::string n, std::vector<std::shared_ptr<TypeNode>> p)
-        : name(n), params(p) {
+    FunctionSignature(std::string n, std::vector<std::unique_ptr<TypeNode>> p)
+        : name(std::move(n)), params(std::move(p)) {
     }
 };
 
@@ -76,7 +76,7 @@ public:
         return result;
     }
 
-    std::shared_ptr<TypeNode> parse_type() {
+    std::unique_ptr<TypeNode> parse_type() {
         bool is_const = false;
         if (peek() == "const") {
             consume();
@@ -84,14 +84,14 @@ public:
         }
 
         // Parse Scoped Types recursively
-        std::vector<std::shared_ptr<TypeNode>> segments;
+        std::vector<std::unique_ptr<TypeNode>> segments;
 
         while (true) {
             std::string name = consume();
             if (name.empty())
                 throw std::runtime_error("Unexpected end of type");
 
-            std::vector<std::shared_ptr<TypeNode>> args;
+            std::vector<std::unique_ptr<TypeNode>> args;
             if (peek() == "<") {
                 consume();
                 while (peek() != ">") {
@@ -102,7 +102,7 @@ public:
                 consume(); // >
             }
 
-            auto node = std::make_shared<TypeNode>(name);
+            auto node = std::make_unique<TypeNode>(name);
             node->template_args = args;
             segments.push_back(node);
 
@@ -205,7 +205,7 @@ public:
 
         consume(); // (
 
-        std::vector<std::shared_ptr<TypeNode>> params;
+        std::vector<std::unique_ptr<TypeNode>> params;
         if (peek() != ")") {
             while (true) {
                 if (peek() == "void" && peek(1) == ")") {
@@ -241,11 +241,11 @@ public:
         // Parse SCOPES from func_name
         auto n_tokens = CppParser::tokenize(func_name);
         CppParser n_parser(n_tokens);
-        std::vector<std::shared_ptr<TypeNode>> segments;
+        std::vector<std::unique_ptr<TypeNode>> segments;
 
         while (true) {
             std::string s_name = n_parser.consume();
-            std::vector<std::shared_ptr<TypeNode>> s_args;
+            std::vector<std::unique_ptr<TypeNode>> s_args;
             if (n_parser.peek() == "<") {
                 n_parser.consume();
                 while (n_parser.peek() != ">") {
@@ -255,7 +255,7 @@ public:
                 }
                 n_parser.consume();
             }
-            auto tn = std::make_shared<TypeNode>(s_name);
+            auto tn = std::make_unique<TypeNode>(s_name);
             tn->template_args = s_args;
             segments.push_back(tn);
 
@@ -314,9 +314,9 @@ std::map<std::string, std::string> ITANIUM_BASIC_TYPES = {
     {"float", "f"},
     {"double", "d"} };
 
-std::string mangle_itanium_type(std::shared_ptr<TypeNode> node);
+std::string mangle_itanium_type(const TypeNode* node);
 
-std::string mangle_itanium_entity(std::shared_ptr<TypeNode> node) {
+std::string mangle_itanium_entity(const TypeNode* node) {
     std::string res = "";
     if (node->base_name == "std") {
         res += "St";
@@ -328,14 +328,14 @@ std::string mangle_itanium_entity(std::shared_ptr<TypeNode> node) {
     if (!node->template_args.empty()) {
         res += "I";
         for (auto& arg : node->template_args) {
-            res += mangle_itanium_type(arg);
+            res += mangle_itanium_type(arg.get());
         }
         res += "E";
     }
     return res;
 }
 
-std::string mangle_itanium_type(std::shared_ptr<TypeNode> node) {
+std::string mangle_itanium_type(const TypeNode* node) {
     std::string res = "";
     // Modifiers reversed
     for (int i = (int)node->modifiers.size() - 1; i >= 0; --i) {
@@ -351,7 +351,7 @@ std::string mangle_itanium_type(std::shared_ptr<TypeNode> node) {
     if (!node->scopes.empty()) {
         res += "N";
         for (auto& s : node->scopes) {
-            res += mangle_itanium_entity(s);
+            res += mangle_itanium_entity(s.get());
         }
         res += mangle_itanium_entity(node);
         res += "E";
@@ -385,9 +385,10 @@ std::string mangle_itanium(FunctionSignature& sig) {
         // 5Class 4func E v
 
         for (auto& s : sig.scopes) {
-            res += mangle_itanium_entity(s);
+            res += mangle_itanium_entity(s.get());
         }
-        res += mangle_itanium_entity(std::make_shared<TypeNode>(sig.name));
+        TypeNode nodeName(sig.name);
+        res += mangle_itanium_entity(&nodeName);
         res += "E";
     }
     else {
@@ -416,7 +417,7 @@ std::string mangle_itanium_final(FunctionSignature& sig) {
             res += "K"; // Const method
 
         for (auto& s : sig.scopes) {
-            res += mangle_itanium_entity(s);
+            res += mangle_itanium_entity(s.get());
         }
         res += std::to_string(sig.name.length()) + sig.name;
         res += "E";
@@ -431,7 +432,7 @@ std::string mangle_itanium_final(FunctionSignature& sig) {
     }
     else {
         for (auto& p : sig.params) {
-            res += mangle_itanium_type(p);
+            res += mangle_itanium_type(p.get());
         }
     }
     return res;
@@ -445,7 +446,7 @@ std::map<std::string, std::string> MSVC_BASIC_TYPES = {
     {"int", "H"},           {"unsigned int", "I"}, {"long", "J"},
     {"unsigned long", "K"}, {"float", "M"},        {"double", "N"} };
 
-std::string mangle_msvc_type(std::shared_ptr<TypeNode> node) {
+std::string mangle_msvc_type(const TypeNode* node) {
     std::string res = "";
     if (node == nullptr)
         return "X"; // Safe guard, void
@@ -462,7 +463,7 @@ std::string mangle_msvc_type(std::shared_ptr<TypeNode> node) {
         if (!node->template_args.empty()) {
             res += "?$" + node->base_name + "@";
             for (auto& arg : node->template_args) {
-                res += mangle_msvc_type(arg);
+                res += mangle_msvc_type(arg.get());
             }
             res += "@";
         }
@@ -471,11 +472,11 @@ std::string mangle_msvc_type(std::shared_ptr<TypeNode> node) {
         }
 
         for (int i = (int)node->scopes.size() - 1; i >= 0; --i) {
-            auto s = node->scopes[i];
+            auto* s = node->scopes[i].get();
             if (!s->template_args.empty()) {
                 res += "?$" + s->base_name + "@";
-                for (auto& arg : s->template_args) {
-                    res += mangle_msvc_type(arg);
+                    for (auto& arg : s->template_args) {
+                    res += mangle_msvc_type(arg.get());
                 }
                 res += "@";
             }
@@ -501,11 +502,11 @@ std::string mangle_msvc(FunctionSignature& sig) {
     res += sig.name + "@";
 
     for (int i = (int)sig.scopes.size() - 1; i >= 0; --i) {
-        auto s = sig.scopes[i];
+        auto* s = sig.scopes[i].get();
         if (!s->template_args.empty()) {
             res += "?$" + s->base_name + "@";
             for (auto& arg : s->template_args) {
-                res += mangle_msvc_type(arg);
+                res += mangle_msvc_type(arg.get());
             }
             res += "@";
         }
@@ -542,7 +543,7 @@ std::string mangle_msvc(FunctionSignature& sig) {
 
     // Return Type
     if (sig.return_type) {
-        res += mangle_msvc_type(sig.return_type);
+        res += mangle_msvc_type(sig.return_type.get());
     }
     else {
         res += "X"; // Default void
@@ -554,7 +555,7 @@ std::string mangle_msvc(FunctionSignature& sig) {
     }
     else {
         for (auto& p : sig.params) {
-            res += mangle_msvc_type(p);
+            res += mangle_msvc_type(p.get());
         }
         res += "@";
     }
@@ -606,3 +607,4 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 #endif
+

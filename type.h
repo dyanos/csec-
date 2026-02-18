@@ -9,24 +9,24 @@
 
 class Type {
 public:
-    // VARIABLE에 대해서는 검토 필요
+    // VARIABLE????댁꽌??寃???꾩슂
     enum Kind { UNKNOWN=-1, BASIC=0, POINTER, ARRAY, STRUCT, CLASS, FUNCTION, GENERIC, VARIABLE };
 
 private:
     Kind kind;
 
-    std::vector<std::unique_ptr<Type>> baseTypes; // 다중 상속 지원을 위한 기반 타입들
-    // 예: BASIC이면 이름("int","float" 등)
+    std::vector<std::unique_ptr<Type>> baseTypes; // ?ㅼ쨷 ?곸냽 吏?먯쓣 ?꾪븳 湲곕컲 ??낅뱾
+    // ?? BASIC?대㈃ ?대쫫("int","float" ??
     std::string name;
-    // STRUCT/CLASS이면 멤버 필드맵
+    // STRUCT/CLASS?대㈃ 硫ㅻ쾭 ?꾨뱶留?
     std::vector<std::pair<std::string, std::unique_ptr<Type>>> fields;
-    // FUNCTION이면 반환타입 + 매개타입 리스트
+    // FUNCTION?대㈃ 諛섑솚???+ 留ㅺ컻???由ъ뒪??
     std::unique_ptr<Type> returnType;
     std::vector<std::unique_ptr<Type>> paramTypes;
-    // 배열이면 elementType + size
+    // 諛곗뿴?대㈃ elementType + size
     std::unique_ptr<Type> elementType;
     int arraySize = 0;
-    // 기타 제네릭이면 타입인자 리스트 등
+    // 湲고? ?쒕꽕由?씠硫???낆씤??由ъ뒪????
     std::vector<std::unique_ptr<Type>> typeArgs;
 
 public:
@@ -34,7 +34,7 @@ public:
     Type(Kind kind, const std::string& name)
 		: kind(kind), name(name) {
 	}
-    Type(Kind kind, const std::string& name, std::unique_ptr<Type>& parentType)
+    Type(Kind kind, const std::string& name, const std::unique_ptr<Type>& parentType)
         : kind(kind), name(name) {
         if (parentType) {
             this->baseTypes.push_back(parentType->clone());
@@ -42,8 +42,8 @@ public:
     }
     Type(Kind kind,
         const std::string& name,
-        const std::unique_ptr<Type> returnType,
-        const std::vector<std::unique_ptr<Type>> paramTypes) {
+        const std::unique_ptr<Type>& returnType,
+        const std::vector<std::unique_ptr<Type>>& paramTypes) {
         this->kind = kind;
         this->name = name;
         this->returnType = returnType ? std::unique_ptr<Type>(returnType->clone()) : nullptr;
@@ -51,103 +51,118 @@ public:
             this->paramTypes.push_back(p ? p->clone() : nullptr);
         }
     }
-    Type(Type* type)
-        : kind(type->kind), name(type->name),
-          returnType(type->returnType ? type->returnType->clone() : nullptr),
-          elementType(type->elementType ? type->elementType->clone() : nullptr),
-          arraySize(type->arraySize) {
-        for (auto& b : type->baseTypes) {
+    Type(const Type& type)
+        : kind(type.kind), name(type.name),
+          returnType(type.returnType ? type.returnType->clone() : nullptr),
+          elementType(type.elementType ? type.elementType->clone() : nullptr),
+          arraySize(type.arraySize) {
+        for (const auto& b : type.baseTypes) {
             this->baseTypes.push_back(b ? b->clone() : nullptr);
         }
-        for (auto& f : type->fields) {
+        for (const auto& f : type.fields) {
             this->fields.push_back({ f.first, f.second ? f.second->clone() : nullptr });
         }
-        for (auto& p : type->paramTypes) {
+        for (const auto& p : type.paramTypes) {
             this->paramTypes.push_back(p ? p->clone() : nullptr);
         }
-        for (auto& t : type->typeArgs) {
+        for (const auto& t : type.typeArgs) {
             this->typeArgs.push_back(t ? t->clone() : nullptr);
         }
     }
 
     virtual ~Type() = default;
 
-    // 생성자들 및 접근자
+    // ?앹꽦?먮뱾 諛??묎렐??
     static std::unique_ptr<Type> makeBasic(const std::string& name);
     static std::unique_ptr<Type> makePointer(std::unique_ptr<Type> base);
     static std::unique_ptr<Type> makeArray(std::unique_ptr<Type> base, int size);
     static std::unique_ptr<Type> makeStruct(const std::string& name,
         const std::vector<std::pair<std::string, std::unique_ptr<Type>>>& fields);
-    static std::unique_ptr<Type> makeFunction(std::unique_ptr<Type>& ret, const std::vector<std::unique_ptr<Type>>& params);
+    static std::unique_ptr<Type> makeFunction(const std::unique_ptr<Type>& ret, const std::vector<std::unique_ptr<Type>>& params);
 
 	Kind getKind() const { return kind; }
 	std::string getName() const { return name; }
+    bool operator==(const Type& other) const {
+        return this->kind == other.getKind() && this->name == other.getName();
+    }
 
-    bool operator == (const std::unique_ptr<Type>& other) {
-		// getKind()와 getName()이 모두 같은지 비교
-        return this->kind == other->getKind() && this->name == other->getName();
-	}
+    bool operator == (const std::unique_ptr<Type>& other) const {
+        return other && (*this == *other);
+    }
 
-    // Ÿ�� �񱳸� ���� �Լ�
-    virtual bool equals(const std::unique_ptr<Type>& other) {
+    // 타占쏙옙 占쏟교몌옙 占쏙옙占쏙옙 占쌉쇽옙
+    virtual bool equals(const Type& other) const {
         return *this == other;
+    }
+    virtual bool equals(const std::unique_ptr<Type>& other) const {
+        return other && equals(*other);
     }
 
     bool isTopType() const {
-        // 예: Any 타입이 최상위 타입인 경우
+        // ?? Any ??낆씠 理쒖긽????낆씤 寃쎌슦
         return getName() == "Any";
 	}
 
-    bool hasSuperClass(const std::unique_ptr<Type>& other) const {
+    bool hasSuperClass(const Type& other) const {
         for (auto& base : this->baseTypes) {
             if (*base == other) return true;
-            // 재귀적으로 상위 클래스 검사
             if (base->hasSuperClass(other)) return true;
         }
         return false;
-	}
+    }
+    bool hasSuperClass(const std::unique_ptr<Type>& other) const {
+        return other && hasSuperClass(*other);
+    }
 
-    bool structuralCheck(const std::unique_ptr<Type>& superType) {
-        // TODO: 구조적 서브타입 검사 구현
-        // 예: superType의 모든 필드/메서드가 subType에 존재하고 타입 호환되는지 확인
-        return false; // 기본 구현 (구현 필요)
-	}
-
-    bool checkFunctionSubtype(const std::unique_ptr<Type>& other);
-
-    bool checkGenericSubtype(const std::unique_ptr<Type>& other) {
-		// TODO: 제네릭 타입 서브타입 검사 구현
+    bool structuralCheck(const Type& superType) const {
         return false;
     }
-
-    bool checkBasicConversion(const std::unique_ptr<Type>& toType) {
-		if (this->getName() == "Int" && toType->getName() == "Float") return true;
-		if (this->getName() == "Int" && toType->getName() == "Double") return true;
-		if (this->getName() == "Float" && toType->getName() == "Double") return true;
-		return false;
+    bool structuralCheck(const std::unique_ptr<Type>& superType) const {
+        return superType && structuralCheck(*superType);
     }
 
-    // ����Ÿ�� �˻� �Լ�
-    virtual bool isSubtypeOf(std::vector<std::unique_ptr<Type>>& others) {
-        for (auto& other : others) {
+    bool checkFunctionSubtype(const Type& other) const;
+    bool checkFunctionSubtype(const std::unique_ptr<Type>& other) const;
+
+    bool checkGenericSubtype(const Type& other) const {
+        return false;
+    }
+    bool checkGenericSubtype(const std::unique_ptr<Type>& other) const {
+        return other && checkGenericSubtype(*other);
+    }
+
+    bool checkBasicConversion(const Type& toType) const {
+        if (this->getName() == "Int" && toType.getName() == "Float") return true;
+        if (this->getName() == "Int" && toType.getName() == "Double") return true;
+        if (this->getName() == "Float" && toType.getName() == "Double") return true;
+        return false;
+    }
+    bool checkBasicConversion(const std::unique_ptr<Type>& toType) const {
+        return toType && checkBasicConversion(*toType);
+    }
+
+    // 占쏙옙占쏙옙타占쏙옙 占싯삼옙 占쌉쇽옙
+    virtual bool isSubtypeOf(const std::vector<std::unique_ptr<Type>>& others) const {
+        for (const auto& other : others) {
             if (isSubtypeOf(other)) return true;
         }
         return false;
 	}
 
-    virtual bool isSubtypeOf(const std::unique_ptr<Type>& other);
+    virtual bool isSubtypeOf(const Type& other) const;
+    virtual bool isSubtypeOf(const std::unique_ptr<Type>& other) const;
 
-	// int, float, double, char, string, unit형인지 체크하는 함수입니다.
+	// int, float, double, char, string, unit?뺤씤吏 泥댄겕?섎뒗 ?⑥닔?낅땲??
 	bool isBasicType() const {
 		return kind == Kind::BASIC || kind == Kind::GENERIC;
 	}
 
-    // class형인지 체크하는 함수입니다.
+    // class?뺤씤吏 泥댄겕?섎뒗 ?⑥닔?낅땲??
 	bool isClassType() const {
 		return kind == Kind::CLASS;
 	}
 
-	// function형인지 체크하는 함수입니다.
+	// function?뺤씤吏 泥댄겕?섎뒗 ?⑥닔?낅땲??
 	bool isFunctionType() const {
 		return kind == Kind::FUNCTION;
 	}
@@ -169,46 +184,69 @@ public:
 	}
 
 	bool isStringTy() const {
-        // string은 basic type인가?
+        // string? basic type?멸??
 		return this->isBasicType() && name == "String";
 	}
 
 	bool isVoidTy() const {
-		return this->isBasicType() && name == "Unit";
+		return this->isBasicType() && (name == "Unit" || name == "Void");
 	}
-    virtual std::unique_ptr<Type> clone() {
-        return std::make_unique<Type>(this);
-    }
+
+    virtual std::unique_ptr<Type> clone() = 0;
 };
 
-// �⺻ Ÿ��
+// Primitive and composite type specializations
 class BasicType : public Type {
 public:
-	BasicType() : Type(Kind::BASIC, "basic") {}
+    BasicType() : Type(Kind::BASIC, "basic") {}
     BasicType(const std::string& name)
-        : Type(Kind::BASIC, name) {
-	}
-    BasicType(const std::string& name, std::unique_ptr<Type>& parentType)
+        : Type(Kind::BASIC, name) {}
+    BasicType(const std::string& name, const std::unique_ptr<Type>& parentType)
         : Type(Kind::BASIC, name, parentType) {}
 
-    bool equals(const std::unique_ptr<Type>& other) override {
-        if (other->getKind() != Kind::BASIC) return false;
-        return getName() == other->getName();
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::BASIC) return false;
+        return getName() == other.getName();
+    }
+
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<BasicType>(*this);
     }
 };
 
 class ClassType : public Type {
 public:
-	ClassType() : Type(Kind::CLASS, "class") {}
+    ClassType() : Type(Kind::CLASS, "class") {}
     ClassType(const std::string& name)
-        : Type(Kind::CLASS, name) {
-    }
-    ClassType(const std::string& name, std::unique_ptr<Type>& parentType)
+        : Type(Kind::CLASS, name) {}
+    ClassType(const std::string& name, const std::unique_ptr<Type>& parentType)
         : Type(Kind::CLASS, name, parentType) {}
 
-    bool equals(const std::unique_ptr<Type>& other) override {
-        if (other->getKind() != Kind::CLASS) return false;
-        return getName() == other->getName();
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::CLASS) return false;
+        return getName() == other.getName();
+    }
+
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<ClassType>(*this);
+    }
+};
+
+class StructType : public Type {
+public:
+    StructType() : Type(Kind::STRUCT, "struct") {}
+    StructType(const std::string& name)
+        : Type(Kind::STRUCT, name) {}
+    StructType(const std::string& name, const std::unique_ptr<Type>& parentType)
+        : Type(Kind::STRUCT, name, parentType) {}
+
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::STRUCT) return false;
+        return getName() == other.getName();
+    }
+
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<StructType>(*this);
     }
 };
 
@@ -217,90 +255,93 @@ public:
     std::vector<std::unique_ptr<Type>> parameterTypes;
     std::unique_ptr<Type> returnType;
 
-	FunctionType() : Type(Kind::FUNCTION, "function") {}
-    FunctionType(std::string& name) : Type(Kind::FUNCTION, name) {
-    }
-    FunctionType(std::vector<std::unique_ptr<Type>>& parameterTypes, std::unique_ptr<Type>& returnType)
+    FunctionType() : Type(Kind::FUNCTION, "function") {}
+    FunctionType(std::string& name) : Type(Kind::FUNCTION, name) {}
+    FunctionType(const std::vector<std::unique_ptr<Type>>& parameterTypes, const std::unique_ptr<Type>& returnType)
         : Type(Kind::FUNCTION, "function") {
-        this->returnType = std::move(returnType);
-        for (auto& pt : parameterTypes) {
+        this->returnType = returnType ? returnType->clone() : nullptr;
+        for (const auto& pt : parameterTypes) {
             this->parameterTypes.push_back(pt->clone());
         }
     }
-    FunctionType(FunctionType* other) : Type(Kind::FUNCTION, "function") {
-        this->returnType = std::move(other->returnType);
-        for (auto& pt : other->parameterTypes) {
+    FunctionType(const FunctionType& other) : Type(Kind::FUNCTION, "function") {
+        this->returnType = other.returnType ? other.returnType->clone() : nullptr;
+        for (const auto& pt : other.parameterTypes) {
             this->parameterTypes.push_back(pt->clone());
         }
     }
 
-    bool equals(const std::unique_ptr<Type>& other) override {
-        if (other->getKind() != Kind::FUNCTION) return false;
-        auto otherFuncType = (FunctionType*)other.get();
-        if (!returnType->equals(otherFuncType->returnType)) return false;
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::FUNCTION) return false;
+        auto otherFuncType = dynamic_cast<const FunctionType*>(&other);
+        if (!otherFuncType) return false;
+        if (!returnType->equals(*otherFuncType->returnType)) return false;
         if (parameterTypes.size() != otherFuncType->parameterTypes.size()) return false;
         for (size_t i = 0; i < parameterTypes.size(); ++i) {
-            if (!parameterTypes[i]->equals(otherFuncType->parameterTypes[i])) return false;
+            if (!parameterTypes[i]->equals(*otherFuncType->parameterTypes[i])) return false;
         }
         return true;
     }
 
     std::unique_ptr<Type> clone() override {
-        return std::make_unique<FunctionType>(this);
+        return std::make_unique<FunctionType>(*this);
     }
 };
 
-// 알 수 없는 타입: codeGen에서 추정하고, 추정이 안되면 오류 출력
 class UnknownType : public Type {
 public:
     UnknownType()
         : Type(Kind::UNKNOWN, "unknown") {}
 
-    bool equals(const std::unique_ptr<Type>& other) override {
+    bool equals(const Type& other) const override {
         return false;
+    }
+
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<UnknownType>(*this);
     }
 };
 
 class GenericType : public Type {
 public:
-    std::unique_ptr<Type> baseType;  // �⺻ Ÿ�� (��: Array)
-    std::vector<std::unique_ptr<Type>> typeArguments;  // Ÿ�� ���� (��: [String])
+    std::unique_ptr<Type> baseType;
+    std::vector<std::unique_ptr<Type>> typeArguments;
 
-	GenericType() : Type(Kind::GENERIC, "generic") {}
-    GenericType(std::unique_ptr<Type>& baseType, const std::vector<std::unique_ptr<Type>>& typeArguments)
+    GenericType() : Type(Kind::GENERIC, "generic") {}
+    GenericType(const std::unique_ptr<Type>& baseType, const std::vector<std::unique_ptr<Type>>& typeArguments)
         : Type(Kind::GENERIC, baseType->getName()) {
-        this->baseType = std::move(baseType);
-        for (auto& pt : typeArguments) {
+        this->baseType = baseType ? baseType->clone() : nullptr;
+        for (const auto& pt : typeArguments) {
             this->typeArguments.push_back(pt->clone());
         }
     }
-    GenericType(GenericType* other)
-        : Type(Kind::GENERIC, other->baseType->getName()) {
-        this->baseType = std::move(other->baseType);
-        for (const auto& arg : other->typeArguments) {
+    GenericType(const GenericType& other)
+        : Type(Kind::GENERIC, other.baseType ? other.baseType->getName() : "generic") {
+        this->baseType = other.baseType ? other.baseType->clone() : nullptr;
+        for (const auto& arg : other.typeArguments) {
             this->typeArguments.push_back(arg->clone());
         }
-	}
+    }
 
-    bool equals(const std::unique_ptr<Type>& other) override {
-        if (other->getKind() != Kind::GENERIC) return false;
-        auto otherGeneric = (GenericType*)other.get();
-        if (!baseType->equals(otherGeneric->baseType)) return false;
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::GENERIC) return false;
+        auto otherGeneric = dynamic_cast<const GenericType*>(&other);
+        if (!otherGeneric) return false;
+        if (!baseType->equals(*otherGeneric->baseType)) return false;
         if (typeArguments.size() != otherGeneric->typeArguments.size()) return false;
         for (size_t i = 0; i < typeArguments.size(); ++i) {
-            if (!typeArguments[i]->equals(otherGeneric->typeArguments[i])) return false;
+            if (!typeArguments[i]->equals(*otherGeneric->typeArguments[i])) return false;
         }
         return true;
     }
 
-    bool isSubtypeOf(const std::unique_ptr<Type>& other) override {
+    bool isSubtypeOf(const Type& other) const override {
         if (equals(other)) return true;
-        // �߰����� ����Ÿ�� ������ ���⿡ ������ �� �ֽ��ϴ�.
         return false;
     }
 
-    std::unique_ptr<Type> clone() {
-        return std::make_unique<GenericType>(this);
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<GenericType>(*this);
     }
 };
 
@@ -308,45 +349,54 @@ class ArrayType : public Type {
 public:
     std::unique_ptr<Type> elementType;
     int size;
+
     ArrayType() : Type(Kind::ARRAY, "array"), size(0) {}
-    ArrayType(std::unique_ptr<Type>& elementType, int size)
+    ArrayType(const std::unique_ptr<Type>& elementType, int size)
         : Type(Kind::ARRAY, "array") {
         this->elementType = elementType->clone();
         this->size = size;
     }
-    ArrayType(ArrayType* other)
+    ArrayType(const ArrayType& other)
         : Type(Kind::ARRAY, "array") {
-        this->elementType = other->elementType->clone();
-        this->size = other->size;
+        this->elementType = other.elementType ? other.elementType->clone() : nullptr;
+        this->size = other.size;
     }
-    bool equals(const std::unique_ptr<Type>& other) override {
-        if (other->getKind() != Kind::ARRAY) return false;
-        auto otherArray = (ArrayType*)other.get();
-        return elementType->equals(otherArray->elementType) && size == otherArray->size;
+
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::ARRAY) return false;
+        auto otherArray = dynamic_cast<const ArrayType*>(&other);
+        if (!otherArray) return false;
+        return elementType->equals(*otherArray->elementType) && size == otherArray->size;
     }
+
     std::unique_ptr<Type> clone() override {
-        return std::make_unique<ArrayType>(this);
+        return std::make_unique<ArrayType>(*this);
     }
 };
 
 class PointerType : public Type {
 public:
     std::unique_ptr<Type> baseType;
+
     PointerType() : Type(Kind::POINTER, "pointer") {}
-    PointerType(std::unique_ptr<Type>& baseType)
+    PointerType(const std::unique_ptr<Type>& baseType)
         : Type(Kind::POINTER, "pointer") {
         this->baseType = baseType->clone();
     }
-    PointerType(PointerType* other)
+    PointerType(const PointerType& other)
         : Type(Kind::POINTER, "pointer") {
-        this->baseType = other->baseType->clone();
+        this->baseType = other.baseType ? other.baseType->clone() : nullptr;
     }
-    bool equals(const std::unique_ptr<Type>& other) override {
-        if (other->getKind() != Kind::POINTER) return false;
-        auto otherPtr = (PointerType*)other.get();
-        return baseType->equals(otherPtr->baseType);
+
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::POINTER) return false;
+        auto otherPtr = dynamic_cast<const PointerType*>(&other);
+        if (!otherPtr) return false;
+        return baseType->equals(*otherPtr->baseType);
     }
+
     std::unique_ptr<Type> clone() override {
-        return std::make_unique<PointerType>(this);
+        return std::make_unique<PointerType>(*this);
     }
 };
+

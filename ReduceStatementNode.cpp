@@ -6,6 +6,6 @@ void ReduceStatementNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ReduceStatementNode::codegen() {
-    // ReduceStatementÀÇ ÄÚµå »ı¼º ·ÎÁ÷ ±¸Çö
+    // ReduceStatementì˜ ì½”ë“œ ìƒì„± ë¡œì§ êµ¬í˜„
     return nullptr;
 }

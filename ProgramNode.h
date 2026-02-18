@@ -7,19 +7,29 @@ public:
     ProgramNode() {
         nodeType = ASTNodeType::PROGRAM;
     }
-    ProgramNode(ProgramNode* other) {
-        nodeType = other->nodeType;
-        // 깊은 복사 수행
-        for (const auto& stmt : other->statements) {
-            statements.push_back(stmt->clone());
+    ProgramNode(const ProgramNode& other) {
+        nodeType = other.nodeType;
+        for (const auto& stmt : other.statements) {
+            statements.push_back(stmt ? stmt->clone() : nullptr);
         }
-	}
+    }
+    ProgramNode& operator=(const ProgramNode& other) {
+        if (this != &other) {
+            nodeType = other.nodeType;
+            statements.clear();
+            statements.reserve(other.statements.size());
+            for (const auto& stmt : other.statements) {
+                statements.push_back(stmt ? stmt->clone() : nullptr);
+            }
+        }
+        return *this;
+    }
     ProgramNode(const std::vector<std::unique_ptr<ASTNode>>& stmts) {
         for (const auto& stmt : stmts) {
-            statements.push_back(stmt->clone());
-		}
+            statements.push_back(stmt ? stmt->clone() : nullptr);
+        }
         nodeType = ASTNodeType::PROGRAM;
-	}
+    }
 
     std::vector<std::unique_ptr<ASTNode>> statements;
 
@@ -29,6 +39,6 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<ProgramNode>(this);
-	}
+        return std::make_unique<ProgramNode>(*this);
+    }
 };

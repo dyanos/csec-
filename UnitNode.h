@@ -7,9 +7,15 @@ public:
     UnitNode() {
         nodeType = ASTNodeType::UNIT;
     }
-    UnitNode(UnitNode* other) {
-        nodeType = other->nodeType;
-	}
+    UnitNode(const UnitNode& other) {
+        nodeType = other.nodeType;
+    }
+    UnitNode& operator=(const UnitNode& other) {
+        if (this != &other) {
+            nodeType = other.nodeType;
+        }
+        return *this;
+    }
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override {
@@ -20,6 +26,6 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<UnitNode>(this);
-	}
+        return std::make_unique<UnitNode>(*this);
+    }
 };

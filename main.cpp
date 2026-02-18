@@ -1,4 +1,4 @@
-// main.cpp
+ï»¿// main.cpp
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
@@ -8,37 +8,28 @@
 #include "ast.h"
 #include "codegen.h"
 #include "type_checker.h"
+#include "utils.h"
 
 #include <iostream>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
+#include <llvm/ExecutionEngine/Interpreter.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Verifier.h>
 
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/Utils/Mem2Reg.h>
 
-#include <fstream>
-#include <sstream>
-
 #include "ProgramNode.h"
-
-// ÆÄÀÏ ³»¿ëÀ» ÀĞ¾î¼­ std::stringÀ¸·Î ¹İÈ¯ÇÏ´Â ÇÔ¼ö ±¸Çö
-std::string readFileContent(const std::string& filename) {
-    std::ifstream file(filename, std::ios::in | std::ios::binary);
-    if (!file) {
-        return "";
-    }
-    std::ostringstream contents;
-    contents << file.rdbuf();
-    return contents.str();
-}
 
 int main(int argc, char** argv) {
     /*llvm::PassBuilder PB;
 
-    // ModulePassManager »ı¼º
+    // ModulePassManager ?ì•¹ê½¦
     llvm::ModulePassManager MPM;
 
     MPM.addPass(llvm::PromotePass());
@@ -60,25 +51,41 @@ int main(int argc, char** argv) {
     /*if (argc < 2) {
         std::cout << "No input file provided." << std::endl;
         return -1;
-	}
+    }
 
-    // ÆÄÀÏÀÌ Á¸ÀçÇÏ´ÂÁö Ã¼Å©
+    // ?ëš¯ì”ª??è­°ëŒì˜±?ì„ë’—ï§Â€ ï§£ëŒ„ê²•
     if (FILE* file = fopen(argv[1], "r")) {
-        // ¾Æ¹«°Íµµ ÇÏÁö ¾Ê´Â´Ù.
+        // ?ê¾¨Ğ¢å¯ƒê»Šë£„ ?ì„? ?ë”…ë’—??
     }
     else {
         std::cout << "File not found: " << argv[1] << std::endl;
         return -1;
-	}*/
+    }*/
 
-	std::cout << "get current directory: " << _getcwd(NULL, 0) << std::endl;
-	std::string code = readFileContent("sample2.csec");
+    char* cwd = _getcwd(NULL, 0);
+    if (cwd) {
+        std::cout << "get current directory: " << cwd << std::endl;
+        free(cwd);
+    }
+    else {
+        std::cout << "get current directory: <unavailable>" << std::endl;
+    }
+    std::string inputFile = "sample2.csec";
+    if (argc >= 2) {
+        inputFile = argv[1];
+    }
 
-    // ÄÚµå »ı¼º
+    std::string code = read_utf8_file(inputFile);
+    if (code.empty()) {
+        std::cerr << "Unable to read input file: " << inputFile << std::endl;
+        return 1;
+    }
+
+    // è‚„ë¶¾ë±¶ ?ì•¹ê½¦
     Lexer lexer(code);
     std::vector<Token> tokens = lexer.tokenize();
 
-    // EOF ÅäÅ« Ãß°¡
+    // EOF ?ì¢ê²™ ç•°ë¶½?
     tokens.push_back(Token{ TokenType::END_OF_FILE, "", 0, 0 });
 
     Parser parser(tokens);
@@ -86,7 +93,7 @@ int main(int argc, char** argv) {
 
     std::cout << "Parsing completed successfully." << std::endl;
 
-    // AST Ãâ·Â (¼±ÅÃ »çÇ×)
+    // AST ç•°ì’•ì ° (?ì¢ê¹® ?Ñ‹ë¹†)
     //ASTPrinter printer;
     //ast->accept(printer);
 
@@ -94,30 +101,49 @@ int main(int argc, char** argv) {
     ast->accept(typeChecker);
     ast->codegen();
 
-    // LLVM IR Ãâ·Â
+    // LLVM IR ç•°ì’•ì °
     CodeGenerator::getInstance().dumpIR();
 
-    // ½ÇÇà ¿£Áø ÃÊ±âÈ­
+    // ?ã…½ë»¾ ?ë¶¿ì­Š ç¥ë‡ë¦°??
+    LLVMLinkInMCJIT();
+    LLVMLinkInInterpreter();
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
 
+    auto& codeGen = CodeGenerator::getInstance();
+    if (codeGen.mainFunction && !codeGen.mainFunction->empty()) {
+        llvm::BasicBlock& rootEntry = codeGen.mainFunction->getEntryBlock();
+        if (!rootEntry.getTerminator()) {
+            llvm::IRBuilder<> rootBuilder(&rootEntry);
+            rootBuilder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGen.context), 0));
+        }
+    }
+
+    if (llvm::verifyModule(*codeGen.module, &llvm::errs())) {
+        std::cerr << "Generated LLVM IR is invalid. Aborting execution." << std::endl;
+        return 1;
+    }
+
     std::string errStr;
-    auto engine = llvm::EngineBuilder(std::move(CodeGenerator::getInstance().module))
+    auto engine = llvm::EngineBuilder(std::move(codeGen.module))
         .setErrorStr(&errStr)
+        .setEngineKind(llvm::EngineKind::Interpreter)
         .setOptLevel(llvm::CodeGenOpt::getLevel(0).value())
         .create();
 
     if (!engine) {
         std::cerr << "Failed to create ExecutionEngine: " << errStr << std::endl;
-        return 1;
+        std::cerr << "Execution backend is unavailable. Skipping run phase." << std::endl;
+        return 0;
     }
 
     //MPM.run(*codeGen.module, MAM);
 
-
-    // main ÇÔ¼ö ½ÇÇà
-    auto result = engine->runFunction(CodeGenerator::getInstance().mainFunction, {});
+    // main ?â‘¥ë‹” ?ã…½ë»¾
+    auto result = engine->runFunction(codeGen.mainFunction, {});
 
     return 0;
 }
+
+

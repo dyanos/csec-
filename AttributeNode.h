@@ -4,20 +4,28 @@
 class AttributeNode : public ASTNode {
 public:
     AttributeNode() {
-        nodeType = ASTNodeType::ATTRIBUTE; // 적절한 노드 타입으로 변경 필요
-    }
-    AttributeNode(AttributeNode* other)
-        : expr(std::move(other->expr)),
-        target(std::move(other->target)) {
         nodeType = ASTNodeType::ATTRIBUTE;
+    }
+    AttributeNode(const AttributeNode& other)
+        : expr(other.expr ? other.expr->clone() : nullptr),
+          target(other.target ? other.target->clone() : nullptr) {
+        nodeType = ASTNodeType::ATTRIBUTE;
+    }
+    AttributeNode& operator=(const AttributeNode& other) {
+        if (this != &other) {
+            expr = other.expr ? other.expr->clone() : nullptr;
+            target = other.target ? other.target->clone() : nullptr;
+            nodeType = ASTNodeType::ATTRIBUTE;
+        }
+        return *this;
     }
     AttributeNode(std::unique_ptr<ASTNode> expr, std::unique_ptr<ASTNode> target)
         : expr(std::move(expr)), target(std::move(target)) {
         nodeType = ASTNodeType::ATTRIBUTE;
-	}
+    }
 
     std::unique_ptr<ASTNode> expr;
-    std::unique_ptr<ASTNode> target; // attribute를 적용할 대상
+    std::unique_ptr<ASTNode> target;
 
     void accept(ASTVisitor& visitor) override;
 
@@ -26,6 +34,6 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<AttributeNode>(this);
-	}
+        return std::make_unique<AttributeNode>(*this);
+    }
 };

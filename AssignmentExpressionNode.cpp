@@ -1,9 +1,9 @@
 #include "codegen.h"
 #include "AssignmentExpressionNode.h"
 #include "ASTVisitor.h"
+#include "IdentifierNode.h"
 
 #include <iostream>
-
 
 void AssignmentExpressionNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -17,10 +17,23 @@ llvm::Value* AssignmentExpressionNode::codegen() {
         return nullptr;
     }
 
-    // 메모리 사이의 이동은 CreateStore로
-    CodeGenerator::getInstance().builder.CreateStore(rightValue, leftValue);
+    llvm::Value* targetPtr = leftValue;
+    if (auto* id = dynamic_cast<IdentifierNode*>(left.get())) {
+        auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(id->value);
+        if (!symbolOpt || !symbolOpt->value) {
+            std::cerr << "Error: Invalid assignment target" << std::endl;
+            return nullptr;
+        }
+        targetPtr = symbolOpt->value;
+    }
 
-    return leftValue;
+    if (!targetPtr->getType()->isPointerTy()) {
+        std::cerr << "Error: Left-hand side of assignment is not assignable" << std::endl;
+        return nullptr;
+    }
+
+    CodeGenerator::getInstance().builder.CreateStore(rightValue, targetPtr);
+    return rightValue;
 }
 
 std::unique_ptr<Type> AssignmentExpressionNode::getType() {

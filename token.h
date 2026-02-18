@@ -20,7 +20,7 @@ enum class TokenType {
     NEWLINE,
     WHITESPACE,
     UNKNOWN,
-    END_OF_FILE  // EOF ≈‰≈´
+    END_OF_FILE  // EOF ÌÜ†ÌÅ∞
 };
 
 struct Token {

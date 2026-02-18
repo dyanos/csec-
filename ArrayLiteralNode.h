@@ -4,20 +4,30 @@
 #include <memory>
 #include "ast.h"
 
-// ArrayLiteralNode: 배열 리터럴을 나타내는 AST 노드 -> 나중에 ArrayCreationExpressionNode로 대체될 수 있음
-// 예: [1, 2, x]
 class ArrayLiteralNode : public ASTNode {
 public:
     std::vector<std::unique_ptr<ASTNode>> elements;
 
     ArrayLiteralNode() {
         elements.clear();
+        nodeType = ASTNodeType::ARRAY_LITERAL;
     }
-    ArrayLiteralNode(ArrayLiteralNode* other) {
-        for (const auto& elem : other->elements) {
-            this->elements.push_back(elem->clone());
+    ArrayLiteralNode(const ArrayLiteralNode& other) {
+        for (const auto& elem : other.elements) {
+            this->elements.push_back(elem ? elem->clone() : nullptr);
         }
         nodeType = ASTNodeType::ARRAY_LITERAL;
+    }
+    ArrayLiteralNode& operator=(const ArrayLiteralNode& other) {
+        if (this != &other) {
+            elements.clear();
+            elements.reserve(other.elements.size());
+            for (const auto& elem : other.elements) {
+                elements.push_back(elem ? elem->clone() : nullptr);
+            }
+            nodeType = ASTNodeType::ARRAY_LITERAL;
+        }
+        return *this;
     }
     virtual ~ArrayLiteralNode() = default;
 
@@ -25,6 +35,6 @@ public:
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override;
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<ArrayLiteralNode>(this);
-	}
+        return std::make_unique<ArrayLiteralNode>(*this);
+    }
 };

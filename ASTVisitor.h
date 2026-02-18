@@ -56,7 +56,7 @@ public:
     virtual void visit(BlockNode& node) = 0;
     virtual void visit(ExpressionNode& node) = 0;
 
-    // ¿ÀºêÁ§Æ® ¸â¹ö º¯¼ö ¹æ¹®
+    // ì˜¤ë¸Œì íŠ¸ ë©¤ë²„ ë³€ìˆ˜ ë°©ë¬¸
     virtual void visit(VariableDeclarationNode& node) = 0;
     virtual void visit(CallExpressionNode& node) = 0;
     virtual void visit(MethodCallNode& node) = 0;

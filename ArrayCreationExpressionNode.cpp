@@ -10,37 +10,37 @@ void ArrayCreationExpressionNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ArrayCreationExpressionNode::codegen() {
-    // sizes·Î ¹è¿­ Å©±â¸¦ ¹Ş¾Æ¼­ Ã³¸®ÇÏ´Âµ¥ ÀÌµéÀº 4Â÷¿øÀÌ ÃÖ´ëÀÌ¹Ç·Î, ÀÌµéÀ» °öÇÑ´Ù.
+    // sizesë¡œ ë°°ì—´ í¬ê¸°ë¥¼ ë°›ì•„ì„œ ì²˜ë¦¬í•˜ëŠ”ë° ì´ë“¤ì€ 4ì°¨ì›ì´ ìµœëŒ€ì´ë¯€ë¡œ, ì´ë“¤ì„ ê³±í•œë‹¤.
     llvm::Value* array_size = sizes[0]->codegen();
     for (int i = 1; i < sizes.size(); i++) {
         array_size = CodeGenerator::getInstance().builder.CreateMul(array_size, sizes[i]->codegen());
     }
 
-    // primitive typeÀÎÁö, class typeÀÎÁö È®ÀÎ, template typeÀÎÁö È®ÀÎ
+    // primitive typeì¸ì§€, class typeì¸ì§€ í™•ì¸, template typeì¸ì§€ í™•ì¸
     if (isPrimitiveType(typeName)) {
 		BasicType basicType(typeName);
         llvm::Type* type = CodeGenerator::getInstance().getLLVMType(&basicType);
         return CodeGenerator::getInstance().builder.CreateAlloca(type, array_size, typeName);
     }
 
-    // Template ClassÀÎÁö È®ÀÎÀº ³ªÁß¿¡ ÄÚµå Ãß°¡µÇ¸é...
+    // Template Classì¸ì§€ í™•ì¸ì€ ë‚˜ì¤‘ì— ì½”ë“œ ì¶”ê°€ë˜ë©´...
 
-    // Å¬·¡½º ½Éº¼ Ã£±â
+    // í´ë˜ìŠ¤ ì‹¬ë³¼ ì°¾ê¸°
     auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(typeName);
     if (!classSymbolOpt) {
         std::cerr << "Error: Class '" << typeName << "' not found" << std::endl;
         return nullptr;
     }
 
-    auto classSymbol = (*classSymbolOpt);
+    auto* classSymbol = classSymbolOpt;
 
-    // Å¬·¡½º Å¸ÀÔ °¡Á®¿À±â
-    llvm::StructType* classType = (llvm::StructType*)classSymbol->classType;
+    // í´ë˜ìŠ¤ íƒ€ì… ê°€ì ¸ì˜¤ê¸°
+    auto* classType = static_cast<llvm::StructType*>(classSymbol->classType);
 
-    // ¸Ş¸ğ¸® ÇÒ´ç
+    // ë©”ëª¨ë¦¬ í• ë‹¹
     llvm::Value* allocatedMemory = CodeGenerator::getInstance().builder.CreateAlloca(classType, array_size, typeName);
 
-    // °´Ã¼ ÃÊ±âÈ­ (»ı¼ºÀÚ È£Ãâ)
+    // ê°ì²´ ì´ˆê¸°í™” (ìƒì„±ì í˜¸ì¶œ)
     std::string constructorName = typeName + "_constructor";
     llvm::Function* constructorFunc = CodeGenerator::getInstance().module->getFunction(constructorName);
     if (constructorFunc) {

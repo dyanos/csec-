@@ -16,11 +16,19 @@ void FunctionDeclarationNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* FunctionDeclarationNode::codegen() {
     if (this->isExternal) {
-        // 외부 함수인 경우 심볼 테이블에만 추가하고 코드 생성은 하지 않음
-        Symbol* functionSymbol = new FunctionSymbol(this->name, this->getType().get(), nullptr, true, SymbolType::FUNCTION);
-        CodeGenerator::getInstance().symbolTable.addSymbol(this->name, functionSymbol);
+        std::vector<llvm::Type*> paramTypes;
+        for (auto& param : this->parameters) {
+            auto* paramType = CodeGenerator::getInstance().getLLVMType(param->getType().get());
+            if (!paramType) {
+                std::cerr << "Error: Not supported parameter type in external function '" << this->name << "'" << std::endl;
+                return nullptr;
+            }
+            paramTypes.push_back(paramType);
+        }
+
         llvm::FunctionType* funcType = llvm::FunctionType::get(
             CodeGenerator::getInstance().getLLVMType(this->returnType.get()),
+            paramTypes,
             false);
         llvm::Function * function = llvm::Function::Create(
             funcType,
@@ -28,6 +36,18 @@ llvm::Value* FunctionDeclarationNode::codegen() {
             this->name,
             CodeGenerator::getInstance().module.get()
 		);
+
+        auto functionType = std::make_unique<FunctionType>();
+        functionType->returnType = this->returnType ? this->returnType->clone() : std::make_unique<UnknownType>();
+        for (auto& param : this->parameters) {
+            functionType->parameterTypes.push_back(param->getType()->clone());
+        }
+        auto functionSymbol = std::make_unique<FunctionSymbol>(this->name, std::move(functionType), function, true, SymbolType::FUNCTION);
+        if (!CodeGenerator::getInstance().symbolTable.addSymbol(this->name, std::move(functionSymbol))) {
+            std::cerr << "Error: Failed to register external function symbol '" << this->name << "'" << std::endl;
+            return nullptr;
+        }
+
 		return function;
 	}
 
@@ -43,7 +63,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         return nullptr;
     }
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-    // 함수를 둘러싸고 있는 이름공간이 있을 경우 이름공간 접두사 추가
+    // ????? ?????? ??? ????????? ???? ??? ??????? ???貫? ???
     std::string funcName = [&]() {
         if (CodeGenerator::getInstance().scopes.empty()) {
             return "_" + this->name;
@@ -53,20 +73,26 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         }
         }();
 
-    llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, this->name, CodeGenerator::getInstance().module.get());
+    llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, CodeGenerator::getInstance().module.get());
 
-    // TODO: 심볼 테이블에 함수 심볼 추가
-    // TODO: 지금까지 symboltable에 함수 심볼을 추가하고, 기존 심볼 테이블의 정보를 계승받는 새로운 심볼 테이블을 만들어서, 거기에 함수 내부 변수등이 선언되어 들어가도록 함
-    Symbol* functionSymbol = new FunctionSymbol(this->name, this->getType().get(), function, false, SymbolType::FUNCTION);
-    CodeGenerator::getInstance().symbolTable.addSymbol(this->name, functionSymbol);
-    CodeGenerator::getInstance().symbolTable.setCurrentSymbol(functionSymbol);
+    // TODO: ??? ?????? ??? ??? ???
+    // TODO: ??????? symboltable?? ??? ????? ??????, ???? ??? ??????? ?????? ??쨔?? ???恝? ??? ??????? ?????, ??? ??? ???? ???????? ?????? ??????? ??
+    auto functionType = this->getType();
+    auto functionSymbol = std::make_unique<FunctionSymbol>(this->name, std::move(functionType), function, false, SymbolType::FUNCTION);
+    auto* functionSymbolRaw = functionSymbol.get();
+    if (!CodeGenerator::getInstance().symbolTable.addSymbol(this->name, std::move(functionSymbol))) {
+        std::cerr << "Error: Failed to register function symbol '" << this->name << "'" << std::endl;
+        return nullptr;
+    }
+    CodeGenerator::getInstance().symbolTable.setCurrentSymbol(functionSymbolRaw);
     CodeGenerator::getInstance().symbolTable.enterScope();
 
-    // 함수 인자 심볼 추가
+    // ??? ???? ??? ???
     int cnt = 0;
     for (auto& arg : this->parameters) {
-        Symbol* paramSymbol = new Symbol(((ParameterNode*)arg.get())->name, arg->getType().get(), function->getArg(cnt), false, SymbolType::VARIABLE);
-        CodeGenerator::getInstance().symbolTable.addSymbol(((ParameterNode*)arg.get())->name, paramSymbol);
+        auto paramType = arg->getType();
+        auto paramSymbol = std::make_unique<Symbol>((static_cast<ParameterNode*>(arg.get()))->name, std::move(paramType), function->getArg(cnt), false, SymbolType::VARIABLE);
+        CodeGenerator::getInstance().symbolTable.addSymbol((static_cast<ParameterNode*>(arg.get()))->name, std::move(paramSymbol));
         cnt += 1;
     }
 
@@ -75,9 +101,28 @@ llvm::Value* FunctionDeclarationNode::codegen() {
     CodeGenerator::getInstance().builder.SetInsertPoint(bb);
     this->body->codegen();
     // block end
-    // body에 return이 있을 것이므로 여기서 리턴 코드를 추가하지 않음
+    // body?? return?? ???? ?????? ???? ???? ??? ??????? ????
+
+    llvm::BasicBlock* currentBlock = CodeGenerator::getInstance().builder.GetInsertBlock();
+    if (currentBlock && !currentBlock->getTerminator()) {
+        if (returnType->isVoidTy()) {
+            CodeGenerator::getInstance().builder.CreateRetVoid();
+        }
+        else if (returnType->isIntegerTy()) {
+            CodeGenerator::getInstance().builder.CreateRet(llvm::ConstantInt::get(returnType, 0));
+        }
+        else if (returnType->isFloatTy()) {
+            CodeGenerator::getInstance().builder.CreateRet(llvm::ConstantFP::get(returnType, 0.0));
+        }
+        else if (returnType->isDoubleTy()) {
+            CodeGenerator::getInstance().builder.CreateRet(llvm::ConstantFP::get(returnType, 0.0));
+        }
+        else {
+            CodeGenerator::getInstance().builder.CreateRet(llvm::Constant::getNullValue(returnType));
+        }
+    }
 
     CodeGenerator::getInstance().symbolTable.exitScope();
 
-    return nullptr;
+    return function;
 }

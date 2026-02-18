@@ -5,19 +5,28 @@
 class PMapStatementNode : public ASTNode {
 public:
     PMapStatementNode() {
-        nodeType = ASTNodeType::EXPRESSION; // 적절한 노드 타입으로 변경 필요
+        nodeType = ASTNodeType::PMAP_STATEMENT;
     }
-    PMapStatementNode(PMapStatementNode* other) {
-        this->variable = other->variable;
-        this->iterableExpr = std::move(other->iterableExpr);
-        this->body = std::move(other->body);
-        nodeType = ASTNodeType::EXPRESSION; // 적절한 노드 타입으로 변경 필요
+    PMapStatementNode(const PMapStatementNode& other) {
+        this->variable = other.variable;
+        this->iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
+        this->body = other.body ? other.body->clone() : nullptr;
+        nodeType = ASTNodeType::PMAP_STATEMENT;
     }
-    PMapStatementNode(std::string variable, std::unique_ptr<ASTNode>& iterableExpr, std::unique_ptr<ASTNode>& body) {
+    PMapStatementNode& operator=(const PMapStatementNode& other) {
+        if (this != &other) {
+            variable = other.variable;
+            iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
+            body = other.body ? other.body->clone() : nullptr;
+            nodeType = ASTNodeType::PMAP_STATEMENT;
+        }
+        return *this;
+    }
+    PMapStatementNode(std::string variable, std::unique_ptr<ASTNode> iterableExpr, std::unique_ptr<ASTNode> body) {
         this->variable = variable;
         this->iterableExpr = std::move(iterableExpr);
         this->body = std::move(body);
-        nodeType = ASTNodeType::EXPRESSION; // 적절한 노드 타입으로 변경 필요
+        nodeType = ASTNodeType::PMAP_STATEMENT;
     }
 
     std::string variable;
@@ -31,6 +40,7 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<PMapStatementNode>(this);
-	}
+        return std::make_unique<PMapStatementNode>(*this);
+    }
 };
+

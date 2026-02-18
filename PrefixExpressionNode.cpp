@@ -20,7 +20,7 @@ llvm::Value* PrefixExpressionNode::codegen() {
 
     if (op == "++") {
         // increment
-        // byte, char, word, short, int, long, long long, float, double, long double¸¸ °¡´ÉÇÏµµ·Ï º¯°æ
+        // byte, char, word, short, int, long, long long, float, double, long doubleë§Œ ê°€ëŠ¥í•˜ë„ë¡ ë³€ê²½
         if (value->getType()->isIntegerTy(1)) { // byte
 
             return CodeGenerator::getInstance().builder.CreateAdd(value, llvm::ConstantInt::get(CodeGenerator::getInstance().context, llvm::APInt(1, 1)), "inc");
@@ -44,15 +44,15 @@ llvm::Value* PrefixExpressionNode::codegen() {
             return CodeGenerator::getInstance().builder.CreateFAdd(value, llvm::ConstantFP::get(CodeGenerator::getInstance().context, llvm::APFloat(1.0)), "inc");
         }
         else if (value->getType()->isStructTy()) {
-            // ±¸Á¶Ã¼ÀÏ °æ¿ì ±¸Á¶Ã¼ ¾È¿¡ '++' ¿¬»êÀÚ°¡ Á¤ÀÇµÇ¾î ÀÖ´ÂÁö È®ÀÎ ÈÄ »ç¿ëÇÒ ¼ö ÀÖ´Ù¸é, »ç¿ë
+            // êµ¬ì¡°ì²´ì¼ ê²½ìš° êµ¬ì¡°ì²´ ì•ˆì— '++' ì—°ì‚°ìžê°€ ì •ì˜ë˜ì–´ ìžˆëŠ”ì§€ í™•ì¸ í›„ ì‚¬ìš©í•  ìˆ˜ ìžˆë‹¤ë©´, ì‚¬ìš©
             auto classType = llvm::cast<llvm::StructType>(value->getType());
             auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(classType->getName().str());
 
             if (classSymbolOpt) {
-                auto classSymbol = *classSymbolOpt;
+                auto* classSymbol = classSymbolOpt;
                 auto method = classSymbol->getMethod("operator--");
                 if (method) {
-                    // '++' ¿¬»êÀÚ ¸Þ¼­µå È£Ãâ
+                    // '++' ì—°ì‚°ìž ë©”ì„œë“œ í˜¸ì¶œ
                     std::vector<llvm::Value*> args;
                     return CodeGenerator::getInstance().builder.CreateCall(llvm::FunctionCallee(method->function), args, "inc");
                 }
@@ -73,7 +73,7 @@ llvm::Value* PrefixExpressionNode::codegen() {
     }
     else if (op == "--") {
         // decrement
-        // byte, char, word, short, int, long, long long, float, double, long double¸¸ °¡´ÉÇÏµµ·Ï º¯°æ
+        // byte, char, word, short, int, long, long long, float, double, long doubleë§Œ ê°€ëŠ¥í•˜ë„ë¡ ë³€ê²½
         if (value->getType()->isIntegerTy(1)) { // byte
             return CodeGenerator::getInstance().builder.CreateSub(value, llvm::ConstantInt::get(CodeGenerator::getInstance().context, llvm::APInt(1, 1)), "dec");
         }
@@ -96,15 +96,15 @@ llvm::Value* PrefixExpressionNode::codegen() {
             return CodeGenerator::getInstance().builder.CreateFSub(value, llvm::ConstantFP::get(CodeGenerator::getInstance().context, llvm::APFloat(1.0)), "dec");
         }
         else if (value->getType()->isStructTy()) {
-            // ±¸Á¶Ã¼ÀÏ °æ¿ì ±¸Á¶Ã¼ ¾È¿¡ '++' ¿¬»êÀÚ°¡ Á¤ÀÇµÇ¾î ÀÖ´ÂÁö È®ÀÎ ÈÄ »ç¿ëÇÒ ¼ö ÀÖ´Ù¸é, »ç¿ë
+            // êµ¬ì¡°ì²´ì¼ ê²½ìš° êµ¬ì¡°ì²´ ì•ˆì— '++' ì—°ì‚°ìžê°€ ì •ì˜ë˜ì–´ ìžˆëŠ”ì§€ í™•ì¸ í›„ ì‚¬ìš©í•  ìˆ˜ ìžˆë‹¤ë©´, ì‚¬ìš©
             auto classType = llvm::cast<llvm::StructType>(value->getType());
             auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(classType->getName().str());
 
             if (classSymbolOpt) {
-                auto classSymbol = *classSymbolOpt;
+                auto* classSymbol = classSymbolOpt;
                 auto method = classSymbol->getMethod("operator++");
                 if (method) {
-                    // '++' ¿¬»êÀÚ ¸Þ¼­µå È£Ãâ
+                    // '++' ì—°ì‚°ìž ë©”ì„œë“œ í˜¸ì¶œ
                     std::vector<llvm::Value*> args;
                     return CodeGenerator::getInstance().builder.CreateCall(llvm::FunctionCallee(method->function), args, "inc");
                 }

@@ -11,7 +11,7 @@ void ParameterNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ParameterNode::codegen() {
-    // ÇÔ¼öÀÇ Parameter´Â localº¯¼ö·Î Ã³¸®
+    // í•¨ìˆ˜ì˜ ParameterëŠ” localë³€ìˆ˜ë¡œ ì²˜ë¦¬
     if (!type) {
         std::cerr << "Error: Parameter type is null for '" << name << "'" << std::endl;
         return nullptr;
@@ -29,5 +29,5 @@ llvm::Value* ParameterNode::codegen() {
         return nullptr;
     }
 
-    return symbol.has_value() ? (*symbol)->value : nullptr;
+    return symbol ? symbol->value : nullptr;
 }

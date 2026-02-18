@@ -1,22 +1,21 @@
-// module_loader.cpp
+癤�// module_loader.cpp
 
 #include "module_loader.h"
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
 #include "codegen.h"
-#include <sstream>
-#include <fstream>
+#include "utils.h"
+
 #include <iostream>
+#include <sstream>
+#include <utility>
 
 ModuleLoader::ModuleLoader() {
-    // TODO: standard library를 로드하는 코드가 들어있어야 합니다.
-	// c/c++과 호환할 것이므로, c/c++의 표준 라이브러리를 로드하는 코드를 작성해야 합니다.
-	loadModule({ "std" });
+    // NOTE: Deferred until std module file exists to avoid silent failure.
 }
 
-std::shared_ptr<SymbolTable> ModuleLoader::loadModule(const std::vector<std::string>& path) {
-    // 모듈 이름을 생성 (예: "package.module")
+SymbolTable* ModuleLoader::loadModule(const std::vector<std::string>& path) {
     std::ostringstream oss;
     for (size_t i = 0; i < path.size(); ++i) {
         oss << path[i];
@@ -26,13 +25,11 @@ std::shared_ptr<SymbolTable> ModuleLoader::loadModule(const std::vector<std::str
     }
     std::string moduleName = oss.str();
 
-    // 이미 로드된 모듈인지 확인
     auto it = moduleCache.find(moduleName);
     if (it != moduleCache.end()) {
-        return it->second;
+        return it->second.get();
     }
 
-    // 모듈 파일 경로를 생성 (예: "package/module.scala")
     std::string filepath;
     for (size_t i = 0; i < path.size(); ++i) {
         filepath += path[i];
@@ -42,45 +39,33 @@ std::shared_ptr<SymbolTable> ModuleLoader::loadModule(const std::vector<std::str
     }
     filepath += ".scala";
 
-    // 모듈 파일을 파싱하여 심볼 테이블을 생성
-    std::shared_ptr<SymbolTable> moduleSymbols = std::make_shared<SymbolTable>();
-    if (!parseModuleFile(filepath, moduleSymbols)) {
+    auto moduleSymbols = std::make_unique<SymbolTable>();
+    if (!parseModuleFile(filepath, *moduleSymbols)) {
         std::cerr << "Error: Failed to parse module file: " << filepath << std::endl;
         return nullptr;
     }
 
-    // 모듈 캐시에 저장
-    moduleCache[moduleName] = moduleSymbols;
+    auto* moduleSymbolsRaw = moduleSymbols.get();
+    moduleCache[moduleName] = std::move(moduleSymbols);
 
-    return moduleSymbols;
+    return moduleSymbolsRaw;
 }
 
 llvm::Function* ModuleLoader::loadFunction(const std::string& name, llvm::Module* module) {
-    // 함수가 이미 있는지 확인
     if (module->getFunction(name)) {
         return module->getFunction(name);
     }
 
-    // 함수를 로드할 수 없는 경우
     return nullptr;
 }
 
-bool ModuleLoader::parseModuleFile(const std::string& filepath, std::shared_ptr<SymbolTable>& moduleSymbols) {
-	// c/c++과 호환할 것이므로, c/c++의 표준 라이브러리를 로드하는 코드를 작성해야 합니다.
-	// TODO: 표준 라이브러리를 로드하는 코드가 들어있어야 합니다.
-
-    // 파일을 읽어들입니다.
-    std::ifstream file(filepath);
-    if (!file) {
+bool ModuleLoader::parseModuleFile(const std::string& filepath, SymbolTable& moduleSymbols) {
+    std::string code = read_utf8_file(filepath);
+    if (code.empty()) {
         std::cerr << "Error: Unable to open module file: " << filepath << std::endl;
         return false;
     }
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string code = buffer.str();
-
-    // 렉싱 및 파싱
     Lexer lexer(code);
     std::vector<Token> tokens = lexer.tokenize();
     tokens.push_back(Token{ TokenType::END_OF_FILE, "", 0, 0 });
@@ -88,12 +73,13 @@ bool ModuleLoader::parseModuleFile(const std::string& filepath, std::shared_ptr<
     Parser parser(tokens);
     auto ast = parser.parse();
 
-    // 코드 생성기를 생성하고 모듈 심볼 테이블을 사용합니다.
-    CodeGenerator::getInstance().symbolTable = *moduleSymbols;
+    auto& codegenSymbolTable = CodeGenerator::getInstance().symbolTable;
+    auto savedSymbolTable = std::move(codegenSymbolTable);
+    codegenSymbolTable = std::move(moduleSymbols);
     ast->codegen();
 
-    // 모듈의 심볼 테이블을 반환
-    *moduleSymbols = CodeGenerator::getInstance().symbolTable;
+    moduleSymbols = std::move(codegenSymbolTable);
+    codegenSymbolTable = std::move(savedSymbolTable);
 
     return true;
 }

@@ -17,8 +17,7 @@ void ForStatementNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* ForStatementNode::codegen() {
     llvm::Function* function = CodeGenerator::getInstance().builder.GetInsertBlock()->getParent();
-
-    //llvm::BasicBlock* beforeLoopBB = CodeGenerator::getInstance().builder.GetInsertBlock();
+    llvm::BasicBlock* beforeLoopBB = CodeGenerator::getInstance().builder.GetInsertBlock();
 
     llvm::Value* startValue;
     llvm::Value* endValue;
@@ -27,7 +26,10 @@ llvm::Value* ForStatementNode::codegen() {
 
     if (this->isRange) {
         //
-        auto rangeExpr = (RangeExpressionNode*)(this->iterableExpr.get());
+        auto* rangeExpr = dynamic_cast<RangeExpressionNode*>(this->iterableExpr.get());
+        if (!rangeExpr) {
+            return nullptr;
+        }
         startValue = rangeExpr->startExpr->codegen();
         endValue = rangeExpr->endExpr->codegen();
         if (!startValue || !endValue) {
@@ -41,8 +43,15 @@ llvm::Value* ForStatementNode::codegen() {
         value_ptr = CodeGenerator::getInstance().builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
         CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
 
-        auto varSymbol = new Symbol(this->variable, rangeExpr->startExpr->getType().get(), value_ptr, false, SymbolType::VARIABLE);
-        CodeGenerator::getInstance().symbolTable.addSymbol(this->variable, varSymbol);
+        auto rangeType = rangeExpr->startExpr->getType();
+        CodeGenerator::getInstance().symbolTable.addSymbol(
+            this->variable,
+            std::make_unique<Symbol>(
+                this->variable,
+                std::move(rangeType),
+                value_ptr,
+                false,
+                SymbolType::VARIABLE));
     }
     else {
         startValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 0);
@@ -51,12 +60,22 @@ llvm::Value* ForStatementNode::codegen() {
         value_ptr = CodeGenerator::getInstance().builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
         CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
 
-        auto varSymbol = new Symbol(this->variable, new BasicType(std::string("Int")), value_ptr, false, SymbolType::VARIABLE);
-        CodeGenerator::getInstance().symbolTable.addSymbol(this->variable, varSymbol);
+        CodeGenerator::getInstance().symbolTable.addSymbol(
+            this->variable,
+            std::make_unique<Symbol>(
+                this->variable,
+                std::make_unique<BasicType>(std::string("Int")),
+                value_ptr,
+                false,
+                SymbolType::VARIABLE));
     }
 
     llvm::BasicBlock* loopBB = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "loop", function);
     llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "afterloop", function);
+
+    if (beforeLoopBB && !beforeLoopBB->getTerminator()) {
+        CodeGenerator::getInstance().builder.CreateBr(loopBB);
+    }
 
     CodeGenerator::getInstance().builder.SetInsertPoint(loopBB);
     this->body->codegen();
@@ -73,3 +92,4 @@ llvm::Value* ForStatementNode::codegen() {
 
     return nullptr;
 }
+

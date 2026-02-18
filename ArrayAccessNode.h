@@ -6,11 +6,19 @@ public:
     ArrayAccessNode() {
         nodeType = ASTNodeType::ARRAY_ACCESS;
     }
-    ArrayAccessNode(ArrayAccessNode* other) {
+    ArrayAccessNode(const ArrayAccessNode& other) {
         nodeType = ASTNodeType::ARRAY_ACCESS;
-        array = std::move(other->array);
-        index = std::move(other->index);
-	}
+        array = other.array ? other.array->clone() : nullptr;
+        index = other.index ? other.index->clone() : nullptr;
+    }
+    ArrayAccessNode& operator=(const ArrayAccessNode& other) {
+        if (this != &other) {
+            nodeType = ASTNodeType::ARRAY_ACCESS;
+            array = other.array ? other.array->clone() : nullptr;
+            index = other.index ? other.index->clone() : nullptr;
+        }
+        return *this;
+    }
 
     std::unique_ptr<ASTNode> array;
     std::unique_ptr<ASTNode> index;
@@ -18,16 +26,17 @@ public:
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override {
-        // ¹è¿­ÀÇ ¿ä¼Ò Å¸ÀÔ ¹İÈ¯
-        auto arrayType = (GenericType*)(array->getType().get());
+        // ë°°ì—´ì˜ ìš”ì†Œ íƒ€ì… ë°˜í™˜
+        auto arrayType = dynamic_cast<GenericType*>(array->getType().get());
         if (arrayType && arrayType->typeArguments.size() == 1) {
-            return std::make_unique<Type>(arrayType->typeArguments[0].get());
+            return arrayType->typeArguments[0] ? arrayType->typeArguments[0]->clone() : std::make_unique<UnknownType>();
         }
         else {
             return std::make_unique<UnknownType>();
         }
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<ArrayAccessNode>(this);
+        return std::make_unique<ArrayAccessNode>(*this);
     }
 };
+

@@ -9,14 +9,22 @@ public:
     ParameterNode(const std::string& name, std::unique_ptr<Type> type)
         : name(name) {
         nodeType = ASTNodeType::PARAMETER;
-		this->type = std::move(type);
-	}
-    ParameterNode(ParameterNode* other) {
+        this->type = std::move(type);
+    }
+    ParameterNode(const ParameterNode& other) {
         nodeType = ASTNodeType::PARAMETER;
-        name = other->name;
-        type = std::move(other->type);
-	}
-	~ParameterNode() = default;
+        name = other.name;
+        type = other.type ? other.type->clone() : nullptr;
+    }
+    ParameterNode& operator=(const ParameterNode& other) {
+        if (this != &other) {
+            nodeType = ASTNodeType::PARAMETER;
+            name = other.name;
+            type = other.type ? other.type->clone() : nullptr;
+        }
+        return *this;
+    }
+    ~ParameterNode() = default;
 
     std::string name;
     std::unique_ptr<Type> type;
@@ -30,6 +38,6 @@ public:
     }
 
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<ParameterNode>(this);
-	}
+        return std::make_unique<ParameterNode>(*this);
+    }
 };

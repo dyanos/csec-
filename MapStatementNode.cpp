@@ -6,6 +6,6 @@ void MapStatementNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* MapStatementNode::codegen() {
-    // MapStatementÀÇ ÄÚµå »ı¼º ·ÎÁ÷ ±¸Çö
+    // MapStatementì˜ ì½”ë“œ ìƒì„± ë¡œì§ êµ¬í˜„
     return nullptr;
 }

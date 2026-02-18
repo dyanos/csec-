@@ -7,12 +7,23 @@ public:
 		statements.clear();
         nodeType = ASTNodeType::BLOCK;
     }
-    BlockNode(BlockNode* other) {
-		for (const auto& stmt : other->statements) {
+    BlockNode(const BlockNode& other) {
+		for (const auto& stmt : other.statements) {
 			statements.push_back(stmt->clone());
         }
 		nodeType = ASTNodeType::BLOCK;
 	}
+    BlockNode& operator=(const BlockNode& other) {
+        if (this != &other) {
+            statements.clear();
+            statements.reserve(other.statements.size());
+            for (const auto& stmt : other.statements) {
+                statements.push_back(stmt ? stmt->clone() : nullptr);
+            }
+            nodeType = ASTNodeType::BLOCK;
+        }
+        return *this;
+    }
 
     std::vector<std::unique_ptr<ASTNode>> statements;
 
@@ -24,6 +35,6 @@ public:
 		return std::unique_ptr<UnknownType>();
     }
 	std::unique_ptr<ASTNode> clone() override {
-		return std::make_unique<BlockNode>(this);
+		return std::make_unique<BlockNode>(*this);
 	}
 };

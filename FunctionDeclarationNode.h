@@ -10,32 +10,48 @@ public:
         nodeType = ASTNodeType::FUNCTION_DECLARATION;
         name = "";
         parameters.clear();
-		returnType = nullptr;
-		body = nullptr;
+        returnType = nullptr;
+        body = nullptr;
     }
     FunctionDeclarationNode(const std::string& name,
         const std::vector<std::unique_ptr<ParameterNode>>& parameters,
-        std::unique_ptr<Type>& returnType,
-        std::unique_ptr<BlockNode>& body)
+        std::unique_ptr<Type> returnType,
+        std::unique_ptr<BlockNode> body)
         : name(name) {
         nodeType = ASTNodeType::FUNCTION_DECLARATION;
         this->returnType = std::move(returnType);
         this->body = std::move(body);
-        for (auto & param : parameters) {
+        for (const auto& param : parameters) {
             this->parameters.push_back(param->clone());
-		}
-    }
-    FunctionDeclarationNode(FunctionDeclarationNode* other) {
-        nodeType = ASTNodeType::FUNCTION_DECLARATION;
-        name = other->name;
-        for (auto& param : other->parameters) {
-            parameters.push_back(param->clone());
         }
-        returnType = std::move(other->returnType);
-		body = std::move(other->body);
+    }
+    FunctionDeclarationNode(const FunctionDeclarationNode& other) {
+        nodeType = ASTNodeType::FUNCTION_DECLARATION;
+        name = other.name;
+        for (const auto& param : other.parameters) {
+            parameters.push_back(param ? param->clone() : nullptr);
+        }
+        returnType = other.returnType ? other.returnType->clone() : nullptr;
+        body = other.body ? std::make_unique<BlockNode>(*other.body) : nullptr;
+        isExternal = other.isExternal;
+    }
+    FunctionDeclarationNode& operator=(const FunctionDeclarationNode& other) {
+        if (this != &other) {
+            nodeType = ASTNodeType::FUNCTION_DECLARATION;
+            name = other.name;
+            parameters.clear();
+            parameters.reserve(other.parameters.size());
+            for (const auto& param : other.parameters) {
+                parameters.push_back(param ? param->clone() : nullptr);
+            }
+            returnType = other.returnType ? other.returnType->clone() : nullptr;
+            body = other.body ? std::make_unique<BlockNode>(*other.body) : nullptr;
+            isExternal = other.isExternal;
+        }
+        return *this;
     }
 
-	bool isExternal = false;
+    bool isExternal = false;
 
     std::string name;
     std::vector<std::unique_ptr<ASTNode>> parameters;
@@ -49,6 +65,7 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<FunctionDeclarationNode>(this);
+        return std::make_unique<FunctionDeclarationNode>(*this);
     }
 };
+

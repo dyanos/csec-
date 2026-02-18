@@ -26,9 +26,9 @@ llvm::Value* FunctionCallNode::codegen() {
     // �Լ� �ɺ� ã��
     auto functionSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupFunction(functionName, argTypes);
     if (functionSymbolOpt) {
-        auto functionSymbol = *functionSymbolOpt;
+        auto* functionSymbol = functionSymbolOpt;
         // �Լ� Ÿ�԰� LLVM �Լ� ��������
-        auto funcType = (FunctionType*)(functionSymbol->type.get());
+        auto* funcType = dynamic_cast<FunctionType*>(functionSymbol->type.get());
         llvm::Function* function = static_cast<llvm::Function*>(functionSymbol->value);
         if (!funcType || !function) {
             std::cerr << "Error: Invalid function '" << functionName << "'" << std::endl;
@@ -39,7 +39,7 @@ llvm::Value* FunctionCallNode::codegen() {
         llvm::Value* result = CodeGenerator::getInstance().builder.CreateCall(function, argValues, "calltmp");
 
         // Ÿ�� ����
-        type = std::move(funcType->returnType);
+        type = funcType->returnType ? funcType->returnType->clone() : std::make_unique<UnknownType>();
         return result;
     }
     else {
@@ -66,14 +66,14 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
 
     auto functionSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupFunction(functionName, argTypes);
     if (!functionSymbolOpt) {
-        printf("functionSymbolOpt is nullopt");
+        std::cerr << "Error: Function '" << functionName << "' not found" << std::endl;
         return std::make_unique<UnknownType>();
     }
 
-    auto functionSymbol = (FunctionSymbol*)*functionSymbolOpt;
+    auto* functionSymbol = functionSymbolOpt;
 
-    auto funcType = (FunctionType*)(functionSymbol->type.get());
-    if (funcType) {
+    auto* funcType = dynamic_cast<FunctionType*>(functionSymbol->type.get());
+    if (funcType && funcType->returnType) {
         return funcType->returnType->clone();
     }
 

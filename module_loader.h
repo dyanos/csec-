@@ -8,13 +8,13 @@
 class ModuleLoader {
 public:
     ModuleLoader();
-    std::shared_ptr<SymbolTable> loadModule(const std::vector<std::string>& path);
+    SymbolTable* loadModule(const std::vector<std::string>& path);
     llvm::Function* loadFunction(const std::string& name, llvm::Module* module); // Add this line
 
 private:
-    // ¸ğµâ Ä³½ÌÀ» À§ÇÑ ¸Ê
-    std::unordered_map<std::string, std::shared_ptr<SymbolTable>> moduleCache;
+    // ëª¨ë“ˆ ìºì‹±ì„ ìœ„í•œ ë§µ
+    std::unordered_map<std::string, std::unique_ptr<SymbolTable>> moduleCache;
 
-    // ¸ğµâÀ» ÀĞ°í ÆÄ½ÌÇÏ´Â ÇÔ¼ö
-    bool parseModuleFile(const std::string& filepath, std::shared_ptr<SymbolTable>& moduleSymbols);
+    // ëª¨ë“ˆì„ ì½ê³  íŒŒì‹±í•˜ëŠ” í•¨ìˆ˜
+    bool parseModuleFile(const std::string& filepath, SymbolTable& moduleSymbols);
 };

@@ -3,12 +3,11 @@
 #include "utils.h"
 
 #include <iostream>
-#include "utils.h"
 
 #include "all_ast.h"
 
 
-// parser������ parsing�� ����ϰ�, symbol ��� �� �˻��� codegen�Ҷ� ���
+// parser占쏙옙占쏙옙占쏙옙 parsing占쏙옙 占쏙옙占쏙옙構占? symbol 占쏙옙占?占쏙옙 占싯삼옙占쏙옙 codegen占쌀띰옙 占쏙옙占?
 Parser::Parser(const std::vector<Token>& tokens)
 	: tokens(tokens), position(0) {}
 
@@ -28,17 +27,24 @@ std::unique_ptr<Type> Parser::parseType() {
 		std::string typeName = previous().value;
 
 		std::unique_ptr<Type> baseType;
-		if (typeName == "Int" || typeName == "Float" || typeName == "Double" || typeName == "Unit") {
+		if (typeName == "Int" ||
+			typeName == "Float" ||
+			typeName == "Double" ||
+			typeName == "Unit" ||
+			typeName == "Void" ||
+			typeName == "Char" ||
+			typeName == "Boolean" ||
+			typeName == "Bool" ||
+			typeName == "Long" ||
+			typeName == "Short" ||
+			typeName == "Byte" ||
+			typeName == "String") {
 			baseType = std::make_unique<BasicType>(typeName);
-		}
-		else if (typeName == "String") {
-			baseType = std::make_unique<ClassType>(typeName);
 		}
 		else {
 			baseType = std::make_unique<ClassType>(typeName);
 		}
 
-		std::unique_ptr<Type> tempArgsType = nullptr;
 		if (match(TokenType::OPERATOR, "[")) {
 			auto tempArgsType = parseType();
 			expect(TokenType::OPERATOR, "]");
@@ -50,7 +56,7 @@ std::unique_ptr<Type> Parser::parseType() {
 		return baseType;
 	}
 	else if (match(TokenType::OPERATOR, "(")) {
-		// 함수 타입 파싱
+		// ?⑥닔 ????뚯떛
 		std::vector<std::unique_ptr<Type>> paramTypes;
 		if (!check(TokenType::OPERATOR, ")")) {
 			do {
@@ -94,12 +100,20 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 		node = parseClassDeclaration(isExternal);
 
 		ClassDeclarationNode* classNode = dynamic_cast<ClassDeclarationNode*>(node.get());
+		if (!classNode) {
+			error("Expected class declaration node");
+			return nullptr;
+		}
 		classNode->isExternal = isExternal;
 	}
 	else if (match(TokenType::KEYWORD, "object")) {
 		node = parseObjectDeclaration(isExternal);
 
 		ObjectDeclarationNode* objectNode = dynamic_cast<ObjectDeclarationNode*>(node.get());
+		if (!objectNode) {
+			error("Expected object declaration node");
+			return nullptr;
+		}
 		objectNode->isExternal = isExternal;
 	}
 	else if (match(TokenType::KEYWORD, "def")) {
@@ -112,7 +126,12 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 	}
 
 	if (attributeNode) {
-		dynamic_cast<AttributeNode*>(attributeNode.get())->target = std::move(node);
+		auto* attrNode = dynamic_cast<AttributeNode*>(attributeNode.get());
+		if (!attrNode) {
+			error("Expected attribute node");
+			return nullptr;
+		}
+		attrNode->target = std::move(node);
 		return attributeNode;
 	}
 
@@ -133,13 +152,11 @@ std::unique_ptr<ASTNode> Parser::parseAnnotationExpression() {
 		}
 	}
 	else if (match(TokenType::STRING_LITERAL)) {
-		auto stringNode = std::make_unique<ValueNode>();
-		stringNode->value = previous().value;
+		auto stringNode = std::make_unique<ValueNode>(previous().value, previous().type);
 		return stringNode;
 	}
 	else if (match(TokenType::INTEGER_LITERAL)) {
-		auto intNode = std::make_unique<ValueNode>();
-		intNode->value = std::stoi(previous().value);
+		auto intNode = std::make_unique<ValueNode>(previous().value, previous().type);
 		return intNode;
 	}
 	else {
@@ -216,7 +233,7 @@ std::unique_ptr<ParameterNode> Parser::parseParameter() {
 		std::unique_ptr<Type> paramType = parseType();
 		auto param = std::make_unique<ParameterNode>();
 		param->name = paramName;
-		param->type = std::make_unique<Type>(paramType.get());
+		param->type = paramType ? paramType->clone() : std::make_unique<UnknownType>();
 		return param;
 	}
 	else {
@@ -231,8 +248,8 @@ std::vector<std::unique_ptr<ASTNode>> Parser::parseArgumentList() {
 		do {
 			arguments.push_back(parseExpression());
 		} while (match(TokenType::OPERATOR, ","));
-		expect(TokenType::OPERATOR, ")");
 	}
+	expect(TokenType::OPERATOR, ")");
 	return arguments;
 }
 

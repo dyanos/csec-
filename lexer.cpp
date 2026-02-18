@@ -1,6 +1,51 @@
-// lexer.cpp
+﻿// lexer.cpp
 #include "lexer.h"
 #include <cctype>
+
+namespace {
+bool isAsciiIdentifierStart(unsigned char ch) {
+    return (ch == '_') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
+}
+
+bool isAsciiIdentifierContinue(unsigned char ch) {
+    return isAsciiIdentifierStart(ch) || (ch >= '0' && ch <= '9');
+}
+
+int utf8SequenceLength(unsigned char lead) {
+    if ((lead & 0x80) == 0x00) return 1;
+    if ((lead & 0xE0) == 0xC0) return 2;
+    if ((lead & 0xF0) == 0xE0) return 3;
+    if ((lead & 0xF8) == 0xF0) return 4;
+    return 0;
+}
+
+bool isUtf8Continuation(unsigned char ch) {
+    return (ch & 0xC0) == 0x80;
+}
+
+bool consumeUtf8CodePoint(const std::string& text, size_t pos, int* outLen) {
+    if (pos >= text.size()) {
+        return false;
+    }
+
+    unsigned char lead = static_cast<unsigned char>(text[pos]);
+    int len = utf8SequenceLength(lead);
+    if (len <= 1) {
+        return false;
+    }
+    if (pos + static_cast<size_t>(len) > text.size()) {
+        return false;
+    }
+    for (int i = 1; i < len; ++i) {
+        unsigned char cont = static_cast<unsigned char>(text[pos + i]);
+        if (!isUtf8Continuation(cont)) {
+            return false;
+        }
+    }
+    *outLen = len;
+    return true;
+}
+}
 
 Lexer::Lexer(const std::string& source)
     : source(source), position(0), line(1), column(1) {
@@ -22,7 +67,9 @@ void Lexer::initializeKeywords() {
 
 void Lexer::initializeOperators() {
     std::string ops[] = {
-		"=", "+", "-", "*", "/", "%", "$", "$$", "\\", "<", ">", "!", "&", "|", "^", "~", ":", ".", ",", ";", "(", ")", "{", "}", "[", "]", "[@", "<-", "_", "=>", "<:", "<%", ">:", "#", "@"
+		"=", "==", "!=", "+", "-", "*", "/", "%", "$", "$$", "\\", "<", ">", "<=", ">=", "<<", ">>",
+		"!", "&", "|", "^", "~", ":", ".", ",", ";", "(", ")", "{", "}", "[", "]", "[@", "<-", "->",
+		"++", "--", "_", "=>", "<:", "<%", ">:", "#", "@"
     };
     operators.insert(ops, ops + sizeof(ops) / sizeof(ops[0]));
 }
@@ -40,7 +87,6 @@ std::vector<Token> Lexer::tokenize() {
         if (matchIdentifierOrKeyword(tokens)) continue;
         if (matchOperator(tokens)) continue;
 
-        // �� �� ���� ���� ó��
         tokens.push_back(Token{ TokenType::UNKNOWN, std::string(1, source[position]), line, column });
         advance();
     }
@@ -48,7 +94,6 @@ std::vector<Token> Lexer::tokenize() {
     return tokens;
 }
 
-// ���� �� ��Ī �Լ����� ���� (���� �ڵ�� ����)
 void Lexer::advance(int steps) {
     for (int i = 0; i < steps; ++i) {
         if (source[position] == '\n') {
@@ -90,7 +135,7 @@ bool Lexer::matchComment(std::vector<Token>& tokens) {
             }
             advance();
         }
-        advance(2);  // '*/' ��ŵ
+        advance(2);  // '*/' ?좎룞?숉궢
         std::string comment = source.substr(start, position - start);
         tokens.push_back(Token{ TokenType::COMMENT, comment, line, column });
         return true;
@@ -99,9 +144,9 @@ bool Lexer::matchComment(std::vector<Token>& tokens) {
 }
 
 bool Lexer::matchWhitespace(std::vector<Token>& tokens) {
-    if (std::isspace(peek()) && peek() != '\n') {
+    if (std::isspace(static_cast<unsigned char>(peek())) && peek() != '\n') {
         //size_t start = position;
-        while (std::isspace(peek()) && peek() != '\n') {
+        while (std::isspace(static_cast<unsigned char>(peek())) && peek() != '\n') {
             advance();
         }
         //std::string whitespace = source.substr(start, position - start);
@@ -129,13 +174,13 @@ bool Lexer::matchStringLiteral(std::vector<Token>& tokens) {
         advance();
         while (peek() != '"' && peek() != '\0') {
             if (peek() == '\\') {
-                advance(2);  // �̽������� ���� ��ŵ
+                advance(2);  // ?좎떛?숈삕?좎룞?쇿뜝?숈삕?좎룞???좎룞?쇿뜝?숈삕 ?좎룞?숉궢
             }
             else {
                 advance();
             }
         }
-        advance();  // �ݴ� ����ǥ ��ŵ
+        advance();  // ?좎뙠?먯삕 ?좎룞?쇿뜝?숈삕???좎룞?숉궢
         std::string strLiteral = source.substr(start, position - start);
         tokens.push_back(Token{ TokenType::STRING_LITERAL, strLiteral, line, column });
         return true;
@@ -148,7 +193,7 @@ bool Lexer::matchCharLiteral(std::vector<Token>& tokens) {
         size_t start = position;
         advance();
         if (peek() == '\\') {
-            advance(2);  // �̽������� ����
+            advance(2);  // ?좎떛?숈삕?좎룞?쇿뜝?숈삕?좎룞???좎룞?쇿뜝?숈삕
         }
         else {
             advance();
@@ -159,24 +204,24 @@ bool Lexer::matchCharLiteral(std::vector<Token>& tokens) {
             tokens.push_back(Token{ TokenType::CHAR_LITERAL, charLiteral, line, column });
             return true;
         }
-        // ���� ���� ó��
+        // ?좎룞?쇿뜝?숈삕 ?좎룞?쇿뜝?숈삕 泥섇뜝?숈삕
     }
     return false;
 }
 
 bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
-    if (std::isdigit(peek())) {
+    if (std::isdigit(static_cast<unsigned char>(peek()))) {
         size_t start = position;
-        while (std::isdigit(peek())) {
+        while (std::isdigit(static_cast<unsigned char>(peek()))) {
             advance();
         }
-        // ���� �� 16����, 2����, 8���� ���ͷ� ó��
+        // ?좎룞?쇿뜝?숈삕 ?좎룞??16?좎룞?쇿뜝?숈삕, 2?좎룞?쇿뜝?숈삕, 8?좎룞?쇿뜝?숈삕 ?좎룞?쇿뜝?띕쨪??泥섇뜝?숈삕
 		if (peek() == 'e' || peek() == 'E') {
 			advance();
 			if (peek() == '+' || peek() == '-') {
 				advance();
 			}
-			while (std::isdigit(peek())) {
+			while (std::isdigit(static_cast<unsigned char>(peek()))) {
 				advance();
 			}
 
@@ -185,7 +230,7 @@ bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
 		}
 		else if (peek() == 'x' || peek() == 'X') {
 			advance();
-			while (std::isxdigit(peek())) {
+			while (std::isxdigit(static_cast<unsigned char>(peek()))) {
 				advance();
 			}
 
@@ -203,7 +248,7 @@ bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
 		}
 		else if (peek() == 'o' || peek() == 'O') {
 			advance();
-			while (std::isdigit(peek()) && peek() < '8') {
+			while (std::isdigit(static_cast<unsigned char>(peek())) && peek() < '8') {
 				advance();
 			}
 
@@ -212,7 +257,7 @@ bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
 		}
         else if (peek() == '.') {
             advance();
-            while (std::isdigit(peek())) {
+            while (std::isdigit(static_cast<unsigned char>(peek()))) {
                 advance();
             }
             std::string floatLiteral = source.substr(start, position - start);
@@ -228,39 +273,70 @@ bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
 }
 
 bool Lexer::matchIdentifierOrKeyword(std::vector<Token>& tokens) {
-    if (std::isalpha(peek()) || peek() == '_') {
-        size_t start = position;
-        while (std::isalnum(peek()) || peek() == '_') {
-            advance();
+    unsigned char first = static_cast<unsigned char>(peek());
+    bool startsWithAsciiIdentifier = isAsciiIdentifierStart(first);
+    bool startsWithUtf8 = first >= 0x80;
+
+    if (!startsWithAsciiIdentifier && !startsWithUtf8) {
+        return false;
+    }
+
+    size_t start = position;
+    if (startsWithAsciiIdentifier) {
+        advance();
+    }
+    else {
+        int len = 0;
+        if (!consumeUtf8CodePoint(source, position, &len)) {
+            return false;
         }
-        std::string identifier = source.substr(start, position - start);
-        if (keywords.find(identifier) != keywords.end()) {
-            if (identifier == "true" || identifier == "false") {
-                tokens.push_back(Token{ TokenType::BOOLEAN_LITERAL, identifier, line, column });
+        advance(len);
+    }
+
+    while (position < source.length()) {
+        unsigned char ch = static_cast<unsigned char>(peek());
+        if (isAsciiIdentifierContinue(ch)) {
+            advance();
+            continue;
+        }
+        if (ch >= 0x80) {
+            int len = 0;
+            if (!consumeUtf8CodePoint(source, position, &len)) {
+                break;
             }
-            else {
-                tokens.push_back(Token{ TokenType::KEYWORD, identifier, line, column });
-            }
+            advance(len);
+            continue;
+        }
+        break;
+    }
+
+    std::string identifier = source.substr(start, position - start);
+    if (keywords.find(identifier) != keywords.end()) {
+        if (identifier == "true" || identifier == "false") {
+            tokens.push_back(Token{ TokenType::BOOLEAN_LITERAL, identifier, line, column });
         }
         else {
-            tokens.push_back(Token{ TokenType::IDENTIFIER, identifier, line, column });
+            tokens.push_back(Token{ TokenType::KEYWORD, identifier, line, column });
         }
-        return true;
     }
-    return false;
+    else {
+        tokens.push_back(Token{ TokenType::IDENTIFIER, identifier, line, column });
+    }
+    return true;
 }
 
 bool Lexer::matchOperator(std::vector<Token>& tokens) {
-    // ���� ���� ������ ó��
+    // ?좎룞?쇿뜝?숈삕 ?좎룞?쇿뜝?숈삕 ?좎룞?쇿뜝?숈삕?좎룞??泥섇뜝?숈삕
     std::string op = "";
-    size_t maxOpLength = 2;  // �ִ� ������ ���� ����
+    size_t maxOpLength = 3;  // ?좎뙇?먯삕 ?좎룞?쇿뜝?숈삕?좎룞???좎룞?쇿뜝?숈삕 ?좎룞?쇿뜝?숈삕
     for (size_t len = maxOpLength; len > 0; --len) {
         op = source.substr(position, len);
         if (operators.find(op) != operators.end()) {
             tokens.push_back(Token{ TokenType::OPERATOR, op, line, column });
-            advance(len);
+            advance(static_cast<int>(len));
             return true;
         }
     }
     return false;
 }
+

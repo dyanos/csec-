@@ -10,16 +10,16 @@ void AssignmentNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* AssignmentNode::codegen() {
-    // C/C++ÀÇ '=' ¿¬»êÀÚ´Â ¿À¸¥ÂÊ °ªÀ» ¿ŞÂÊ¿¡ ´ëÀÔÇÏ´Â ¿¬»êÀÚÀÌ´Ù.
-    // ¿ŞÂÊ °ªÀº º¯¼öÀÌ¾î¾ß ÇÑ´Ù.
-    // ¿À¸¥ÂÊ °ªÀº º¯¼öÀÌ°Å³ª ¸Ş¼­µå È£Ãâ °á°úÀÌ¾î¾ß ÇÑ´Ù.
+    // C/C++ì˜ '=' ì—°ì‚°ìëŠ” ì˜¤ë¥¸ìª½ ê°’ì„ ì™¼ìª½ì— ëŒ€ì…í•˜ëŠ” ì—°ì‚°ìì´ë‹¤.
+    // ì™¼ìª½ ê°’ì€ ë³€ìˆ˜ì´ì–´ì•¼ í•œë‹¤.
+    // ì˜¤ë¥¸ìª½ ê°’ì€ ë³€ìˆ˜ì´ê±°ë‚˜ ë©”ì„œë“œ í˜¸ì¶œ ê²°ê³¼ì´ì–´ì•¼ í•œë‹¤.
     auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(name);
     if (!symbolOpt) {
         std::cerr << "Undefined variable: " << name << std::endl;
         return nullptr;
     }
 
-    auto symbol = (*symbolOpt);
+    auto* symbol = symbolOpt;
     if (!symbol->isMutable) {
         std::cerr << "Cannot assign to immutable variable: " << name << std::endl;
         return nullptr;

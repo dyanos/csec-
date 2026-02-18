@@ -1,4 +1,4 @@
-﻿#include "codegen.h"
+#include "codegen.h"
 
 #include "ImportNode.h"
 #include "ASTVisitor.h"
@@ -12,10 +12,10 @@ void ImportNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ImportNode::codegen() {
-	ModuleLoader* moduleLoader = new ModuleLoader();
-    auto moduleSymbols = moduleLoader->loadModule(path);
+	ModuleLoader moduleLoader;
+    auto moduleSymbols = moduleLoader.loadModule(path);
     if (moduleSymbols) {
-        //  ɺ  ɺ ̺
+        //  ?  ? ?
         CodeGenerator::getInstance().symbolTable.merge(*moduleSymbols);
     }
     else {

@@ -1,4 +1,4 @@
-﻿#include "parser.h"
+#include "parser.h"
 #include "all_ast.h"
 
 std::unique_ptr<ASTNode> Parser::parseAnnotationStatement() {
@@ -68,7 +68,7 @@ std::unique_ptr<ASTNode> Parser::parseClassDeclaration(bool isExternal) {
 			}
 		}
 
-		return std::make_unique<ClassDeclarationNode>(className, constructorParams, superClassName, classBody);
+		return std::make_unique<ClassDeclarationNode>(className, constructorParams, superClassName, std::move(classBody));
 	}
 	else {
 		error("Expected class name after 'class'");
@@ -101,7 +101,7 @@ std::unique_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 			error("Expected '=' in variable declaration");
 		}
 
-		// TODO: initializer�� ���� Ÿ�� �߷��ڵ尡 ������ ��
+		// TODO: initializer?? ???? ??? ?????? ?????? ??
 		if (varType == nullptr) {
 			if (initializer) {
 				varType = initializer->getType();
@@ -158,7 +158,7 @@ std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration(bool i
 		}
 	}
 
-	return std::make_unique<FunctionDeclarationNode>(functionName, parameters, returnType, body);
+	return std::make_unique<FunctionDeclarationNode>(functionName, parameters, std::move(returnType), std::move(body));
 }
 
 std::unique_ptr<ASTNode> Parser::parseObjectDeclaration(bool isExternal) {

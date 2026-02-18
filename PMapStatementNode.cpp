@@ -6,6 +6,6 @@ void PMapStatementNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* PMapStatementNode::codegen() {
-    // PMapStatementÀÇ ÄÚµå »ı¼º ·ÎÁ÷ ±¸Çö
+    // PMapStatementì˜ ì½”ë“œ ìƒì„± ë¡œì§ êµ¬í˜„
     return nullptr;
 }

@@ -6,6 +6,6 @@ void FilterStatementNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* FilterStatementNode::codegen() {
-    // FilterStatementÀÇ ÄÚµå »ı¼º ·ÎÁ÷ ±¸Çö
+    // FilterStatementì˜ ì½”ë“œ ìƒì„± ë¡œì§ êµ¬í˜„
     return nullptr;
 }

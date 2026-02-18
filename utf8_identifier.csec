@@ -1,4 +1,4 @@
-﻿external def println(s: String): Void;
+external def println(s: String): Void;
 external def sin(x: Double): Double;
 
 def sum(f: (Int) => Int, start: Int, end: Int): Int = {
@@ -18,7 +18,7 @@ def sum(start: Int, end: Int): Int = {
 }
 
 def main(): Int = {
-	var a1: Int = 10;
+	var 값1: Int = 10;
 	var b1: String = "Hello";
 	var c1: Char = 2;
 	var d1: Boolean = true;
@@ -31,14 +31,14 @@ def main(): Int = {
 	var a4 = $$\sum_{t=1}^{a2+1}(t+4)$$;
 
 	for (i <- 0 to 5) {
-		a1 = a1 + i;
+		값1 = 값1 + i;
 	}
 
 	var a: Int = 0;
 	var b: Int = 10;
 	/*for (i <- a to b) {
-		a1 = a1 + i;
+		값1 = 값1 + i;
 	}*/
 
-	return a1;
+	return 값1;
 }

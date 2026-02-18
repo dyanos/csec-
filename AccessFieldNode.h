@@ -15,17 +15,25 @@ public:
 		this->base = std::move(base);
 		this->field = std::move(field);
     }
-    AccessFieldNode(AccessFieldNode* other) {
+    AccessFieldNode(const AccessFieldNode& other) {
         nodeType = ASTNodeType::ACCESS_FIELD;
-        base = std::move(other->base);
-        field = std::move(other->field);
+        base = other.base ? other.base->clone() : nullptr;
+        field = other.field ? other.field->clone() : nullptr;
+	}
+    AccessFieldNode& operator=(const AccessFieldNode& other) {
+        if (this != &other) {
+            nodeType = ASTNodeType::ACCESS_FIELD;
+            base = other.base ? other.base->clone() : nullptr;
+            field = other.field ? other.field->clone() : nullptr;
+        }
+        return *this;
 	}
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override;
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<AccessFieldNode>(this);
+        return std::make_unique<AccessFieldNode>(*this);
     }
 
     int findFieldIndex(ClassSymbol* classSymbol, const std::string& fieldName);

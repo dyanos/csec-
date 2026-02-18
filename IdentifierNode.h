@@ -6,8 +6,15 @@ public:
 	IdentifierNode(const std::string& value) : value(value) {
 		nodeType = ASTNodeType::IDENTIFIER;
 	}
-	IdentifierNode(IdentifierNode* other) : value(other->value) {
+	IdentifierNode(const IdentifierNode& other) : value(other.value) {
 		nodeType = ASTNodeType::IDENTIFIER;
+	}
+	IdentifierNode& operator=(const IdentifierNode& other) {
+		if (this != &other) {
+			value = other.value;
+			nodeType = ASTNodeType::IDENTIFIER;
+		}
+		return *this;
 	}
 
 	std::string value;
@@ -16,6 +23,6 @@ public:
 	llvm::Value* codegen() override;
 	std::unique_ptr<Type> getType() override;
 	std::unique_ptr<ASTNode> clone() override {
-		return std::make_unique<IdentifierNode>(this);
+		return std::make_unique<IdentifierNode>(*this);
 	}
 };

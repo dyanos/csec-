@@ -7,17 +7,30 @@ public:
     MethodCallNode() {
         nodeType = ASTNodeType::METHOD_CALL;
     }
-    MethodCallNode(MethodCallNode* other) {
+    MethodCallNode(const MethodCallNode& other) {
         nodeType = ASTNodeType::METHOD_CALL;
-        if (other->object) {
-            object = other->object->clone();
+        if (other.object) {
+            object = other.object->clone();
         }
-        methodName = other->methodName;
-        for (const auto& arg : other->arguments) {
-            arguments.push_back(arg->clone());
+        methodName = other.methodName;
+        for (const auto& arg : other.arguments) {
+            arguments.push_back(arg ? arg->clone() : nullptr);
         }
-	}
-    MethodCallNode(std::unique_ptr<ASTNode>& object,
+    }
+    MethodCallNode& operator=(const MethodCallNode& other) {
+        if (this != &other) {
+            nodeType = ASTNodeType::METHOD_CALL;
+            object = other.object ? other.object->clone() : nullptr;
+            methodName = other.methodName;
+            arguments.clear();
+            arguments.reserve(other.arguments.size());
+            for (const auto& arg : other.arguments) {
+                arguments.push_back(arg ? arg->clone() : nullptr);
+            }
+        }
+        return *this;
+    }
+    MethodCallNode(std::unique_ptr<ASTNode> object,
                    const std::string& methodName,
                    const std::vector<std::unique_ptr<ASTNode>>& arguments)
         : object(std::move(object)), methodName(methodName) {
@@ -25,9 +38,9 @@ public:
         for (const auto& arg : arguments) {
             this->arguments.push_back(arg->clone());
         }
-	}
+    }
 
-    std::unique_ptr<ASTNode> object;  // ¸Ş¼­µå¸¦ È£ÃâÇÏ´Â °´Ã¼
+    std::unique_ptr<ASTNode> object;  // ë©”ì„œë“œë¥¼ í˜¸ì¶œí•˜ëŠ” ê°ì²´
     std::string methodName;
     std::vector<std::unique_ptr<ASTNode>> arguments;
 
@@ -35,6 +48,7 @@ public:
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override;
     std::unique_ptr<ASTNode> clone() override {
-		return std::make_unique<MethodCallNode>(this);
-	}
+        return std::make_unique<MethodCallNode>(*this);
+    }
 };
+

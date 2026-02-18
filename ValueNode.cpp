@@ -21,6 +21,9 @@ llvm::Value* ValueNode::codegen() {
 	else if (valueType == TokenType::FLOAT_LITERAL) {
 		return llvm::ConstantFP::get(llvm::Type::getFloatTy(CodeGenerator::getInstance().context), std::stof(value));
 	}
+	else if (valueType == TokenType::EXPONENTIAL_LITERAL) {
+		return llvm::ConstantFP::get(llvm::Type::getDoubleTy(CodeGenerator::getInstance().context), std::stod(value));
+	}
 	else if (valueType == TokenType::BINARY_LITERAL) {
 		return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), std::stoi(value.substr(2), nullptr, 2));
 	}
@@ -50,12 +53,29 @@ llvm::Value* ValueNode::codegen() {
 std::unique_ptr<Type> ValueNode::getType() {
 	if (type) return type->clone();
 
-	if (value.front() == '"' && value.back() == '"') {
-		return std::make_unique<ClassType>(std::string("String"));
-	}
-	if (std::all_of(value.begin(), value.end(), ::isdigit)) {
-		return std::make_unique<BasicType>(std::string("Int"));
+	switch (valueType) {
+	case TokenType::INTEGER_LITERAL:
+	case TokenType::HEX_LITERAL:
+	case TokenType::BINARY_LITERAL:
+	case TokenType::OCTAL_LITERAL:
+		type = std::make_unique<BasicType>(std::string("Int"));
+		break;
+	case TokenType::FLOAT_LITERAL:
+		type = std::make_unique<BasicType>(std::string("Float"));
+		break;
+	case TokenType::EXPONENTIAL_LITERAL:
+		type = std::make_unique<BasicType>(std::string("Double"));
+		break;
+	case TokenType::BOOLEAN_LITERAL:
+		type = std::make_unique<BasicType>(std::string("Boolean"));
+		break;
+	case TokenType::STRING_LITERAL:
+		type = std::make_unique<BasicType>(std::string("String"));
+		break;
+	default:
+		type = std::make_unique<UnknownType>();
+		break;
 	}
 
-	return std::make_unique<UnknownType>();
+	return type->clone();
 }

@@ -10,7 +10,7 @@ void WhileStatementNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* WhileStatementNode::codegen() {
-	// WhileStatementÀÇ ÄÚµå »ı¼º ·ÎÁ÷ ±¸Çö
+	// WhileStatementì˜ ì½”ë“œ ìƒì„± ë¡œì§ êµ¬í˜„
 	return nullptr;
 }
 

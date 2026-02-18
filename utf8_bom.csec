@@ -1,4 +1,5 @@
-﻿external def println(s: String): Void;
+﻿// 한글 UTF-8 BOM 테스트
+external def println(s: String): Void;
 external def sin(x: Double): Double;
 
 def sum(f: (Int) => Int, start: Int, end: Int): Int = {

@@ -13,12 +13,15 @@ public:
         }
         nodeType = ASTNodeType::IMPORT;
     }
-    ImportNode(ImportNode* other) {
-        this->path.clear();
-        for (auto p : other->path) {
-            this->path.push_back(p);
-        }
+    ImportNode(const ImportNode& other) : path(other.path) {
         nodeType = ASTNodeType::IMPORT;
+    }
+    ImportNode& operator=(const ImportNode& other) {
+        if (this != &other) {
+            path = other.path;
+            nodeType = ASTNodeType::IMPORT;
+        }
+        return *this;
     }
 
     std::vector<std::string> path;
@@ -30,6 +33,6 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<ImportNode>(this);
+        return std::make_unique<ImportNode>(*this);
     }
 };

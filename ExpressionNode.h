@@ -6,14 +6,21 @@ public:
     ExpressionNode() {
         nodeType = ASTNodeType::EXPRESSION;
     }
-    ExpressionNode(ExpressionNode* other) {
-        nodeType = other->nodeType;
-		value = other->value;
+    ExpressionNode(const ExpressionNode& other) {
+        nodeType = other.nodeType;
+        value = other.value;
+    }
+    ExpressionNode& operator=(const ExpressionNode& other) {
+        if (this != &other) {
+            nodeType = other.nodeType;
+            value = other.value;
+        }
+        return *this;
     }
     ExpressionNode(ASTNodeType type, std::string& value) {
         this->nodeType = type;
         this->value = value;
-	}
+    }
 
     std::string value;
 
@@ -22,6 +29,6 @@ public:
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override;
     std::unique_ptr<ASTNode> clone() override {
-		return std::make_unique<ExpressionNode>(this);
+        return std::make_unique<ExpressionNode>(*this);
     }
 };

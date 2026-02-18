@@ -7,11 +7,11 @@
 #include "ValueNode.h"
 #include "UnitNode.h"
 #include "UnaryExpressionNode.h"
+#include "RangeExpressionNode.h"
 
 #include <iostream>
 
 std::unique_ptr<ASTNode> LatexMathEqParser::parse() {
-	// 현재 위치의 토큰이 LATEX_INLINE임을 확인
 	if (isAtEnd()) {
 		throw std::runtime_error("Unexpected end of input while parsing LaTeX expression.");
 	}
@@ -29,7 +29,6 @@ const Token& LatexMathEqParser::peek(int pos) const {
 	else if (*position + pos < tokens->size())
 		return (*tokens)[*position + pos];
 	else {
-		// END_OF_FILE
 		return (*tokens)[tokens->size() - 1];
 	}
 }
@@ -166,45 +165,186 @@ const char* logicalOperatorSymbolTable[] = {
 	"Leftrightarrow"
 };
 
-// ===== Calligraphic Fonts (필기체 폰트) =====
+// ===== Calligraphic Fonts (캘리그래피 폰트) =====
 const char* calligraphicFontSymbolTable[] = {
 	"mathcal", "mathbf", "mathit", "mathtt",
 	"mathsf", "mathfrak", "mathbb", "mathscr",
 	"textit", "textbf", "texttt", "textsf"
 };
 
+// ===== LaTeX 명령어 미리보기 =====
+// 현재 위치가 '\' + IDENTIFIER 형태인지 확인하고, 명령어 이름을 반환
+std::string LatexMathEqParser::tryPeekLatexCommand() const {
+	if (*position < tokens->size() &&
+		(*tokens)[*position].type == TokenType::OPERATOR &&
+		(*tokens)[*position].value == "\\" &&
+		*position + 1 < tokens->size() &&
+		(*tokens)[*position + 1].type == TokenType::IDENTIFIER) {
+		return (*tokens)[*position + 1].value;
+	}
+	return "";
+}
+
+// ===== 연산자 우선순위 기반 파싱 =====
+//
+// 우선순위 (낮음 → 높음):
+//   parseExpr        : 최상위 진입점
+//   parseRelational  : =, <, >, <=, >=, !=, \leq, \geq, \neq, ...
+//   parseAdditive    : +, -, \pm, \mp
+//   parseMultiplicative : *, /, \times, \div, \cdot
+//   parsePostfix     : ^(거듭제곱), _(첨자)
+//   parseSimpleExpr  : 단항 연산자, 괄호, 중괄호
+//   parseTerminal    : 숫자, 식별자, \명령어
+
 std::unique_ptr<ASTNode> LatexMathEqParser::parseExpr() {
-	auto left = parseSimpleExpr();
+	return parseRelational();
+}
+
+// ===== 관계 연산자: =, <, >, <=, >=, !=, \leq, \geq, \neq 등 =====
+std::unique_ptr<ASTNode> LatexMathEqParser::parseRelational() {
+	auto left = parseAdditive();
 
 	while (true) {
-		if (match(TokenType::OPERATOR, "$$") || match(TokenType::OPERATOR, "$") || isAtEnd()) {
+		if (isAtEnd() || check(TokenType::OPERATOR, "$") || check(TokenType::OPERATOR, "$$") ||
+			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}")) {
 			break;
 		}
 
-		std::string op = advance().value;
+		std::string op;
 
-		// 연산자 인식
-		bool isOperator = false;
-		for (int i = 0; i < sizeof(operatorSymbolTable) / sizeof(operatorSymbolTable[0]); ++i) {
-			if (op == operatorSymbolTable[i]) {
-				isOperator = true;
+		// 단일 토큰 관계 연산자
+		if (check(TokenType::OPERATOR, "=") || check(TokenType::OPERATOR, "<") ||
+			check(TokenType::OPERATOR, ">") || check(TokenType::OPERATOR, "<=") ||
+			check(TokenType::OPERATOR, ">=") || check(TokenType::OPERATOR, "!=")) {
+			op = advance().value;
+		}
+		// LaTeX 명령어 관계 연산자 (\leq, \geq, \neq, \approx 등)
+		else {
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "leq" || cmd == "geq" || cmd == "neq" ||
+				cmd == "approx" || cmd == "sim" || cmd == "simeq" ||
+				cmd == "equiv" || cmd == "cong" || cmd == "ll" || cmd == "gg" ||
+				cmd == "doteq" || cmd == "asymp" || cmd == "propto") {
+				advance(); // consume '\'
+				op = advance().value; // consume command name
+			}
+			else {
 				break;
 			}
 		}
 
-		if (!isOperator) {
-			// 인식되지 않은 연산자일 경우, 이전 위치로 되돌아감
-			(*position)--;
-			break;
-		}
-
-		auto right = parseSimpleExpr();
-
-		auto binaryNode = std::make_unique<BinaryExpressionNode>(left, op, right);
-		left = std::move(binaryNode);
+		auto right = parseAdditive();
+		left = std::make_unique<BinaryExpressionNode>(std::move(left), op, std::move(right));
 	}
 
 	return left;
+}
+
+// ===== 덧셈/뺄셈: +, -, \pm, \mp =====
+std::unique_ptr<ASTNode> LatexMathEqParser::parseAdditive() {
+	auto left = parseMultiplicative();
+
+	while (true) {
+		if (isAtEnd() || check(TokenType::OPERATOR, "$") || check(TokenType::OPERATOR, "$$") ||
+			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}")) {
+			break;
+		}
+
+		std::string op;
+
+		if (check(TokenType::OPERATOR, "+") || check(TokenType::OPERATOR, "-")) {
+			op = advance().value;
+		}
+		else {
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "pm" || cmd == "mp") {
+				advance(); // consume '\'
+				op = advance().value;
+			}
+			else {
+				break;
+			}
+		}
+
+		auto right = parseMultiplicative();
+		left = std::make_unique<BinaryExpressionNode>(std::move(left), op, std::move(right));
+	}
+
+	return left;
+}
+
+// ===== 곱셈/나눗셈: *, /, \times, \div, \cdot =====
+std::unique_ptr<ASTNode> LatexMathEqParser::parseMultiplicative() {
+	auto left = parsePostfix();
+
+	while (true) {
+		if (isAtEnd() || check(TokenType::OPERATOR, "$") || check(TokenType::OPERATOR, "$$") ||
+			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}")) {
+			break;
+		}
+
+		std::string op;
+
+		if (check(TokenType::OPERATOR, "*") || check(TokenType::OPERATOR, "/")) {
+			op = advance().value;
+		}
+		else {
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "times" || cmd == "div" || cmd == "cdot") {
+				advance(); // consume '\'
+				op = advance().value;
+			}
+			else {
+				break;
+			}
+		}
+
+		auto right = parsePostfix();
+		left = std::make_unique<BinaryExpressionNode>(std::move(left), op, std::move(right));
+	}
+
+	return left;
+}
+
+// ===== 후위 연산자: ^(거듭제곱), _(첨자) =====
+std::unique_ptr<ASTNode> LatexMathEqParser::parsePostfix() {
+	auto node = parseSimpleExpr();
+
+	// ^와 _는 동일 항에 모두 붙을 수 있음: x_i^2, x^2_i
+	while (true) {
+		if (check(TokenType::OPERATOR, "^")) {
+			advance(); // consume '^'
+			auto exponent = parseArg();
+			node = std::make_unique<BinaryExpressionNode>(std::move(node), "^", std::move(exponent));
+		}
+		else if (check(TokenType::OPERATOR, "_")) {
+			advance(); // consume '_'
+			auto subscript = parseArg();
+
+			// 식별자에 첨자가 붙으면 이름에 합침: x_i → "x_i"
+			if (node && node->nodeType == ASTNodeType::IDENTIFIER &&
+				subscript && subscript->nodeType == ASTNodeType::IDENTIFIER) {
+				auto* idNode = static_cast<IdentifierNode*>(node.get());
+				auto* subNode = static_cast<IdentifierNode*>(subscript.get());
+				node = std::make_unique<IdentifierNode>(idNode->value + "_" + subNode->value);
+			}
+			else if (node && node->nodeType == ASTNodeType::IDENTIFIER &&
+				subscript && subscript->nodeType == ASTNodeType::VALUE) {
+				auto* idNode = static_cast<IdentifierNode*>(node.get());
+				auto* valNode = static_cast<ValueNode*>(subscript.get());
+				node = std::make_unique<IdentifierNode>(idNode->value + "_" + valNode->value);
+			}
+			else {
+				// 일반적인 경우: 이항 연산으로 처리
+				node = std::make_unique<BinaryExpressionNode>(std::move(node), "_", std::move(subscript));
+			}
+		}
+		else {
+			break;
+		}
+	}
+
+	return node;
 }
 
 std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
@@ -212,19 +352,98 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 		if (check(TokenType::IDENTIFIER)) {
 			std::string command = advance().value;
 
-			// 마지막이 '_'인 경우, 명령어에서 제거하고, 다음 token을 첨자 인자로 처리
+			// 명령어가 '_'로 끝나는 경우, 명령어에서 제거하고, 다음 token을 첨자 인자로 처리
 			if (!command.empty() && command.back() == '_') {
-				// *position 위치에 '_' 제거한거 넣기
 				command = command.substr(0, command.size() - 1);
-				// token 내용 변경
 				(*const_cast<std::vector<Token>*>(tokens))[*position - 1].value = command;
 				auto nonConstTokens = const_cast<std::vector<Token>*>(tokens);
 				nonConstTokens->insert(nonConstTokens->begin() + *position, Token{ TokenType::OPERATOR, "_", peek().line, peek().column });
 			}
 
-			// 폰트 명령어 처리 (예: \mathbf, \mathcal)
+			// \left 구분자 처리
+			if (command == "left") {
+				// \left 뒤의 구분자 소비 (, [, {, |, .
+				if (!isAtEnd()) {
+					advance(); // consume delimiter
+				}
+				auto expr = parseExpr();
+				// \right 소비
+				if (check(TokenType::OPERATOR, "\\")) {
+					std::string nextCmd = tryPeekLatexCommand();
+					if (nextCmd == "right") {
+						advance(); // consume '\'
+						advance(); // consume 'right'
+						if (!isAtEnd()) {
+							advance(); // consume delimiter ), ], }, |, .
+						}
+					}
+				}
+				return expr;
+			}
+
+			// 폰트 명령어 처리 (예: \mathbb, \mathcal, \mathbf)
 			if (isCalligraphicFont(command)) {
 				auto arg = parseArg(true);
+
+				// 인자가 식별자인 경우 특수 심볼로 매핑
+				if (arg && arg->nodeType == ASTNodeType::IDENTIFIER) {
+					auto* idArg = static_cast<IdentifierNode*>(arg.get());
+					std::string letter = idArg->value;
+
+					// \mathbb{X} → 수학적 수 집합 매핑
+					if (command == "mathbb") {
+						if (letter == "R") return std::make_unique<IdentifierNode>("Real");
+						if (letter == "C") return std::make_unique<IdentifierNode>("Complex");
+						if (letter == "N") return std::make_unique<IdentifierNode>("Natural");
+						if (letter == "Z") return std::make_unique<IdentifierNode>("Integer");
+						if (letter == "Q") return std::make_unique<IdentifierNode>("Rational");
+						if (letter == "P") return std::make_unique<IdentifierNode>("Prime");
+						if (letter == "F") return std::make_unique<IdentifierNode>("Field");
+						if (letter == "H") return std::make_unique<IdentifierNode>("Quaternion");
+						// 알 수 없는 문자는 접두사 형태로
+						return std::make_unique<IdentifierNode>("mathbb_" + letter);
+					}
+
+					// \mathcal{X} → 캘리그래피 심볼 매핑
+					if (command == "mathcal") {
+						if (letter == "L") return std::make_unique<IdentifierNode>("Lagrangian");
+						if (letter == "F") return std::make_unique<IdentifierNode>("Fourier");
+						if (letter == "O") return std::make_unique<IdentifierNode>("BigO");
+						if (letter == "P") return std::make_unique<IdentifierNode>("PowerSet");
+						if (letter == "H") return std::make_unique<IdentifierNode>("Hilbert");
+						if (letter == "B") return std::make_unique<IdentifierNode>("Borel");
+						return std::make_unique<IdentifierNode>("mathcal_" + letter);
+					}
+
+					// \mathbf{X} → 볼드 (벡터/행렬)
+					if (command == "mathbf") {
+						return std::make_unique<IdentifierNode>("bf_" + letter);
+					}
+
+					// \mathit{X} → 이탤릭
+					if (command == "mathit") {
+						return std::make_unique<IdentifierNode>("it_" + letter);
+					}
+
+					// \mathfrak{X} → 프락투르 심볼 매핑
+					if (command == "mathfrak") {
+						if (letter == "g") return std::make_unique<IdentifierNode>("LieAlgebra_g");
+						if (letter == "h") return std::make_unique<IdentifierNode>("LieAlgebra_h");
+						if (letter == "p") return std::make_unique<IdentifierNode>("PrimeIdeal");
+						if (letter == "m") return std::make_unique<IdentifierNode>("MaximalIdeal");
+						return std::make_unique<IdentifierNode>("mathfrak_" + letter);
+					}
+
+					// \mathscr{X} → 스크립트
+					if (command == "mathscr") {
+						return std::make_unique<IdentifierNode>("mathscr_" + letter);
+					}
+
+					// 기타 폰트 명령어: 접두사_문자 형태로
+					return std::make_unique<IdentifierNode>(command + "_" + letter);
+				}
+
+				// 인자가 식별자가 아닌 경우 (예: \mathbf{x+y}) → 함수 호출로 처리
 				auto node = std::make_unique<FunctionCallNode>();
 				node->functionName = command;
 				node->arguments.push_back(std::move(arg));
@@ -257,7 +476,7 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 				}
 			}
 
-			// 그릭 문자 처리
+			// 그리스 문자 처리
 			for (int i = 0; i < sizeof(greekLetterSymbolTable) / sizeof(greekLetterSymbolTable[0]); ++i) {
 				if (command == greekLetterSymbolTable[i]) {
 					return std::make_unique<IdentifierNode>(command);
@@ -271,7 +490,7 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 				}
 			}
 
-			// 관계 연산자 처리
+			// 관계 연산자 처리 (단독 출현 시 식별자로)
 			if (isRelationalOperator(command)) {
 				return std::make_unique<IdentifierNode>(command);
 			}
@@ -316,14 +535,17 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 							}
 						}
 
+						// lower limit에서 변수와 시작값 추출
+						std::unique_ptr<ASTNode> startExpr = nullptr;
+
 						if (argsMap["lower"]) {
 							if (argsMap["lower"]->nodeType == ASTNodeType::BINARY_EXPRESSION) {
-								auto binExpr = (BinaryExpressionNode*)(argsMap["lower"].get());
+								auto* binExpr = static_cast<BinaryExpressionNode*>(argsMap["lower"].get());
 								if (binExpr->op == "=") {
 									if (binExpr->left->nodeType == ASTNodeType::IDENTIFIER) {
-										auto idNode = (IdentifierNode*)(binExpr->left.get());
+										auto* idNode = static_cast<IdentifierNode*>(binExpr->left.get());
 										node->variable = idNode->value;
-										node->iterableExpr = std::move(binExpr->right);
+										startExpr = std::move(binExpr->right);
 									}
 									else {
 										throw std::runtime_error("Expected identifier on the left side of '=' in lower limit.");
@@ -333,10 +555,10 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 									throw std::runtime_error("Expected '=' operator in lower limit.");
 								}
 							}
-							else if (argsMap["lower"]->nodeType == ASTNodeType::IDENTIFIER) {
-								auto forStmt = (ForStatementNode*)(argsMap["lower"].get());
+							else if (argsMap["lower"]->nodeType == ASTNodeType::FOR_STATEMENT) {
+								auto* forStmt = static_cast<ForStatementNode*>(argsMap["lower"].get());
 								node->variable = forStmt->variable;
-								node->iterableExpr = std::move(forStmt->iterableExpr);
+								startExpr = std::move(forStmt->iterableExpr);
 							}
 							else {
 								throw std::runtime_error("Expected binary expression in lower limit.");
@@ -344,11 +566,20 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 						}
 						else {
 							node->variable = "_";
-							node->iterableExpr = std::make_unique<UnitNode>();
+							startExpr = std::make_unique<UnitNode>();
 						}
 
-						if (argsMap["upper"]) {
+						// upper + lower를 RangeExpressionNode로 합침
+						if (argsMap["upper"] && startExpr) {
+							node->iterableExpr = std::make_unique<RangeExpressionNode>(
+								std::move(startExpr), std::move(argsMap["upper"]), true);
+							node->isRange = true;
+						}
+						else if (argsMap["upper"]) {
 							node->iterableExpr = std::move(argsMap["upper"]);
+						}
+						else if (startExpr) {
+							node->iterableExpr = std::move(startExpr);
 						}
 						else {
 							node->iterableExpr = std::make_unique<UnitNode>();
@@ -399,6 +630,9 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 					}
 				}
 			}
+
+			// 인식할 수 없는 명령어는 식별자로 처리
+			return std::make_unique<IdentifierNode>(command);
 		}
 		else {
 			throw std::runtime_error("Expected command name after '\\'");
@@ -444,22 +678,30 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 }
 
 std::unique_ptr<ASTNode> LatexMathEqParser::parseSimpleExpr() {
+	// 괄호 그룹: ( expr )
 	if (match(TokenType::OPERATOR, "(")) {
 		auto expr = parseExpr();
 		match(TokenType::OPERATOR, ")");
 		return expr;
 	}
-	else if (match(TokenType::OPERATOR, "-") ||
-		match(TokenType::OPERATOR, "+")) {
-		auto rightCopy = parseSimpleExpr();
-		return std::make_unique<UnaryExpressionNode>(previous().value, rightCopy);
+	// 중괄호 그룹: { expr }
+	else if (match(TokenType::OPERATOR, "{")) {
+		auto expr = parseExpr();
+		match(TokenType::OPERATOR, "}");
+		return expr;
+	}
+	// 단항 연산자: -, +
+	else if (check(TokenType::OPERATOR, "-") || check(TokenType::OPERATOR, "+")) {
+		std::string op = advance().value; // 연산자를 먼저 저장
+		auto operand = parsePostfix();
+		return std::make_unique<UnaryExpressionNode>(op, std::move(operand));
 	}
 
 	return parseTerminal();
 }
 
 std::unique_ptr<ASTNode> LatexMathEqParser::parseArg(bool isBrace) {
-	// 파라미터 파싱 함수 선택
+	// 파라미터 필수 함수 (중괄호 필수)
 	if (isBrace && !check(TokenType::OPERATOR, "{")) {
 		throw std::runtime_error("Expected '{' to start argument.");
 		return nullptr;

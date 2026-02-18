@@ -8,12 +8,24 @@ public:
     ArrayCreationNode() {
         nodeType = ASTNodeType::ARRAY_CREATION;
     }
-    ArrayCreationNode(ArrayCreationNode* other) {
-        this->arrayType = std::move(other->arrayType);
-        for (const auto& element : other->elements) {
-            this->elements.push_back(element->clone());
+    ArrayCreationNode(const ArrayCreationNode& other) {
+        this->arrayType = other.arrayType ? std::make_unique<GenericType>(*other.arrayType) : nullptr;
+        for (const auto& element : other.elements) {
+            this->elements.push_back(element ? element->clone() : nullptr);
         }
 		nodeType = ASTNodeType::ARRAY_CREATION;
+    }
+    ArrayCreationNode& operator=(const ArrayCreationNode& other) {
+        if (this != &other) {
+            this->arrayType = other.arrayType ? std::make_unique<GenericType>(*other.arrayType) : nullptr;
+            this->elements.clear();
+            this->elements.reserve(other.elements.size());
+            for (const auto& element : other.elements) {
+                this->elements.push_back(element ? element->clone() : nullptr);
+            }
+            nodeType = ASTNodeType::ARRAY_CREATION;
+        }
+        return *this;
     }
 
     std::unique_ptr<GenericType> arrayType;
@@ -22,9 +34,9 @@ public:
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override {
-        return std::make_unique<Type>(arrayType.get());
+        return arrayType ? arrayType->clone() : std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<ArrayCreationNode>(this);
+        return std::make_unique<ArrayCreationNode>(*this);
     }
 };

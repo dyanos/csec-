@@ -21,8 +21,8 @@ llvm::Value* ArrayAccessNode::codegen() {
         return nullptr;
     }
 
-    // ¿ä¼Ò Æ÷ÀÎÅÍ °è»ê
+    // ìš”ì†Œ í¬ì¸í„° ê³„ì‚°
     llvm::Value* elemPtr = CodeGenerator::getInstance().builder.CreateGEP(elementType, arrayValue, indexValue, "arrayelem");
-    // ¿ä¼Ò ·Îµå
+    // ìš”ì†Œ ë¡œë“œ
     return CodeGenerator::getInstance().builder.CreateLoad(elementType, elemPtr, "arrayload");
 }

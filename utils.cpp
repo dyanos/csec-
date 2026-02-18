@@ -15,19 +15,29 @@ inline static bool exist_file(const std::string& name) {
 
 std::string read_file(const std::string& path)
 {
-	// TODO: read file
-	std::ifstream file(path.c_str());
-	if (file.is_open()) {
-		std::string content;
-		std::string line;
-		while (std::getline(file, line)) {
-			content += line;
-		}
-		file.close();
-		return content;
+	return read_utf8_file(path);
+}
+
+std::string read_utf8_file(const std::string& path)
+{
+	std::ifstream file(path, std::ios::in | std::ios::binary);
+	if (!file.is_open()) {
+		return std::string();
 	}
 
-	return std::string();
+	std::ostringstream contents;
+	contents << file.rdbuf();
+	std::string text = contents.str();
+
+	// Strip UTF-8 BOM if present so lexer sees the first real token.
+	if (text.size() >= 3 &&
+		static_cast<unsigned char>(text[0]) == 0xEF &&
+		static_cast<unsigned char>(text[1]) == 0xBB &&
+		static_cast<unsigned char>(text[2]) == 0xBF) {
+		text.erase(0, 3);
+	}
+
+	return text;
 }
 
 template<class...T>
@@ -76,6 +86,6 @@ std::vector<std::string> split(const std::string& str, char delimiter) {
 
 inline bool isStringTypeFromLLVM(llvm::Value* value, CodeGenerator* codeGenerator) {
 	return value->getType()->isPointerTy() &&
-		((llvm::PointerType*)value->getType())->isValidElementType(
+		(static_cast<llvm::PointerType*>(value->getType()))->isValidElementType(
 			llvm::Type::getInt8Ty(CodeGenerator::getInstance().context));
 }

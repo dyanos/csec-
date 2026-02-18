@@ -11,17 +11,17 @@ void ArrayCreationNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ArrayCreationNode::codegen() {
-    // ¿ä¼Ò Å¸ÀÔÀÇ LLVM Å¸ÀÔ °¡Á®¿À±â
+    // ìš”ì†Œ íƒ€ìž…ì˜ LLVM íƒ€ìž… ê°€ì ¸ì˜¤ê¸°
     llvm::Type* elementType = CodeGenerator::getInstance().getLLVMType(arrayType->typeArguments[0].get());
     if (!elementType) {
         std::cerr << "Error: Invalid array element type" << std::endl;
         return nullptr;
     }
 
-    // ¹è¿­ Å©±â °áÁ¤
+    // ë°°ì—´ í¬ê¸° ê²°ì •
     llvm::Value* arraySize = CodeGenerator::getInstance().builder.getInt32(elements.size());
 
-    // ¸Þ¸ð¸® ÇÒ´ç (malloc µî »ç¿ë)
+    // ë©”ëª¨ë¦¬ í• ë‹¹ (malloc ë“± ì‚¬ìš©)
     llvm::Function* mallocFunc = llvm::Function::Create(
         llvm::FunctionType::get(
             llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(CodeGenerator::getInstance().context)),
@@ -41,7 +41,7 @@ llvm::Value* ArrayCreationNode::codegen() {
     llvm::Value* rawPtr = CodeGenerator::getInstance().builder.CreateCall(mallocFunc, { totalSize }, "malloccall");
     llvm::Value* arrayPtr = CodeGenerator::getInstance().builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(elementType));
 
-    // ¹è¿­ ¿ä¼Ò ÃÊ±âÈ­
+    // ë°°ì—´ ìš”ì†Œ ì´ˆê¸°í™”
     for (size_t i = 0; i < elements.size(); ++i) {
         llvm::Value* elemValue = elements[i]->codegen();
         if (!elemValue) {

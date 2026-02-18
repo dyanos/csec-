@@ -10,14 +10,14 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
         node.initializer->accept(*this);
         auto initType = node.initializer->getType();
 
-        // º¯¼öÀÇ Å¸ÀÔ°ú ÃÊ±âÈ­ ½ÄÀÇ Å¸ÀÔ ºñ±³
+        // ë³€ìˆ˜ì˜ íƒ€ìž…ê³¼ ì´ˆê¸°í™” ì‹ì˜ íƒ€ìž… ë¹„êµ
         if (node.type) {
-            // º¯¼ö ¼±¾ð ½Ã Å¸ÀÔÀÌ ¸í½ÃµÈ °æ¿ì
+            // ë³€ìˆ˜ ì„ ì–¸ ì‹œ íƒ€ìž…ì´ ëª…ì‹œëœ ê²½ìš°
             if (!node.type->equals(initType)) {
                 std::cerr << "Type error: Variable '" << node.name << "' declared as '" << node.type->getName() << "' but initialized with '" << initType->getName() << "'" << std::endl;
             }
         } else {
-            // Å¸ÀÔÀÌ ¸í½ÃµÇÁö ¾ÊÀº °æ¿ì ÃÊ±âÈ­ ½ÄÀÇ Å¸ÀÔÀ¸·Î ¼³Á¤
+            // íƒ€ìž…ì´ ëª…ì‹œë˜ì§€ ì•Šì€ ê²½ìš° ì´ˆê¸°í™” ì‹ì˜ íƒ€ìž…ìœ¼ë¡œ ì„¤ì •
 			node.type = initType->clone();
         }
     } else {
@@ -29,26 +29,26 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
 }
 
 void TypeChecker::visit(FunctionDeclarationNode& node) {
-    // ÆÄ¶ó¹ÌÅÍ Å¸ÀÔ °Ë»ç
+    // íŒŒë¼ë¯¸í„° íƒ€ìž… ê²€ì‚¬
     for (auto& param : node.parameters) {
         if (!param->type) {
-            std::cerr << "Type error: Parameter '" << ((ParameterNode*)param.get())->name << "' has no type" << std::endl;
+            std::cerr << "Type error: Parameter '" << (static_cast<ParameterNode*>(param.get()))->name << "' has no type" << std::endl;
             param->type = std::make_unique<UnknownType>();
         }
     }
 
-    // ÇÔ¼ö º»¹® Å¸ÀÔ °Ë»ç
+    // í•¨ìˆ˜ ë³¸ë¬¸ íƒ€ìž… ê²€ì‚¬
     if (node.body) {
         node.body->accept(*this);
         auto bodyType = node.body->getType();
 
-        // ¹ÝÈ¯ Å¸ÀÔ°ú ÇÔ¼ö º»¹®ÀÇ Å¸ÀÔ ºñ±³
+        // ë°˜í™˜ íƒ€ìž…ê³¼ í•¨ìˆ˜ ë³¸ë¬¸ì˜ íƒ€ìž… ë¹„êµ
         if (node.returnType) {
             if (!node.returnType->equals(bodyType)) {
                 std::cerr << "Type error: Function '" << node.name << "' declared to return '" << node.returnType->getName() << "' but returns '" << bodyType->getName() << "'" << std::endl;
             }
         } else {
-            // ¹ÝÈ¯ Å¸ÀÔÀÌ ¸í½ÃµÇÁö ¾ÊÀº °æ¿ì ÇÔ¼ö º»¹®ÀÇ Å¸ÀÔÀ¸·Î ¼³Á¤
+            // ë°˜í™˜ íƒ€ìž…ì´ ëª…ì‹œë˜ì§€ ì•Šì€ ê²½ìš° í•¨ìˆ˜ ë³¸ë¬¸ì˜ íƒ€ìž…ìœ¼ë¡œ ì„¤ì •
 			node.returnType = bodyType->clone();
         }
     }
@@ -62,7 +62,7 @@ void TypeChecker::visit(BinaryExpressionNode& node) {
     node.getType();
 }
 
-// ±âÅ¸ ÇÊ¿äÇÑ ¹æ¹® ÇÔ¼ö ±¸Çö
+// ê¸°íƒ€ í•„ìš”í•œ ë°©ë¬¸ í•¨ìˆ˜ êµ¬í˜„
 void TypeChecker::visit(ProgramNode& node) {
     node.getType();
 }

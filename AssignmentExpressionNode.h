@@ -15,15 +15,24 @@ public:
         this->right = std::move(right);
         nodeType = ASTNodeType::ASSIGNMENT_EXPRESSION;
     }
-    AssignmentExpressionNode(AssignmentExpressionNode* other)
-        : left(std::move(other->left)), right(std::move(other->right)) {
+    AssignmentExpressionNode(const AssignmentExpressionNode& other)
+        : left(other.left ? other.left->clone() : nullptr),
+          right(other.right ? other.right->clone() : nullptr) {
         nodeType = ASTNodeType::ASSIGNMENT_EXPRESSION;
 	}
+    AssignmentExpressionNode& operator=(const AssignmentExpressionNode& other) {
+        if (this != &other) {
+            left = other.left ? other.left->clone() : nullptr;
+            right = other.right ? other.right->clone() : nullptr;
+            nodeType = ASTNodeType::ASSIGNMENT_EXPRESSION;
+        }
+        return *this;
+    }
 
-    void accept(ASTVisitor& visitor) override;
+	void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override;
 	std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<AssignmentExpressionNode>(this);
+        return std::make_unique<AssignmentExpressionNode>(*this);
 	}
 };

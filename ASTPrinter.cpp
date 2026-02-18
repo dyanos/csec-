@@ -74,9 +74,9 @@ public:
         std::cout << "Cases:" << std::endl;
         for (auto& c : node.cases) {
             std::cout << "Case:" << std::endl;
-            c.first->accept(*this);  // ����
+            c.first->accept(*this);  // 占쏙옙占쏙옙
             std::cout << "Result:" << std::endl;
-            c.second->accept(*this); // ��� ǥ����
+            c.second->accept(*this); // 占쏙옙占?표占쏙옙占쏙옙
         }
     }
 

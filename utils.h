@@ -7,6 +7,7 @@
 #include "codegen.h"
 
 inline static bool exist_file(const std::string& name);
+std::string read_utf8_file(const std::string& path);
 std::string read_file(const std::string& path);
 
 template<class...T>

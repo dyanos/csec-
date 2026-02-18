@@ -6,91 +6,91 @@
 
 #include "ASTVisitor.h"
 
-// TypeChecker Å¬·¡½º´Â AST¸¦ ¹æ¹®ÇÏ¿© Å¸ÀÔ °Ë»ç¸¦ ¼öÇàÇÕ´Ï´Ù.
+// TypeChecker í´ë˜ìŠ¤ëŠ” ASTë¥¼ ë°©ë¬¸í•˜ì—¬ íƒ€ì… ê²€ì‚¬ë¥¼ ìˆ˜í–‰í•©ë‹ˆë‹¤.
 class TypeChecker : public ASTVisitor {
 public:
-    // ÇÁ·Î±×·¥ ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í”„ë¡œê·¸ë¨ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ProgramNode& node) override;
 
-    // ÀÓÆ÷Æ® ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ì„í¬íŠ¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ImportNode& node) override;
 
-    // Å¬·¡½º ¼±¾ğ ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í´ë˜ìŠ¤ ì„ ì–¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ClassDeclarationNode& node) override;
 
-    // °´Ã¼ ¼±¾ğ ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ê°ì²´ ì„ ì–¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ObjectDeclarationNode& node) override;
 
-    // ÇÔ¼ö ¼±¾ğ ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í•¨ìˆ˜ ì„ ì–¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(FunctionDeclarationNode& node) override;
 
-    // ÆÄ¶ó¹ÌÅÍ ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // íŒŒë¼ë¯¸í„° ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ParameterNode& node) override;
 
-    // ºí·Ï ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ë¸”ë¡ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(BlockNode& node) override;
 
-    // Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ExpressionNode& node) override;
 
-    // º¯¼ö ¼±¾ğ ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ë³€ìˆ˜ ì„ ì–¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(VariableDeclarationNode& node) override;
 
-    // È£Ãâ Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í˜¸ì¶œ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(CallExpressionNode& node) override;
 
 	void visit(MethodCallNode& node) override;
 
-    // if ¹® ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // if ë¬¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(IfStatementNode& node) override;
 
-    // for ¹® ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // for ë¬¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ForStatementNode& node) override;
 
-    // match Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // match í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(MatchExpressionNode& node) override;
 
-    // ¹üÀ§ Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ë²”ìœ„ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(RangeExpressionNode& node) override;
 
-    // ÀÌÇ× Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ì´í•­ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(BinaryExpressionNode& node) override;
 
-    // ÇÒ´ç ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í• ë‹¹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(AssignmentNode& node) override;
 
-    // Å¬·¡½º º»¹® ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í´ë˜ìŠ¤ ë³¸ë¬¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ClassBodyNode& node) override;
 
-    // ¹İÈ¯ ¹® ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ë°˜í™˜ ë¬¸ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ReturnStatementNode& node) override;
 
-    // »õ·Î¿î È£Ãâ Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ìƒˆë¡œìš´ í˜¸ì¶œ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ClassInstanceCreationNode& node) override;
 
-    // »õ·Î¿î ¹è¿­ Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ìƒˆë¡œìš´ ë°°ì—´ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ArrayCreationExpressionNode& node) override;
 
-    // ÇÒ´ç Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í• ë‹¹ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(AssignmentExpressionNode& node) override;
 
-    // ´ÜÇ× Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ë‹¨í•­ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(UnaryExpressionNode& node) override;
     void visit(CastingExpressionNode& node) override;
 
-    // ÈÄÀ§ Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // í›„ìœ„ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(PostfixExpressionNode& node) override;
 
-    // ÀüÀ§ Ç¥Çö½Ä ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ì „ìœ„ í‘œí˜„ì‹ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(PrefixExpressionNode& node) override;
 
-    // ´ÜÀ§ ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ë‹¨ìœ„ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(UnitNode& node) override;
 
-    // ½Äº°ÀÚ ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ì‹ë³„ì ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(IdentifierNode& node) override;
 
-    // °ª ³ëµå¸¦ ¹æ¹®ÇÕ´Ï´Ù.
+    // ê°’ ë…¸ë“œë¥¼ ë°©ë¬¸í•©ë‹ˆë‹¤.
     void visit(ValueNode& node) override;
 
 	void visit(FunctionCallNode& node) override;

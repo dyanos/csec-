@@ -1,4 +1,4 @@
-﻿#include "codegen.h"
+#include "codegen.h"
 
 #include "ClassInstanceCreationNode.h"
 #include "ASTVisitor.h"
@@ -38,7 +38,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         return nullptr;
     }
 
-    auto classSymbol = (*classSymbolOpt);
+    auto* classSymbol = classSymbolOpt;
 
     // 클래스 타입 가져오기
     llvm::StructType* classType = llvm::dyn_cast<llvm::StructType>(classSymbol->classType);
@@ -116,7 +116,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         llvm::BasicBlock* bb = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "entry", useF);
         CodeGenerator::getInstance().builder.SetInsertPoint(bb);
 
-        // alloca — 스택에 MyStruct 공간 할당
+        // alloca ? 스택에 MyStruct 공간 할당
         llvm::Value* obj = CodeGenerator::getInstance().builder.CreateAlloca(classType, nullptr, "obj");
 
         // 생성자 호출

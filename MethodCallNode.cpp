@@ -30,7 +30,7 @@ llvm::Value* MethodCallNode::codegen() {
         return nullptr;
     }
 
-    ClassSymbol* classSymbol = (*symbol);
+    ClassSymbol* classSymbol = symbol;
 
     auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName);
     if (!methodSymbolOpt) {
@@ -38,9 +38,9 @@ llvm::Value* MethodCallNode::codegen() {
         return nullptr;
     }
 
-    auto methodSymbol = (*methodSymbolOpt);
+    auto* methodSymbol = methodSymbolOpt;
 
-    auto funcType = (FunctionType*)(methodSymbol->type.get());
+    auto* funcType = dynamic_cast<FunctionType*>(methodSymbol->type.get());
     llvm::Function* function = static_cast<llvm::Function*>(methodSymbol->value);
     if (!function) {
         auto symbol = CodeGenerator::getInstance().symbolTable.lookupClass(objectType->getName());
@@ -49,7 +49,7 @@ llvm::Value* MethodCallNode::codegen() {
             return nullptr;
         }
 
-        ClassSymbol* classSymbol = *symbol;
+        ClassSymbol* classSymbol = symbol;
         if (classSymbol->methodBodies.find(methodName) == classSymbol->methodBodies.end()) {
             std::cerr << "Error: Method '" << methodName << "' not found in class '" << objectType->getName() << "'" << std::endl;
             return nullptr;
@@ -58,7 +58,7 @@ llvm::Value* MethodCallNode::codegen() {
         classSymbol->methodBodies[methodName]->codegen();
         function = CodeGenerator::getInstance().module->getFunction(methodName);
         methodSymbol->value = function;
-        CodeGenerator::getInstance().symbolTable.addSymbol(methodName, methodSymbol);
+        CodeGenerator::getInstance().symbolTable.addSymbol(methodName, methodSymbol ? methodSymbol->clone() : nullptr);
     }
 
     if (!funcType || !function) {
@@ -106,17 +106,17 @@ std::unique_ptr<Type> MethodCallNode::getType() {
         return std::make_unique<UnknownType>();
     }
 
-    auto classSymbol = *classSymbolOpt;
+    auto* classSymbol = classSymbolOpt;
 
     auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName);
     if (!methodSymbolOpt) {
         return std::make_unique<UnknownType>();
     }
 
-    auto methodSymbol = *methodSymbolOpt;
+    auto* methodSymbol = methodSymbolOpt;
 
-    auto funcType = (FunctionType*)(methodSymbol->type.get());
-    if (funcType) {
+    auto* funcType = dynamic_cast<FunctionType*>(methodSymbol->type.get());
+    if (funcType && funcType->returnType) {
         return funcType->returnType->clone();
     }
 

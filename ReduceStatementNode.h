@@ -4,21 +4,25 @@
 class ReduceStatementNode : public ASTNode {
 public:
     ReduceStatementNode() {
-        nodeType = ASTNodeType::EXPRESSION; // 적절한 노드 타입으로 변경 필요
+        nodeType = ASTNodeType::REDUCE_STATEMENT;
     }
-    ReduceStatementNode(ReduceStatementNode* other) {
-        nodeType = other->nodeType;
-        variable = other->variable;
-        if (other->iterableExpr) {
-            iterableExpr = std::move(other->iterableExpr);
+    ReduceStatementNode(const ReduceStatementNode& other) {
+        nodeType = other.nodeType;
+        variable = other.variable;
+        iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
+        body = other.body ? other.body->clone() : nullptr;
+        initialValue = other.initialValue ? other.initialValue->clone() : nullptr;
+    }
+    ReduceStatementNode& operator=(const ReduceStatementNode& other) {
+        if (this != &other) {
+            nodeType = other.nodeType;
+            variable = other.variable;
+            iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
+            body = other.body ? other.body->clone() : nullptr;
+            initialValue = other.initialValue ? other.initialValue->clone() : nullptr;
         }
-        if (other->body) {
-            body = std::move(other->body);
-        }
-        if (other->initialValue) {
-            initialValue = std::move(other->initialValue);
-        }
-	}
+        return *this;
+    }
     ReduceStatementNode(const std::string& var,
         std::unique_ptr<ASTNode> iterable,
         std::unique_ptr<ASTNode> body,
@@ -27,7 +31,7 @@ public:
         iterableExpr(std::move(iterable)),
         body(std::move(body)),
         initialValue(std::move(initialValue)) {
-        nodeType = ASTNodeType::EXPRESSION; // 적절한 노드 타입으로 변경 필요
+        nodeType = ASTNodeType::REDUCE_STATEMENT;
     }
 
     std::string variable;
@@ -42,6 +46,6 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<ReduceStatementNode>(this);
-	}
+        return std::make_unique<ReduceStatementNode>(*this);
+    }
 };

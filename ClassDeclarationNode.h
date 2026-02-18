@@ -14,7 +14,7 @@ public:
     ClassDeclarationNode(const std::string& name,
         const std::vector<std::unique_ptr<ParameterNode>>& constructorParams,
         const std::string& superClassName,
-        std::unique_ptr<ClassBodyNode>& body)
+        std::unique_ptr<ClassBodyNode> body)
         : name(name), superClassName(superClassName) {
         for (const auto& param : constructorParams) {
             this->constructorParams.push_back(param->clone());
@@ -22,17 +22,33 @@ public:
         this->body = std::move(body);
         nodeType = ASTNodeType::CLASS_DECLARATION;
     }
-    ClassDeclarationNode(ClassDeclarationNode* other) {
+    ClassDeclarationNode(const ClassDeclarationNode& other) {
         nodeType = ASTNodeType::CLASS_DECLARATION;
-        name = other->name;
-        for (auto& param : other->constructorParams) {
-            constructorParams.push_back(param->clone());
+        name = other.name;
+        for (const auto& param : other.constructorParams) {
+            constructorParams.push_back(param ? param->clone() : nullptr);
         }
-        superClassName = other->superClassName;
-        body = std::move(other->body);
-	}
+        superClassName = other.superClassName;
+        body = other.body ? other.body->clone() : nullptr;
+        isExternal = other.isExternal;
+    }
+    ClassDeclarationNode& operator=(const ClassDeclarationNode& other) {
+        if (this != &other) {
+            nodeType = ASTNodeType::CLASS_DECLARATION;
+            name = other.name;
+            constructorParams.clear();
+            constructorParams.reserve(other.constructorParams.size());
+            for (const auto& param : other.constructorParams) {
+                constructorParams.push_back(param ? param->clone() : nullptr);
+            }
+            superClassName = other.superClassName;
+            body = other.body ? other.body->clone() : nullptr;
+            isExternal = other.isExternal;
+        }
+        return *this;
+    }
 
-	bool isExternal = false;
+    bool isExternal = false;
 
     std::string name;
     std::vector<std::unique_ptr<ASTNode>> constructorParams;
@@ -48,6 +64,7 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<ClassDeclarationNode>(this);
+        return std::make_unique<ClassDeclarationNode>(*this);
     }
 };
+

@@ -10,7 +10,7 @@ void AttributeNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* AttributeNode::codegen() {
-    // Node°¡ IdentifierNodeÀÌ¶ó°í ÇÏ´õ¶óµµ FunctionCall·Î Ãë±Þ
+    // Nodeê°€ IdentifierNodeì´ë¼ê³  í•˜ë”ë¼ë„ FunctionCallë¡œ ì·¨ê¸‰
     switch (this->expr->nodeType) {
     case ASTNodeType::FUNCTION_CALL:
         return this->expr->codegen();
@@ -23,18 +23,18 @@ llvm::Value* AttributeNode::codegen() {
             return nullptr;
         }
 
-        // Attribute Á¾·ù¿¡ µû¸¥ Ã³¸®
+        // Attribute ì¢…ë¥˜ì— ë”°ë¥¸ ì²˜ë¦¬
         if (identifierNode->value == "DllImport") {
-            // ÀÌ°Å ´ÙÀ½ÀÇ ÇÔ¼ö´Â ¿ÜºÎ DLL¿¡¼­ °¡Á®¿À´Â ÇÔ¼ö·Î Ã³¸®
+            // ì´ê±° ë‹¤ìŒì˜ í•¨ìˆ˜ëŠ” ì™¸ë¶€ DLLì—ì„œ ê°€ì ¸ì˜¤ëŠ” í•¨ìˆ˜ë¡œ ì²˜ë¦¬
         }
         else if (identifierNode->value == "StaticLibraryImport") {
-            // ÀÌ°Å ´ÙÀ½ÀÇ ÇÔ¼ö´Â ¿ÜºÎ Static Library¿¡¼­ °¡Á®¿À´Â ÇÔ¼ö·Î Ã³¸®
+            // ì´ê±° ë‹¤ìŒì˜ í•¨ìˆ˜ëŠ” ì™¸ë¶€ Static Libraryì—ì„œ ê°€ì ¸ì˜¤ëŠ” í•¨ìˆ˜ë¡œ ì²˜ë¦¬
         }
         else if (identifierNode->value == "Native") {
-            // ÀÌ°Å ´ÙÀ½ÀÇ ÇÔ¼ö´Â ³×ÀÌÆ¼ºê ÇÔ¼ö·Î Ã³¸® = Compiler¿¡¼­ Áö¿øÇÏ´Â ÇÔ¼ö
+            // ì´ê±° ë‹¤ìŒì˜ í•¨ìˆ˜ëŠ” ë„¤ì´í‹°ë¸Œ í•¨ìˆ˜ë¡œ ì²˜ë¦¬ = Compilerì—ì„œ ì§€ì›í•˜ëŠ” í•¨ìˆ˜
         }
         else {
-            // ³ª¸ÓÁö´Â »ç¿ëÀÚ ÁöÁ¤À¸·Î ÇÒ ¿¹Á¤
+            // ë‚˜ë¨¸ì§€ëŠ” ì‚¬ìš©ìž ì§€ì •ìœ¼ë¡œ í•  ì˜ˆì •
         }
     }
     break;

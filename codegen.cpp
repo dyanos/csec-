@@ -17,6 +17,7 @@ CodeGenerator::CodeGenerator() : builder(context) {
 
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", mainFunction);
     this->builder.SetInsertPoint(entry);
+    this->builder.CreateRet(this->builder.getInt32(0));
 
     this->mallocFunction = module->getFunction("malloc");
     if (!mallocFunction) {
@@ -40,13 +41,13 @@ CodeGenerator::CodeGenerator() : builder(context) {
 
     this->symbolTable.initializeBuiltInTypes(context);
 
-	// int클래스에 추가된 toString메서드의 llvm 코드 생성
+	// int?대옒?ㅼ뿉 異붽???toString硫붿꽌?쒖쓽 llvm 肄붾뱶 ?앹꽦
 	auto initClassSymbolOpt = symbolTable.lookupClass("Int");
     if (!initClassSymbolOpt) {
         std::cerr << "Error: 'Int' class not found in symbol table." << std::endl;
         return;
 	}
-    auto initClassSymbol = *initClassSymbolOpt;
+    auto* initClassSymbol = initClassSymbolOpt;
 	auto toStringFunction = llvm::Function::Create(
 		llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { initClassSymbol->classType->getPointerTo() }, false),
 		llvm::Function::ExternalLinkage,
@@ -61,7 +62,7 @@ CodeGenerator::CodeGenerator() : builder(context) {
 		module.get()
 	);
 
-    // print 함수 생성
+    // print ?⑥닔 ?앹꽦
     llvm::Function::Create(
         llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::Type::getInt8Ty(context)->getPointerTo() }, false),
         llvm::Function::ExternalLinkage,
@@ -85,8 +86,21 @@ void CodeGenerator::dumpIR() {
 
 llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
     if (type->getKind() == Type::Kind::BASIC) {
-        if (type->isIntegerTy()) {
+        const std::string name = type->getName();
+        if (name == "Int") {
             return llvm::Type::getInt32Ty(context);
+        }
+        else if (name == "Short") {
+            return llvm::Type::getInt16Ty(context);
+        }
+        else if (name == "Byte") {
+            return llvm::Type::getInt8Ty(context);
+        }
+        else if (name == "Long") {
+            return llvm::Type::getInt64Ty(context);
+        }
+        else if (name == "Boolean" || name == "Bool") {
+            return llvm::Type::getInt1Ty(context);
         }
         else if (type->isFloatTy()) {
             return llvm::Type::getFloatTy(context);
@@ -105,12 +119,11 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         }
     }
     else if (type->getKind() == Type::Kind::CLASS) {
-        // 클래스 타입 처리
-        auto classSymbolOpt = symbolTable.lookup(type->getName());
+        auto* classSymbol = symbolTable.lookupClass(type->getName());
 
-		// Symbol을 ClassSymbol로 캐스팅하여 classType에 접근
-        if (classSymbolOpt) {
-            return static_cast<ClassSymbol*>(*classSymbolOpt)->classType;
+		// Symbol??ClassSymbol濡?罹먯뒪?낇븯??classType???묎렐
+        if (classSymbol) {
+            return classSymbol->classType;
 		}
 		else {
 			std::cerr << "Error: Undefined class type '" << type->getName() << "'" << std::endl;
@@ -118,7 +131,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
 		}
     }
     else if (type->getKind() == Type::Kind::GENERIC) {
-        auto genericType = (GenericType*)(type);
+        auto* genericType = static_cast<const GenericType*>(type);
         if (genericType->baseType->getName() == "Array") {
             if (genericType->typeArguments.size() != 1) {
                 std::cerr << "Error: Array type must have exactly one type argument" << std::endl;
@@ -135,9 +148,9 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         return nullptr;
     }
     else if (type->getKind() == Type::Kind::STRUCT) {
-        auto structSymbolOpt = symbolTable.lookup(type->getName());
-        if (structSymbolOpt) {
-            return static_cast<ClassSymbol*>(*structSymbolOpt)->classType;
+        auto* structSymbol = symbolTable.lookupStruct(type->getName());
+        if (structSymbol) {
+            return static_cast<StructSymbol*>(structSymbol)->structType;
         }
         else {
             std::cerr << "Error: Undefined struct type '" << type->getName() << "'" << std::endl;
@@ -145,7 +158,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         }
 	}
     else if (type->getKind() == Type::Kind::FUNCTION) {
-        auto functionType = (FunctionType*)(type);
+        auto* functionType = static_cast<const FunctionType*>(type);
         std::vector<llvm::Type*> paramLLVMTypes;
         for (const auto& paramType : functionType->parameterTypes) {
             auto llvmParamType = getLLVMType(paramType.get());
@@ -164,7 +177,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         return llvm::PointerType::getUnqual(tp);
     }
     else if (type->getKind() == Type::Kind::ARRAY) {
-        auto arrayType = (ArrayType*)(type);
+        auto* arrayType = static_cast<const ArrayType*>(type);
         auto elementLLVMType = getLLVMType(arrayType->elementType.get());
         if (!elementLLVMType) {
             std::cerr << "Error: Invalid element type in array" << std::endl;
@@ -173,7 +186,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         return llvm::ArrayType::get(elementLLVMType, arrayType->size);
 	}
     else if (type->getKind() == Type::Kind::POINTER) {
-        auto pointerType = (PointerType*)(type);
+        auto* pointerType = static_cast<const PointerType*>(type);
         auto baseLLVMType = getLLVMType(pointerType->baseType.get());
         if (!baseLLVMType) {
             std::cerr << "Error: Invalid base type for pointer" << std::endl;

@@ -63,8 +63,9 @@ llvm::Value* VariableDeclarationNode::codegen() {
 
     CodeGenerator::getInstance().builder.CreateStore(initValue, alloc);
 
-    Symbol* symbol = new Symbol(name, type.get(), alloc, isMutable, SymbolType::VARIABLE);
-    CodeGenerator::getInstance().symbolTable.addSymbol(name, symbol);
+    CodeGenerator::getInstance().symbolTable.addSymbol(
+        name,
+        std::make_unique<Symbol>(name, type->clone(), alloc, isMutable, SymbolType::VARIABLE));
 
     return alloc;
 }

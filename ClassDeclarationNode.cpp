@@ -12,12 +12,12 @@ void ClassDeclarationNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ClassDeclarationNode::codegen() {
-    // »óÀ§ Å¬·¡½º ½Éº¼ Ã£±â
+    // ìƒìœ„ í´ë˜ìŠ¤ ì‹¬ë³¼ ì°¾ê¸°
     ClassSymbol* superClassSymbol = nullptr;
 
-    auto superClassSymbolOpt = CodeGenerator::getInstance().symbolTable.lookup(superClassName);
+    auto superClassSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(superClassName);
     if (superClassSymbolOpt) {
-        superClassSymbol = static_cast<ClassSymbol*>(*superClassSymbolOpt);
+        superClassSymbol = superClassSymbolOpt;
     }
 
     if (!superClassSymbol) {
@@ -25,63 +25,77 @@ llvm::Value* ClassDeclarationNode::codegen() {
         return nullptr;
     }
 
-    // Å¬·¡½º ½Éº¼ »ı¼º ¹× Å¬·¡½º Å¸ÀÔ ÀúÀå
-    ClassSymbol* classSymbol = new ClassSymbol(name, nullptr, superClassName);
+    // í´ë˜ìŠ¤ ì‹¬ë³¼ ìƒì„± ë° í´ë˜ìŠ¤ íƒ€ì… ì €ì¥
+    auto classSymbol = std::make_unique<ClassSymbol>(name, nullptr, superClassName);
     classSymbol->superClassSymbol = superClassSymbol;
 
-    // ÇÊµå ¹× ¸Ş¼­µå ¼öÁı
+    // í•„ë“œ ë° ë©”ì„œë“œ ìˆ˜ì§‘
     if (superClassSymbol) {
         for (auto& field : superClassSymbol->fields) {
-            classSymbol->fields[field.first] = std::make_unique<Symbol>(field.second.get());
+            classSymbol->fields[field.first] = field.second ? field.second->clone() : nullptr;
         }
         for (auto& method : superClassSymbol->methods) {
-            classSymbol->methods[method.first] = std::make_unique<Symbol>(method.second.get());
+            classSymbol->methods[method.first] = method.second ? method.second->clone() : nullptr;
         }
     }
 
-    // ÇöÀç Å¬·¡½ºÀÇ ÇÊµå¿Í ¸Ş¼­µå Ãß°¡ ¶Ç´Â ¿À¹ö¶óÀÌµù
+    // í˜„ì¬ í´ë˜ìŠ¤ì˜ í•„ë“œì™€ ë©”ì„œë“œ ì¶”ê°€ ë˜ëŠ” ì˜¤ë²„ë¼ì´ë”©
     for (auto& field : constructorParams) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(field->type.get());
         if (!fieldType) {
-            delete classSymbol;
+            
             std::cerr << "Error: Unsupported field type '" << field->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
 
-        auto f = (ParameterNode*)(field.get());
-        classSymbol->constructorParams[f->name] = std::make_unique<Symbol>(new Symbol(f->name, f->type.get(), nullptr, false, SymbolType::FIELD));
+        auto f = dynamic_cast<ParameterNode*>(field.get());
+        if (!f) {
+            std::cerr << "Error: Expected parameter node in constructor of '" << name << "'" << std::endl;
+            return nullptr;
+        }
+        classSymbol->constructorParams[f->name] = std::make_unique<Symbol>(f->name, f->type->clone(), nullptr, false, SymbolType::FIELD);
     }
 
-    for (auto& field : ((ClassBodyNode*)(body.get()))->fields) {
+    auto* classBody = dynamic_cast<ClassBodyNode*>(body.get());
+    if (!classBody) {
+        std::cerr << "Error: Expected class body in class '" << name << "'" << std::endl;
+        return nullptr;
+    }
+
+    for (auto& field : classBody->fields) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(field->type.get());
         if (!fieldType) {
-            delete classSymbol;
+            
             std::cerr << "Error: Unsupported field type '" << field->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
 
 		auto f = dynamic_cast<VariableDeclarationNode*>(field.get());
-        classSymbol->fields[f->name] = std::make_unique<Symbol>(new Symbol(f->name, field->type.get(), nullptr, f->isMutable, SymbolType::FIELD));
+		if (!f) {
+			std::cerr << "Error: Expected variable declaration in class body of '" << name << "'" << std::endl;
+			return nullptr;
+		}
+        classSymbol->fields[f->name] = std::make_unique<Symbol>(f->name, field->type->clone(), nullptr, f->isMutable, SymbolType::FIELD);
     }
 
-    // Å¬·¡½º Å¸ÀÔ »ı¼º
+    // í´ë˜ìŠ¤ íƒ€ì… ìƒì„±
     std::vector<llvm::Type*> fieldTypes;
-    // »ı¼ºÀÚ ÆÄ¶ó¸ŞÅÍ Ãß°¡
+    // ìƒì„±ì íŒŒë¼ë©”í„° ì¶”ê°€
     for (auto& fieldEntry : classSymbol->constructorParams) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(fieldEntry.second->type.get());
         if (!fieldType) {
-            delete classSymbol;
+            
             std::cerr << "Error: Unsupported field type '" << fieldEntry.second->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
         fieldTypes.push_back(fieldType);
     }
 
-    // ÀÏ¹İ ÇÊµå Ãß°¡
+    // ì¼ë°˜ í•„ë“œ ì¶”ê°€
     for (auto& fieldEntry : classSymbol->fields) {
         llvm::Type* fieldType = CodeGenerator::getInstance().getLLVMType(fieldEntry.second->type.get());
         if (!fieldType) {
-            delete classSymbol;
+            
             std::cerr << "Error: Unsupported field type '" << fieldEntry.second->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
@@ -91,21 +105,25 @@ llvm::Value* ClassDeclarationNode::codegen() {
     llvm::StructType* classType = llvm::StructType::create(CodeGenerator::getInstance().context, fieldTypes, name);
     classSymbol->classType = classType;
 
-    // ¸Ş¼­µå ¼±¾ğ »ı¼º (½ÇÁ¦ ÄÚµå »ı¼ºÀº ³ªÁß¿¡ ¼öÇà)
-    for (auto& method : ((ClassBodyNode*)(body.get()))->methods) {
+    // ë©”ì„œë“œ ì„ ì–¸ ìƒì„± (ì‹¤ì œ ì½”ë“œ ìƒì„±ì€ ë‚˜ì¤‘ì— ìˆ˜í–‰)
+    for (auto& method : classBody->methods) {
 		auto md = dynamic_cast<FunctionDeclarationNode*>(method.get());
-        declareMethod(md, classSymbol);
+		if (!md) {
+			std::cerr << "Error: Expected function declaration in class body of '" << name << "'" << std::endl;
+			continue;
+		}
+        declareMethod(md, classSymbol.get());
     }
 
-    // ½Éº¼ Å×ÀÌºí¿¡ Å¬·¡½º ½Éº¼ Ãß°¡
-    CodeGenerator::getInstance().symbolTable.addSymbol(name, classSymbol);
+    // ì‹¬ë³¼ í…Œì´ë¸”ì— í´ë˜ìŠ¤ ì‹¬ë³¼ ì¶”ê°€
+    CodeGenerator::getInstance().symbolTable.addSymbol(name, std::move(classSymbol));
 
     return nullptr;
 }
 
 void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol) {
     std::vector<llvm::Type*> paramTypes;
-    paramTypes.push_back(((llvm::PointerType*)classSymbol->classType)->get(CodeGenerator::getInstance().context, 0)); // this Æ÷ÀÎÅÍ Å¸ÀÔ
+    paramTypes.push_back(llvm::PointerType::get(CodeGenerator::getInstance().context, 0)); // this í¬ì¸í„° íƒ€ì…
 
     for (auto& param : method->parameters) {
         llvm::Type* paramType = CodeGenerator::getInstance().getLLVMType(param->type.get());
@@ -123,7 +141,7 @@ void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassS
     }
 
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-    std::string methodName = name + "_" + method->name; // Å¬·¡½º ÀÌ¸§À» Á¢µÎ»ç·Î »ç¿ë
+    std::string methodName = name + "_" + method->name; // í´ë˜ìŠ¤ ì´ë¦„ì„ ì ‘ë‘ì‚¬ë¡œ ì‚¬ìš©
     llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, methodName, CodeGenerator::getInstance().module.get());
 
     std::vector<std::unique_ptr<Type>> types;
@@ -132,11 +150,11 @@ void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassS
         types.push_back(param->getType()->clone());
     }
 
-    // ¸Ş¼­µå ½Éº¼ ¾÷µ¥ÀÌÆ®
-    Symbol* methodSymbol = new Symbol(method->name, new FunctionType(types, method->returnType), function, false, SymbolType::METHOD);
-    classSymbol->methods[method->name] = std::make_unique<Symbol>(methodSymbol);
+    // ë©”ì„œë“œ ì‹¬ë³¼ ì—…ë°ì´íŠ¸
+    auto methodSymbol = std::make_unique<Symbol>(method->name, std::make_unique<FunctionType>(types, method->returnType), function, false, SymbolType::METHOD);
+    classSymbol->methods[method->name] = std::move(methodSymbol);
 
-    // ¸Ş¼­µå º»¹® »ı¼ºÀ» Áö¿¬½ÃÅ°±â À§ÇØ FunctionDeclarationNode¸¦ ÀúÀå
-    classSymbol->methodBodies[method->name] = std::make_unique<FunctionDeclarationNode>(method);
+    // ë©”ì„œë“œ ë³¸ë¬¸ ìƒì„±ì„ ì§€ì—°ì‹œí‚¤ê¸° ìœ„í•´ FunctionDeclarationNodeë¥¼ ì €ì¥
+        classSymbol->methodBodies[method->name] = std::make_unique<FunctionDeclarationNode>(*method);
     //classSymbol->methodBodies[method->name] = method;
 }

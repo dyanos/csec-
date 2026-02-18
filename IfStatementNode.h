@@ -17,18 +17,27 @@ public:
           elseBlock(std::move(elseBlk)) {
         nodeType = ASTNodeType::IF_STATEMENT;
 	}
-    IfStatementNode(IfStatementNode* other) {
-        if (other->condition) {
-            condition = other->condition->clone();
+    IfStatementNode(const IfStatementNode& other) {
+        if (other.condition) {
+            condition = other.condition->clone();
         }
-        if (other->thenBlock) {
-            thenBlock = std::make_unique<BlockNode>(static_cast<BlockNode*>(other->thenBlock.get()));
+        if (other.thenBlock) {
+            thenBlock = std::make_unique<BlockNode>(*other.thenBlock);
         }
-        if (other->elseBlock) {
-            elseBlock = std::make_unique<BlockNode>(static_cast<BlockNode*>(other->elseBlock.get()));
+        if (other.elseBlock) {
+            elseBlock = std::make_unique<BlockNode>(*other.elseBlock);
         }
         nodeType = ASTNodeType::IF_STATEMENT;
 	}
+    IfStatementNode& operator=(const IfStatementNode& other) {
+        if (this != &other) {
+            condition = other.condition ? other.condition->clone() : nullptr;
+            thenBlock = other.thenBlock ? std::make_unique<BlockNode>(*other.thenBlock) : nullptr;
+            elseBlock = other.elseBlock ? std::make_unique<BlockNode>(*other.elseBlock) : nullptr;
+            nodeType = ASTNodeType::IF_STATEMENT;
+        }
+        return *this;
+    }
 
     std::unique_ptr<ASTNode> condition;
     std::unique_ptr<BlockNode> thenBlock;
@@ -41,6 +50,6 @@ public:
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
-        return std::make_unique<IfStatementNode>(this);
+        return std::make_unique<IfStatementNode>(*this);
 	}
 };

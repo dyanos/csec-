@@ -9,6 +9,8 @@
 #include "RangeExpressionNode.h"
 #include "symbol.h"
 
+#include <iostream>
+
 
 // ForStatementNode
 void ForStatementNode::accept(ASTVisitor& visitor) {
@@ -16,35 +18,40 @@ void ForStatementNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ForStatementNode::codegen() {
-    llvm::Function* function = CodeGenerator::getInstance().builder.GetInsertBlock()->getParent();
-    llvm::BasicBlock* beforeLoopBB = CodeGenerator::getInstance().builder.GetInsertBlock();
+    auto& cg = CodeGenerator::getInstance();
+
+    llvm::Function* function = cg.builder.GetInsertBlock()->getParent();
+    llvm::BasicBlock* beforeLoopBB = cg.builder.GetInsertBlock();
 
     llvm::Value* startValue;
     llvm::Value* endValue;
 
     llvm::Value* value_ptr = nullptr;
 
+    cg.symbolTable.enterScope();
+
     if (this->isRange) {
-        //
         auto* rangeExpr = dynamic_cast<RangeExpressionNode*>(this->iterableExpr.get());
         if (!rangeExpr) {
+            cg.symbolTable.exitScope();
             return nullptr;
         }
         startValue = rangeExpr->startExpr->codegen();
         endValue = rangeExpr->endExpr->codegen();
         if (!startValue || !endValue) {
+            cg.symbolTable.exitScope();
             return nullptr;
         }
 
         if (!rangeExpr->isInclusive) {
-            endValue = CodeGenerator::getInstance().builder.CreateSub(endValue, llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 1), "untilEnd");
+            endValue = cg.builder.CreateSub(endValue, llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), 1), "untilEnd");
         }
 
-        value_ptr = CodeGenerator::getInstance().builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
-        CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
+        value_ptr = cg.builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
+        cg.builder.CreateStore(startValue, value_ptr);
 
         auto rangeType = rangeExpr->startExpr->getType();
-        CodeGenerator::getInstance().symbolTable.addSymbol(
+        cg.symbolTable.addSymbol(
             this->variable,
             std::make_unique<Symbol>(
                 this->variable,
@@ -54,41 +61,45 @@ llvm::Value* ForStatementNode::codegen() {
                 SymbolType::VARIABLE));
     }
     else {
-        startValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 0);
-        endValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGenerator::getInstance().context), 10);
-
-        value_ptr = CodeGenerator::getInstance().builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
-        CodeGenerator::getInstance().builder.CreateStore(startValue, value_ptr);
-
-        CodeGenerator::getInstance().symbolTable.addSymbol(
-            this->variable,
-            std::make_unique<Symbol>(
-                this->variable,
-                std::make_unique<BasicType>(std::string("Int")),
-                value_ptr,
-                false,
-                SymbolType::VARIABLE));
+        std::cerr << "Error: non-range for-each loops are not yet implemented." << std::endl;
+        cg.symbolTable.exitScope();
+        return nullptr;
     }
 
-    llvm::BasicBlock* loopBB = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "loop", function);
-    llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "afterloop", function);
+    llvm::BasicBlock* condBB = llvm::BasicBlock::Create(cg.context, "forcond", function);
+    llvm::BasicBlock* loopBB = llvm::BasicBlock::Create(cg.context, "loop", function);
+    llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(cg.context, "afterloop", function);
 
     if (beforeLoopBB && !beforeLoopBB->getTerminator()) {
-        CodeGenerator::getInstance().builder.CreateBr(loopBB);
+        cg.builder.CreateBr(condBB);
     }
 
-    CodeGenerator::getInstance().builder.SetInsertPoint(loopBB);
+    // Condition block: check i <= endValue before each iteration
+    cg.builder.SetInsertPoint(condBB);
+    auto* condValue = cg.builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
+    if (!condValue->getType()->isIntegerTy() || condValue->getType() != endValue->getType()) {
+        std::cerr << "Type error: range bounds in for-loop must be the same integer type" << std::endl;
+        cg.symbolTable.exitScope();
+        return nullptr;
+    }
+    auto* cond = cg.builder.CreateICmpSLE(condValue, endValue, "cond");
+    cg.builder.CreateCondBr(cond, loopBB, afterBB);
+
+    // Loop body
+    cg.builder.SetInsertPoint(loopBB);
     this->body->codegen();
 
-    auto* value = CodeGenerator::getInstance().builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
-    auto* next_value = CodeGenerator::getInstance().builder.CreateAdd(value, CodeGenerator::getInstance().builder.getInt32(1), "next_i");
-    CodeGenerator::getInstance().builder.CreateStore(next_value, value_ptr);
+    // Increment and branch back to condition
+    if (!cg.builder.GetInsertBlock()->getTerminator()) {
+        auto* value = cg.builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
+        auto* one = llvm::ConstantInt::get(startValue->getType(), 1, true);
+        auto* next_value = cg.builder.CreateAdd(value, one, "next_i");
+        cg.builder.CreateStore(next_value, value_ptr);
+        cg.builder.CreateBr(condBB);
+    }
 
-    auto* cond = CodeGenerator::getInstance().builder.CreateICmpSLE(value, endValue, "cond");
-    CodeGenerator::getInstance().builder.CreateCondBr(cond, loopBB /*body and increment*/, afterBB);
-
-    // jump back to loop
-    CodeGenerator::getInstance().builder.SetInsertPoint(afterBB);
+    cg.builder.SetInsertPoint(afterBB);
+    cg.symbolTable.exitScope();
 
     return nullptr;
 }

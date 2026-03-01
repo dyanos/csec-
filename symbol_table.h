@@ -43,7 +43,7 @@ private:
     int currentScopeLevel = 0;
     Symbol* currentSymbol = nullptr;
     std::vector<std::unique_ptr<Scope>> ownedScopes;
-    std::vector<Scope*> scopeStack; // non-owning snapshot stack
+    std::vector<Symbol*> symbolStack; // non-owning snapshot stack
 
 public:
     void setCurrentSymbol(Symbol& symbol) {
@@ -54,14 +54,18 @@ public:
         this->currentSymbol = symbol;
     }
 
+    Symbol* getCurrentSymbol() const {
+        return currentSymbol;
+    }
+
     void saveCurrentSymbol() {
-        scopeStack.push_back(currentScope);
+        symbolStack.push_back(currentSymbol);
     }
 
     void popCurrentSymbol() {
-        if (!scopeStack.empty()) {
-            this->currentScope = scopeStack.back();
-            scopeStack.pop_back();
+        if (!symbolStack.empty()) {
+            this->currentSymbol = symbolStack.back();
+            symbolStack.pop_back();
         }
     }
 };

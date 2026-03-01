@@ -1,10 +1,14 @@
 #include "codegen.h"
 
 #include "ClassInstanceCreationNode.h"
+#include "ClassDeclarationNode.h"
+#include "ParameterNode.h"
 #include "ASTVisitor.h"
 
 #include <iostream>
+#include <llvm/IR/DataLayout.h>
 #include <llvm/IR/Function.h>
+
 #include "utils.h"
 
 void ClassInstanceCreationNode::accept(ASTVisitor& visitor) {
@@ -12,124 +16,113 @@ void ClassInstanceCreationNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ClassInstanceCreationNode::codegen() {
-    // primitive type인지, class type인지 확인, template type인지 확인
-    // primitive type이면 llvm::CreateAlloca로
+    auto& cg = CodeGenerator::getInstance();
+
+    // Primitive allocation: return typed pointer from malloc.
     if (isPrimitiveType(className)) {
-        // new로 시작한 것이므로, malloc사용
         BasicType basicType(className);
+        llvm::Type* type = cg.getLLVMType(&basicType);
+        if (!type) {
+            std::cerr << "Error: Unsupported primitive type '" << className << "'" << std::endl;
+            return nullptr;
+        }
 
-        llvm::Type* type = CodeGenerator::getInstance().getLLVMType(&basicType);
-
-        // type을 메모리 당할때 필요한 메모리 크기를 계산
-        llvm::DataLayout dataLayout;
-        uint64_t typeSize = dataLayout.getTypeAllocSize(type);
-        llvm::Value* allocSize = llvm::ConstantInt::get(CodeGenerator::getInstance().context, llvm::APInt(64, typeSize));
-
-        // malloc함수 호출
-        return CodeGenerator::getInstance().builder.CreateCall(CodeGenerator::getInstance().mallocFunction, allocSize, "malloc");
+        const llvm::DataLayout& dl = cg.module->getDataLayout();
+        uint64_t typeSize = dl.getTypeAllocSize(type);
+        llvm::Value* allocSize = llvm::ConstantInt::get(llvm::Type::getInt64Ty(cg.context), typeSize);
+        llvm::Value* rawPtr = cg.builder.CreateCall(cg.mallocFunction, allocSize, "malloc");
+        return cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(type), "newptr");
     }
 
-    // Template Class인지 확인은 나중에 코드 추가되면...
+    std::string resolvedClassName = className;
 
-    // 클래스 심볼 찾기
-    auto classSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupClass(className);
+    // Template Class instantiation: new ClassName<Type>(args)
+    if (!templateArgs.empty()) {
+        auto* symbol = cg.symbolTable.lookup(className);
+        if (symbol && symbol->symbolType == SymbolType::TEMPLATE) {
+            auto* tmplSymbol = dynamic_cast<TemplateSymbol*>(symbol);
+            if (!tmplSymbol) {
+                std::cerr << "Error: Invalid template symbol '" << className << "'" << std::endl;
+                return nullptr;
+            }
+
+            auto* classDecl = dynamic_cast<ClassDeclarationNode*>(tmplSymbol->declaration.get());
+            if (!classDecl) {
+                std::cerr << "Error: Template '" << className << "' is not a class template" << std::endl;
+                return nullptr;
+            }
+
+            std::string mangledName = className;
+            for (auto& ta : templateArgs) {
+                mangledName += "$" + (ta ? ta->getName() : "Unknown");
+            }
+
+            auto cacheIt = tmplSymbol->classInstantiations.find(mangledName);
+            if (cacheIt != tmplSymbol->classInstantiations.end()) {
+                resolvedClassName = mangledName;
+            }
+            else {
+                auto clonedDecl = classDecl->clone();
+                auto* clonedClass = dynamic_cast<ClassDeclarationNode*>(clonedDecl.get());
+                if (!clonedClass) {
+                    std::cerr << "Error: Failed to clone template class" << std::endl;
+                    return nullptr;
+                }
+                clonedClass->name = mangledName;
+
+                // Substitute type variables in constructor parameters.
+                for (auto& param : clonedClass->constructorParams) {
+                    auto* paramNode = dynamic_cast<ParameterNode*>(param.get());
+                    if (paramNode && paramNode->type && paramNode->type->getKind() == Type::Kind::VARIABLE) {
+                        for (size_t i = 0; i < tmplSymbol->typeParameters.size(); ++i) {
+                            if (paramNode->type->getName() == tmplSymbol->typeParameters[i] && i < templateArgs.size()) {
+                                paramNode->type = templateArgs[i]->clone();
+                            }
+                        }
+                    }
+                }
+
+                // Preserve insertion point while emitting top-level class metadata.
+                auto* savedInsertBlock = cg.builder.GetInsertBlock();
+                auto savedInsertPoint = cg.builder.GetInsertPoint();
+                auto* savedCurrentSymbol = cg.symbolTable.getCurrentSymbol();
+                cg.symbolTable.saveCurrentSymbol();
+                cg.symbolTable.setCurrentSymbol(nullptr);
+                clonedClass->codegen();
+                cg.symbolTable.popCurrentSymbol();
+                cg.symbolTable.setCurrentSymbol(savedCurrentSymbol);
+                if (savedInsertBlock) {
+                    cg.builder.SetInsertPoint(savedInsertBlock, savedInsertPoint);
+                }
+
+                auto* instantiatedSymbol = cg.symbolTable.lookupClass(mangledName);
+                if (instantiatedSymbol) {
+                    tmplSymbol->classInstantiations[mangledName] = instantiatedSymbol;
+                }
+                resolvedClassName = mangledName;
+            }
+        }
+    }
+
+    auto classSymbolOpt = cg.symbolTable.lookupClass(resolvedClassName);
     if (!classSymbolOpt) {
-        std::cerr << "Error: Class '" << className << "' not found" << std::endl;
+        std::cerr << "Error: Class '" << resolvedClassName << "' not found" << std::endl;
         return nullptr;
     }
 
     auto* classSymbol = classSymbolOpt;
-
-    // 클래스 타입 가져오기
     llvm::StructType* classType = llvm::dyn_cast<llvm::StructType>(classSymbol->classType);
     if (!classType) {
-        std::cerr << "Error: Unknown type about class '" << className << "'" << std::endl;
+        std::cerr << "Error: Unknown type about class '" << resolvedClassName << "'" << std::endl;
         return nullptr;
     }
 
-    llvm::PointerType* classPtrTy = llvm::PointerType::getUnqual(classType);
-
-    {
-        std::vector<llvm::Type*> ctorArgTys;
-
-        ctorArgTys.push_back(classPtrTy); // this 포인터 추가
-        for (auto& field : classSymbol->constructorParams) {
-            if (field.first.compare("this") == 0) continue;
-            ctorArgTys.push_back(CodeGenerator::getInstance().getLLVMType(field.second->type.get()));
-        }
-
-        llvm::FunctionType* ctorFT = llvm::FunctionType::get(
-            /*Result=*/llvm::Type::getVoidTy(CodeGenerator::getInstance().context),
-            ctorArgTys,
-            /*isVarArg=*/false
-        );
-
-        auto functionName = className + "_ctor";
-        llvm::Function* ctorF = llvm::Function::Create(
-            ctorFT,
-            llvm::Function::ExternalLinkage,
-            functionName,
-            *CodeGenerator::getInstance().module
-        );
-
-        auto argIt = ctorF->arg_begin();
-        argIt->setName("this_ptr");
-        for (auto& field : classSymbol->constructorParams) {
-            if (field.first.compare("this") == 0) continue;
-            (++argIt)->setName("p_" + field.first);
-        }
-
-        // 3. BasicBlock 만들고 IRBuilder 삽입 위치 지정
-        llvm::BasicBlock* bb = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "entry", ctorF);
-        CodeGenerator::getInstance().builder.SetInsertPoint(bb);
-
-        // 4. this_ptr->a = p_a; this_ptr->b = p_b;
-        llvm::Value* thisPtr = ctorF->getArg(0);
-
-        int fieldIndex = 0;
-        for (auto& field : classSymbol->constructorParams) {
-            if (field.first.compare("this") == 0) continue;
-
-            llvm::Value* fieldPtr = CodeGenerator::getInstance().builder.CreateStructGEP(classType, thisPtr, fieldIndex, field.first + "_ptr");
-            llvm::Value* paramValue = nullptr;
-            for (auto& arg : ctorF->args()) {
-                if (arg.getName() == "p_" + field.first) {
-                    paramValue = &arg;
-                    break;
-                }
-            }
-            if (paramValue) {
-                CodeGenerator::getInstance().builder.CreateStore(paramValue, fieldPtr);
-            }
-            fieldIndex++;
-        }
-
-        // 5. return void
-        CodeGenerator::getInstance().builder.CreateRetVoid();
+    if (!arguments.empty()) {
+        std::cerr << "Warning: class constructor arguments are not fully supported yet for '" << resolvedClassName
+                  << "'. Object is allocated without constructor invocation." << std::endl;
     }
 
-    {
-        // TODO: 어디다 생성할지 정하는 로직 필요
-        // “객체 생성 + 생성자 호출” 예제
-        llvm::FunctionType* useFT = llvm::FunctionType::get(llvm::Type::getVoidTy(CodeGenerator::getInstance().context), {}, false);
-        llvm::Function* useF = llvm::Function::Create(useFT, llvm::Function::ExternalLinkage, "use", *CodeGenerator::getInstance().module);
-        llvm::BasicBlock* bb = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "entry", useF);
-        CodeGenerator::getInstance().builder.SetInsertPoint(bb);
-
-        // alloca ? 스택에 MyStruct 공간 할당
-        llvm::Value* obj = CodeGenerator::getInstance().builder.CreateAlloca(classType, nullptr, "obj");
-
-        // 생성자 호출
-        llvm::Function* ctorF = CodeGenerator::getInstance().module->getFunction(className + "_ctor");
-        // 인자: this, int, double
-        llvm::Value* arg_int = llvm::ConstantInt::get(CodeGenerator::getInstance().context, llvm::APInt(32, 123));
-        llvm::Value* arg_double = llvm::ConstantFP::get(CodeGenerator::getInstance().context, llvm::APFloat(3.1415));
-        CodeGenerator::getInstance().builder.CreateCall(ctorF, { obj, arg_int, arg_double });
-
-        CodeGenerator::getInstance().builder.CreateRetVoid();
-    }
-
-    return nullptr;
+    return cg.builder.CreateAlloca(classType, nullptr, "newobj");
 }
 
 std::unique_ptr<Type> ClassInstanceCreationNode::getType() {

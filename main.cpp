@@ -11,6 +11,7 @@
 #include "utils.h"
 
 #include <iostream>
+#include <direct.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
@@ -25,6 +26,8 @@
 #include <llvm/Transforms/Utils/Mem2Reg.h>
 
 #include "ProgramNode.h"
+
+#include <exception>
 
 int main(int argc, char** argv) {
     /*llvm::PassBuilder PB;
@@ -85,11 +88,15 @@ int main(int argc, char** argv) {
     Lexer lexer(code);
     std::vector<Token> tokens = lexer.tokenize();
 
-    // EOF ?좏겙 異붽?
-    tokens.push_back(Token{ TokenType::END_OF_FILE, "", 0, 0 });
-
-    Parser parser(tokens);
-    auto ast = parser.parse();
+    std::unique_ptr<ASTNode> ast;
+    try {
+        Parser parser(tokens);
+        ast = parser.parse();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Parsing failed: " << e.what() << std::endl;
+        return 1;
+    }
 
     std::cout << "Parsing completed successfully." << std::endl;
 
@@ -99,6 +106,11 @@ int main(int argc, char** argv) {
 
     TypeChecker typeChecker;
     ast->accept(typeChecker);
+    if (typeChecker.hasErrors()) {
+        std::cerr << "Type checking found " << typeChecker.getErrorCount()
+                  << " error(s). Aborting code generation." << std::endl;
+        return 1;
+    }
     ast->codegen();
 
     // LLVM IR 異쒕젰

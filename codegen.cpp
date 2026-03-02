@@ -44,19 +44,18 @@ CodeGenerator::CodeGenerator() : builder(context) {
 	// int?대옒?ㅼ뿉 異붽???toString硫붿꽌?쒖쓽 llvm 肄붾뱶 ?앹꽦
 	auto initClassSymbolOpt = symbolTable.lookupClass("Int");
     if (!initClassSymbolOpt) {
-        std::cerr << "Error: 'Int' class not found in symbol table." << std::endl;
-        return;
+        throw std::runtime_error("Fatal: 'Int' class not found in symbol table");
 	}
     auto* initClassSymbol = initClassSymbolOpt;
-	auto toStringFunction = llvm::Function::Create(
-		llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { initClassSymbol->classType->getPointerTo() }, false),
+	llvm::Function::Create(
+		llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::PointerType::getUnqual(initClassSymbol->classType) }, false),
 		llvm::Function::ExternalLinkage,
 		"toString",
 		module.get()
 	);
 
     llvm::Function::Create(
-		llvm::FunctionType::get(llvm::Type::getInt8Ty(context)->getPointerTo(), { llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt8Ty(context)->getPointerTo() }, false),
+		llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
 		llvm::Function::ExternalLinkage,
 		"operator+",
 		module.get()
@@ -64,14 +63,14 @@ CodeGenerator::CodeGenerator() : builder(context) {
 
     // print ?⑥닔 ?앹꽦
     llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::Type::getInt8Ty(context)->getPointerTo() }, false),
+        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
         llvm::Function::ExternalLinkage,
         "print",
         module.get()
     );
 
     llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::Type::getInt8Ty(context)->getPointerTo() }, false),
+        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
         llvm::Function::ExternalLinkage,
         "println",
         module.get()
@@ -99,6 +98,12 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         else if (name == "Long") {
             return llvm::Type::getInt64Ty(context);
         }
+        else if (name == "Natural" || name == "Integer") {
+            return llvm::Type::getInt64Ty(context);
+        }
+        else if (name == "Real") {
+            return llvm::Type::getDoubleTy(context);
+        }
         else if (name == "Boolean" || name == "Bool") {
             return llvm::Type::getInt1Ty(context);
         }
@@ -117,6 +122,8 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         else if (type->isVoidTy()) {
             return llvm::Type::getVoidTy(context);
         }
+        std::cerr << "Error: Unsupported basic type '" << type->getName() << "'" << std::endl;
+        return nullptr;
     }
     else if (type->getKind() == Type::Kind::CLASS) {
         auto* classSymbol = symbolTable.lookupClass(type->getName());
@@ -143,6 +150,23 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
                 return nullptr;
             }
             return llvm::PointerType::getUnqual(elementType);
+        }
+        // Check if this is a template class instantiation: e.g. Pair<Int, String>
+        std::string baseName = genericType->baseType->getName();
+        auto* symbol = symbolTable.lookup(baseName);
+        if (symbol && symbol->symbolType == SymbolType::TEMPLATE) {
+            // Build mangled name
+            std::string mangledName = baseName;
+            for (auto& ta : genericType->typeArguments) {
+                mangledName += "$" + (ta ? ta->getName() : "Unknown");
+            }
+            // Look up the instantiated class
+            auto* classSymbol = symbolTable.lookupClass(mangledName);
+            if (classSymbol) {
+                return classSymbol->classType;
+            }
+            std::cerr << "Error: Template class '" << mangledName << "' not instantiated yet" << std::endl;
+            return nullptr;
         }
         std::cerr << "Error: Unsupported generic type '" << genericType->baseType->getName() << "'" << std::endl;
         return nullptr;

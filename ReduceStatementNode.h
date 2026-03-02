@@ -43,6 +43,7 @@ public:
 
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override {
+        if (initialValue) return initialValue->getType();
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {

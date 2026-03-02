@@ -27,6 +27,7 @@ public:
         if (other.elseBlock) {
             elseBlock = std::make_unique<BlockNode>(*other.elseBlock);
         }
+        isConstexpr = other.isConstexpr;
         nodeType = ASTNodeType::IF_STATEMENT;
 	}
     IfStatementNode& operator=(const IfStatementNode& other) {
@@ -34,11 +35,13 @@ public:
             condition = other.condition ? other.condition->clone() : nullptr;
             thenBlock = other.thenBlock ? std::make_unique<BlockNode>(*other.thenBlock) : nullptr;
             elseBlock = other.elseBlock ? std::make_unique<BlockNode>(*other.elseBlock) : nullptr;
+            isConstexpr = other.isConstexpr;
             nodeType = ASTNodeType::IF_STATEMENT;
         }
         return *this;
     }
 
+    bool isConstexpr = false;
     std::unique_ptr<ASTNode> condition;
     std::unique_ptr<BlockNode> thenBlock;
     std::unique_ptr<BlockNode> elseBlock;  // else

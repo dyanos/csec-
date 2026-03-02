@@ -34,6 +34,7 @@ public:
         returnType = other.returnType ? other.returnType->clone() : nullptr;
         body = other.body ? std::make_unique<BlockNode>(*other.body) : nullptr;
         isExternal = other.isExternal;
+        isConstexpr = other.isConstexpr;
     }
     FunctionDeclarationNode& operator=(const FunctionDeclarationNode& other) {
         if (this != &other) {
@@ -47,11 +48,13 @@ public:
             returnType = other.returnType ? other.returnType->clone() : nullptr;
             body = other.body ? std::make_unique<BlockNode>(*other.body) : nullptr;
             isExternal = other.isExternal;
+            isConstexpr = other.isConstexpr;
         }
         return *this;
     }
 
     bool isExternal = false;
+    bool isConstexpr = false;
 
     std::string name;
     std::vector<std::unique_ptr<ASTNode>> parameters;
@@ -62,7 +65,12 @@ public:
 
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override {
-        return std::make_unique<UnknownType>();
+        auto ft = std::make_unique<FunctionType>();
+        ft->returnType = returnType ? returnType->clone() : std::make_unique<UnknownType>();
+        for (auto& param : parameters) {
+            ft->parameterTypes.push_back(param->getType() ? param->getType()->clone() : std::make_unique<UnknownType>());
+        }
+        return ft;
     }
     std::unique_ptr<ASTNode> clone() override {
         return std::make_unique<FunctionDeclarationNode>(*this);

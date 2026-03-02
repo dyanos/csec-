@@ -8,7 +8,7 @@
 
 
 // parser占쏙옙占쏙옙占쏙옙 parsing占쏙옙 占쏙옙占쏙옙構占? symbol 占쏙옙占?占쏙옙 占싯삼옙占쏙옙 codegen占쌀띰옙 占쏙옙占?
-Parser::Parser(const std::vector<Token>& tokens)
+Parser::Parser(std::vector<Token>& tokens)
 	: tokens(tokens), position(0) {}
 
 std::unique_ptr<ASTNode> Parser::parse() {
@@ -25,6 +25,13 @@ std::unique_ptr<ASTNode> Parser::parse() {
 std::unique_ptr<Type> Parser::parseType() {
 	if (match(TokenType::IDENTIFIER)) {
 		std::string typeName = previous().value;
+
+		// Check if this identifier is a template type parameter
+		for (const auto& tp : templateTypeParams) {
+			if (typeName == tp) {
+				return std::make_unique<TypeVariableType>(typeName);
+			}
+		}
 
 		std::unique_ptr<Type> baseType;
 		if (typeName == "Int" ||
@@ -53,6 +60,16 @@ std::unique_ptr<Type> Parser::parseType() {
 			return std::make_unique<GenericType>(baseType, typeArgs);
 		}
 
+		// ClassName<Type, ...> syntax for template class instantiation types
+		if (match(TokenType::OPERATOR, "<")) {
+			std::vector<std::unique_ptr<Type>> typeArgs;
+			do {
+				typeArgs.push_back(parseType());
+			} while (match(TokenType::OPERATOR, ","));
+			expect(TokenType::OPERATOR, ">");
+			return std::make_unique<GenericType>(baseType, typeArgs);
+		}
+
 		return baseType;
 	}
 	else if (match(TokenType::OPERATOR, "(")) {
@@ -75,8 +92,77 @@ std::unique_ptr<Type> Parser::parseType() {
 	}
 }
 
+std::vector<std::string> Parser::parseTemplateParameters() {
+	std::vector<std::string> params;
+	currentTemplateParams.clear();
+	expect(TokenType::OPERATOR, "<");
+	do {
+		if (match(TokenType::KEYWORD, "typename") || match(TokenType::KEYWORD, "class")) {
+			expect(TokenType::IDENTIFIER);
+			std::string name = previous().value;
+			params.push_back(name);
+			currentTemplateParams.push_back(TemplateParam(name));
+		}
+		else if (check(TokenType::IDENTIFIER)) {
+			// Non-type template parameter: e.g. "Int N"
+			std::string typeName = peek().value;
+			// Check if it's a known type name (for non-type param)
+			if (typeName == "Int" || typeName == "Long" || typeName == "Short" ||
+				typeName == "Byte" || typeName == "Boolean" || typeName == "Bool") {
+				advance(); // consume type name
+				expect(TokenType::IDENTIFIER);
+				std::string paramName = previous().value;
+				params.push_back(paramName);
+				currentTemplateParams.push_back(TemplateParam(paramName, std::make_unique<BasicType>(typeName)));
+			}
+			else {
+				error("Expected 'typename', 'class', or a type name in template parameter list");
+				break;
+			}
+		}
+		else {
+			error("Expected 'typename', 'class', or a type name in template parameter list");
+			break;
+		}
+	} while (match(TokenType::OPERATOR, ","));
+	expect(TokenType::OPERATOR, ">");
+	return params;
+}
+
 std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 	std::unique_ptr<ASTNode> attributeNode = parseAnnotationStatement();
+
+	// Handle template declarations
+	if (match(TokenType::KEYWORD, "template")) {
+		auto templateNode = std::make_unique<TemplateDeclarationNode>();
+		templateNode->typeParameters = parseTemplateParameters();
+		templateNode->templateParams = currentTemplateParams;
+
+		// Set active template type params for parseType()
+		templateTypeParams = templateNode->typeParameters;
+
+		// Parse the inner declaration (def or class)
+		if (match(TokenType::KEYWORD, "def")) {
+			templateNode->declaration = parseFunctionDeclaration();
+		}
+		else if (match(TokenType::KEYWORD, "class")) {
+			templateNode->declaration = parseClassDeclaration();
+		}
+		else {
+			error("Expected 'def' or 'class' after template parameters");
+		}
+
+		// Clear active template type params
+		templateTypeParams.clear();
+		return templateNode;
+	}
+
+	// Handle constexpr modifier
+	bool isConstexpr = false;
+	if (check(TokenType::KEYWORD, "constexpr")) {
+		isConstexpr = true;
+		advance();
+	}
 
 	bool isExternal = false;
 	if (check(TokenType::KEYWORD, "external")) {
@@ -119,9 +205,20 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 	else if (match(TokenType::KEYWORD, "def")) {
 		auto targetNode = parseFunctionDeclaration(isExternal);
 		targetNode->isExternal = isExternal;
+		targetNode->isConstexpr = isConstexpr;
 		node = std::move(targetNode);
 	}
 	else {
+		// constexpr can precede val/var in top-level statements
+		if (isConstexpr) {
+			if (match(TokenType::KEYWORD, "val") || match(TokenType::KEYWORD, "var")) {
+				bool isMutable = previous().value == "var";
+				auto varDecl = parseVariableDeclaration(isMutable);
+				varDecl->isConstexpr = isConstexpr;
+				match(TokenType::OPERATOR, ";");
+				return varDecl;
+			}
+		}
 		return parseStatement();
 	}
 

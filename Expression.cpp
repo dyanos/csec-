@@ -19,6 +19,37 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 			}
 		}
 
+		// Check for explicit template arguments: identifier<Type, ...>(args)
+		if (pathComponents.size() == 1 && check(TokenType::OPERATOR, "<")) {
+			saveTokenPosition();
+			advance(); // consume '<'
+			std::vector<std::unique_ptr<Type>> typeArgs;
+			bool isTemplateCall = false;
+			// Try to parse type list followed by '>' and '('
+			auto firstType = parseType();
+			if (firstType && firstType->getKind() != Type::Kind::UNKNOWN) {
+				typeArgs.push_back(std::move(firstType));
+				while (match(TokenType::OPERATOR, ",")) {
+					typeArgs.push_back(parseType());
+				}
+				if (match(TokenType::OPERATOR, ">") && match(TokenType::OPERATOR, "(")) {
+					isTemplateCall = true;
+				}
+			}
+			if (isTemplateCall) {
+				discardTokenPosition();
+				auto callNode = std::make_unique<FunctionCallNode>();
+				callNode->functionName = pathComponents[0];
+				callNode->explicitTypeArgs = std::move(typeArgs);
+				callNode->arguments = parseCallParameterList();
+				return callNode;
+			}
+			else {
+				restoreTokenPosition();
+				typeArgs.clear();
+			}
+		}
+
 		if (match(TokenType::OPERATOR, "(")) {
 			if (pathComponents.size() == 1) {
 				auto callNode = std::make_unique<FunctionCallNode>();
@@ -78,6 +109,7 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 		saveTokenPosition();
 		auto lambdaExpr = parseLambdaExpression();
 		if (lambdaExpr) {
+			discardTokenPosition();
 			expr = std::move(lambdaExpr);
 		}
 		else {
@@ -99,6 +131,16 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 	else if (match(TokenType::KEYWORD, "new")) {
 		if (match(TokenType::IDENTIFIER)) {
 			auto id = previous().value;
+
+			// Check for template arguments: new ClassName<Type, ...>(args)
+			std::vector<std::unique_ptr<Type>> tmplArgs;
+			if (match(TokenType::OPERATOR, "<")) {
+				do {
+					tmplArgs.push_back(parseType());
+				} while (match(TokenType::OPERATOR, ","));
+				expect(TokenType::OPERATOR, ">");
+			}
+
 			if (match(TokenType::OPERATOR, "[")) {
 				std::vector<std::unique_ptr<ASTNode>> sizes;
 				while (!check(TokenType::OPERATOR, "]")) {
@@ -113,10 +155,14 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 				return node;
 			}
 			else if (match(TokenType::OPERATOR, "(")) {
-				return std::make_unique<ClassInstanceCreationNode>(id, parseArgumentList());
+				auto node = std::make_unique<ClassInstanceCreationNode>(id, parseArgumentList());
+				node->templateArgs = std::move(tmplArgs);
+				return node;
 			}
 			else {
-				return std::make_unique<ClassInstanceCreationNode>(id);
+				auto node = std::make_unique<ClassInstanceCreationNode>(id);
+				node->templateArgs = std::move(tmplArgs);
+				return node;
 			}
 		}
 		else {

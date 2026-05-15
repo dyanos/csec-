@@ -1,18 +1,22 @@
 cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
-set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+if(WIN32)
+    set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+endif()
 
 project(csec++ CXX)
 
 ################################################################################
 # Set target arch type if empty. Visual studio solution generator provides it.
 ################################################################################
-if(NOT CMAKE_VS_PLATFORM_NAME)
+if(MSVC AND NOT CMAKE_VS_PLATFORM_NAME)
     set(CMAKE_VS_PLATFORM_NAME "x64")
 endif()
-message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
+if(CMAKE_VS_PLATFORM_NAME)
+    message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
+endif()
 
-if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"
+if(MSVC AND NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"
      OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86"))
     message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
 endif()
@@ -114,8 +118,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 
 
-
-
 set(PROJECT_NAME csec++)
 
 ################################################################################
@@ -130,7 +132,7 @@ source_group("samples" FILES ${samples})
 set(_
     "README.md"
 )
-source_group("리소스 파일" FILES ${_})
+source_group("由ъ냼???뚯씪" FILES ${_})
 
 set(_
     "ast.cpp"
@@ -147,7 +149,7 @@ set(_
     "type_utils.cpp"
     "utils.cpp"
 )
-source_group("소스 파일" FILES ${_})
+source_group("?뚯뒪 ?뚯씪" FILES ${_})
 
 set(___AST
     "AccessFieldNode.cpp"
@@ -192,7 +194,7 @@ set(___AST
     "VariableDeclarationNode.cpp"
     "WhileStatementNode.cpp"
 )
-source_group("소스 파일\\AST" FILES ${___AST})
+source_group("?뚯뒪 ?뚯씪\\AST" FILES ${___AST})
 
 set(___Parser
     "Declaration.cpp"
@@ -201,7 +203,7 @@ set(___Parser
     "Statement.cpp"
     "Token.cpp"
 )
-source_group("소스 파일\\Parser" FILES ${___Parser})
+source_group("?뚯뒪 ?뚯씪\\Parser" FILES ${___Parser})
 
 set(_
     "all_ast.h"
@@ -221,7 +223,7 @@ set(_
     "type_utils.h"
     "utils.h"
 )
-source_group("헤더 파일" FILES ${_})
+source_group("?ㅻ뜑 ?뚯씪" FILES ${_})
 
 set(___AST
     "AccessFieldNode.h"
@@ -267,11 +269,12 @@ set(___AST
     "VariableDeclarationNode.h"
     "WhileStatementNode.h"
 )
-source_group("헤더 파일\\AST" FILES ${___AST})
+source_group("?ㅻ뜑 ?뚯씪\\AST" FILES ${___AST})
 
 file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
+list(REMOVE_ITEM PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/NativeRuntime.cpp")
 file(GLOB PROJECT_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
 )
@@ -287,6 +290,31 @@ set(ALL_FILES
 # Target
 ################################################################################
 add_executable(${PROJECT_NAME} ${ALL_FILES})
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+
+add_library(csec_native_runtime SHARED
+    "NativeRuntime.cpp"
+    "NativeRuntime.h"
+)
+target_compile_features(csec_native_runtime PRIVATE cxx_std_17)
+target_compile_definitions(csec_native_runtime PRIVATE CSEC_NATIVE_RUNTIME_BUILD)
+if(WIN32)
+    target_compile_definitions(csec_native_runtime PRIVATE
+        _CRT_SECURE_NO_WARNINGS
+        _WINSOCK_DEPRECATED_NO_WARNINGS
+    )
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_definitions(csec_native_runtime PRIVATE _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH)
+    endif()
+endif()
+set_target_properties(csec_native_runtime PROPERTIES
+    OUTPUT_NAME "csec_native_runtime"
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN YES
+)
+if(WIN32)
+    target_link_libraries(csec_native_runtime PRIVATE ws2_32)
+endif()
 
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(ROOT_NAMESPACE csec)
@@ -315,15 +343,27 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 ################################################################################
 # Include directories
 ################################################################################
-target_include_directories(${PROJECT_NAME} PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/build/include;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/llvm/include"
+find_package(LLVM CONFIG QUIET
+    PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/build/lib/cmake/llvm"
+    NO_DEFAULT_PATH
 )
+if(NOT LLVM_FOUND)
+    find_package(LLVM CONFIG REQUIRED)
+endif()
+
+if(WIN32)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/build/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/llvm/include"
+    )
+else()
+    target_include_directories(${PROJECT_NAME} PRIVATE ${LLVM_INCLUDE_DIRS})
+endif()
 
 ################################################################################
 # Compile definitions
 ################################################################################
-if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+if(MSVC AND "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         "$<$<CONFIG:Debug>:"
             "_DEBUG"
@@ -335,7 +375,7 @@ if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
         "UNICODE;"
         "_UNICODE"
     )
-elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
+elseif(MSVC AND "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         "$<$<CONFIG:Debug>:"
             "_DEBUG"
@@ -384,115 +424,53 @@ endif()
 ################################################################################
 # Dependencies
 ################################################################################
-set(ADDITIONAL_LIBRARY_DEPENDENCIES
-    "$<$<CONFIG:Debug>:"
-        "z"
-    ">"
-    "ntdll;"
-    "LLVM-C;"
-    "LLVMAggressiveInstCombine;"
-    "LLVMAnalysis;"
-    "LLVMAsmParser;"
-    "LLVMAsmPrinter;"
-    "LLVMBinaryFormat;"
-    "LLVMBitReader;"
-    "LLVMBitWriter;"
-    "LLVMBitstreamReader;"
-    "LLVMCFGuard;"
-    "LLVMCFIVerify;"
-    "LLVMCGData;"
-    "LLVMCodeGen;"
-    "LLVMCodeGenTypes;"
-    "LLVMCore;"
-    "LLVMCoroutines;"
-    "LLVMCoverage;"
-    "LLVMDWARFLinker;"
-    "LLVMDWARFLinkerClassic;"
-    "LLVMDWARFLinkerParallel;"
-    "LLVMDWP;"
-    "LLVMDebugInfoBTF;"
-    "LLVMDebugInfoCodeView;"
-    "LLVMDebugInfoDWARF;"
-    "LLVMDebugInfoGSYM;"
-    "LLVMDebugInfoLogicalView;"
-    "LLVMDebugInfoMSF;"
-    "LLVMDebugInfoPDB;"
-    "LLVMDebuginfod;"
-    "LLVMDemangle;"
-    "LLVMDiff;"
-    "LLVMDlltoolDriver;"
-    "LLVMExecutionEngine;"
-    "LLVMExegesis;"
-    "LLVMExegesisX86;"
-    "LLVMExtensions;"
-    "LLVMFileCheck;"
-    "LLVMFrontendDriver;"
-    "LLVMFrontendHLSL;"
-    "LLVMFrontendOffloading;"
-    "LLVMFrontendOpenACC;"
-    "LLVMFrontendOpenMP;"
-    "LLVMFuzzMutate;"
-    "LLVMFuzzerCLI;"
-    "LLVMGlobalISel;"
-    "LLVMHipStdPar;"
-    "LLVMIRPrinter;"
-    "LLVMIRReader;"
-    "LLVMInstCombine;"
-    "LLVMInstrumentation;"
-    "LLVMInterfaceStub;"
-    "LLVMInterpreter;"
-    "LLVMJITLink;"
-    "LLVMLTO;"
-    "LLVMLibDriver;"
-    "LLVMLineEditor;"
-    "LLVMLinker;"
-    "LLVMMC;"
-    "LLVMMCA;"
-    "LLVMMCDisassembler;"
-    "LLVMMCJIT;"
-    "LLVMMCParser;"
-    "LLVMMIRParser;"
-    "LLVMObjCARCOpts;"
-    "LLVMObjCopy;"
-    "LLVMObject;"
-    "LLVMObjectYAML;"
-    "LLVMOptDriver;"
-    "LLVMOption;"
-    "LLVMOrcDebugging;"
-    "LLVMOrcJIT;"
-    "LLVMOrcShared;"
-    "LLVMOrcTargetProcess;"
-    "LLVMPasses;"
-    "LLVMProfileData;"
-    "LLVMRemarks;"
-    "LLVMRuntimeDyld;"
-    "LLVMSandboxIR;"
-    "LLVMScalarOpts;"
-    "LLVMSelectionDAG;"
-    "LLVMSupport;"
-    "LLVMSymbolize;"
-    "LLVMTableGen;"
-    "LLVMTableGenBasic;"
-    "LLVMTableGenCommon;"
-    "LLVMTarget;"
-    "LLVMTargetParser;"
-    "LLVMTextAPI;"
-    "LLVMTextAPIBinaryReader;"
-    "LLVMTransformUtils;"
-    "LLVMVectorize;"
-    "LLVMWindowsDriver;"
-    "LLVMWindowsManifest;"
-    "LLVMX86AsmParser;"
-    "LLVMX86CodeGen;"
-    "LLVMX86Desc;"
-    "LLVMX86Disassembler;"
-    "LLVMX86Info;"
-    "LLVMX86TargetMCA;"
-    "LLVMXRay;"
-    "LLVMipo"
+llvm_map_components_to_libnames(LLVM_COMPONENT_LIBS
+    AggressiveInstCombine
+    Analysis
+    AsmParser
+    AsmPrinter
+    BinaryFormat
+    BitReader
+    BitWriter
+    CodeGen
+    Core
+    ExecutionEngine
+    InstCombine
+    Interpreter
+    IPO
+    IRPrinter
+    IRReader
+    JITLink
+    Linker
+    MC
+    MCJIT
+    MCParser
+    Object
+    OrcJIT
+    Passes
+    RuntimeDyld
+    ScalarOpts
+    Support
+    Target
+    TargetParser
+    TransformUtils
+    Vectorize
+    X86
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
 
-target_link_directories(${PROJECT_NAME} PRIVATE
-    "C:/Users/USER/Projects/llvm-project/build/lib"
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    LLVM-C
+    ${LLVM_COMPONENT_LIBS}
 )
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        "$<$<CONFIG:Debug>:z>"
+        ntdll
+    )
+endif()
+
+if(WIN32)
+    target_link_directories(${PROJECT_NAME} PRIVATE
+        "C:/Users/USER/Projects/llvm-project/build/lib"
+    )
+endif()

@@ -41,4 +41,3 @@
 #include "ArrayCreationNode.h"
 #include "ArrayAccessNode.h"
 #include "AccessFieldNode.h"
-#include "TemplateDeclarationNode.h"

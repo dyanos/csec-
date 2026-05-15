@@ -11,15 +11,15 @@ public:
 	WhileStatementNode() {
 		condition = nullptr;
 		body = nullptr;
-		nodeType = ASTNodeType::WHILE_STATEMENT;
+		nodeType = ASTNodeType::FOR_STATEMENT;
 	}
 	WhileStatementNode(std::unique_ptr<ASTNode> condition, std::unique_ptr<BlockNode> body) {
 		this->condition = std::move(condition);
 		this->body = std::move(body);
-		nodeType = ASTNodeType::WHILE_STATEMENT;
+		nodeType = ASTNodeType::FOR_STATEMENT;
 	}
 	WhileStatementNode(const WhileStatementNode& other) {
-		this->nodeType = ASTNodeType::WHILE_STATEMENT;
+		this->nodeType = ASTNodeType::FOR_STATEMENT;
 		if (other.condition) {
 			this->condition = other.condition->clone();
 		}
@@ -29,7 +29,7 @@ public:
 	}
 	WhileStatementNode& operator=(const WhileStatementNode& other) {
 		if (this != &other) {
-			this->nodeType = ASTNodeType::WHILE_STATEMENT;
+			this->nodeType = ASTNodeType::FOR_STATEMENT;
 			this->condition = other.condition ? other.condition->clone() : nullptr;
 			this->body = other.body ? std::make_unique<BlockNode>(*other.body) : nullptr;
 		}

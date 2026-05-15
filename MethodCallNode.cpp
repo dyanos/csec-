@@ -55,10 +55,8 @@ llvm::Value* MethodCallNode::codegen() {
             return nullptr;
         }
 
-        llvm::BasicBlock* savedBB = CodeGenerator::getInstance().builder.GetInsertBlock();
         classSymbol->methodBodies[methodName]->codegen();
-        CodeGenerator::getInstance().builder.SetInsertPoint(savedBB);
-        function = CodeGenerator::getInstance().module->getFunction(objectType->getName() + "_" + methodName);
+        function = CodeGenerator::getInstance().module->getFunction(methodName);
         methodSymbol->value = function;
         CodeGenerator::getInstance().symbolTable.addSymbol(methodName, methodSymbol ? methodSymbol->clone() : nullptr);
     }
@@ -82,8 +80,7 @@ llvm::Value* MethodCallNode::codegen() {
             return nullptr;
         }
 
-        auto argType = arguments[i]->getType();
-        if (!argType || !argType->equals(funcType->parameterTypes[i + 1])) {
+        if (!arguments[i]->getType()->equals(funcType->parameterTypes[i])) {
             std::cerr << "Type error: Argument type mismatch in method call '" << methodName << "'" << std::endl;
             return nullptr;
         }

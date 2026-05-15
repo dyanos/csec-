@@ -1,7 +1,12 @@
-﻿// main.cpp
+// main.cpp
+#ifdef _WIN32
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "lexer.h"
 #include "parser.h"
@@ -11,7 +16,6 @@
 #include "utils.h"
 
 #include <iostream>
-#include <direct.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
@@ -20,6 +24,8 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/Support/FileSystem.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
@@ -27,15 +33,365 @@
 
 #include "ProgramNode.h"
 
+#include <cstdlib>
 #include <exception>
+#include <filesystem>
+#include <vector>
+
+namespace {
+enum class OutputMode {
+    Run,
+    SyntaxOnly,
+    EmitIR,
+    EmitObject,
+    EmitExecutable
+};
+
+void printUsage(const char* programName) {
+    std::cerr
+        << "Usage: " << programName << " [options] <input.csec>\n"
+        << "Options:\n"
+        << "  --syntax-only, --parse-only  Parse only, no code generation\n"
+        << "  --run                        Generate and run with LLVM interpreter (default)\n"
+        << "  --emit-ir, -S                Write LLVM IR (.ll)\n"
+        << "  --emit-obj, -c               Write native object code (.obj/.o)\n"
+        << "  --emit-exe                   Write native executable (.exe)\n"
+        << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n";
+}
+
+std::string defaultOutputPath(const std::string& inputFile, OutputMode mode) {
+    std::filesystem::path path(inputFile);
+    if (path.has_parent_path()) {
+        path = path.parent_path() / path.stem();
+    }
+    else {
+        path = path.stem();
+    }
+
+    if (mode == OutputMode::EmitIR) {
+        path.replace_extension(".ll");
+    }
+    else if (mode == OutputMode::EmitObject) {
+#ifdef _WIN32
+        path.replace_extension(".obj");
+#else
+        path.replace_extension(".o");
+#endif
+    }
+    else if (mode == OutputMode::EmitExecutable) {
+#ifdef _WIN32
+        path.replace_extension(".exe");
+#else
+        path.replace_extension("");
+#endif
+    }
+
+    return path.string();
+}
+
+llvm::Value* coerceReturnToInt32(llvm::IRBuilder<>& builder, llvm::Value* value) {
+    if (!value) {
+        return builder.getInt32(0);
+    }
+
+    llvm::Type* sourceType = value->getType();
+    llvm::Type* int32Type = builder.getInt32Ty();
+    if (sourceType == int32Type) {
+        return value;
+    }
+    if (sourceType->isIntegerTy()) {
+        unsigned sourceBits = sourceType->getIntegerBitWidth();
+        if (sourceBits < 32) {
+            return builder.CreateSExt(value, int32Type, "main.ret.sext");
+        }
+        if (sourceBits > 32) {
+            return builder.CreateTrunc(value, int32Type, "main.ret.trunc");
+        }
+    }
+    if (sourceType->isFloatingPointTy()) {
+        return builder.CreateFPToSI(value, int32Type, "main.ret.fptosi");
+    }
+    return builder.getInt32(0);
+}
+
+void rebuildRuntimeMain(CodeGenerator& codeGen) {
+    llvm::Function* userMain = codeGen.module->getFunction("_main");
+    if (!userMain || userMain->arg_size() != 0) {
+        return;
+    }
+
+    codeGen.mainFunction->deleteBody();
+    llvm::BasicBlock* entry = llvm::BasicBlock::Create(codeGen.context, "entry", codeGen.mainFunction);
+    llvm::IRBuilder<> builder(entry);
+
+    llvm::Value* result = nullptr;
+    if (userMain->getReturnType()->isVoidTy()) {
+        builder.CreateCall(userMain);
+    }
+    else {
+        result = builder.CreateCall(userMain, {}, "user.main");
+    }
+
+    builder.CreateRet(coerceReturnToInt32(builder, result));
+}
+
+bool writeIRToFile(llvm::Module& module, const std::string& outputPath, bool announce = true) {
+    std::error_code ec;
+    llvm::raw_fd_ostream output(outputPath, ec, llvm::sys::fs::OF_Text);
+    if (ec) {
+        std::cerr << "Failed to open IR output file '" << outputPath << "': " << ec.message() << std::endl;
+        return false;
+    }
+
+    module.print(output, nullptr);
+    if (announce) {
+        std::cout << "Wrote LLVM IR: " << outputPath << std::endl;
+    }
+    return true;
+}
+
+std::string quoteCommandArg(const std::string& value) {
+    std::string quoted = "\"";
+    for (char ch : value) {
+        if (ch == '"') {
+            quoted += "\\\"";
+        }
+        else {
+            quoted += ch;
+        }
+    }
+    quoted += "\"";
+    return quoted;
+}
+
+bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool announce = true) {
+    std::filesystem::path llcPath = std::filesystem::absolute(
+        std::filesystem::path("..") / "llvm-project" / "build" / "bin" / "llc.exe");
+    if (!std::filesystem::exists(llcPath)) {
+        llcPath = "llc.exe";
+    }
+    else {
+        std::error_code canonicalError;
+        auto canonicalPath = std::filesystem::weakly_canonical(llcPath, canonicalError);
+        if (!canonicalError) {
+            llcPath = canonicalPath;
+        }
+    }
+
+    std::filesystem::path tempIR = std::filesystem::path(outputPath).replace_extension(".tmp.ll");
+    if (!writeIRToFile(module, tempIR.string(), false)) {
+        return false;
+    }
+
+    std::string command = "\"" + quoteCommandArg(llcPath.string()) +
+        " -filetype=obj -o " + quoteCommandArg(outputPath) + " " + quoteCommandArg(tempIR.string()) + "\"";
+    int result = std::system(command.c_str());
+    std::error_code removeError;
+    std::filesystem::remove(tempIR, removeError);
+    if (result != 0) {
+        std::cerr << "Failed to emit object file via llc. Command exited with code " << result << std::endl;
+        return false;
+    }
+
+    if (announce) {
+        std::cout << "Wrote object file: " << outputPath << std::endl;
+    }
+    return true;
+}
+
+std::filesystem::path findWindowsLinker() {
+    std::filesystem::path linkerPath = "link.exe";
+    if (std::filesystem::exists(linkerPath)) {
+        return linkerPath;
+    }
+
+#ifdef _WIN32
+    std::filesystem::path msvcRoot =
+        R"(C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC)";
+    std::error_code ec;
+    if (std::filesystem::exists(msvcRoot, ec)) {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(
+                 msvcRoot, std::filesystem::directory_options::skip_permission_denied, ec)) {
+            if (ec) {
+                break;
+            }
+
+            auto path = entry.path();
+            std::string pathText = path.string();
+            if (entry.is_regular_file(ec) && path.filename() == "link.exe" &&
+                pathText.find("\\bin\\Hostx64\\x64\\") != std::string::npos) {
+                auto canonicalPath = std::filesystem::weakly_canonical(path, ec);
+                return ec ? path : canonicalPath;
+            }
+        }
+    }
+#endif
+
+    return linkerPath;
+}
+
+#ifdef _WIN32
+std::filesystem::path findMsvcX64LibPath(const std::filesystem::path& linkPath) {
+    std::error_code ec;
+    auto canonical = std::filesystem::weakly_canonical(linkPath, ec);
+    const auto path = ec ? linkPath : canonical;
+    const auto versionDir = path.parent_path().parent_path().parent_path().parent_path();
+    auto libPath = versionDir / "lib" / "x64";
+    if (std::filesystem::exists(libPath / "libcmt.lib", ec)) {
+        return libPath;
+    }
+    return {};
+}
+
+std::filesystem::path findWindowsSdkLibRoot() {
+    std::filesystem::path sdkLibRoot = R"(C:\Program Files (x86)\Windows Kits\10\Lib)";
+    std::error_code ec;
+    if (!std::filesystem::exists(sdkLibRoot, ec)) {
+        return {};
+    }
+
+    std::filesystem::path best;
+    for (const auto& entry : std::filesystem::directory_iterator(sdkLibRoot, ec)) {
+        if (ec || !entry.is_directory(ec)) {
+            continue;
+        }
+        auto candidate = entry.path();
+        if (std::filesystem::exists(candidate / "ucrt" / "x64" / "ucrt.lib", ec) &&
+            std::filesystem::exists(candidate / "um" / "x64" / "kernel32.lib", ec) &&
+            (best.empty() || candidate.filename().string() > best.filename().string())) {
+            best = candidate;
+        }
+    }
+    return best;
+}
+
+std::filesystem::path findNativeRuntimeObject() {
+    std::vector<std::filesystem::path> candidates = {
+        std::filesystem::absolute(std::filesystem::path("csec++") / "x64" / "Debug" / "NativeRuntime.obj"),
+        std::filesystem::absolute(std::filesystem::path("csec++") / "x64" / "Release" / "NativeRuntime.obj"),
+        std::filesystem::absolute(std::filesystem::path("x64") / "Debug" / "NativeRuntime.obj"),
+        std::filesystem::absolute(std::filesystem::path("x64") / "Release" / "NativeRuntime.obj"),
+        std::filesystem::absolute(std::filesystem::path("Debug") / "NativeRuntime.obj"),
+        std::filesystem::absolute(std::filesystem::path("Release") / "NativeRuntime.obj")
+    };
+    std::error_code ec;
+    for (const auto& candidate : candidates) {
+        if (std::filesystem::exists(candidate, ec)) {
+            return candidate;
+        }
+    }
+    return {};
+}
+
+bool compileNativeRuntimeObject(const std::filesystem::path& linkPath, const std::filesystem::path& outputObject) {
+    std::filesystem::path clPath = linkPath.parent_path() / "cl.exe";
+    std::error_code ec;
+    if (!std::filesystem::exists(clPath, ec)) {
+        std::cerr << "MSVC compiler not found next to linker: " << clPath << std::endl;
+        return false;
+    }
+
+    std::filesystem::path sourcePath = std::filesystem::absolute("NativeRuntime.cpp");
+    const auto versionDir = linkPath.parent_path().parent_path().parent_path().parent_path();
+    const auto vcInclude = versionDir / "include";
+    const auto sdkRoot = findWindowsSdkLibRoot();
+    std::string command =
+        quoteCommandArg(clPath.string()) +
+        " /nologo /c /EHsc /MT /O2 /DCSEC_NATIVE_RUNTIME_BUILD /D_CRT_SECURE_NO_WARNINGS /D_WINSOCK_DEPRECATED_NO_WARNINGS " +
+        "/I" + quoteCommandArg(vcInclude.string()) + " ";
+    if (!sdkRoot.empty()) {
+        auto sdkBase = sdkRoot.parent_path().parent_path();
+        command +=
+            "/I" + quoteCommandArg((sdkBase / "Include" / sdkRoot.filename() / "ucrt").string()) + " " +
+            "/I" + quoteCommandArg((sdkBase / "Include" / sdkRoot.filename() / "shared").string()) + " " +
+            "/I" + quoteCommandArg((sdkBase / "Include" / sdkRoot.filename() / "um").string()) + " ";
+    }
+    command +=
+        quoteCommandArg(sourcePath.string()) +
+        " /Fo:" + quoteCommandArg(outputObject.string());
+    command = "\"" + command + "\"";
+    int result = std::system(command.c_str());
+    if (result != 0) {
+        std::cerr << "Failed to compile NativeRuntime.cpp. Command exited with code " << result << std::endl;
+        return false;
+    }
+    return true;
+}
+#endif
+
+bool writeExecutableToFile(llvm::Module& module, const std::string& outputPath) {
+#ifndef _WIN32
+    std::cerr << "--emit-exe is currently implemented for Windows/MSVC only." << std::endl;
+    return false;
+#else
+    std::filesystem::path tempObject = std::filesystem::path(outputPath).replace_extension(".tmp.obj");
+    if (!writeObjectToFile(module, tempObject.string(), false)) {
+        return false;
+    }
+
+    std::filesystem::path linkPath = findWindowsLinker();
+    std::filesystem::path tempRuntimeObject = std::filesystem::path(outputPath).replace_extension(".native.tmp.obj");
+    if (!compileNativeRuntimeObject(linkPath, tempRuntimeObject)) {
+        std::error_code removeError;
+        std::filesystem::remove(tempObject, removeError);
+        return false;
+    }
+    std::vector<std::string> linkArgs = {
+        quoteCommandArg(linkPath.string()),
+        "/NOLOGO",
+        "/SUBSYSTEM:CONSOLE",
+        "/OUT:" + quoteCommandArg(outputPath),
+        quoteCommandArg(tempObject.string())
+    };
+    linkArgs.push_back(quoteCommandArg(tempRuntimeObject.string()));
+
+    auto msvcLibPath = findMsvcX64LibPath(linkPath);
+    if (!msvcLibPath.empty()) {
+        linkArgs.push_back("/LIBPATH:" + quoteCommandArg(msvcLibPath.string()));
+    }
+    auto sdkLibRoot = findWindowsSdkLibRoot();
+    if (!sdkLibRoot.empty()) {
+        linkArgs.push_back("/LIBPATH:" + quoteCommandArg((sdkLibRoot / "ucrt" / "x64").string()));
+        linkArgs.push_back("/LIBPATH:" + quoteCommandArg((sdkLibRoot / "um" / "x64").string()));
+    }
+    linkArgs.push_back("libcmt.lib");
+    linkArgs.push_back("libvcruntime.lib");
+    linkArgs.push_back("libucrt.lib");
+    linkArgs.push_back("kernel32.lib");
+    linkArgs.push_back("ws2_32.lib");
+    linkArgs.push_back("legacy_stdio_definitions.lib");
+
+    std::string command;
+    for (size_t i = 0; i < linkArgs.size(); ++i) {
+        if (i > 0) {
+            command += " ";
+        }
+        command += linkArgs[i];
+    }
+    command = "\"" + command + "\"";
+    int result = std::system(command.c_str());
+    std::error_code removeError;
+    std::filesystem::remove(tempObject, removeError);
+    std::filesystem::remove(tempRuntimeObject, removeError);
+    if (result != 0) {
+        std::cerr << "Failed to emit executable via link.exe. Command exited with code " << result << std::endl;
+        return false;
+    }
+
+    std::cout << "Wrote executable: " << outputPath << std::endl;
+    return true;
+#endif
+}
+}
 
 int main(int argc, char** argv) {
-    /*llvm::PassBuilder PB;
+    llvm::PassBuilder PB;
 
-    // ModulePassManager ?앹꽦
     llvm::ModulePassManager MPM;
 
-    MPM.addPass(llvm::PromotePass());
+    llvm::FunctionPassManager FPM;
+    FPM.addPass(llvm::PromotePass());
+    MPM.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(FPM)));
 
     llvm::LoopAnalysisManager LAM;
     llvm::FunctionAnalysisManager FAM;
@@ -46,9 +402,11 @@ int main(int argc, char** argv) {
     PB.registerFunctionAnalyses(FAM);
     PB.registerLoopAnalyses(LAM);
     PB.registerCGSCCAnalyses(CGAM);
-    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);*/
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
+#ifdef _WIN32
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
     //_CrtSetBreakAlloc(3404);
 
     /*if (argc < 2) {
@@ -65,7 +423,12 @@ int main(int argc, char** argv) {
         return -1;
     }*/
 
-    char* cwd = _getcwd(NULL, 0);
+    char* cwd =
+#ifdef _WIN32
+        _getcwd(NULL, 0);
+#else
+        getcwd(NULL, 0);
+#endif
     if (cwd) {
         std::cout << "get current directory: " << cwd << std::endl;
         free(cwd);
@@ -73,20 +436,74 @@ int main(int argc, char** argv) {
     else {
         std::cout << "get current directory: <unavailable>" << std::endl;
     }
+    OutputMode outputMode = OutputMode::Run;
     std::string inputFile = "sample2.csec";
-    if (argc >= 2) {
-        inputFile = argv[1];
+    bool inputFileSet = false;
+    std::string outputFile;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--syntax-only" || arg == "--parse-only") {
+            outputMode = OutputMode::SyntaxOnly;
+            continue;
+        }
+        if (arg == "--run") {
+            outputMode = OutputMode::Run;
+            continue;
+        }
+        if (arg == "--emit-ir" || arg == "-S") {
+            outputMode = OutputMode::EmitIR;
+            continue;
+        }
+        if (arg == "--emit-obj" || arg == "-c") {
+            outputMode = OutputMode::EmitObject;
+            continue;
+        }
+        if (arg == "--emit-exe") {
+            outputMode = OutputMode::EmitExecutable;
+            continue;
+        }
+        if (arg == "-o") {
+            if (i + 1 >= argc) {
+                std::cerr << "Missing output path after -o" << std::endl;
+                printUsage(argv[0]);
+                return 1;
+            }
+            outputFile = argv[++i];
+            continue;
+        }
+        if (arg == "--help" || arg == "-h") {
+            printUsage(argv[0]);
+            return 0;
+        }
+        if (!inputFileSet) {
+            inputFile = arg;
+            inputFileSet = true;
+            continue;
+        }
+        std::cerr << "Unexpected argument: " << arg << std::endl;
+        printUsage(argv[0]);
+        return 1;
     }
 
     std::string code = read_utf8_file(inputFile);
     if (code.empty()) {
-        std::cerr << "Unable to read input file: " << inputFile << std::endl;
-        return 1;
+        std::error_code ec;
+        if (!std::filesystem::exists(inputFile, ec) || !std::filesystem::is_regular_file(inputFile, ec)) {
+            std::cerr << "Unable to read input file: " << inputFile << std::endl;
+            return 1;
+        }
     }
 
     // 肄붾뱶 ?앹꽦
     Lexer lexer(code);
     std::vector<Token> tokens = lexer.tokenize();
+    for (const auto& token : tokens) {
+        if (token.type == TokenType::UNKNOWN) {
+            std::cerr << "Lexing failed: unknown token '" << token.value
+                      << "' at line " << token.line << ", column " << token.column << std::endl;
+            return 1;
+        }
+    }
 
     std::unique_ptr<ASTNode> ast;
     try {
@@ -99,8 +516,10 @@ int main(int argc, char** argv) {
     }
 
     std::cout << "Parsing completed successfully." << std::endl;
+    if (outputMode == OutputMode::SyntaxOnly) {
+        return 0;
+    }
 
-    // AST 異쒕젰 (?좏깮 ?ы빆)
     //ASTPrinter printer;
     //ast->accept(printer);
 
@@ -113,10 +532,9 @@ int main(int argc, char** argv) {
     }
     ast->codegen();
 
-    // LLVM IR 異쒕젰
-    CodeGenerator::getInstance().dumpIR();
+    // Keep IR dumping opt-in; unconditional dumps make large template suites unreasonably slow.
+    // CodeGenerator::getInstance().dumpIR();
 
-    // ?ㅽ뻾 ?붿쭊 珥덇린??
     LLVMLinkInMCJIT();
     LLVMLinkInInterpreter();
     llvm::InitializeNativeTarget();
@@ -124,6 +542,7 @@ int main(int argc, char** argv) {
     llvm::InitializeNativeTargetAsmParser();
 
     auto& codeGen = CodeGenerator::getInstance();
+    rebuildRuntimeMain(codeGen);
     if (codeGen.mainFunction && !codeGen.mainFunction->empty()) {
         llvm::BasicBlock& rootEntry = codeGen.mainFunction->getEntryBlock();
         if (!rootEntry.getTerminator()) {
@@ -135,6 +554,25 @@ int main(int argc, char** argv) {
     if (llvm::verifyModule(*codeGen.module, &llvm::errs())) {
         std::cerr << "Generated LLVM IR is invalid. Aborting execution." << std::endl;
         return 1;
+    }
+
+    MPM.run(*codeGen.module, MAM);
+
+    if (outputMode == OutputMode::EmitIR || outputMode == OutputMode::EmitObject ||
+        outputMode == OutputMode::EmitExecutable) {
+        if (outputFile.empty()) {
+            outputFile = defaultOutputPath(inputFile, outputMode);
+        }
+
+        if (outputMode == OutputMode::EmitIR) {
+            return writeIRToFile(*codeGen.module, outputFile) ? 0 : 1;
+        }
+
+        if (outputMode == OutputMode::EmitObject) {
+            return writeObjectToFile(*codeGen.module, outputFile) ? 0 : 1;
+        }
+
+        return writeExecutableToFile(*codeGen.module, outputFile) ? 0 : 1;
     }
 
     std::string errStr;
@@ -150,12 +588,11 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    //MPM.run(*codeGen.module, MAM);
-
     // main ?⑥닔 ?ㅽ뻾
     auto result = engine->runFunction(codeGen.mainFunction, {});
 
     return 0;
 }
+
 
 

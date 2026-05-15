@@ -2,7 +2,6 @@
 
 #include "ast.h"
 #include "token.h"
-#include "ArrayLiteralNode.h"
 
 #include <vector>
 #include <memory>
@@ -10,12 +9,12 @@
 // LatexMathEqParser 클래스: LaTeX 수식을 AST로 파싱 (parser.cpp에서 호출)
 class LatexMathEqParser {
 public:
-    LatexMathEqParser(std::vector<Token>* tokens, size_t* position)
+    LatexMathEqParser(const std::vector<Token>* tokens, size_t* position)
         : tokens(tokens), position(position) {
     }
 
 private:
-    std::vector<Token>* tokens;
+    const std::vector<Token>* tokens;
     size_t* position;
 
 public:
@@ -39,10 +38,6 @@ public:
 
     // LaTeX 명령어 피킹 (\ + command 형태 확인)
     std::string tryPeekLatexCommand() const;
-
-    // Matrix 환경 파싱
-    std::unique_ptr<ASTNode> parseMatrixEnvironment(const std::string& envType);
-    bool isMatrixEnvironment(const std::string& name) const;
 
     // LaTeX 심볼 인식 함수
     bool isRelationalOperator(const std::string& symbol) const;

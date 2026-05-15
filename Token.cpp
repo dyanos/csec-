@@ -1,8 +1,6 @@
 #include "parser.h"
 
 #include <iostream>
-#include <sstream>
-#include <stdexcept>
 
 bool Parser::isAtEnd() const {
 	return position >= tokens.size() || tokens[position].type == TokenType::END_OF_FILE;
@@ -25,7 +23,6 @@ const Token& Parser::advance() {
 }
 
 const Token& Parser::previous() const {
-	if (position == 0) return tokens[0];
 	return tokens[position - 1];
 }
 
@@ -37,7 +34,7 @@ bool Parser::check(TokenType type, const std::string& value) const {
 }
 
 bool Parser::match(TokenType type, const std::string& value) {
-	while (position < tokens.size() && tokens[position].type == TokenType::COMMENT) {
+	while (tokens[position].type == TokenType::COMMENT) {
 		advance();
 	}
 
@@ -60,12 +57,6 @@ void Parser::restoreTokenPosition() {
 	}
 }
 
-void Parser::discardTokenPosition() {
-	if (!positionStack.empty()) {
-		positionStack.pop_back();
-	}
-}
-
 void Parser::expect(TokenType type, const std::string& value) {
 	if (!check(type, value)) {
 		std::string expected = value.empty() ? tokenTypeToString(type) : "'" + value + "'";
@@ -76,13 +67,12 @@ void Parser::expect(TokenType type, const std::string& value) {
 }
 
 void Parser::error(const std::string& message) {
-	std::ostringstream oss;
-	oss << "Parser Error: " << message;
+	std::cerr << "Parser Error: " << message;
 	if (!isAtEnd()) {
-		oss << " at line " << peek().line << ", column " << peek().column;
+		std::cerr << " at line " << peek().line << ", column " << peek().column;
 	}
-	std::cerr << oss.str() << std::endl;
-	throw std::runtime_error(oss.str());
+	std::cerr << std::endl;
+	exit(1);
 }
 
 std::string Parser::tokenTypeToString(TokenType type) const {

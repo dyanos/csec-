@@ -14,6 +14,7 @@ public:
         return instance;          // Instantiated on first use
     }
 
+    CodeGenerator();
     llvm::LLVMContext context;
     llvm::IRBuilder<> builder;
     std::unique_ptr<llvm::Module> module;
@@ -33,7 +34,4 @@ public:
 
     llvm::Function* mallocFunction;
     llvm::Function* freeFunction;
-
-private:
-    CodeGenerator();
 };

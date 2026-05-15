@@ -60,8 +60,7 @@ void Lexer::initializeKeywords() {
         "import", "lazy", "match", "new", "null", "object", "override",
         "package", "private", "protected", "return", "sealed", "super",
         "this", "throw", "trait", "try", "true", "type", "val", "var",
-		"while", "with", "yield", "to", "map", "pmap", "reduce", "filter", "external", "inline", "constexpr",
-		"template", "typename"
+		"while", "with", "yield", "to", "val", "var", "map", "pmap", "reduce", "filter", "external", "inline", "constexpr"
     };
     keywords.insert(kws, kws + sizeof(kws) / sizeof(kws[0]));
 }
@@ -92,7 +91,6 @@ std::vector<Token> Lexer::tokenize() {
         advance();
     }
 
-    tokens.push_back(Token{ TokenType::END_OF_FILE, "", line, column });
     return tokens;
 }
 
@@ -137,9 +135,7 @@ bool Lexer::matchComment(std::vector<Token>& tokens) {
             }
             advance();
         }
-        if (peek() == '*' && peek(1) == '/') {
-            advance(2);
-        }
+        advance(2);  // '*/' ?좎룞?숉궢
         std::string comment = source.substr(start, position - start);
         tokens.push_back(Token{ TokenType::COMMENT, comment, line, column });
         return true;
@@ -185,7 +181,7 @@ bool Lexer::matchStringLiteral(std::vector<Token>& tokens) {
             }
         }
         advance();  // ?좎뙠?먯삕 ?좎룞?쇿뜝?숈삕???좎룞?숉궢
-        std::string strLiteral = source.substr(start + 1, position - start - 2);
+        std::string strLiteral = source.substr(start, position - start);
         tokens.push_back(Token{ TokenType::STRING_LITERAL, strLiteral, line, column });
         return true;
     }
@@ -194,9 +190,7 @@ bool Lexer::matchStringLiteral(std::vector<Token>& tokens) {
 
 bool Lexer::matchCharLiteral(std::vector<Token>& tokens) {
     if (peek() == '\'') {
-        size_t savedPos = position;
-        int savedLine = line;
-        int savedCol = column;
+        size_t start = position;
         advance();
         if (peek() == '\\') {
             advance(2);  // ?좎떛?숈삕?좎룞?쇿뜝?숈삕?좎룞???좎룞?쇿뜝?숈삕
@@ -206,13 +200,10 @@ bool Lexer::matchCharLiteral(std::vector<Token>& tokens) {
         }
         if (peek() == '\'') {
             advance();
-            std::string charLiteral = source.substr(savedPos, position - savedPos);
+            std::string charLiteral = source.substr(start, position - start);
             tokens.push_back(Token{ TokenType::CHAR_LITERAL, charLiteral, line, column });
             return true;
         }
-        position = savedPos;
-        line = savedLine;
-        column = savedCol;
         // ?좎룞?쇿뜝?숈삕 ?좎룞?쇿뜝?숈삕 泥섇뜝?숈삕
     }
     return false;
@@ -225,35 +216,7 @@ bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
             advance();
         }
         // ?좎룞?쇿뜝?숈삕 ?좎룞??16?좎룞?쇿뜝?숈삕, 2?좎룞?쇿뜝?숈삕, 8?좎룞?쇿뜝?숈삕 ?좎룞?쇿뜝?띕쨪??泥섇뜝?숈삕
-		bool singleZero = (position - start == 1) && (source[start] == '0');
-		if (singleZero && (peek() == 'x' || peek() == 'X')) {
-			advance();
-			while (std::isxdigit(static_cast<unsigned char>(peek()))) {
-				advance();
-			}
-
-			std::string value = source.substr(start, position - start);
-			tokens.push_back(Token{ TokenType::HEX_LITERAL, value, line, column });
-		}
-		else if (singleZero && (peek() == 'b' || peek() == 'B')) {
-			advance();
-			while (peek() == '0' || peek() == '1') {
-				advance();
-			}
-
-            std::string value = source.substr(start, position - start);
-            tokens.push_back(Token{ TokenType::BINARY_LITERAL, value, line, column });
-		}
-		else if (singleZero && (peek() == 'o' || peek() == 'O')) {
-			advance();
-			while (std::isdigit(static_cast<unsigned char>(peek())) && peek() < '8') {
-				advance();
-			}
-
-            std::string value = source.substr(start, position - start);
-            tokens.push_back(Token{ TokenType::OCTAL_LITERAL, value, line, column });
-		}
-		else if (peek() == 'e' || peek() == 'E') {
+		if (peek() == 'e' || peek() == 'E') {
 			advance();
 			if (peek() == '+' || peek() == '-') {
 				advance();
@@ -264,6 +227,33 @@ bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
 
             std::string value = source.substr(start, position - start);
 			tokens.push_back(Token{ TokenType::EXPONENTIAL_LITERAL, value, line, column });
+		}
+		else if (peek() == 'x' || peek() == 'X') {
+			advance();
+			while (std::isxdigit(static_cast<unsigned char>(peek()))) {
+				advance();
+			}
+
+			std::string value = source.substr(start, position - start);
+			tokens.push_back(Token{ TokenType::HEX_LITERAL, value, line, column });
+		}
+		else if (peek() == 'b' || peek() == 'B') {
+			advance();
+			while (peek() == '0' || peek() == '1') {
+				advance();
+			}
+
+            std::string value = source.substr(start, position - start);
+            tokens.push_back(Token{ TokenType::BINARY_LITERAL, value, line, column });
+		}
+		else if (peek() == 'o' || peek() == 'O') {
+			advance();
+			while (std::isdigit(static_cast<unsigned char>(peek())) && peek() < '8') {
+				advance();
+			}
+
+            std::string value = source.substr(start, position - start);
+            tokens.push_back(Token{ TokenType::OCTAL_LITERAL, value, line, column });
 		}
         else if (peek() == '.') {
             advance();

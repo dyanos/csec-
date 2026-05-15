@@ -2,24 +2,14 @@
 #include "all_ast.h"
 
 std::unique_ptr<ASTNode> Parser::parseStatement() {
-	bool isConstexpr = false;
-	if (check(TokenType::KEYWORD, "constexpr")) {
-		isConstexpr = true;
-		advance();
-	}
-
 	if (match(TokenType::KEYWORD, "val") || match(TokenType::KEYWORD, "var")) {
 		bool isMutable = previous().value == "var";
 		auto expr = parseVariableDeclaration(isMutable);
-		expr->isConstexpr = isConstexpr;
 		match(TokenType::OPERATOR, ";");
 		return expr;
 	}
 	else if (match(TokenType::KEYWORD, "if")) {
-		auto ifStmt = parseIfStatement();
-		auto* ifNode = dynamic_cast<IfStatementNode*>(ifStmt.get());
-		if (ifNode && isConstexpr) ifNode->isConstexpr = true;
-		return ifStmt;
+		return parseIfStatement();
 	}
 	else if (match(TokenType::KEYWORD, "for")) {
 		return parseForStatement();
@@ -79,11 +69,6 @@ std::unique_ptr<BlockNode> Parser::parseBlock() {
 
 std::unique_ptr<ASTNode> Parser::parseIfStatement() {
 	auto ifNode = std::make_unique<IfStatementNode>();
-
-	// Handle "if constexpr (...)" syntax
-	if (match(TokenType::KEYWORD, "constexpr")) {
-		ifNode->isConstexpr = true;
-	}
 
 	expect(TokenType::OPERATOR, "(");
 	ifNode->condition = parseExpression();
@@ -253,12 +238,6 @@ std::unique_ptr<ASTNode> Parser::parseReduceStatement() {
 	else {
 		error("Expected identifier in reduce statement");
 	}
-
-	// Parse required initial value: reduce(x <- arr, initVal) { body }
-	if (!match(TokenType::OPERATOR, ",")) {
-		error("Expected ',' and initial value in reduce statement");
-	}
-	reduceNode->initialValue = parseExpression();
 
 	expect(TokenType::OPERATOR, ")");
 

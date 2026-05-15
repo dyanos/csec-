@@ -25,7 +25,6 @@ public:
         this->initializer = other.initializer ? other.initializer->clone() : nullptr;
         this->isMutable = other.isMutable;
         this->isField = other.isField;
-        this->isConstexpr = other.isConstexpr;
     }
     VariableDeclarationNode& operator=(const VariableDeclarationNode& other) {
         if (this != &other) {
@@ -35,7 +34,6 @@ public:
             this->initializer = other.initializer ? other.initializer->clone() : nullptr;
             this->isMutable = other.isMutable;
             this->isField = other.isField;
-            this->isConstexpr = other.isConstexpr;
         }
         return *this;
     }
@@ -45,7 +43,6 @@ public:
     std::unique_ptr<ASTNode> initializer;
     bool isMutable = false;
     bool isField = false;
-    bool isConstexpr = false;
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;

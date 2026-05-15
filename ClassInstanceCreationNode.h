@@ -6,7 +6,6 @@ class ClassInstanceCreationNode : public ASTNode {
 public:
     std::string className;
     std::vector<std::unique_ptr<ASTNode>> arguments;
-    std::vector<std::unique_ptr<Type>> templateArgs;  // e.g. new Stack<Int>()
 
     ClassInstanceCreationNode() {
         nodeType = ASTNodeType::CLASS_INSTANCE_CREATION;
@@ -31,9 +30,6 @@ public:
         for (const auto& arg : other.arguments) {
             arguments.push_back(arg ? arg->clone() : nullptr);
         }
-        for (const auto& t : other.templateArgs) {
-            templateArgs.push_back(t ? t->clone() : nullptr);
-        }
     }
     ClassInstanceCreationNode& operator=(const ClassInstanceCreationNode& other) {
         if (this != &other) {
@@ -43,10 +39,6 @@ public:
             arguments.reserve(other.arguments.size());
             for (const auto& arg : other.arguments) {
                 arguments.push_back(arg ? arg->clone() : nullptr);
-            }
-            templateArgs.clear();
-            for (const auto& t : other.templateArgs) {
-                templateArgs.push_back(t ? t->clone() : nullptr);
             }
         }
         return *this;

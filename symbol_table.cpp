@@ -88,40 +88,6 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
     this->currentScope->symbols["Char"] = std::make_unique<ClassSymbol>("Char", llvm::Type::getInt32Ty(context), "System.lang.Object");
     this->currentScope->symbols["Boolean"] = std::make_unique<ClassSymbol>("Boolean", llvm::Type::getInt32Ty(context), "System.lang.Object");
 
-    // Number set alias types
-    this->currentScope->symbols["Natural"] = std::make_unique<ClassSymbol>("Natural", llvm::Type::getInt64Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Integer"] = std::make_unique<ClassSymbol>("Integer", llvm::Type::getInt64Ty(context), "System.lang.Object");
-    this->currentScope->symbols["Real"] = std::make_unique<ClassSymbol>("Real", llvm::Type::getDoubleTy(context), "System.lang.Object");
-
-    // Complex = { double re, double im }
-    {
-        auto* complexStructTy = llvm::StructType::create(context, { llvm::Type::getDoubleTy(context), llvm::Type::getDoubleTy(context) }, "Complex");
-        auto complexSymbol = std::make_unique<StructSymbol>("Complex", complexStructTy);
-        complexSymbol->fields["re"] = std::make_unique<Symbol>("re", std::make_unique<BasicType>("Double"), nullptr, false, SymbolType::FIELD);
-        complexSymbol->fields["im"] = std::make_unique<Symbol>("im", std::make_unique<BasicType>("Double"), nullptr, false, SymbolType::FIELD);
-        this->currentScope->symbols["Complex"] = std::move(complexSymbol);
-    }
-
-    // Rational = { i64 numerator, i64 denominator }
-    {
-        auto* rationalStructTy = llvm::StructType::create(context, { llvm::Type::getInt64Ty(context), llvm::Type::getInt64Ty(context) }, "Rational");
-        auto rationalSymbol = std::make_unique<StructSymbol>("Rational", rationalStructTy);
-        rationalSymbol->fields["numerator"] = std::make_unique<Symbol>("numerator", std::make_unique<BasicType>("Long"), nullptr, false, SymbolType::FIELD);
-        rationalSymbol->fields["denominator"] = std::make_unique<Symbol>("denominator", std::make_unique<BasicType>("Long"), nullptr, false, SymbolType::FIELD);
-        this->currentScope->symbols["Rational"] = std::move(rationalSymbol);
-    }
-
-    // Quaternion = { double w, double x, double y, double z }
-    {
-        auto* quaternionStructTy = llvm::StructType::create(context, { llvm::Type::getDoubleTy(context), llvm::Type::getDoubleTy(context), llvm::Type::getDoubleTy(context), llvm::Type::getDoubleTy(context) }, "Quaternion");
-        auto quaternionSymbol = std::make_unique<StructSymbol>("Quaternion", quaternionStructTy);
-        quaternionSymbol->fields["w"] = std::make_unique<Symbol>("w", std::make_unique<BasicType>("Double"), nullptr, false, SymbolType::FIELD);
-        quaternionSymbol->fields["x"] = std::make_unique<Symbol>("x", std::make_unique<BasicType>("Double"), nullptr, false, SymbolType::FIELD);
-        quaternionSymbol->fields["y"] = std::make_unique<Symbol>("y", std::make_unique<BasicType>("Double"), nullptr, false, SymbolType::FIELD);
-        quaternionSymbol->fields["z"] = std::make_unique<Symbol>("z", std::make_unique<BasicType>("Double"), nullptr, false, SymbolType::FIELD);
-        this->currentScope->symbols["Quaternion"] = std::move(quaternionSymbol);
-    }
-
     auto anyRefType = std::make_unique<ClassType>("AnyRef");
     //addTypeSymbol("AnyRef", anyRefType);
     this->currentScope->symbols["AnyRef"] = std::make_unique<ClassSymbol>("AnyRef", llvm::Type::getInt32Ty(context), "System.lang.Object");
@@ -146,7 +112,7 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
 }
 
 SymbolTable::~SymbolTable() {
-    while (currentScopeLevel > 0) {
+    for (int i = 0; i < this->currentScopeLevel; ++i) {
         exitScope();
 	}
 
@@ -172,6 +138,7 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
         }
 
 		this->currentScope->symbols[key] = std::move(symbol);
+        this->currentSymbol = this->currentScope->symbols[key].get();
 		return true;
     }
 
@@ -192,7 +159,7 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
 
                 target->variables[name] = rawSymbol->clone();
                 this->currentScope->symbols[name] = std::move(symbol);
-                return true;
+                break;
 
             case SymbolType::FUNCTION:
             case SymbolType::METHOD:
@@ -201,7 +168,7 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
                 auto scopeKey = makeUniqueKey(this->currentScope->symbols, name);
                 target->functions[functionKey] = rawSymbol->clone();
                 this->currentScope->symbols[scopeKey] = std::move(symbol);
-                return true;
+                break;
             }
 
             case SymbolType::CLASS:
@@ -216,7 +183,7 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
                 }
                 target->classes[name] = std::make_unique<ClassSymbol>(*classRaw);
                 this->currentScope->symbols[name] = std::move(symbol);
-                return true;
+                break;
             }
 
             case SymbolType::NAMESPACE:
@@ -231,12 +198,12 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
                 }
                 target->namespaces[name] = std::make_unique<NamespaceSymbol>(*nsRaw);
                 this->currentScope->symbols[name] = std::move(symbol);
-                return true;
+                break;
             }
 
             default:
                 std::cerr << "Unsupported symbol type for namespace: " << (int)rawSymbol->symbolType << std::endl;
-                return false;
+                break;
             }
         }
 
@@ -258,7 +225,7 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
 
                 target->fields[name] = rawSymbol->clone();
                 this->currentScope->symbols[name] = std::move(symbol);
-                return true;
+                break;
 
             case SymbolType::FUNCTION:
             case SymbolType::METHOD:
@@ -267,12 +234,12 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
                 auto scopeKey = makeUniqueKey(this->currentScope->symbols, name);
                 target->methods[methodKey] = rawSymbol->clone();
                 this->currentScope->symbols[scopeKey] = std::move(symbol);
-                return true;
+                break;
             }
 
             default:
                 std::cerr << "Unsupported symbol type for class: " << (int)rawSymbol->symbolType << std::endl;
-                return false;
+                break;
             }
         }
         break;
@@ -283,27 +250,23 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
             case SymbolType::VARIABLE:
             case SymbolType::FIELD:
 				this->currentScope->symbols[name] = std::move(symbol);
-                return true;
+                break;
             case SymbolType::FUNCTION:
 				this->currentScope->symbols[name] = std::move(symbol);
-                return true;
+                break;
             default:
                 std::cerr << "Unsupported symbol type for function: " << (int)rawSymbol->symbolType << std::endl;
-                return false;
+                break;
             }
         }
 		break;
 
     default:
-        if (current) {
-            std::cerr << "Unsupported current symbol type: " << (int)current->symbolType << std::endl;
-        } else {
-            std::cerr << "Error: No current namespace available" << std::endl;
-        }
-        return false;
+        std::cerr << "Unsupported current symbol type: " << (int)current->symbolType << std::endl;
+        break;
     }
 
-    return false;
+    return true;
 }
 
 Symbol* checkSymbol(Symbol* symbol, const std::string& name) {

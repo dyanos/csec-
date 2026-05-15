@@ -41,7 +41,6 @@ class FunctionCallNode;
 class ArrayCreationNode;
 class ArrayAccessNode;
 class AccessFieldNode;
-class TemplateDeclarationNode;
 
 class ASTVisitor {
 public:
@@ -91,5 +90,4 @@ public:
     virtual void visit(ArrayCreationNode& node) = 0;
     virtual void visit(ArrayAccessNode& node) = 0;
     virtual void visit(AccessFieldNode& node) = 0;
-    virtual void visit(TemplateDeclarationNode& node) = 0;
 };

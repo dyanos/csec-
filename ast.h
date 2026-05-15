@@ -49,7 +49,6 @@ enum class ASTNodeType {
     FILTER_STATEMENT,
     WHILE_STATEMENT,
     LAMBDA_EXPRESSION,
-    TEMPLATE_DECLARATION,
 };
 
 class ASTVisitor;

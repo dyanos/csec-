@@ -168,7 +168,7 @@ public:
 	}
 
     bool isIntegerTy() const {
-		return this->isBasicType() && (name == "Int" || name == "Byte" || name == "Short" || name == "Long" || name == "Natural" || name == "Integer");
+		return this->isBasicType() && (name == "Int" || name == "Byte" || name == "Short");
     }
 
 	bool isCharTy() const {
@@ -180,7 +180,7 @@ public:
     }
 
 	bool isDoubleTy() const {
-		return this->isBasicType() && (name == "Double" || name == "Real");
+		return this->isBasicType() && name == "Double";
 	}
 
 	bool isStringTy() const {
@@ -397,21 +397,6 @@ public:
 
     std::unique_ptr<Type> clone() override {
         return std::make_unique<PointerType>(*this);
-    }
-};
-
-class TypeVariableType : public Type {
-public:
-    TypeVariableType() : Type(Kind::VARIABLE, "T") {}
-    TypeVariableType(const std::string& name) : Type(Kind::VARIABLE, name) {}
-
-    bool equals(const Type& other) const override {
-        if (other.getKind() != Kind::VARIABLE) return false;
-        return getName() == other.getName();
-    }
-
-    std::unique_ptr<Type> clone() override {
-        return std::make_unique<TypeVariableType>(getName());
     }
 };
 

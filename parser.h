@@ -1,10 +1,8 @@
 #pragma once
 
-// parser.h
-#pragma once
-
 #include "token.h"
 #include "ast.h"
+#include "TemplateDeclarationNode.h"
 #include <vector>
 #include <memory>
 
@@ -16,11 +14,11 @@ class BlockNode;
 
 class Parser {
 public:
-    Parser(const std::vector<Token>& tokens);
+    Parser(std::vector<Token>& tokens);
     std::unique_ptr<ASTNode> parse();
 
 private:
-    const std::vector<Token>& tokens;
+    std::vector<Token>& tokens;
     size_t position;
     std::vector<size_t> positionStack;
 
@@ -33,9 +31,16 @@ private:
     // 현재 Token position 저장/복원
     bool saveTokenPosition();
     void restoreTokenPosition();
+    void discardTokenPosition();
+
+    // Active template type parameter names (set while parsing a template declaration)
+    std::vector<std::string> templateTypeParams;
+    // Full template parameter info (set by parseTemplateParameters)
+    std::vector<TemplateParam> currentTemplateParams;
 
     // import, class, object, template....
 	std::unique_ptr<ASTNode> parseTopStatement();
+    std::vector<std::string> parseTemplateParameters();
 
     std::unique_ptr<ASTNode> parseAnnotationStatement();
 	std::unique_ptr<ASTNode> parseAnnotationExpression();

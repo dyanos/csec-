@@ -1,0 +1,21 @@
+template<typename T>
+def identity(x: T): T = x;
+
+template<typename T, Int N>
+def getSize(): Int = N;
+
+template<typename T>
+class Pair(first: T, second: T) {}
+
+constexpr val SIZE = 10;
+
+constexpr def square(x: Int): Int = x * x;
+
+def main(): Int {
+    val a = identity<Int>(42);
+    val b = square(5);
+    if constexpr (true) {
+        return a;
+    }
+    return 0;
+}

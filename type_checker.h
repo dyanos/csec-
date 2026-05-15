@@ -5,10 +5,14 @@
 #include "ast.h"
 
 #include "ASTVisitor.h"
+#include <string>
 
 // TypeChecker 클래스는 AST를 방문하여 타입 검사를 수행합니다.
 class TypeChecker : public ASTVisitor {
 public:
+    bool hasErrors() const { return errorCount > 0; }
+    int getErrorCount() const { return errorCount; }
+
     // 프로그램 노드를 방문합니다.
     void visit(ProgramNode& node) override;
 
@@ -108,4 +112,10 @@ public:
 	void visit(FilterStatementNode& node) override;
 	void visit(ArrayLiteralNode& node) override;
 	void visit(WhileStatementNode& node) override;
+	void visit(TemplateDeclarationNode& node) override;
+
+private:
+    int errorCount = 0;
+    void reportError(const std::string& message);
+    void checkTypeResolved(const std::unique_ptr<Type>& type, const std::string& context);
 };

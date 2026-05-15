@@ -51,78 +51,83 @@ llvm::Value* FunctionDeclarationNode::codegen() {
 		return function;
 	}
 
+    auto& cg = CodeGenerator::getInstance();
+
     std::vector<llvm::Type*> paramTypes;
 
     for (auto& param : this->parameters) {
-        paramTypes.push_back(CodeGenerator::getInstance().getLLVMType(param->getType().get()));
+        auto* paramType = cg.getLLVMType(param->getType().get());
+        if (!paramType) {
+            std::cerr << "Error: Not supported parameter type in function '" << this->name << "'" << std::endl;
+            return nullptr;
+        }
+        paramTypes.push_back(paramType);
     }
 
-    llvm::Type* returnType = CodeGenerator::getInstance().getLLVMType(this->returnType.get());
+    llvm::Type* returnType = cg.getLLVMType(this->returnType.get());
     if (!returnType) {
         std::cerr << "Error: Not supported the return type of '" << this->name << "'" << std::endl;
         return nullptr;
     }
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-    // ????? ?????? ??? ????????? ???? ??? ??????? ???λ? ???
     std::string funcName = [&]() {
-        if (CodeGenerator::getInstance().scopes.empty()) {
+        if (cg.scopes.empty()) {
             return "_" + this->name;
         }
         else {
-            return join(CodeGenerator::getInstance().scopes, "#") + "#" + this->name;
+            return join(cg.scopes, "#") + "#" + this->name;
         }
         }();
 
-    llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, CodeGenerator::getInstance().module.get());
+    llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, cg.module.get());
 
-    // TODO: ??? ?????? ??? ??? ???
-    // TODO: ??????? symboltable?? ??? ????? ??????, ???? ??? ??????? ?????? ??¹?? ???ο? ??? ??????? ?????, ??? ??? ???? ???????? ?????? ??????? ??
+    if (this->isConstexpr) {
+        function->addFnAttr(llvm::Attribute::AlwaysInline);
+    }
+
     auto functionType = this->getType();
     auto functionSymbol = std::make_unique<FunctionSymbol>(this->name, std::move(functionType), function, false, SymbolType::FUNCTION);
     auto* functionSymbolRaw = functionSymbol.get();
-    if (!CodeGenerator::getInstance().symbolTable.addSymbol(this->name, std::move(functionSymbol))) {
+    if (!cg.symbolTable.addSymbol(this->name, std::move(functionSymbol))) {
         std::cerr << "Error: Failed to register function symbol '" << this->name << "'" << std::endl;
         return nullptr;
     }
-    CodeGenerator::getInstance().symbolTable.setCurrentSymbol(functionSymbolRaw);
-    CodeGenerator::getInstance().symbolTable.enterScope();
+    cg.symbolTable.setCurrentSymbol(functionSymbolRaw);
+    cg.symbolTable.enterScope();
 
-    // ??? ???? ??? ???
     int cnt = 0;
     for (auto& arg : this->parameters) {
         auto paramType = arg->getType();
         auto paramSymbol = std::make_unique<Symbol>((static_cast<ParameterNode*>(arg.get()))->name, std::move(paramType), function->getArg(cnt), false, SymbolType::VARIABLE);
-        CodeGenerator::getInstance().symbolTable.addSymbol((static_cast<ParameterNode*>(arg.get()))->name, std::move(paramSymbol));
+        cg.symbolTable.addSymbol((static_cast<ParameterNode*>(arg.get()))->name, std::move(paramSymbol));
         cnt += 1;
     }
 
-    // block start
-    llvm::BasicBlock* bb = llvm::BasicBlock::Create(CodeGenerator::getInstance().context, "entry", function);
-    CodeGenerator::getInstance().builder.SetInsertPoint(bb);
+    llvm::BasicBlock* bb = llvm::BasicBlock::Create(cg.context, "entry", function);
+    cg.builder.SetInsertPoint(bb);
     this->body->codegen();
-    // block end
-    // body?? return?? ???? ?????? ???? ???? ??? ??????? ????
 
-    llvm::BasicBlock* currentBlock = CodeGenerator::getInstance().builder.GetInsertBlock();
+    llvm::BasicBlock* currentBlock = cg.builder.GetInsertBlock();
     if (currentBlock && !currentBlock->getTerminator()) {
         if (returnType->isVoidTy()) {
-            CodeGenerator::getInstance().builder.CreateRetVoid();
+            cg.builder.CreateRetVoid();
         }
         else if (returnType->isIntegerTy()) {
-            CodeGenerator::getInstance().builder.CreateRet(llvm::ConstantInt::get(returnType, 0));
+            cg.builder.CreateRet(llvm::ConstantInt::get(returnType, 0));
         }
         else if (returnType->isFloatTy()) {
-            CodeGenerator::getInstance().builder.CreateRet(llvm::ConstantFP::get(returnType, 0.0));
+            cg.builder.CreateRet(llvm::ConstantFP::get(returnType, 0.0));
         }
         else if (returnType->isDoubleTy()) {
-            CodeGenerator::getInstance().builder.CreateRet(llvm::ConstantFP::get(returnType, 0.0));
+            cg.builder.CreateRet(llvm::ConstantFP::get(returnType, 0.0));
         }
         else {
-            CodeGenerator::getInstance().builder.CreateRet(llvm::Constant::getNullValue(returnType));
+            cg.builder.CreateRet(llvm::Constant::getNullValue(returnType));
         }
     }
 
-    CodeGenerator::getInstance().symbolTable.exitScope();
+    cg.symbolTable.exitScope();
+    cg.symbolTable.setCurrentSymbol(nullptr);
 
     return function;
 }

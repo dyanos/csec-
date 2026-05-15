@@ -8,6 +8,7 @@
 #include "UnitNode.h"
 #include "UnaryExpressionNode.h"
 #include "RangeExpressionNode.h"
+#include "ArrayLiteralNode.h"
 
 #include <iostream>
 
@@ -26,7 +27,7 @@ bool LatexMathEqParser::isAtEnd() const {
 const Token& LatexMathEqParser::peek(int pos) const {
 	if (pos < 0)
 		return (*tokens)[*position];
-	else if (*position + pos < tokens->size())
+	else if (*position + static_cast<size_t>(pos) < tokens->size())
 		return (*tokens)[*position + pos];
 	else {
 		return (*tokens)[tokens->size() - 1];
@@ -39,6 +40,7 @@ const Token& LatexMathEqParser::advance() {
 }
 
 const Token& LatexMathEqParser::previous() const {
+	if (*position == 0) return (*tokens)[0];
 	return (*tokens)[*position - 1];
 }
 
@@ -50,7 +52,7 @@ bool LatexMathEqParser::check(TokenType type, const std::string& value) const {
 }
 
 bool LatexMathEqParser::match(TokenType type, const std::string& value) {
-	while ((*tokens)[*position].type == TokenType::COMMENT) {
+	while (!isAtEnd() && (*tokens)[*position].type == TokenType::COMMENT) {
 		advance();
 	}
 
@@ -100,7 +102,7 @@ const char* functionOneArgSymbolTable[] = {
 	"arccos", "arcsin", "arctan", "arg",
 	"cos", "cosh", "cot", "coth",
 	"csc", "deg", "det", "dim",
-	"exp", "gcd", "hom", "inf",
+	"exp", "gcd", "hom",
 	"ker", "lg", "lim", "liminf",
 	"limsup", "ln", "log", "max",
 	"min", "Pr", "sec", "sin",
@@ -172,6 +174,12 @@ const char* calligraphicFontSymbolTable[] = {
 	"textit", "textbf", "texttt", "textsf"
 };
 
+// ===== 행렬 환경 (Matrix Environments) =====
+const char* matrixEnvironmentTable[] = {
+	"matrix", "pmatrix", "bmatrix", "vmatrix", "Bmatrix", "Vmatrix",
+	"smallmatrix"
+};
+
 // ===== LaTeX 명령어 미리보기 =====
 // 현재 위치가 '\' + IDENTIFIER 형태인지 확인하고, 명령어 이름을 반환
 std::string LatexMathEqParser::tryPeekLatexCommand() const {
@@ -206,8 +214,18 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseRelational() {
 
 	while (true) {
 		if (isAtEnd() || check(TokenType::OPERATOR, "$") || check(TokenType::OPERATOR, "$$") ||
-			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}")) {
+			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}") ||
+			check(TokenType::OPERATOR, "&")) {
 			break;
+		}
+		// 행 구분자 \\ 또는 \end 확인
+		{
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "end" || cmd == "\\") break;
+			if (check(TokenType::OPERATOR, "\\") && *position + 1 < tokens->size() &&
+				(*tokens)[*position + 1].type == TokenType::OPERATOR && (*tokens)[*position + 1].value == "\\") {
+				break;
+			}
 		}
 
 		std::string op;
@@ -246,8 +264,18 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseAdditive() {
 
 	while (true) {
 		if (isAtEnd() || check(TokenType::OPERATOR, "$") || check(TokenType::OPERATOR, "$$") ||
-			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}")) {
+			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}") ||
+			check(TokenType::OPERATOR, "&")) {
 			break;
+		}
+		// 행 구분자 \\ 또는 \end 확인
+		{
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "end" || cmd == "\\") break;
+			if (check(TokenType::OPERATOR, "\\") && *position + 1 < tokens->size() &&
+				(*tokens)[*position + 1].type == TokenType::OPERATOR && (*tokens)[*position + 1].value == "\\") {
+				break;
+			}
 		}
 
 		std::string op;
@@ -279,8 +307,18 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseMultiplicative() {
 
 	while (true) {
 		if (isAtEnd() || check(TokenType::OPERATOR, "$") || check(TokenType::OPERATOR, "$$") ||
-			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}")) {
+			check(TokenType::OPERATOR, ")") || check(TokenType::OPERATOR, "}") ||
+			check(TokenType::OPERATOR, "&")) {
 			break;
+		}
+		// 행 구분자 \\ 또는 \end 확인
+		{
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "end" || cmd == "\\") break;
+			if (check(TokenType::OPERATOR, "\\") && *position + 1 < tokens->size() &&
+				(*tokens)[*position + 1].type == TokenType::OPERATOR && (*tokens)[*position + 1].value == "\\") {
+				break;
+			}
 		}
 
 		std::string op;
@@ -355,9 +393,8 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 			// 명령어가 '_'로 끝나는 경우, 명령어에서 제거하고, 다음 token을 첨자 인자로 처리
 			if (!command.empty() && command.back() == '_') {
 				command = command.substr(0, command.size() - 1);
-				(*const_cast<std::vector<Token>*>(tokens))[*position - 1].value = command;
-				auto nonConstTokens = const_cast<std::vector<Token>*>(tokens);
-				nonConstTokens->insert(nonConstTokens->begin() + *position, Token{ TokenType::OPERATOR, "_", peek().line, peek().column });
+				(*tokens)[*position - 1].value = command;
+				tokens->insert(tokens->begin() + *position, Token{ TokenType::OPERATOR, "_", peek().line, peek().column });
 			}
 
 			// \left 구분자 처리
@@ -379,6 +416,25 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 					}
 				}
 				return expr;
+			}
+
+			// \begin{...} 환경 처리
+			if (command == "begin") {
+				if (!match(TokenType::OPERATOR, "{")) {
+					throw std::runtime_error("Expected '{' after \\begin");
+				}
+				if (!check(TokenType::IDENTIFIER)) {
+					throw std::runtime_error("Expected environment name after \\begin{");
+				}
+				std::string envName = advance().value;
+				if (!match(TokenType::OPERATOR, "}")) {
+					throw std::runtime_error("Expected '}' after environment name");
+				}
+				if (isMatrixEnvironment(envName)) {
+					return parseMatrixEnvironment(envName);
+				}
+				// 알 수 없는 환경은 식별자로 처리
+				return std::make_unique<IdentifierNode>("begin_" + envName);
 			}
 
 			// 폰트 명령어 처리 (예: \mathbb, \mathcal, \mathbf)
@@ -704,7 +760,6 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseArg(bool isBrace) {
 	// 파라미터 필수 함수 (중괄호 필수)
 	if (isBrace && !check(TokenType::OPERATOR, "{")) {
 		throw std::runtime_error("Expected '{' to start argument.");
-		return nullptr;
 	}
 
 	if (match(TokenType::OPERATOR, "{")) {
@@ -778,4 +833,103 @@ bool LatexMathEqParser::isCalligraphicFont(const std::string& symbol) const {
 		}
 	}
 	return false;
+}
+
+bool LatexMathEqParser::isMatrixEnvironment(const std::string& name) const {
+	for (int i = 0; i < sizeof(matrixEnvironmentTable) / sizeof(matrixEnvironmentTable[0]); ++i) {
+		if (name == matrixEnvironmentTable[i]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+std::unique_ptr<ASTNode> LatexMathEqParser::parseMatrixEnvironment(const std::string& envType) {
+	// 행렬 환경의 행과 열을 파싱
+	// 행 구분자: \\ (연속 백슬래시 두 개)
+	// 열 구분자: &
+	// 종료: \end{envType}
+
+	auto matrix = std::make_unique<ArrayLiteralNode>();
+
+	while (true) {
+		if (isAtEnd()) {
+			throw std::runtime_error("Unexpected end of input inside matrix environment '" + envType + "'");
+		}
+
+		// \end{envType} 확인
+		{
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "end") {
+				advance(); // consume '\'
+				advance(); // consume 'end'
+				if (!match(TokenType::OPERATOR, "{")) {
+					throw std::runtime_error("Expected '{' after \\end");
+				}
+				if (!check(TokenType::IDENTIFIER) || peek().value != envType) {
+					throw std::runtime_error("Expected \\end{" + envType + "}");
+				}
+				advance(); // consume envType
+				if (!match(TokenType::OPERATOR, "}")) {
+					throw std::runtime_error("Expected '}' after \\end{" + envType);
+				}
+				break;
+			}
+		}
+
+		// 한 행 파싱
+		auto row = std::make_unique<ArrayLiteralNode>();
+
+		// 첫 번째 셀 파싱
+		auto cell = parseExpr();
+		if (!cell) {
+			throw std::runtime_error("Expected matrix cell expression in \\begin{" + envType + "}");
+		}
+		row->elements.push_back(std::move(cell));
+
+		// 나머지 셀 파싱 (& 구분자)
+		while (match(TokenType::OPERATOR, "&")) {
+			cell = parseExpr();
+			if (!cell) {
+				throw std::runtime_error("Expected matrix cell expression after '&' in \\begin{" + envType + "}");
+			}
+			row->elements.push_back(std::move(cell));
+		}
+
+		if (row->elements.empty()) {
+			throw std::runtime_error("Empty matrix row in \\begin{" + envType + "}");
+		}
+
+		matrix->elements.push_back(std::move(row));
+
+		// 행 구분자 \\ 확인 (연속 OPERATOR '\' 토큰 두 개)
+		if (check(TokenType::OPERATOR, "\\") && *position + 1 < tokens->size() &&
+			(*tokens)[*position + 1].type == TokenType::OPERATOR && (*tokens)[*position + 1].value == "\\") {
+			advance(); // consume first '\'
+			advance(); // consume second '\'
+			continue;
+		}
+
+		// \\ 가 LaTeX 명령어로 처리되는 경우
+		{
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "\\") {
+				advance(); // consume '\'
+				advance(); // consume '\\'
+				continue;
+			}
+		}
+
+		// \end 확인 (행 구분자 없이 마지막 행)
+		{
+			std::string cmd = tryPeekLatexCommand();
+			if (cmd == "end") {
+				continue; // 루프 상단에서 \end 처리
+			}
+		}
+
+		throw std::runtime_error("Expected '\\\\' or \\end{" + envType + "} in matrix environment");
+	}
+
+	return matrix;
 }

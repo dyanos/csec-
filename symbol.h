@@ -2,6 +2,7 @@
 
 #include "type.h"
 #include "ast.h"
+#include "TemplateDeclarationNode.h"
 
 #include <memory>
 #include <string>
@@ -86,7 +87,7 @@ struct FunctionSymbol : public Symbol {
         this->name = name;
     }
 
-    FunctionSymbol(const FunctionSymbol& other) noexcept {
+    FunctionSymbol(const FunctionSymbol& other) {
         copyFrom(other);
     }
 
@@ -101,7 +102,9 @@ struct FunctionSymbol : public Symbol {
     FunctionSymbol& operator=(FunctionSymbol&&) noexcept = default;
 
     void copyFrom(const Symbol& other) override {
-        const FunctionSymbol& funcOther = static_cast<const FunctionSymbol&>(other);
+        const auto* funcOtherPtr = dynamic_cast<const FunctionSymbol*>(&other);
+        if (!funcOtherPtr) { Symbol::copyFrom(other); return; }
+        const FunctionSymbol& funcOther = *funcOtherPtr;
         this->name = funcOther.name;
         this->type = funcOther.type ? funcOther.type->clone() : nullptr;
         this->value = funcOther.value;
@@ -131,7 +134,7 @@ struct StructSymbol : public Symbol {
         this->symbolType = SymbolType::STRUCT;
     }
 
-    StructSymbol(const StructSymbol& other) noexcept {
+    StructSymbol(const StructSymbol& other) {
         copyFrom(other);
     }
 
@@ -146,7 +149,9 @@ struct StructSymbol : public Symbol {
     StructSymbol& operator=(StructSymbol&&) noexcept = default;
 
     void copyFrom(const Symbol& other) override {
-        const StructSymbol& structOther = static_cast<const StructSymbol&>(other);
+        const auto* structOtherPtr = dynamic_cast<const StructSymbol*>(&other);
+        if (!structOtherPtr) { Symbol::copyFrom(other); return; }
+        const StructSymbol& structOther = *structOtherPtr;
         this->name = structOther.name;
         this->structType = structOther.structType;
         this->isMutable = structOther.isMutable;
@@ -190,7 +195,7 @@ struct ClassSymbol : public Symbol {
         this->symbolType = SymbolType::CLASS;
     }
 
-    ClassSymbol(const ClassSymbol& other) noexcept {
+    ClassSymbol(const ClassSymbol& other) {
         copyHelper(other);
     }
 
@@ -201,7 +206,7 @@ struct ClassSymbol : public Symbol {
         return *this;
     }
 
-    ClassSymbol(ClassSymbol&&) noexcept = default;
+    ClassSymbol(ClassSymbol&&) = default;
     ClassSymbol& operator=(ClassSymbol&&) noexcept = default;
 
     void copyFrom(const Symbol& other) override {
@@ -230,10 +235,11 @@ struct ClassSymbol : public Symbol {
 
 protected:
     void copyHelper(const Symbol& other) {
-        const ClassSymbol& classOther = static_cast<const ClassSymbol&>(other);
-        this->name = classOther.name;
+        const auto* classOtherPtr = dynamic_cast<const ClassSymbol*>(&other);
+        if (!classOtherPtr) { Symbol::copyHelper(other); return; }
+        const ClassSymbol& classOther = *classOtherPtr;
+        Symbol::copyHelper(classOther);
         this->classType = classOther.classType;
-        this->isMutable = classOther.isMutable;
         this->symbolType = SymbolType::CLASS;
         this->superClassName = classOther.superClassName;
         this->superClassSymbol = classOther.superClassSymbol;
@@ -252,6 +258,52 @@ protected:
     }
 };
 
+struct TemplateSymbol : public Symbol {
+    std::vector<std::string> typeParameters;       // backward compat - just names
+    std::vector<TemplateParam> templateParams;     // full param info including non-type
+    std::unique_ptr<ASTNode> declaration;  // stored AST for instantiation
+    std::unordered_map<std::string, llvm::Function*> instantiations;  // func template cache
+    std::unordered_map<std::string, ClassSymbol*> classInstantiations;  // class template cache
+
+    TemplateSymbol() {
+        this->symbolType = SymbolType::TEMPLATE;
+    }
+
+    TemplateSymbol(const TemplateSymbol& other) {
+        copyFrom(other);
+    }
+
+    TemplateSymbol& operator=(const TemplateSymbol& other) {
+        if (this != &other) {
+            copyFrom(other);
+        }
+        return *this;
+    }
+
+    TemplateSymbol(TemplateSymbol&&) noexcept = default;
+    TemplateSymbol& operator=(TemplateSymbol&&) noexcept = default;
+
+    void copyFrom(const Symbol& other) override {
+        const auto* tmplOtherPtr = dynamic_cast<const TemplateSymbol*>(&other);
+        if (!tmplOtherPtr) { Symbol::copyFrom(other); return; }
+        const TemplateSymbol& tmplOther = *tmplOtherPtr;
+        Symbol::copyHelper(tmplOther);
+        this->symbolType = SymbolType::TEMPLATE;
+        this->typeParameters = tmplOther.typeParameters;
+        this->templateParams.clear();
+        for (auto& p : tmplOther.templateParams) this->templateParams.push_back(TemplateParam(p));
+        this->declaration = tmplOther.declaration ? tmplOther.declaration->clone() : nullptr;
+        this->instantiations = tmplOther.instantiations;
+        this->classInstantiations = tmplOther.classInstantiations;
+    }
+
+    std::unique_ptr<Symbol> clone() const override {
+        return std::make_unique<TemplateSymbol>(*this);
+    }
+
+    ~TemplateSymbol() override = default;
+};
+
 struct NamespaceSymbol : public Symbol {
     std::unordered_map<std::string, std::unique_ptr<Symbol>> variables;
     std::unordered_map<std::string, std::unique_ptr<ClassSymbol>> classes;
@@ -267,7 +319,7 @@ struct NamespaceSymbol : public Symbol {
         this->symbolType = SymbolType::NAMESPACE;
     }
 
-    NamespaceSymbol(const NamespaceSymbol& other) noexcept {
+    NamespaceSymbol(const NamespaceSymbol& other) {
         copyHelper(other);
     }
 
@@ -278,7 +330,7 @@ struct NamespaceSymbol : public Symbol {
         return *this;
     }
 
-    NamespaceSymbol(NamespaceSymbol&&) noexcept = default;
+    NamespaceSymbol(NamespaceSymbol&&) = default;
     NamespaceSymbol& operator=(NamespaceSymbol&&) noexcept = default;
 
     ~NamespaceSymbol() override = default;
@@ -293,7 +345,9 @@ struct NamespaceSymbol : public Symbol {
 
 protected:
     void copyHelper(const Symbol& other) {
-        const NamespaceSymbol& nsOther = static_cast<const NamespaceSymbol&>(other);
+        const auto* nsOtherPtr = dynamic_cast<const NamespaceSymbol*>(&other);
+        if (!nsOtherPtr) { Symbol::copyHelper(other); return; }
+        const NamespaceSymbol& nsOther = *nsOtherPtr;
         this->name = nsOther.name;
         this->isMutable = nsOther.isMutable;
         this->symbolType = SymbolType::NAMESPACE;

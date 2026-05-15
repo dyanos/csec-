@@ -68,7 +68,6 @@ bool ModuleLoader::parseModuleFile(const std::string& filepath, SymbolTable& mod
 
     Lexer lexer(code);
     std::vector<Token> tokens = lexer.tokenize();
-    tokens.push_back(Token{ TokenType::END_OF_FILE, "", 0, 0 });
 
     Parser parser(tokens);
     auto ast = parser.parse();

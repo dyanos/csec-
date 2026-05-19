@@ -1,0 +1,13 @@
+class Animal(name: String) {
+    def id(): Int = 1
+}
+
+class Dog(name: String) extends Animal {
+    def bark(): Int = 2
+}
+
+def main(): Int {
+    val animal = new Animal("cat");
+    val dog = new Dog("dog");
+    return 0;
+}

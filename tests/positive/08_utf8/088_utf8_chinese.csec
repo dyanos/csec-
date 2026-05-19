@@ -1,0 +1,27 @@
+def 求和(起始: Int, 结束: Int): Int {
+    var 结果: Int = 0;
+    for (数字 <- 起始 to 结束) {
+        结果 = 结果 + 数字;
+    }
+    return 结果;
+}
+
+class 矩形(宽度: Int, 高度: Int) {
+    def 面积(): Int = 宽度 * 高度
+}
+
+object 工具 {
+    def 绝对值(数值: Int): Int {
+        if (数值 < 0) {
+            return 0 - 数值;
+        }
+        return 数值;
+    }
+}
+
+def main(): Int {
+    val 总和 = 求和(1, 5);
+    val rect = new 矩形(3, 4);
+    val 结果 = 工具.绝对值(0 - 10);
+    return 总和 + rect.面积() + 结果;
+}

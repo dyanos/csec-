@@ -1,0 +1,21 @@
+def main(): Int {
+    /* plain matrix */
+    val m1 = $$\begin{matrix} 1 & 0 \\ 0 & 1 \end{matrix}$$;
+
+    /* parenthesized matrix */
+    val m2 = $$\begin{pmatrix} a & b \\ c & d \end{pmatrix}$$;
+
+    /* bracketed matrix */
+    val m3 = $$\begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix}$$;
+
+    /* determinant matrix */
+    val m4 = $$\begin{vmatrix} a & b \\ c & d \end{vmatrix}$$;
+
+    /* curly brace matrix */
+    val m5 = $$\begin{Bmatrix} x & y \\ z & w \end{Bmatrix}$$;
+
+    /* 3x3 identity */
+    val m6 = $$\begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$;
+
+    return 0;
+}

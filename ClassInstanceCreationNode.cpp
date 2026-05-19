@@ -2,14 +2,214 @@
 
 #include "ClassInstanceCreationNode.h"
 #include "ClassDeclarationNode.h"
+#include "BinaryExpressionNode.h"
+#include "BlockNode.h"
+#include "ClassBodyNode.h"
+#include "FunctionCallNode.h"
+#include "FunctionDeclarationNode.h"
+#include "IdentifierNode.h"
+#include "IfStatementNode.h"
 #include "ParameterNode.h"
+#include "ReturnStatementNode.h"
 #include "ASTVisitor.h"
+#include "ValueNode.h"
+#include "VariableDeclarationNode.h"
+#include "TensorRuntime.h"
 
 #include <iostream>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/Function.h>
 
 #include "utils.h"
+
+namespace {
+std::string mangleTemplateClassName(const std::string& className,
+                                    const std::vector<std::unique_ptr<Type>>& templateArgs) {
+    std::string mangledName = className;
+    for (const auto& arg : templateArgs) {
+        mangledName += "$" + (arg ? arg->getName() : "Unknown");
+    }
+    return mangledName;
+}
+
+void substituteTypeVariables(std::unique_ptr<Type>& type,
+                             const std::vector<std::string>& typeParams,
+                             const std::vector<std::unique_ptr<Type>>& concreteArgs) {
+    if (!type) {
+        return;
+    }
+
+    if (type->getKind() == Type::Kind::VARIABLE) {
+        for (size_t i = 0; i < typeParams.size(); ++i) {
+            if (type->getName() == typeParams[i] && i < concreteArgs.size() && concreteArgs[i]) {
+                type = concreteArgs[i]->clone();
+                return;
+            }
+        }
+    }
+
+    if (type->getKind() == Type::Kind::GENERIC) {
+        auto* generic = dynamic_cast<GenericType*>(type.get());
+        if (generic) {
+            substituteTypeVariables(generic->baseType, typeParams, concreteArgs);
+            for (auto& arg : generic->typeArguments) {
+                substituteTypeVariables(arg, typeParams, concreteArgs);
+            }
+        }
+    }
+}
+
+void substituteTemplateConstants(ASTNode* node,
+                                 const std::unordered_map<std::string, std::string>& constantValues) {
+    if (!node) {
+        return;
+    }
+
+    if (auto* identifier = dynamic_cast<IdentifierNode*>(node)) {
+        auto it = constantValues.find(identifier->value);
+        if (it != constantValues.end()) {
+            identifier->value = it->second;
+        }
+        return;
+    }
+
+    if (auto* block = dynamic_cast<BlockNode*>(node)) {
+        for (auto& stmt : block->statements) {
+            substituteTemplateConstants(stmt.get(), constantValues);
+        }
+        return;
+    }
+
+    if (auto* returnStmt = dynamic_cast<ReturnStatementNode*>(node)) {
+        substituteTemplateConstants(returnStmt->expression.get(), constantValues);
+        return;
+    }
+
+    if (auto* binary = dynamic_cast<BinaryExpressionNode*>(node)) {
+        substituteTemplateConstants(binary->left.get(), constantValues);
+        substituteTemplateConstants(binary->right.get(), constantValues);
+        return;
+    }
+
+    if (auto* ifStmt = dynamic_cast<IfStatementNode*>(node)) {
+        substituteTemplateConstants(ifStmt->condition.get(), constantValues);
+        substituteTemplateConstants(ifStmt->thenBlock.get(), constantValues);
+        substituteTemplateConstants(ifStmt->elseBlock.get(), constantValues);
+        return;
+    }
+
+    if (auto* varDecl = dynamic_cast<VariableDeclarationNode*>(node)) {
+        substituteTemplateConstants(varDecl->initializer.get(), constantValues);
+        return;
+    }
+
+    if (auto* call = dynamic_cast<FunctionCallNode*>(node)) {
+        for (auto& arg : call->arguments) {
+            substituteTemplateConstants(arg.get(), constantValues);
+        }
+        return;
+    }
+}
+
+void substituteClassTemplateArguments(ClassDeclarationNode* classDecl,
+                                      const std::vector<std::string>& typeParams,
+                                      const std::vector<std::unique_ptr<Type>>& concreteArgs,
+                                      const std::unordered_map<std::string, std::string>& constantValues) {
+    if (!classDecl) {
+        return;
+    }
+
+    for (auto& param : classDecl->constructorParams) {
+        auto* paramNode = dynamic_cast<ParameterNode*>(param.get());
+        if (paramNode) {
+            substituteTypeVariables(paramNode->type, typeParams, concreteArgs);
+        }
+    }
+
+    auto* classBody = dynamic_cast<ClassBodyNode*>(classDecl->body.get());
+    if (!classBody) {
+        return;
+    }
+
+    for (auto& field : classBody->fields) {
+        auto* fieldNode = dynamic_cast<VariableDeclarationNode*>(field.get());
+        if (!fieldNode) {
+            continue;
+        }
+        substituteTypeVariables(fieldNode->type, typeParams, concreteArgs);
+        substituteTemplateConstants(fieldNode->initializer.get(), constantValues);
+    }
+
+    for (auto& method : classBody->methods) {
+        auto* methodNode = dynamic_cast<FunctionDeclarationNode*>(method.get());
+        if (!methodNode) {
+            continue;
+        }
+        for (auto& param : methodNode->parameters) {
+            auto* paramNode = dynamic_cast<ParameterNode*>(param.get());
+            if (paramNode) {
+                substituteTypeVariables(paramNode->type, typeParams, concreteArgs);
+            }
+        }
+        substituteTypeVariables(methodNode->returnType, typeParams, concreteArgs);
+        substituteTemplateConstants(methodNode->body.get(), constantValues);
+    }
+}
+
+ClassSymbol* ensureTemplateClassInstantiation(const std::string& className,
+                                              const std::vector<std::unique_ptr<Type>>& templateArgs) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* symbol = cg.symbolTable.lookup(className);
+    if (!symbol || symbol->symbolType != SymbolType::TEMPLATE) {
+        return nullptr;
+    }
+
+    auto* tmplSymbol = dynamic_cast<TemplateSymbol*>(symbol);
+    auto* classDecl = tmplSymbol ? dynamic_cast<ClassDeclarationNode*>(tmplSymbol->declaration.get()) : nullptr;
+    if (!tmplSymbol || !classDecl) {
+        return nullptr;
+    }
+
+    std::string mangledName = mangleTemplateClassName(className, templateArgs);
+    if (auto* existingClass = cg.symbolTable.lookupClass(mangledName)) {
+        tmplSymbol->classInstantiations[mangledName] = existingClass;
+        return existingClass;
+    }
+
+    auto clonedDecl = classDecl->clone();
+    auto* clonedClass = dynamic_cast<ClassDeclarationNode*>(clonedDecl.get());
+    if (!clonedClass) {
+        return nullptr;
+    }
+    clonedClass->name = mangledName;
+
+    std::unordered_map<std::string, std::string> constantValues;
+    for (size_t i = 0; i < tmplSymbol->templateParams.size() && i < templateArgs.size(); ++i) {
+        if (!tmplSymbol->templateParams[i].isType && templateArgs[i]) {
+            constantValues[tmplSymbol->templateParams[i].name] = templateArgs[i]->getName();
+        }
+    }
+    substituteClassTemplateArguments(clonedClass, tmplSymbol->typeParameters, templateArgs, constantValues);
+
+    auto* savedInsertBlock = cg.builder.GetInsertBlock();
+    auto savedInsertPoint = cg.builder.GetInsertPoint();
+    auto* savedCurrentSymbol = cg.symbolTable.getCurrentSymbol();
+    cg.symbolTable.saveCurrentSymbol();
+    cg.symbolTable.setCurrentSymbol(nullptr);
+    clonedClass->codegen();
+    cg.symbolTable.popCurrentSymbol();
+    cg.symbolTable.setCurrentSymbol(savedCurrentSymbol);
+    if (savedInsertBlock) {
+        cg.builder.SetInsertPoint(savedInsertBlock, savedInsertPoint);
+    }
+
+    auto* instantiatedSymbol = cg.symbolTable.lookupClass(mangledName);
+    if (instantiatedSymbol) {
+        tmplSymbol->classInstantiations[mangledName] = instantiatedSymbol;
+    }
+    return instantiatedSymbol;
+}
+}
 
 void ClassInstanceCreationNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -34,73 +234,26 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         return cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(type), "newptr");
     }
 
+    if (className == "Tensor") {
+        std::vector<int64_t> dims = TensorRuntime::dimensionsFromTemplateArgs(templateArgs);
+        if (dims.empty()) {
+            std::cerr << "Error: Tensor requires at least one positive dimension" << std::endl;
+            return nullptr;
+        }
+
+        llvm::Value* fillValue = nullptr;
+        if (!arguments.empty()) {
+            fillValue = arguments.front()->codegen();
+        }
+        return TensorRuntime::createTensor(cg, dims, fillValue);
+    }
+
     std::string resolvedClassName = className;
 
     // Template Class instantiation: new ClassName<Type>(args)
     if (!templateArgs.empty()) {
-        auto* symbol = cg.symbolTable.lookup(className);
-        if (symbol && symbol->symbolType == SymbolType::TEMPLATE) {
-            auto* tmplSymbol = dynamic_cast<TemplateSymbol*>(symbol);
-            if (!tmplSymbol) {
-                std::cerr << "Error: Invalid template symbol '" << className << "'" << std::endl;
-                return nullptr;
-            }
-
-            auto* classDecl = dynamic_cast<ClassDeclarationNode*>(tmplSymbol->declaration.get());
-            if (!classDecl) {
-                std::cerr << "Error: Template '" << className << "' is not a class template" << std::endl;
-                return nullptr;
-            }
-
-            std::string mangledName = className;
-            for (auto& ta : templateArgs) {
-                mangledName += "$" + (ta ? ta->getName() : "Unknown");
-            }
-
-            auto cacheIt = tmplSymbol->classInstantiations.find(mangledName);
-            if (cacheIt != tmplSymbol->classInstantiations.end()) {
-                resolvedClassName = mangledName;
-            }
-            else {
-                auto clonedDecl = classDecl->clone();
-                auto* clonedClass = dynamic_cast<ClassDeclarationNode*>(clonedDecl.get());
-                if (!clonedClass) {
-                    std::cerr << "Error: Failed to clone template class" << std::endl;
-                    return nullptr;
-                }
-                clonedClass->name = mangledName;
-
-                // Substitute type variables in constructor parameters.
-                for (auto& param : clonedClass->constructorParams) {
-                    auto* paramNode = dynamic_cast<ParameterNode*>(param.get());
-                    if (paramNode && paramNode->type && paramNode->type->getKind() == Type::Kind::VARIABLE) {
-                        for (size_t i = 0; i < tmplSymbol->typeParameters.size(); ++i) {
-                            if (paramNode->type->getName() == tmplSymbol->typeParameters[i] && i < templateArgs.size()) {
-                                paramNode->type = templateArgs[i]->clone();
-                            }
-                        }
-                    }
-                }
-
-                // Preserve insertion point while emitting top-level class metadata.
-                auto* savedInsertBlock = cg.builder.GetInsertBlock();
-                auto savedInsertPoint = cg.builder.GetInsertPoint();
-                auto* savedCurrentSymbol = cg.symbolTable.getCurrentSymbol();
-                cg.symbolTable.saveCurrentSymbol();
-                cg.symbolTable.setCurrentSymbol(nullptr);
-                clonedClass->codegen();
-                cg.symbolTable.popCurrentSymbol();
-                cg.symbolTable.setCurrentSymbol(savedCurrentSymbol);
-                if (savedInsertBlock) {
-                    cg.builder.SetInsertPoint(savedInsertBlock, savedInsertPoint);
-                }
-
-                auto* instantiatedSymbol = cg.symbolTable.lookupClass(mangledName);
-                if (instantiatedSymbol) {
-                    tmplSymbol->classInstantiations[mangledName] = instantiatedSymbol;
-                }
-                resolvedClassName = mangledName;
-            }
+        if (auto* instantiatedClass = ensureTemplateClassInstantiation(className, templateArgs)) {
+            resolvedClassName = instantiatedClass->name;
         }
     }
 
@@ -126,5 +279,21 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
 }
 
 std::unique_ptr<Type> ClassInstanceCreationNode::getType() {
+    if (!templateArgs.empty()) {
+        if (className == "Tensor") {
+            std::vector<std::unique_ptr<Type>> clonedArgs;
+            clonedArgs.reserve(templateArgs.size());
+            for (const auto& arg : templateArgs) {
+                clonedArgs.push_back(arg ? arg->clone() : std::make_unique<UnknownType>());
+            }
+            return std::make_unique<GenericType>(std::make_unique<BasicType>("Tensor"), clonedArgs);
+        }
+        if (className != "Tensor") {
+            ensureTemplateClassInstantiation(className, templateArgs);
+        }
+        std::string mangledName = mangleTemplateClassName(className, templateArgs);
+        return std::make_unique<ClassType>(mangledName);
+    }
+
     return std::make_unique<ClassType>(className);
 }

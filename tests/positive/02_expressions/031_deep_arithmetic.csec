@@ -1,0 +1,10 @@
+def main(): Int {
+    var a: Int = ((1 + 2) * (3 + 4)) / (5 - 2);
+    var b: Int = (((10 + 20) * 3) - 50) / 2;
+    var c: Int = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10;
+    var d: Int = 2 * 3 * 4 * 5;
+    var e: Int = 100 / 10 / 5;
+    var f: Int = 100 % 7 % 3;
+    var g: Int = (a + b) * (c - d) + (e % f);
+    return g;
+}

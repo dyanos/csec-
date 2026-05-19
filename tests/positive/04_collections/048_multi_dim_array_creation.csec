@@ -1,0 +1,16 @@
+def main(): Int {
+    /* 1D arrays */
+    val a1 = new Int[10];
+    val a2 = new Float[20];
+    val a3 = new Double[5];
+
+    /* 2D arrays */
+    val m1 = new Int[3, 3];
+    val m2 = new Double[4, 4];
+
+    /* 3D arrays */
+    val t1 = new Int[2, 3, 4];
+    val t2 = new Float[5, 5, 5];
+
+    return 0;
+}

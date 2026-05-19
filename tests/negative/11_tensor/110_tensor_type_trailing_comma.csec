@@ -1,0 +1,4 @@
+def main(): Int {
+    val x: Tensor<Int, 2,> = new Tensor<Int, 2>(0);
+    return 0;
+}

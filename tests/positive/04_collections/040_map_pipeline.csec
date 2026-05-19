@@ -1,0 +1,17 @@
+def main(): Int {
+    val xs = [1, 2, 3, 4];
+
+    map (x <- xs) {
+        x + 1;
+    }
+
+    pmap (x <- xs) {
+        x * 2;
+    }
+
+    filter (x <- xs) {
+        x > 2;
+    }
+
+    return 0;
+}

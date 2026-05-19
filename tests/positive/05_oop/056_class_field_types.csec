@@ -1,0 +1,25 @@
+class DataHolder(id: Int) {
+    val name: String = "default";
+    val score: Float = 0.0;
+    val active: Boolean = true;
+    var count: Int = 0;
+    var factor: Double = 1.0;
+
+    def getId(): Int = id
+
+    def getCount(): Int = count
+
+    def increment(): Int {
+        count = count + 1;
+        return count;
+    }
+}
+
+def main(): Int {
+    val d = new DataHolder(42);
+    val id = d.getId();
+    d.increment();
+    d.increment();
+    val cnt = d.getCount();
+    return id + cnt;
+}

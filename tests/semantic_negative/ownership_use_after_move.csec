@@ -1,0 +1,11 @@
+class Image() {
+    def id(): Int = 0
+}
+
+def take(value: box Image): Int = 1
+
+def main(): Int {
+    var img: box Image = new Image();
+    var result: Int = take(<- img);
+    return img.id() + result;
+}

@@ -1,0 +1,17 @@
+def main(): Int {
+    val xs = [10, 20, 30, 40, 50];
+
+    pmap (x <- xs) {
+        x + 1;
+    }
+
+    pmap (y <- xs) {
+        y * y;
+    }
+
+    pmap (z <- xs) {
+        z - 5;
+    }
+
+    return 0;
+}

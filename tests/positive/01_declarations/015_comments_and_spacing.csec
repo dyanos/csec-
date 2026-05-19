@@ -1,0 +1,10 @@
+/* top-level block comment */
+import io.console
+
+// attribute with call form
+[@native("fast")]
+def main(): Int {
+    // inline comment
+    val x = 1;
+    return x;
+}

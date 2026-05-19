@@ -1,0 +1,22 @@
+def square(x: Int): Int = x * x
+
+def main(): Int {
+    val data = [1, 2, 3, 4, 5];
+
+    map (x <- data) {
+        val doubled = x + x;
+        val incremented = doubled + 1;
+        incremented;
+    }
+
+    map (y <- data) {
+        if (y > 3) {
+            y * 10;
+        }
+        else {
+            y;
+        }
+    }
+
+    return 0;
+}

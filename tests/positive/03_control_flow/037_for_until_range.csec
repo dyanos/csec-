@@ -1,0 +1,23 @@
+def main(): Int {
+    var sumInclusive: Int = 0;
+    for (i <- 0 to 5) {
+        sumInclusive = sumInclusive + i;
+    }
+
+    var sumExclusive: Int = 0;
+    for (j <- 0 until 5) {
+        sumExclusive = sumExclusive + j;
+    }
+
+    var product: Int = 1;
+    for (k <- 1 to 5) {
+        product = product * k;
+    }
+
+    var countdown: Int = 0;
+    for (m <- 10 until 15) {
+        countdown = countdown + 1;
+    }
+
+    return sumInclusive + sumExclusive;
+}

@@ -48,6 +48,17 @@ bool Parser::match(TokenType type, const std::string& value) {
 	return false;
 }
 
+bool Parser::matchIdentifierName() {
+	if (match(TokenType::IDENTIFIER)) {
+		return true;
+	}
+	if (check(TokenType::KEYWORD, "box")) {
+		advance();
+		return true;
+	}
+	return false;
+}
+
 bool Parser::saveTokenPosition() {
 	positionStack.push_back(position);
 	return true;

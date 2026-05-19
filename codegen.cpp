@@ -1,5 +1,6 @@
 // codegen.cpp
 #include "codegen.h"
+#include "TensorRuntime.h"
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/Type.h>
 #include <llvm/Support/raw_ostream.h>
@@ -126,6 +127,9 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         return nullptr;
     }
     else if (type->getKind() == Type::Kind::CLASS) {
+        if (TensorRuntime::isTensorTypeName(type->getName())) {
+            return TensorRuntime::getTensorPointerType(*this);
+        }
         auto* classSymbol = symbolTable.lookupClass(type->getName());
 
 		// Symbol??ClassSymbol濡?罹먯뒪?낇븯??classType???묎렐
@@ -150,6 +154,9 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
                 return nullptr;
             }
             return llvm::PointerType::getUnqual(elementType);
+        }
+        if (genericType->baseType->getName() == "Tensor") {
+            return TensorRuntime::getTensorPointerType(*this);
         }
         // Check if this is a template class instantiation: e.g. Pair<Int, String>
         std::string baseName = genericType->baseType->getName();
@@ -218,6 +225,33 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         }
         return llvm::PointerType::getUnqual(baseLLVMType);
 	}
+    else if (type->getKind() == Type::Kind::BOX) {
+        auto* boxType = static_cast<const BoxType*>(type);
+        auto baseLLVMType = getLLVMType(boxType->baseType.get());
+        if (!baseLLVMType) {
+            std::cerr << "Error: Invalid base type for box" << std::endl;
+            return nullptr;
+        }
+        return llvm::PointerType::getUnqual(baseLLVMType);
+    }
+    else if (type->getKind() == Type::Kind::BORROW || type->getKind() == Type::Kind::MUTABLE_BORROW) {
+        auto* borrowType = static_cast<const BorrowType*>(type);
+        auto baseLLVMType = getLLVMType(borrowType->baseType.get());
+        if (!baseLLVMType) {
+            std::cerr << "Error: Invalid base type for borrow" << std::endl;
+            return nullptr;
+        }
+        return llvm::PointerType::getUnqual(baseLLVMType);
+    }
+    else if (type->getKind() == Type::Kind::UNSAFE_POINTER) {
+        auto* pointerType = static_cast<const UnsafePointerType*>(type);
+        auto baseLLVMType = getLLVMType(pointerType->baseType.get());
+        if (!baseLLVMType) {
+            std::cerr << "Error: Invalid base type for unsafe pointer" << std::endl;
+            return nullptr;
+        }
+        return llvm::PointerType::getUnqual(baseLLVMType);
+    }
     else if (type->getKind() == Type::Kind::UNKNOWN) {
         std::cerr << "Error: Unknown type '" << type->getName() << "'" << std::endl;
         return nullptr;

@@ -1,0 +1,5 @@
+def main(): Int {
+    val energy = mdSimulate(3, 2, 25, 0.001, 300.0);
+    val residual = cfdSimulate(16, 16, 20, 0.01, 0.001, 1.0);
+    return 0;
+}

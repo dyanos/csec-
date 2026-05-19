@@ -1,0 +1,12 @@
+def main(): Int {
+    val less = 1 < 2;
+    val greater = 3 > 2;
+    val equal = 4 == 4;
+    val notequal = 5 != 6;
+    val logic = less and greater or equal xor notequal;
+    var bits: Int = 1 << 3;
+    bits = bits | 2;
+    bits = bits & 15;
+    bits = bits ^ 7;
+    return bits;
+}

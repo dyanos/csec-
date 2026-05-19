@@ -1,0 +1,9 @@
+def main(): Int {
+    val unitValue = _;
+    val letter = 'A';
+    val nested = {
+        val inner = 3;
+        inner + 1;
+    };
+    return nested;
+}

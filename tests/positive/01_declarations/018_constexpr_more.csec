@@ -1,0 +1,26 @@
+constexpr val PI_APPROX: Int = 3;
+constexpr val MAX_SIZE: Int = 1024;
+constexpr val MIN_SIZE: Int = 1;
+constexpr var counter: Int = 0;
+
+constexpr def double(x: Int): Int = x + x
+
+constexpr def square(x: Int): Int = x * x
+
+constexpr def cube(x: Int): Int = x * x * x
+
+constexpr def isPositive(x: Int): Boolean {
+    if (x > 0) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+def main(): Int {
+    val a = double(5);
+    val b = square(4);
+    val c = cube(3);
+    return a + b + c;
+}

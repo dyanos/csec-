@@ -1,0 +1,21 @@
+class Base(id: Int) {
+    def getId(): Int = id
+}
+
+template<typename T>
+class TypedNode(value: T, id: Int) extends Base {
+    def getValue(): T = value
+}
+
+template<typename T>
+class Wrapper(inner: T) {
+    def unwrap(): T = inner
+}
+
+def main(): Int {
+    val node = new TypedNode<Int>(42, 1);
+    val w = new Wrapper<Int>(100);
+    val id = node.getId();
+    val v = w.unwrap();
+    return id + v;
+}

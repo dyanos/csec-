@@ -10,7 +10,7 @@
 class Type {
 public:
     // VARIABLE????댁꽌??寃???꾩슂
-    enum Kind { UNKNOWN=-1, BASIC=0, POINTER, ARRAY, STRUCT, CLASS, FUNCTION, GENERIC, VARIABLE };
+    enum Kind { UNKNOWN=-1, BASIC=0, POINTER, ARRAY, STRUCT, CLASS, FUNCTION, GENERIC, VARIABLE, BOX, BORROW, MUTABLE_BORROW, UNSAFE_POINTER };
 
 private:
     Kind kind;
@@ -115,7 +115,20 @@ public:
     }
 
     bool structuralCheck(const Type& superType) const {
-        return false;
+        if (superType.fields.empty()) return false;
+        for (const auto& superField : superType.fields) {
+            bool found = false;
+            for (const auto& myField : this->fields) {
+                if (myField.first == superField.first &&
+                    myField.second && superField.second &&
+                    myField.second->equals(*superField.second)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
     }
     bool structuralCheck(const std::unique_ptr<Type>& superType) const {
         return superType && structuralCheck(*superType);
@@ -132,6 +145,13 @@ public:
     }
 
     bool checkBasicConversion(const Type& toType) const {
+        if (this->isIntegerTy() && toType.isIntegerTy()) return true;
+        if ((this->getName() == "Boolean" && toType.getName() == "Bool") ||
+            (this->getName() == "Bool" && toType.getName() == "Boolean")) return true;
+        if ((this->getName() == "Unit" && toType.getName() == "Void") ||
+            (this->getName() == "Void" && toType.getName() == "Unit")) return true;
+        if ((this->getName() == "Double" && toType.getName() == "Real") ||
+            (this->getName() == "Real" && toType.getName() == "Double")) return true;
         if (this->getName() == "Int" && toType.getName() == "Float") return true;
         if (this->getName() == "Int" && toType.getName() == "Double") return true;
         if (this->getName() == "Float" && toType.getName() == "Double") return true;
@@ -192,6 +212,10 @@ public:
 		return this->isBasicType() && (name == "Unit" || name == "Void");
 	}
 
+    bool isOwnershipManagedTy() const {
+        return kind == Kind::BOX || kind == Kind::BORROW || kind == Kind::MUTABLE_BORROW || kind == Kind::UNSAFE_POINTER;
+    }
+
     virtual std::unique_ptr<Type> clone() = 0;
 };
 
@@ -206,6 +230,12 @@ public:
 
     bool equals(const Type& other) const override {
         if (other.getKind() != Kind::BASIC) return false;
+        if ((getName() == "Boolean" && other.getName() == "Bool") ||
+            (getName() == "Bool" && other.getName() == "Boolean")) return true;
+        if ((getName() == "Unit" && other.getName() == "Void") ||
+            (getName() == "Void" && other.getName() == "Unit")) return true;
+        if ((getName() == "Double" && other.getName() == "Real") ||
+            (getName() == "Real" && other.getName() == "Double")) return true;
         return getName() == other.getName();
     }
 
@@ -275,6 +305,7 @@ public:
         if (other.getKind() != Kind::FUNCTION) return false;
         auto otherFuncType = dynamic_cast<const FunctionType*>(&other);
         if (!otherFuncType) return false;
+        if (!returnType || !otherFuncType->returnType) return false;
         if (!returnType->equals(*otherFuncType->returnType)) return false;
         if (parameterTypes.size() != otherFuncType->parameterTypes.size()) return false;
         for (size_t i = 0; i < parameterTypes.size(); ++i) {
@@ -327,6 +358,7 @@ public:
         if (other.getKind() != Kind::GENERIC) return false;
         auto otherGeneric = dynamic_cast<const GenericType*>(&other);
         if (!otherGeneric) return false;
+        if (!baseType || !otherGeneric->baseType) return false;
         if (!baseType->equals(*otherGeneric->baseType)) return false;
         if (typeArguments.size() != otherGeneric->typeArguments.size()) return false;
         for (size_t i = 0; i < typeArguments.size(); ++i) {
@@ -397,6 +429,87 @@ public:
 
     std::unique_ptr<Type> clone() override {
         return std::make_unique<PointerType>(*this);
+    }
+};
+
+class BoxType : public Type {
+public:
+    std::unique_ptr<Type> baseType;
+
+    BoxType() : Type(Kind::BOX, "box") {}
+    BoxType(const std::unique_ptr<Type>& baseType)
+        : Type(Kind::BOX, "box") {
+        this->baseType = baseType ? baseType->clone() : nullptr;
+    }
+    BoxType(const BoxType& other)
+        : Type(Kind::BOX, "box") {
+        this->baseType = other.baseType ? other.baseType->clone() : nullptr;
+    }
+
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::BOX) return false;
+        auto otherBox = dynamic_cast<const BoxType*>(&other);
+        if (!otherBox || !baseType || !otherBox->baseType) return false;
+        return baseType->equals(*otherBox->baseType);
+    }
+
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<BoxType>(*this);
+    }
+};
+
+class BorrowType : public Type {
+public:
+    std::unique_ptr<Type> baseType;
+    bool isMutableBorrow = false;
+
+    BorrowType() : Type(Kind::BORROW, "borrow") {}
+    BorrowType(const std::unique_ptr<Type>& baseType, bool isMutableBorrow)
+        : Type(isMutableBorrow ? Kind::MUTABLE_BORROW : Kind::BORROW, isMutableBorrow ? "&mut" : "&"),
+          isMutableBorrow(isMutableBorrow) {
+        this->baseType = baseType ? baseType->clone() : nullptr;
+    }
+    BorrowType(const BorrowType& other)
+        : Type(other.isMutableBorrow ? Kind::MUTABLE_BORROW : Kind::BORROW, other.isMutableBorrow ? "&mut" : "&"),
+          isMutableBorrow(other.isMutableBorrow) {
+        this->baseType = other.baseType ? other.baseType->clone() : nullptr;
+    }
+
+    bool equals(const Type& other) const override {
+        if (other.getKind() != getKind()) return false;
+        auto otherBorrow = dynamic_cast<const BorrowType*>(&other);
+        if (!otherBorrow || !baseType || !otherBorrow->baseType) return false;
+        return baseType->equals(*otherBorrow->baseType);
+    }
+
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<BorrowType>(*this);
+    }
+};
+
+class UnsafePointerType : public Type {
+public:
+    std::unique_ptr<Type> baseType;
+
+    UnsafePointerType() : Type(Kind::UNSAFE_POINTER, "unsafe pointer") {}
+    UnsafePointerType(const std::unique_ptr<Type>& baseType)
+        : Type(Kind::UNSAFE_POINTER, "unsafe pointer") {
+        this->baseType = baseType ? baseType->clone() : nullptr;
+    }
+    UnsafePointerType(const UnsafePointerType& other)
+        : Type(Kind::UNSAFE_POINTER, "unsafe pointer") {
+        this->baseType = other.baseType ? other.baseType->clone() : nullptr;
+    }
+
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::UNSAFE_POINTER) return false;
+        auto otherPtr = dynamic_cast<const UnsafePointerType*>(&other);
+        if (!otherPtr || !baseType || !otherPtr->baseType) return false;
+        return baseType->equals(*otherPtr->baseType);
+    }
+
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<UnsafePointerType>(*this);
     }
 };
 

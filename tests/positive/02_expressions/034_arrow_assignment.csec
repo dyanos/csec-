@@ -1,0 +1,14 @@
+def main(): Int {
+    var a: Int = 10;
+    a <- 20;
+    a <- a + 5;
+
+    var b: Int = 0;
+    b <- 100;
+
+    var c: Int = 1;
+    c = c + 1;
+    c <- c + 1;
+
+    return a + b + c;
+}

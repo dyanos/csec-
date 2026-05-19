@@ -1,0 +1,32 @@
+class Base(id: Int) {
+    def getId(): Int = id
+}
+
+class Middle(id: Int) extends Base {
+    def getMiddle(): Int = id + 10
+}
+
+class Leaf(id: Int) extends Middle {
+    def getLeaf(): Int = id + 100
+}
+
+class Shape(name: String) {
+    def describe(): Int = 0
+}
+
+class Polygon(name: String, sides: Int) extends Shape {
+    def getSides(): Int = sides
+}
+
+class RegularPolygon(name: String, sides: Int, length: Int) extends Polygon {
+    def perimeter(): Int = sides * length
+}
+
+def main(): Int {
+    val base = new Base(1);
+    val mid = new Middle(2);
+    val leaf = new Leaf(3);
+    val poly = new Polygon("triangle", 3);
+    val reg = new RegularPolygon("square", 4, 5);
+    return 0;
+}

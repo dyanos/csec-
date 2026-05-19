@@ -1,0 +1,10 @@
+def double(x: Int): Int = x + x
+
+def triple(x: Int): Int = x + x + x
+
+def inc(x: Int): Int = x + 1
+
+def main(): Int {
+    val result = inc(double(triple(2)));
+    return result;
+}

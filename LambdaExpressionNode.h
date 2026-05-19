@@ -41,8 +41,25 @@ public:
 
     llvm::Value* codegen() override;
     std::unique_ptr<Type> getType() override {
-        if (body) return body->getType();
-        return std::make_unique<UnknownType>();
+        std::vector<std::unique_ptr<Type>> parameterTypes;
+        for (const auto& arg : arguments) {
+            if (!arg) {
+                parameterTypes.push_back(std::make_unique<UnknownType>());
+                continue;
+            }
+            auto argType = arg->getType();
+            if (!argType || argType->getKind() == Type::Kind::UNKNOWN) {
+                parameterTypes.push_back(std::make_unique<BasicType>("Int"));
+            }
+            else {
+                parameterTypes.push_back(argType->clone());
+            }
+        }
+        auto returnType = body ? body->getType() : nullptr;
+        if (!returnType || returnType->getKind() == Type::Kind::UNKNOWN) {
+            returnType = std::make_unique<BasicType>("Int");
+        }
+        return std::make_unique<FunctionType>(parameterTypes, returnType);
     }
     std::unique_ptr<ASTNode> clone() override {
         return std::make_unique<LambdaExpressionNode>(*this);

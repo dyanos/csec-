@@ -38,6 +38,24 @@ llvm::Value* ValueNode::codegen() {
 		else if (valueType == TokenType::STRING_LITERAL) {
 			return cg.builder.CreateGlobalString(value);
 		}
+        else if (valueType == TokenType::CHAR_LITERAL) {
+            char ch = '\0';
+            if (value.size() >= 3) {
+                if (value[1] == '\\' && value.size() >= 4) {
+                    switch (value[2]) {
+                    case 'n': ch = '\n'; break;
+                    case 't': ch = '\t'; break;
+                    case '\\': ch = '\\'; break;
+                    case '\'': ch = '\''; break;
+                    default: ch = value[2]; break;
+                    }
+                }
+                else {
+                    ch = value[1];
+                }
+            }
+            return llvm::ConstantInt::get(llvm::Type::getInt8Ty(cg.context), static_cast<unsigned char>(ch));
+        }
 		else if (valueType == TokenType::BOOLEAN_LITERAL) {
 			if (value == "true") {
 				return llvm::ConstantInt::get(llvm::Type::getInt1Ty(cg.context), 1);
@@ -76,6 +94,9 @@ std::unique_ptr<Type> ValueNode::getType() {
 	case TokenType::BOOLEAN_LITERAL:
 		type = std::make_unique<BasicType>(std::string("Boolean"));
 		break;
+    case TokenType::CHAR_LITERAL:
+        type = std::make_unique<BasicType>(std::string("Char"));
+        break;
 	case TokenType::STRING_LITERAL:
 		type = std::make_unique<BasicType>(std::string("String"));
 		break;

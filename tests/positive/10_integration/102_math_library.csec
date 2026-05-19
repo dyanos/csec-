@@ -1,0 +1,54 @@
+object MathLib {
+    def factorial(n: Int): Int {
+        if (n <= 1) {
+            return 1;
+        }
+        else {
+            return n * factorial(n - 1);
+        }
+    }
+
+    def fibonacci(n: Int): Int {
+        if (n <= 1) {
+            return n;
+        }
+        else {
+            return fibonacci(n - 1) + fibonacci(n - 2);
+        }
+    }
+
+    def power(base: Int, exp: Int): Int {
+        if (exp == 0) {
+            return 1;
+        }
+        else {
+            return base * power(base, exp - 1);
+        }
+    }
+
+    def gcd(a: Int, b: Int): Int {
+        if (b == 0) {
+            return a;
+        }
+        else {
+            return gcd(b, a % b);
+        }
+    }
+
+    def sumRange(start: Int, end: Int): Int {
+        var total: Int = 0;
+        for (i <- start to end) {
+            total = total + i;
+        }
+        return total;
+    }
+}
+
+def main(): Int {
+    val f5 = MathLib.factorial(5);
+    val fib10 = MathLib.fibonacci(10);
+    val pow = MathLib.power(2, 8);
+    val g = MathLib.gcd(48, 18);
+    val s = MathLib.sumRange(1, 100);
+    return f5 + fib10 + pow + g + s;
+}

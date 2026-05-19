@@ -2,6 +2,7 @@
 
 #include "PrefixExpressionNode.h"
 #include "ASTVisitor.h"
+#include "IdentifierNode.h"
 
 #include <iostream>
 #include <llvm/IR/Constants.h>
@@ -18,7 +19,19 @@ llvm::Value* PrefixExpressionNode::codegen() {
         return nullptr;
     }
 
-    if (op == "++") {
+    if (op == "&" || op == "&mut") {
+        if (auto* id = dynamic_cast<IdentifierNode*>(expression.get())) {
+            auto* symbol = CodeGenerator::getInstance().symbolTable.lookup(id->value);
+            if (symbol && symbol->value) {
+                return symbol->value;
+            }
+        }
+        return value;
+    }
+    else if (op == "<-") {
+        return value;
+    }
+    else if (op == "++") {
         // increment
         // byte, char, word, short, int, long, long long, float, double, long double만 가능하도록 변경
         if (value->getType()->isIntegerTy(1)) { // byte
@@ -131,35 +144,15 @@ llvm::Value* PrefixExpressionNode::codegen() {
 }
 
 std::unique_ptr<Type> PrefixExpressionNode::getType() {
-    auto res = this->codegen();
-    if (res->getType()->isVoidTy()) {
-        return std::make_unique<BasicType>("Void");
-    }
-    else if (res->getType()->isStructTy()) {
-        return std::make_unique<ClassType>(res->getType()->getStructName().str());
-    }
-    else if (res->getType()->isIntegerTy(1)) {
-        return std::make_unique<BasicType>("Bool");
-    }
-    else if (res->getType()->isIntegerTy(8)) {
-        return std::make_unique<BasicType>("Byte");
-    }
-    else if (res->getType()->isIntegerTy(16)) {
-        return std::make_unique<BasicType>("Short");
-    }
-    else if (res->getType()->isIntegerTy(32)) {
-        return std::make_unique<BasicType>("Int");
-    }
-    else if (res->getType()->isIntegerTy(64)) {
-        return std::make_unique<BasicType>("Long");
-    }
-    else if (res->getType()->isFloatTy()) {
-        return std::make_unique<BasicType>("Float");
-    }
-    else if (res->getType()->isDoubleTy()) {
-        return std::make_unique<BasicType>("Double");
-    }
-    else {
+    if (!expression) {
         return std::make_unique<UnknownType>();
     }
+    auto exprType = expression->getType();
+    if (op == "&") {
+        return std::make_unique<BorrowType>(exprType, false);
+    }
+    if (op == "&mut") {
+        return std::make_unique<BorrowType>(exprType, true);
+    }
+    return exprType;
 }

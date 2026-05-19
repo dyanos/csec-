@@ -1,0 +1,14 @@
+def decay(t: Double, y: Double): Double {
+    return 0.0 - y;
+}
+
+def main(): Int {
+    val initial: Double = 1.0;
+    val finalValue = ode euler decay from (0.0, initial) step 0.01 steps 100;
+
+    if (finalValue < initial) {
+        return 0;
+    }
+
+    return 1;
+}

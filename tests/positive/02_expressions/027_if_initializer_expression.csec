@@ -1,0 +1,10 @@
+def main(): Int {
+    var value = if (true) {
+        10;
+    }
+    else {
+        20;
+    };
+
+    return value;
+}

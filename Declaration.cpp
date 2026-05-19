@@ -3,7 +3,7 @@
 
 std::unique_ptr<ASTNode> Parser::parseAnnotationStatement() {
 	if (match(TokenType::OPERATOR, "[@")) {
-		if (check(TokenType::IDENTIFIER)) {
+		if (check(TokenType::IDENTIFIER) || check(TokenType::KEYWORD)) {
 			auto simpleExpr = parseAnnotationExpression();
 			match(TokenType::OPERATOR, "]");
 			auto attributeNode = std::make_unique<AttributeNode>();
@@ -23,7 +23,7 @@ std::unique_ptr<ASTNode> Parser::parseImportStatement() {
 	std::vector<std::string> pathComponents;
 
 	do {
-		if (match(TokenType::IDENTIFIER)) {
+		if (matchIdentifierName()) {
 			pathComponents.push_back(previous().value);
 		}
 		else {
@@ -38,7 +38,7 @@ std::unique_ptr<ASTNode> Parser::parseImportStatement() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseClassDeclaration(bool isExternal) {
-	if (match(TokenType::IDENTIFIER)) {
+	if (matchIdentifierName()) {
 		std::string className = previous().value;
 
 		std::vector<std::unique_ptr<ParameterNode>> constructorParams;
@@ -77,12 +77,14 @@ std::unique_ptr<ASTNode> Parser::parseClassDeclaration(bool isExternal) {
 }
 
 std::unique_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool isMutable) {
-	if (match(TokenType::IDENTIFIER)) {
+	if (matchIdentifierName()) {
 		std::string varName = previous().value;
 		std::unique_ptr<Type> varType;
 		std::unique_ptr<ASTNode> initializer;
+		bool hasExplicitType = false;
 
 		if (match(TokenType::OPERATOR, ":")) {
+			hasExplicitType = true;
 			varType = parseType();
 		}
 		else {
@@ -90,12 +92,7 @@ std::unique_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 		}
 
 		if (match(TokenType::OPERATOR, "=")) {
-			if (match(TokenType::KEYWORD, "if")) {
-				initializer = parseIfStatement();
-			}
-			else {
-				initializer = parseSimpleExpression();
-			}
+			initializer = parseExpression();
 		}
 		else {
 			error("Expected '=' in variable declaration");
@@ -118,6 +115,7 @@ std::unique_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 		varDecl->type = std::move(varType);
 		varDecl->initializer = std::move(initializer);
 		varDecl->isMutable = isMutable;
+		varDecl->hasExplicitType = hasExplicitType;
 
 		return varDecl;
 	}
@@ -162,7 +160,7 @@ std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration(bool i
 }
 
 std::unique_ptr<ASTNode> Parser::parseObjectDeclaration(bool isExternal) {
-	if (match(TokenType::IDENTIFIER)) {
+	if (matchIdentifierName()) {
 		std::string objectName = previous().value;
 		std::unique_ptr<ASTNode> body = nullptr;
 		if (isExternal == false) {
@@ -170,9 +168,14 @@ std::unique_ptr<ASTNode> Parser::parseObjectDeclaration(bool isExternal) {
 				body = parseBlock();
 			}
 			else if (match(TokenType::OPERATOR, "=")) {
-				auto expr = parseExpression();
 				auto blockNode = std::make_unique<BlockNode>();
-				blockNode->statements.push_back(std::move(expr));
+				if (match(TokenType::OPERATOR, "{")) {
+					blockNode = parseBlock();
+				}
+				else {
+					auto expr = parseExpression();
+					blockNode->statements.push_back(std::move(expr));
+				}
 				body = std::move(blockNode);
 			}
 			else {

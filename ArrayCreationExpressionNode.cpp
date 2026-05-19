@@ -58,5 +58,8 @@ llvm::Value* ArrayCreationExpressionNode::codegen() {
 }
 
 std::unique_ptr<Type> ArrayCreationExpressionNode::getType() {
-    return std::make_unique<ClassType>(typeName);
+    std::vector<std::unique_ptr<Type>> typeArgs;
+    typeArgs.push_back(std::make_unique<BasicType>(typeName));
+    std::unique_ptr<Type> baseType = std::make_unique<ClassType>("Array");
+    return std::make_unique<GenericType>(baseType, typeArgs);
 }

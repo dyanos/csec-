@@ -1,0 +1,25 @@
+def main(): Int {
+    val data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+    /* map: double each */
+    map (x <- data) {
+        x * 2;
+    }
+
+    /* pmap: square each */
+    pmap (x <- data) {
+        x * x;
+    }
+
+    /* filter: keep evens */
+    filter (x <- data) {
+        x > 5;
+    }
+
+    /* reduce: sum */
+    reduce (x <- data, 0) {
+        x + 1;
+    }
+
+    return 0;
+}

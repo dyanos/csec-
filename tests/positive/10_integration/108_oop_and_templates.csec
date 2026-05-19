@@ -1,0 +1,57 @@
+/* Combining OOP features with templates */
+
+class Animal(name: String, age: Int) {
+    def getName(): String = name
+    def getAge(): Int = age
+}
+
+class Dog(name: String, age: Int, breed: String) extends Animal {
+    def getBreed(): String = breed
+    def bark(): Int = 1
+}
+
+template<typename T>
+class Cage(animal: T) {
+    val occupied: Boolean = true;
+
+    def isOccupied(): Boolean = occupied
+}
+
+template<typename T, Int CAPACITY>
+class Kennel(name: String) {
+    var count: Int = 0;
+
+    def getCapacity(): Int = CAPACITY
+
+    def getCount(): Int = count
+
+    def add(): Int {
+        if (count < CAPACITY) {
+            count = count + 1;
+        }
+        return count;
+    }
+}
+
+object Shelter {
+    val totalAnimals: Int = 0;
+
+    def report(): Int = totalAnimals
+}
+
+def main(): Int {
+    val dog = new Dog("Rex", 3, "Labrador");
+    val age = dog.getAge();
+    val bark = dog.bark();
+
+    val kennel = new Kennel<Dog, 10>("Main");
+    kennel.add();
+    kennel.add();
+    kennel.add();
+    val count = kennel.getCount();
+    val cap = kennel.getCapacity();
+
+    val report = Shelter.report();
+
+    return age + bark + count + cap + report;
+}

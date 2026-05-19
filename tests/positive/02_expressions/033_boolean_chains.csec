@@ -1,0 +1,27 @@
+def main(): Int {
+    val a = true;
+    val b = false;
+    val c = true;
+
+    val r1 = a and b;
+    val r2 = a or b;
+    val r3 = a xor b;
+    val r4 = a and b or c;
+    val r5 = (a or b) and (b or c);
+    val r6 = a and b and c;
+    val r7 = a or b or c;
+    val r8 = (a xor b) and (b xor c);
+
+    val x: Int = 10;
+    val y: Int = 20;
+    val z: Int = 30;
+
+    val cmp1 = x < y;
+    val cmp2 = y <= z;
+    val cmp3 = x != z;
+    val cmp4 = x == 10;
+    val cmp5 = x < y and y < z;
+    val cmp6 = x >= 0 or z <= 100;
+
+    return 0;
+}

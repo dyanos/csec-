@@ -26,7 +26,14 @@ public:
     llvm::Value* codegen() override;
 
     std::unique_ptr<Type> getType() override {
-        return std::make_unique<UnknownType>();
+        if (type) {
+            return type->clone();
+        }
+        if (!expression) {
+            return std::make_unique<BasicType>("Unit");
+        }
+        auto exprType = expression->getType();
+        return exprType ? exprType->clone() : std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {
         return std::make_unique<ReturnStatementNode>(*this);

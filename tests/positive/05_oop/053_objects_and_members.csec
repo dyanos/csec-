@@ -1,0 +1,16 @@
+object Logger {
+    def info(x: Int): Int = x
+}
+
+class Service(id: Int) {
+    val version: Int = 1;
+
+    def run(x: Int): Int {
+        return Logger.info(id + x + version);
+    }
+}
+
+def main(): Int {
+    val service = new Service(10);
+    return service.run(5);
+}

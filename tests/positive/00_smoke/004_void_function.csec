@@ -1,0 +1,9 @@
+def greet(): Void {
+    val msg = "hello";
+}
+
+def noop(): Unit {
+    return;
+}
+
+def main(): Int = 0

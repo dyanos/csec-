@@ -1,0 +1,9 @@
+def main(): Int {
+    val xs = [10, 20, 30, 40, 50];
+    val ys = [[1, 2], [3, 4]];
+    val zs = [[[1]]];
+    val empty = new Int[0];
+    val single = [42];
+
+    return 0;
+}

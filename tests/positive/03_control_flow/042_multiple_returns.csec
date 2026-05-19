@@ -1,0 +1,36 @@
+def classify(n: Int): Int {
+    if (n < 0) {
+        return 0 - 1;
+    }
+    if (n == 0) {
+        return 0;
+    }
+    if (n < 10) {
+        return 1;
+    }
+    if (n < 100) {
+        return 2;
+    }
+    return 3;
+}
+
+def search(target: Int): Int {
+    var i: Int = 0;
+    while (i < 100) {
+        if (i == target) {
+            return i;
+        }
+        i = i + 1;
+    }
+    return 0 - 1;
+}
+
+def main(): Int {
+    val a = classify(0 - 5);
+    val b = classify(0);
+    val c = classify(5);
+    val d = classify(50);
+    val e = classify(500);
+    val f = search(42);
+    return a + b + c + d + e + f;
+}

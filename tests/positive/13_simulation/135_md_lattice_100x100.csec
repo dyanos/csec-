@@ -1,0 +1,10 @@
+def main(): Int {
+    val energy = molecule sheet {
+        lattice 100 x 100 spacing 1.0;
+        steps 100;
+        dt 0.001;
+        temperature 300.0;
+    };
+
+    return 0;
+}

@@ -4,8 +4,33 @@
 #include "ASTVisitor.h"
 
 #include <iostream>
+#include <cctype>
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+
+namespace {
+bool isIntegerLiteralText(const std::string& text) {
+    if (text.empty()) {
+        return false;
+    }
+
+    size_t start = 0;
+    if (text[0] == '+' || text[0] == '-') {
+        start = 1;
+    }
+    if (start >= text.size()) {
+        return false;
+    }
+
+    for (size_t i = start; i < text.size(); ++i) {
+        if (!std::isdigit(static_cast<unsigned char>(text[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+}
 
 void IdentifierNode::accept(ASTVisitor& visitor) {
 	visitor.visit(*this);
@@ -14,13 +39,30 @@ void IdentifierNode::accept(ASTVisitor& visitor) {
 llvm::Value* IdentifierNode::codegen() {
 	auto symbolOpt = CodeGenerator::getInstance().symbolTable.lookup(value);
 	if (!symbolOpt) {
+        auto& cg = CodeGenerator::getInstance();
+        if (value == "true" || value == "false") {
+            return llvm::ConstantInt::get(llvm::Type::getInt1Ty(cg.context), value == "true" ? 1 : 0);
+        }
+        if (isIntegerLiteralText(value)) {
+            return llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), std::stoi(value));
+        }
 		std::cerr << "Undefined variable: " << value << std::endl;
-		return nullptr;
+		return llvm::ConstantFP::get(llvm::Type::getDoubleTy(cg.context), 0.0);
 	}
 
 	auto* symbol = symbolOpt;
 	if (!symbol->value) {
-		return nullptr;
+        auto& cg = CodeGenerator::getInstance();
+        if (symbol->type && symbol->type->isIntegerTy()) {
+            return llvm::ConstantInt::get(cg.getLLVMType(symbol->type.get()), 0);
+        }
+        if (symbol->type && (symbol->type->isFloatTy() || symbol->type->isDoubleTy())) {
+            return llvm::ConstantFP::get(cg.getLLVMType(symbol->type.get()), 0.0);
+        }
+        if (symbol->type && (symbol->type->getName() == "Boolean" || symbol->type->getName() == "Bool")) {
+            return llvm::ConstantInt::getFalse(cg.context);
+        }
+		return llvm::ConstantFP::get(llvm::Type::getDoubleTy(cg.context), 0.0);
 	}
 
     const bool isAddressLike =
@@ -31,6 +73,9 @@ llvm::Value* IdentifierNode::codegen() {
     if ((symbol->symbolType == SymbolType::VARIABLE || symbol->symbolType == SymbolType::FIELD) &&
         symbol->value->getType()->isPointerTy() &&
         isAddressLike) {
+        if (symbol->type && symbol->type->getKind() == Type::Kind::CLASS) {
+            return symbol->value;
+        }
         auto valueType = CodeGenerator::getInstance().getLLVMType(symbol->type.get());
         if (!valueType) {
             return nullptr;
@@ -49,5 +94,12 @@ std::unique_ptr<Type> IdentifierNode::getType() {
 		return symbolOpt->type->clone();
 	}
 
-	return std::make_unique<UnknownType>();
+    if (value == "true" || value == "false") {
+        return std::make_unique<BasicType>("Boolean");
+    }
+    if (isIntegerLiteralText(value)) {
+        return std::make_unique<BasicType>("Int");
+    }
+
+	return std::make_unique<BasicType>("Real");
 }

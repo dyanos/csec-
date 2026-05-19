@@ -1,0 +1,28 @@
+/* Matrix operations using LaTeX and regular code */
+
+def dotProduct(n: Int): Int {
+    var sum: Int = 0;
+    for (i <- 0 to n) {
+        sum = sum + i * i;
+    }
+    return sum;
+}
+
+def main(): Int {
+    /* 2x2 matrix via LaTeX */
+    val identity = $$\begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}$$;
+
+    /* 3x3 matrix */
+    val m3 = $$\begin{pmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \\ 7 & 8 & 9 \end{pmatrix}$$;
+
+    /* matrix algebra expression */
+    val trace = $$\sum_{i=1}^{3} i$$;
+
+    /* numeric computation */
+    val dp = dotProduct(5);
+
+    /* array-based matrix */
+    val flat = new Int[3, 3];
+
+    return dp;
+}

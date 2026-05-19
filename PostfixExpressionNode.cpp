@@ -130,35 +130,8 @@ llvm::Value* PostfixExpressionNode::codegen() {
 }
 
 std::unique_ptr<Type> PostfixExpressionNode::getType() {
-    auto res = this->codegen();
-    if (res->getType()->isVoidTy()) {
-        return std::make_unique<BasicType>("Void");
-    }
-    else if (res->getType()->isStructTy()) {
-        return std::make_unique<ClassType>(res->getType()->getStructName().str());
-    }
-    else if (res->getType()->isIntegerTy(1)) {
-        return std::make_unique<BasicType>("Bool");
-    }
-    else if (res->getType()->isIntegerTy(8)) {
-        return std::make_unique<BasicType>("Byte");
-    }
-    else if (res->getType()->isIntegerTy(16)) {
-        return std::make_unique<BasicType>("Short");
-    }
-    else if (res->getType()->isIntegerTy(32)) {
-        return std::make_unique<BasicType>("Int");
-    }
-    else if (res->getType()->isIntegerTy(64)) {
-        return std::make_unique<BasicType>("Long");
-    }
-    else if (res->getType()->isFloatTy()) {
-        return std::make_unique<BasicType>("Float");
-    }
-    else if (res->getType()->isDoubleTy()) {
-        return std::make_unique<BasicType>("Double");
-    }
-    else {
+    if (!expression) {
         return std::make_unique<UnknownType>();
     }
+    return expression->getType();
 }

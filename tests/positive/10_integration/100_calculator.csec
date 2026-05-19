@@ -1,0 +1,52 @@
+object Calculator {
+    def add(a: Int, b: Int): Int = a + b
+    def sub(a: Int, b: Int): Int = a - b
+    def mul(a: Int, b: Int): Int = a * b
+
+    def div(a: Int, b: Int): Int {
+        if (b == 0) {
+            return 0;
+        }
+        return a / b;
+    }
+
+    def mod(a: Int, b: Int): Int {
+        if (b == 0) {
+            return 0;
+        }
+        return a % b;
+    }
+
+    def abs(x: Int): Int {
+        if (x < 0) {
+            return 0 - x;
+        }
+        return x;
+    }
+
+    def max(a: Int, b: Int): Int {
+        if (a > b) {
+            return a;
+        }
+        return b;
+    }
+
+    def min(a: Int, b: Int): Int {
+        if (a < b) {
+            return a;
+        }
+        return b;
+    }
+}
+
+def main(): Int {
+    val a = Calculator.add(10, 20);
+    val b = Calculator.sub(50, 30);
+    val c = Calculator.mul(3, 4);
+    val d = Calculator.div(100, 5);
+    val e = Calculator.mod(17, 5);
+    val f = Calculator.abs(0 - 42);
+    val g = Calculator.max(a, b);
+    val h = Calculator.min(c, d);
+    return a + b + c + d + e + f + g + h;
+}

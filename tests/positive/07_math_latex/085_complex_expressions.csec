@@ -1,0 +1,18 @@
+def main(): Int {
+    /* nested fractions */
+    val nested = $$\frac{\frac{1}{2} + \frac{1}{3}}{\frac{1}{4}}$$;
+
+    /* sum with complex body */
+    val complexSum = $$\sum_{i=1}^{n} \frac{i^{2}}{i + 1}$$;
+
+    /* combined trig */
+    val trigExpr = $\sin(\frac{\pi}{4})$;
+
+    /* sqrt of sum */
+    val rootSum = $\sqrt{\alpha^{2} + \beta^{2} + \gamma^{2}}$;
+
+    /* mixed operators */
+    val mixed = $$\alpha \times \beta + \gamma \div \delta$$;
+
+    return 0;
+}

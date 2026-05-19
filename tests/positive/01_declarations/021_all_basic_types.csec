@@ -1,0 +1,13 @@
+def main(): Int {
+    val a: Int = 42;
+    val b: Float = 3.14;
+    val c: Double = 2.718;
+    val d: Long = 1000000;
+    val e: Short = 100;
+    val f: Byte = 8;
+    val g: Boolean = true;
+    val h: Bool = false;
+    val i: Char = 'A';
+    val j: String = "hello world";
+    return a;
+}

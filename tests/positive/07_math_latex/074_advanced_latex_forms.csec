@@ -1,0 +1,6 @@
+def main(): Int {
+    val bounded = $$\left( \frac{a+b}{c} \right)$$;
+    val rooted = $$\sqrt{\alpha + \beta}$$;
+    val matrix = $$\begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}$$;
+    return 0;
+}

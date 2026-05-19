@@ -1,0 +1,15 @@
+def main(): Int {
+    val s = $\sin(x)$;
+    val c = $\cos(x)$;
+    val t = $\tan(x)$;
+    val as = $\arcsin(x)$;
+    val ac = $\arccos(x)$;
+    val at = $\arctan(x)$;
+    val sh = $\sinh(x)$;
+    val ch = $\cosh(x)$;
+    val th = $\tanh(x)$;
+    val ct = $\cot(x)$;
+    val sc = $\sec(x)$;
+    val cs = $\csc(x)$;
+    return 0;
+}

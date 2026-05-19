@@ -1,0 +1,19 @@
+def main(): Int {
+    var i: Int = 0;
+    var j: Int = 100;
+
+    while (i < 10 and j > 50) {
+        i = i + 1;
+        j = j - 5;
+    }
+
+    var x: Int = 0;
+    while (x < 100) {
+        x = x + 1;
+        if (x == 50) {
+            return x;
+        }
+    }
+
+    return i + j;
+}

@@ -1,0 +1,25 @@
+template<typename A, typename B>
+class Pair(first: A, second: B) {
+    def getFirst(): A = first
+    def getSecond(): B = second
+}
+
+template<typename A, typename B, typename C>
+class Triple(first: A, second: B, third: C) {
+    def getFirst(): A = first
+    def getSecond(): B = second
+    def getThird(): C = third
+}
+
+def main(): Int {
+    val p1 = new Pair<Int, Int>(1, 2);
+    val p2 = new Pair<Int, String>(42, "hello");
+    val p3 = new Pair<String, Boolean>("test", true);
+
+    val t1 = new Triple<Int, Int, Int>(1, 2, 3);
+    val t2 = new Triple<Int, Float, Double>(1, 2.0, 3.0);
+
+    val a = p1.getFirst();
+    val b = p1.getSecond();
+    return a + b;
+}

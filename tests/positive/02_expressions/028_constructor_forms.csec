@@ -1,0 +1,14 @@
+class Empty() {
+    def value(): Int = 1
+}
+
+class Holder(x: Int) {
+    def get(): Int = x
+}
+
+def main(): Int {
+    val a = new Empty;
+    val b = new Empty();
+    val c = new Holder(4);
+    return 0;
+}

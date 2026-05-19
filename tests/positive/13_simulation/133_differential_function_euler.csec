@@ -1,0 +1,28 @@
+def eulerSolve(f: (Double, Double) => Double, t0: Double, y0: Double, h: Double, n: Int): Double {
+    var t: Double = t0;
+    var y: Double = y0;
+    var i: Int = 0;
+
+    while (i < n) {
+        y = y + h * f(t, y);
+        t = t + h;
+        i = i + 1;
+    }
+
+    return y;
+}
+
+def decay(t: Double, y: Double): Double {
+    return 0.0 - y;
+}
+
+def main(): Int {
+    val initial: Double = 1.0;
+    val finalValue = eulerSolve(decay, 0.0, initial, 0.01, 100);
+
+    if (finalValue < initial) {
+        return 0;
+    }
+
+    return 1;
+}

@@ -1,0 +1,12 @@
+object Constants {
+    val answer: Int = 42;
+
+    def value(): Int = answer
+}
+
+object Singleton = {
+    val base: Int = 10;
+    return base;
+}
+
+def main(): Int = Constants.value()

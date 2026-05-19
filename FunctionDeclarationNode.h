@@ -35,6 +35,7 @@ public:
         body = other.body ? std::make_unique<BlockNode>(*other.body) : nullptr;
         isExternal = other.isExternal;
         isConstexpr = other.isConstexpr;
+        isUnsafe = other.isUnsafe;
     }
     FunctionDeclarationNode& operator=(const FunctionDeclarationNode& other) {
         if (this != &other) {
@@ -49,12 +50,14 @@ public:
             body = other.body ? std::make_unique<BlockNode>(*other.body) : nullptr;
             isExternal = other.isExternal;
             isConstexpr = other.isConstexpr;
+            isUnsafe = other.isUnsafe;
         }
         return *this;
     }
 
     bool isExternal = false;
     bool isConstexpr = false;
+    bool isUnsafe = false;
 
     std::string name;
     std::vector<std::unique_ptr<ASTNode>> parameters;
@@ -76,4 +79,3 @@ public:
         return std::make_unique<FunctionDeclarationNode>(*this);
     }
 };
-

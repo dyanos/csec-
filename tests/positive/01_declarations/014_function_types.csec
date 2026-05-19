@@ -1,0 +1,5 @@
+def applyTwice(f: (Int) => Int, value: Int): Int {
+    return f(value);
+}
+
+def main(): Int = 0

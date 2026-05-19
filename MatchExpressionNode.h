@@ -42,6 +42,19 @@ public:
     llvm::Value* codegen() override;
 
     std::unique_ptr<Type> getType() override {
+        if (type) {
+            return type->clone();
+        }
+
+        for (const auto& casePair : cases) {
+            if (casePair.second) {
+                auto caseType = casePair.second->getType();
+                if (caseType) {
+                    return caseType->clone();
+                }
+            }
+        }
+
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {

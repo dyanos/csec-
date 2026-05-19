@@ -1,0 +1,40 @@
+class Shape(name: String) {
+    def getName(): String = name
+    def area(): Int = 0
+}
+
+class Rectangle(name: String, width: Int, height: Int) extends Shape {
+    def area(): Int = width * height
+    def perimeter(): Int = 2 * (width + height)
+}
+
+class Square(name: String, side: Int) extends Rectangle {
+    def getSide(): Int = side
+}
+
+class Circle(name: String, radius: Int) extends Shape {
+    def area(): Int = radius * radius * 3
+    def circumference(): Int = 2 * radius * 3
+}
+
+object ShapeFactory {
+    def createRectangle(w: Int, h: Int): Int = w * h
+    def createSquare(s: Int): Int = s * s
+    def createCircle(r: Int): Int = r * r * 3
+}
+
+def main(): Int {
+    val rect = new Rectangle("rect", 10, 20);
+    val sq = new Square("sq", 5);
+    val circ = new Circle("circ", 7);
+
+    val a1 = rect.area();
+    val a2 = circ.area();
+    val p = rect.perimeter();
+
+    val f1 = ShapeFactory.createRectangle(3, 4);
+    val f2 = ShapeFactory.createSquare(5);
+    val f3 = ShapeFactory.createCircle(10);
+
+    return a1 + a2 + p + f1 + f2 + f3;
+}

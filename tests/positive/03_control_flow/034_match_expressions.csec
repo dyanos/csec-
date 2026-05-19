@@ -1,0 +1,9 @@
+def score(n: Int): Int =
+    n match {
+        case 0 => 100
+        case 1 => 10
+        case 2 => 1
+        case _ => 0
+    }
+
+def main(): Int = score(1)

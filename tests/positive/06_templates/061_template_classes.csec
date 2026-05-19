@@ -1,0 +1,16 @@
+template<typename T>
+class Box(value: T) {
+    def get(): T = value
+}
+
+template<typename T, typename U>
+class Pair(first: T, second: U) {
+    def left(): T = first
+    def right(): U = second
+}
+
+def main(): Int {
+    val box = new Box<Int>(10);
+    val pair = new Pair<Int, Int>(1, 2);
+    return 0;
+}

@@ -1,0 +1,30 @@
+def main(): Int {
+    /* simple identity lambda */
+    val id = [=](x) -> {
+        return x;
+    };
+
+    /* constant lambda */
+    val always42 = [=](x) -> {
+        return 42;
+    };
+
+    /* multi-statement lambda */
+    val compute = [=](x) -> {
+        val doubled = x + x;
+        val incremented = doubled + 1;
+        return incremented;
+    };
+
+    /* lambda with conditionals */
+    val classify = [=](x) -> {
+        if (x > 0) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    };
+
+    return 0;
+}

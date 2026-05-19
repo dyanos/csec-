@@ -1,0 +1,16 @@
+class Base(value: Int) {
+    def current(): Int {
+        return this.value;
+    }
+}
+
+class Child(value: Int) extends Base {
+    def inherited(): Int {
+        return super.current();
+    }
+}
+
+def main(): Int {
+    val child = new Child(1);
+    return child.inherited();
+}

@@ -1,0 +1,11 @@
+def main(): Int {
+    val reals = $$\mathbb{R}$$;
+    val complex = $$\mathbb{C}$$;
+    val naturals = $$\mathbb{N}$$;
+    val integers = $$\mathbb{Z}$$;
+    val rationals = $$\mathbb{Q}$$;
+    val quaternions = $$\mathbb{H}$$;
+    val field = $$\mathbb{F}$$;
+    val primes = $$\mathbb{P}$$;
+    return 0;
+}

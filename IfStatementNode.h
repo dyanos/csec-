@@ -50,6 +50,19 @@ public:
     llvm::Value* codegen() override;
 
     std::unique_ptr<Type> getType() override {
+        if (type) {
+            return type->clone();
+        }
+        if (thenBlock && thenBlock->getType()) {
+            auto thenType = thenBlock->getType();
+            if (elseBlock) {
+                auto elseType = elseBlock->getType();
+                if (thenType && elseType && thenType->equals(elseType)) {
+                    return thenType->clone();
+                }
+            }
+            return thenType ? thenType->clone() : std::make_unique<UnknownType>();
+        }
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {

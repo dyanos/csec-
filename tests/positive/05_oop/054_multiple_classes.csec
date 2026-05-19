@@ -1,0 +1,29 @@
+class Vector2(x: Int, y: Int) {
+    def magnitude(): Int = x * x + y * y
+}
+
+class Vector3(x: Int, y: Int, z: Int) {
+    def magnitude(): Int = x * x + y * y + z * z
+}
+
+class Color(r: Int, g: Int, b: Int) {
+    def brightness(): Int = r + g + b
+}
+
+class Rectangle(w: Int, h: Int) {
+    def area(): Int = w * h
+    def perimeter(): Int = 2 * (w + h)
+}
+
+class Circle(radius: Int) {
+    def diameter(): Int = radius * 2
+}
+
+def main(): Int {
+    val v2 = new Vector2(3, 4);
+    val v3 = new Vector3(1, 2, 3);
+    val c = new Color(255, 128, 0);
+    val r = new Rectangle(10, 20);
+    val ci = new Circle(5);
+    return 0;
+}

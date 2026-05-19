@@ -1,0 +1,8 @@
+class ListNode(value: Int) {
+    var next: ListNode = new ListNode(0);
+    def get(): Int = value
+}
+
+def consume(xs: Vector[Int], ys: Matrix[Double], f: (Int, Int) => Int): Int = 0
+
+def main(): Int = 0

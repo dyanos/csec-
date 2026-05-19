@@ -1,0 +1,9 @@
+def main(): Int {
+    val tensor = [
+        [[1, 2], [3, 4]],
+        [[5, 6], [7, 8]]
+    ];
+
+    val shape = new Int[2, 2, 2];
+    return 0;
+}

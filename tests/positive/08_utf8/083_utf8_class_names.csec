@@ -1,0 +1,15 @@
+class 점(x좌표: Int, y좌표: Int) {
+    def 거리(): Int = x좌표 * x좌표 + y좌표 * y좌표
+}
+
+object 수학도구 {
+    def 더하기(a: Int, b: Int): Int = a + b
+    def 곱하기(a: Int, b: Int): Int = a * b
+}
+
+def main(): Int {
+    val p = new 점(3, 4);
+    val d = p.거리();
+    val s = 수학도구.더하기(10, 20);
+    return d + s;
+}

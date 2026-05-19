@@ -1,0 +1,10 @@
+class Image() {
+    def id(): Int = 0
+}
+
+def main(): Int {
+    var img: box Image = new Image();
+    var ref: &box Image = &img;
+    var mutRef: &mut box Image = &mut img;
+    return 0;
+}

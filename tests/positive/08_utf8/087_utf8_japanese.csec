@@ -1,0 +1,17 @@
+def 合計(開始: Int, 終了: Int): Int {
+    var 結果: Int = 0;
+    for (数 <- 開始 to 終了) {
+        結果 = 結果 + 数;
+    }
+    return 結果;
+}
+
+class 点(x座標: Int, y座標: Int) {
+    def 距離(): Int = x座標 + y座標
+}
+
+def main(): Int {
+    val 結果 = 合計(1, 10);
+    val 座標 = new 点(3, 4);
+    return 結果 + 座標.距離();
+}

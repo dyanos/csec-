@@ -11,6 +11,39 @@
 
 #include <iostream>
 
+namespace {
+llvm::Value* coerceRangeBound(llvm::Value* value, llvm::Type* targetType) {
+    if (!value || !targetType) {
+        return value;
+    }
+
+    auto& cg = CodeGenerator::getInstance();
+    llvm::Type* sourceType = value->getType();
+    if (sourceType == targetType) {
+        return value;
+    }
+
+    if (sourceType->isIntegerTy() && targetType->isIntegerTy()) {
+        unsigned srcBits = sourceType->getIntegerBitWidth();
+        unsigned dstBits = targetType->getIntegerBitWidth();
+        if (srcBits < dstBits) {
+            return cg.builder.CreateSExt(value, targetType, "range.sext");
+        }
+        return cg.builder.CreateTrunc(value, targetType, "range.trunc");
+    }
+
+    if (sourceType->isFloatingPointTy() && targetType->isIntegerTy()) {
+        return cg.builder.CreateFPToSI(value, targetType, "range.fptosi");
+    }
+
+    if (sourceType->isIntegerTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateSIToFP(value, targetType, "range.sitofp");
+    }
+
+    return value;
+}
+}
+
 
 // ForStatementNode
 void ForStatementNode::accept(ASTVisitor& visitor) {
@@ -43,11 +76,17 @@ llvm::Value* ForStatementNode::codegen() {
             return nullptr;
         }
 
+        llvm::Type* rangeValueType = startValue->getType()->isIntegerTy()
+            ? startValue->getType()
+            : llvm::Type::getInt32Ty(cg.context);
+        startValue = coerceRangeBound(startValue, rangeValueType);
+        endValue = coerceRangeBound(endValue, rangeValueType);
+
         if (!rangeExpr->isInclusive) {
-            endValue = cg.builder.CreateSub(endValue, llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), 1), "untilEnd");
+            endValue = cg.builder.CreateSub(endValue, llvm::ConstantInt::get(rangeValueType, 1, true), "untilEnd");
         }
 
-        value_ptr = cg.builder.CreateAlloca(startValue->getType(), nullptr, this->variable + "_ptr");
+        value_ptr = cg.builder.CreateAlloca(rangeValueType, nullptr, this->variable + "_ptr");
         cg.builder.CreateStore(startValue, value_ptr);
 
         auto rangeType = rangeExpr->startExpr->getType();
@@ -77,7 +116,7 @@ llvm::Value* ForStatementNode::codegen() {
     // Condition block: check i <= endValue before each iteration
     cg.builder.SetInsertPoint(condBB);
     auto* condValue = cg.builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
-    if (!condValue->getType()->isIntegerTy() || condValue->getType() != endValue->getType()) {
+    if (!condValue->getType()->isIntegerTy()) {
         std::cerr << "Type error: range bounds in for-loop must be the same integer type" << std::endl;
         cg.symbolTable.exitScope();
         return nullptr;

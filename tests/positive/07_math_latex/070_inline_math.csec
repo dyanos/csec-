@@ -1,0 +1,7 @@
+def main(): Int {
+    val a = $x + y$;
+    val b = $\sin(x)$;
+    val c = $\sqrt{a + b}$;
+    val d = $\frac{1}{2}$;
+    return 0;
+}

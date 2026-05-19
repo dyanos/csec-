@@ -1,0 +1,4 @@
+def main(): Int {
+    val x: Int = ;
+    return x;
+}

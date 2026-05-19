@@ -60,8 +60,12 @@ void Lexer::initializeKeywords() {
         "import", "lazy", "match", "new", "null", "object", "override",
         "package", "private", "protected", "return", "sealed", "super",
         "this", "throw", "trait", "try", "true", "type", "val", "var",
-		"while", "with", "yield", "to", "map", "pmap", "reduce", "filter", "external", "inline", "constexpr",
-		"template", "typename"
+		"while", "with", "yield", "to", "until", "and", "or", "xor", "map", "pmap", "reduce", "filter", "external", "inline", "constexpr",
+		"template", "typename", "mut", "box", "unsafe", "unatomic",
+        "molecule", "atom", "bond", "at", "steps", "dt", "temperature",
+        "cfd", "grid", "viscosity", "velocity",
+        "ode", "euler", "from", "step", "lattice", "spacing",
+        "protein", "chain", "mcmc"
     };
     keywords.insert(kws, kws + sizeof(kws) / sizeof(kws[0]));
 }
@@ -70,7 +74,7 @@ void Lexer::initializeOperators() {
     std::string ops[] = {
 		"=", "==", "!=", "+", "-", "*", "/", "%", "$", "$$", "\\", "<", ">", "<=", ">=", "<<", ">>",
 		"!", "&", "|", "^", "~", ":", ".", ",", ";", "(", ")", "{", "}", "[", "]", "[@", "<-", "->",
-		"++", "--", "_", "=>", "<:", "<%", ">:", "#", "@"
+		"++", "--", "+=", "-=", "*=", "/=", "%=", "_", "=>", "<:", "<%", ">:", "#", "@"
     };
     operators.insert(ops, ops + sizeof(ops) / sizeof(ops[0]));
 }
@@ -254,24 +258,49 @@ bool Lexer::matchNumberLiteral(std::vector<Token>& tokens) {
             tokens.push_back(Token{ TokenType::OCTAL_LITERAL, value, line, column });
 		}
 		else if (peek() == 'e' || peek() == 'E') {
+            size_t savedPosition = position;
+            int savedColumn = column;
 			advance();
 			if (peek() == '+' || peek() == '-') {
 				advance();
 			}
+            bool hasExponentDigits = false;
 			while (std::isdigit(static_cast<unsigned char>(peek()))) {
+                hasExponentDigits = true;
 				advance();
 			}
 
-            std::string value = source.substr(start, position - start);
-			tokens.push_back(Token{ TokenType::EXPONENTIAL_LITERAL, value, line, column });
+            if (hasExponentDigits) {
+                std::string value = source.substr(start, position - start);
+			    tokens.push_back(Token{ TokenType::EXPONENTIAL_LITERAL, value, line, column });
+            }
+            else {
+                position = savedPosition;
+                column = savedColumn;
+                std::string intLiteral = source.substr(start, position - start);
+                tokens.push_back(Token{ TokenType::INTEGER_LITERAL, intLiteral, line, column });
+            }
 		}
         else if (peek() == '.') {
             advance();
             while (std::isdigit(static_cast<unsigned char>(peek()))) {
                 advance();
             }
-            std::string floatLiteral = source.substr(start, position - start);
-            tokens.push_back(Token{ TokenType::FLOAT_LITERAL, floatLiteral, line, column });
+            if (peek() == 'e' || peek() == 'E') {
+                advance();
+                if (peek() == '+' || peek() == '-') {
+                    advance();
+                }
+                while (std::isdigit(static_cast<unsigned char>(peek()))) {
+                    advance();
+                }
+                std::string expLiteral = source.substr(start, position - start);
+                tokens.push_back(Token{ TokenType::EXPONENTIAL_LITERAL, expLiteral, line, column });
+            }
+            else {
+                std::string floatLiteral = source.substr(start, position - start);
+                tokens.push_back(Token{ TokenType::FLOAT_LITERAL, floatLiteral, line, column });
+            }
         }
         else {
             std::string intLiteral = source.substr(start, position - start);

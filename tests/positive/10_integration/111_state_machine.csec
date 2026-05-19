@@ -1,0 +1,43 @@
+/* Simple state machine pattern */
+
+constexpr val STATE_IDLE: Int = 0;
+constexpr val STATE_RUNNING: Int = 1;
+constexpr val STATE_PAUSED: Int = 2;
+constexpr val STATE_STOPPED: Int = 3;
+
+class StateMachine(initialState: Int) {
+    var state: Int = 0;
+
+    def getState(): Int = state
+
+    def transition(event: Int): Int {
+        val next = state match {
+            case 0 => event match {
+                case 1 => 1
+                case _ => 0
+            }
+            case 1 => event match {
+                case 2 => 2
+                case 3 => 3
+                case _ => 1
+            }
+            case 2 => event match {
+                case 1 => 1
+                case 3 => 3
+                case _ => 2
+            }
+            case _ => 3
+        };
+        state = next;
+        return state;
+    }
+}
+
+def main(): Int {
+    val sm = new StateMachine(0);
+    sm.transition(1);
+    sm.transition(2);
+    sm.transition(1);
+    sm.transition(3);
+    return sm.getState();
+}

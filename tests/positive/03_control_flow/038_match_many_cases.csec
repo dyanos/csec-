@@ -1,0 +1,26 @@
+def dayName(d: Int): Int =
+    d match {
+        case 0 => 0
+        case 1 => 10
+        case 2 => 20
+        case 3 => 30
+        case 4 => 40
+        case 5 => 50
+        case 6 => 60
+        case _ => 99
+    }
+
+def grade(score: Int): Int =
+    score match {
+        case 100 => 4
+        case 90 => 3
+        case 80 => 2
+        case 70 => 1
+        case _ => 0
+    }
+
+def main(): Int {
+    val a = dayName(3);
+    val b = grade(90);
+    return a + b;
+}

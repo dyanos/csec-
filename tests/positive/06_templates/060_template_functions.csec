@@ -1,0 +1,11 @@
+template<typename T>
+def identity(x: T): T = x
+
+template<typename T, Int N>
+def capacity(): Int = N
+
+def main(): Int {
+    val a = identity<Int>(42);
+    val b = capacity<Int, 8>();
+    return a + b;
+}

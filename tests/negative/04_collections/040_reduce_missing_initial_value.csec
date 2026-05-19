@@ -1,0 +1,7 @@
+def main(): Int {
+    val xs = [1, 2, 3];
+    reduce (x <- xs) {
+        x;
+    }
+    return 0;
+}

@@ -1,0 +1,14 @@
+def main(): Int {
+    val a = $\pi$;
+    val b = $\e$;
+    val c = $\i$;
+    val d = $\phi$;
+    val e = $\infty$;
+    val f = $\emptyset$;
+
+    /* expressions with constants */
+    val g = $2 * \pi$;
+    val h = $\e^{x}$;
+
+    return 0;
+}

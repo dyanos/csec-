@@ -1,0 +1,12 @@
+def add(a: Int, b: Int): Int = a + b
+
+def sub(a: Int, b: Int): Int = a - b
+
+def mul(a: Int, b: Int): Int = a * b
+
+def main(): Int {
+    var result: Int = add(4, 5);
+    result = result + sub(10, 3);
+    result = result + mul(2, 3);
+    return result;
+}

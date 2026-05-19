@@ -1,0 +1,30 @@
+template<typename T>
+class Stack(capacity: Int) {
+    var size: Int = 0;
+
+    def push(item: T): Int {
+        size = size + 1;
+        return size;
+    }
+
+    def pop(): Int {
+        size = size - 1;
+        return size;
+    }
+
+    def getSize(): Int = size
+
+    def isEmpty(): Boolean = size == 0
+
+    def isFull(): Boolean = size == capacity
+}
+
+def main(): Int {
+    val intStack = new Stack<Int>(10);
+    intStack.push(1);
+    intStack.push(2);
+    intStack.push(3);
+    val s = intStack.getSize();
+    intStack.pop();
+    return s;
+}

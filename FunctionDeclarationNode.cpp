@@ -15,6 +15,26 @@ void FunctionDeclarationNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* FunctionDeclarationNode::codegen() {
+    auto updateOrRegisterFunctionSymbol = [&](std::unique_ptr<Type> functionType, llvm::Function* function, bool isExternalSymbol) -> FunctionSymbol* {
+        auto& symbolTable = CodeGenerator::getInstance().symbolTable;
+        auto* existingSymbol = symbolTable.lookup(this->name);
+        if (existingSymbol && existingSymbol->symbolType == SymbolType::FUNCTION) {
+            existingSymbol->type = functionType ? functionType->clone() : std::make_unique<UnknownType>();
+            existingSymbol->value = function;
+            existingSymbol->function = function;
+            existingSymbol->isMutable = isExternalSymbol;
+            return dynamic_cast<FunctionSymbol*>(existingSymbol);
+        }
+
+        auto functionSymbol = std::make_unique<FunctionSymbol>(this->name, std::move(functionType), function, isExternalSymbol, SymbolType::FUNCTION);
+        auto* functionSymbolRaw = functionSymbol.get();
+        if (!symbolTable.addSymbol(this->name, std::move(functionSymbol))) {
+            std::cerr << "Error: Failed to register function symbol '" << this->name << "'" << std::endl;
+            return nullptr;
+        }
+        return functionSymbolRaw;
+    };
+
     if (this->isExternal) {
         std::vector<llvm::Type*> paramTypes;
         for (auto& param : this->parameters) {
@@ -42,9 +62,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         for (auto& param : this->parameters) {
             functionType->parameterTypes.push_back(param->getType()->clone());
         }
-        auto functionSymbol = std::make_unique<FunctionSymbol>(this->name, std::move(functionType), function, true, SymbolType::FUNCTION);
-        if (!CodeGenerator::getInstance().symbolTable.addSymbol(this->name, std::move(functionSymbol))) {
-            std::cerr << "Error: Failed to register external function symbol '" << this->name << "'" << std::endl;
+        if (!updateOrRegisterFunctionSymbol(std::move(functionType), function, true)) {
             return nullptr;
         }
 
@@ -85,27 +103,34 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         function->addFnAttr(llvm::Attribute::AlwaysInline);
     }
 
-    auto functionType = this->getType();
-    auto functionSymbol = std::make_unique<FunctionSymbol>(this->name, std::move(functionType), function, false, SymbolType::FUNCTION);
-    auto* functionSymbolRaw = functionSymbol.get();
-    if (!cg.symbolTable.addSymbol(this->name, std::move(functionSymbol))) {
-        std::cerr << "Error: Failed to register function symbol '" << this->name << "'" << std::endl;
+    auto* functionSymbolRaw = updateOrRegisterFunctionSymbol(this->getType(), function, false);
+    if (!functionSymbolRaw) {
         return nullptr;
     }
+    auto* savedCurrentSymbol = cg.symbolTable.getCurrentSymbol();
+    cg.symbolTable.saveCurrentSymbol();
     cg.symbolTable.setCurrentSymbol(functionSymbolRaw);
     cg.symbolTable.enterScope();
 
     int cnt = 0;
     for (auto& arg : this->parameters) {
+        auto* paramNode = dynamic_cast<ParameterNode*>(arg.get());
+        if (!paramNode) {
+            std::cerr << "Error: Non-parameter node in parameters list of '" << this->name << "'" << std::endl;
+            cnt += 1;
+            continue;
+        }
         auto paramType = arg->getType();
-        auto paramSymbol = std::make_unique<Symbol>((static_cast<ParameterNode*>(arg.get()))->name, std::move(paramType), function->getArg(cnt), false, SymbolType::VARIABLE);
-        cg.symbolTable.addSymbol((static_cast<ParameterNode*>(arg.get()))->name, std::move(paramSymbol));
+        auto paramSymbol = std::make_unique<Symbol>(paramNode->name, std::move(paramType), function->getArg(cnt), false, SymbolType::VARIABLE);
+        cg.symbolTable.addSymbol(paramNode->name, std::move(paramSymbol));
         cnt += 1;
     }
 
     llvm::BasicBlock* bb = llvm::BasicBlock::Create(cg.context, "entry", function);
     cg.builder.SetInsertPoint(bb);
-    this->body->codegen();
+    if (this->body) {
+        this->body->codegen();
+    }
 
     llvm::BasicBlock* currentBlock = cg.builder.GetInsertBlock();
     if (currentBlock && !currentBlock->getTerminator()) {
@@ -127,7 +152,8 @@ llvm::Value* FunctionDeclarationNode::codegen() {
     }
 
     cg.symbolTable.exitScope();
-    cg.symbolTable.setCurrentSymbol(nullptr);
+    cg.symbolTable.popCurrentSymbol();
+    cg.symbolTable.setCurrentSymbol(savedCurrentSymbol);
 
     return function;
 }

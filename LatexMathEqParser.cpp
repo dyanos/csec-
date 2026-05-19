@@ -362,15 +362,19 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parsePostfix() {
 			// 식별자에 첨자가 붙으면 이름에 합침: x_i → "x_i"
 			if (node && node->nodeType == ASTNodeType::IDENTIFIER &&
 				subscript && subscript->nodeType == ASTNodeType::IDENTIFIER) {
-				auto* idNode = static_cast<IdentifierNode*>(node.get());
-				auto* subNode = static_cast<IdentifierNode*>(subscript.get());
-				node = std::make_unique<IdentifierNode>(idNode->value + "_" + subNode->value);
+				auto* idNode = dynamic_cast<IdentifierNode*>(node.get());
+				auto* subNode = dynamic_cast<IdentifierNode*>(subscript.get());
+				if (idNode && subNode) {
+					node = std::make_unique<IdentifierNode>(idNode->value + "_" + subNode->value);
+				}
 			}
 			else if (node && node->nodeType == ASTNodeType::IDENTIFIER &&
 				subscript && subscript->nodeType == ASTNodeType::VALUE) {
-				auto* idNode = static_cast<IdentifierNode*>(node.get());
-				auto* valNode = static_cast<ValueNode*>(subscript.get());
-				node = std::make_unique<IdentifierNode>(idNode->value + "_" + valNode->value);
+				auto* idNode = dynamic_cast<IdentifierNode*>(node.get());
+				auto* valNode = dynamic_cast<ValueNode*>(subscript.get());
+				if (idNode && valNode) {
+					node = std::make_unique<IdentifierNode>(idNode->value + "_" + valNode->value);
+				}
 			}
 			else {
 				// 일반적인 경우: 이항 연산으로 처리
@@ -443,7 +447,8 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 
 				// 인자가 식별자인 경우 특수 심볼로 매핑
 				if (arg && arg->nodeType == ASTNodeType::IDENTIFIER) {
-					auto* idArg = static_cast<IdentifierNode*>(arg.get());
+					auto* idArg = dynamic_cast<IdentifierNode*>(arg.get());
+					if (!idArg) return std::move(arg);
 					std::string letter = idArg->value;
 
 					// \mathbb{X} → 수학적 수 집합 매핑
@@ -506,6 +511,42 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 				return node;
 			}
 
+			// Limit-like operators accept optional lower/upper bounds before the body:
+			// \lim_{x=0} f(x), \limsup^n a_n, etc.
+			if (command == "lim" || command == "liminf" || command == "limsup") {
+				auto node = std::make_unique<FunctionCallNode>();
+				node->functionName = command;
+
+				std::unique_ptr<ASTNode> lower = nullptr;
+				std::unique_ptr<ASTNode> upper = nullptr;
+				while (check(TokenType::OPERATOR, "^") || check(TokenType::OPERATOR, "_")) {
+					if (match(TokenType::OPERATOR, "^")) {
+						upper = parseArg(true);
+					}
+					else if (match(TokenType::OPERATOR, "_")) {
+						lower = parseArg(true);
+					}
+				}
+
+				node->arguments.push_back(lower ? std::move(lower) : std::make_unique<UnitNode>());
+				node->arguments.push_back(upper ? std::move(upper) : std::make_unique<UnitNode>());
+
+				if (!isAtEnd() &&
+					!check(TokenType::OPERATOR, "$") &&
+					!check(TokenType::OPERATOR, "$$") &&
+					!check(TokenType::OPERATOR, ")") &&
+					!check(TokenType::OPERATOR, "}") &&
+					!check(TokenType::OPERATOR, "&")) {
+					auto body = parseSimpleExpr();
+					node->arguments.push_back(body ? std::move(body) : std::make_unique<UnitNode>());
+				}
+				else {
+					node->arguments.push_back(std::make_unique<UnitNode>());
+				}
+
+				return node;
+			}
+
 			// 두 개 인자 함수 처리
 			for (int i = 0; i < sizeof(functionTwoArgSymbolTable) / sizeof(functionTwoArgSymbolTable[0]); ++i) {
 				if (command == functionTwoArgSymbolTable[i]) {
@@ -514,8 +555,8 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 
 					auto node = std::make_unique<FunctionCallNode>();
 					node->functionName = command;
-					node->arguments.push_back(std::move(firstArg));
-					node->arguments.push_back(std::move(secondArg));
+					node->arguments.push_back(firstArg ? std::move(firstArg) : std::make_unique<UnitNode>());
+					node->arguments.push_back(secondArg ? std::move(secondArg) : std::make_unique<UnitNode>());
 					return node;
 				}
 			}
@@ -527,7 +568,7 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 
 					auto node = std::make_unique<FunctionCallNode>();
 					node->functionName = command;
-					node->arguments.push_back(std::move(arg));
+					node->arguments.push_back(arg ? std::move(arg) : std::make_unique<UnitNode>());
 					return node;
 				}
 			}
@@ -596,10 +637,16 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 
 						if (argsMap["lower"]) {
 							if (argsMap["lower"]->nodeType == ASTNodeType::BINARY_EXPRESSION) {
-								auto* binExpr = static_cast<BinaryExpressionNode*>(argsMap["lower"].get());
+								auto* binExpr = dynamic_cast<BinaryExpressionNode*>(argsMap["lower"].get());
+								if (!binExpr) {
+									throw std::runtime_error("Failed to cast lower limit to BinaryExpressionNode.");
+								}
 								if (binExpr->op == "=") {
 									if (binExpr->left->nodeType == ASTNodeType::IDENTIFIER) {
-										auto* idNode = static_cast<IdentifierNode*>(binExpr->left.get());
+										auto* idNode = dynamic_cast<IdentifierNode*>(binExpr->left.get());
+										if (!idNode) {
+											throw std::runtime_error("Failed to cast left side of '=' to IdentifierNode.");
+										}
 										node->variable = idNode->value;
 										startExpr = std::move(binExpr->right);
 									}
@@ -612,7 +659,10 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseTerminal() {
 								}
 							}
 							else if (argsMap["lower"]->nodeType == ASTNodeType::FOR_STATEMENT) {
-								auto* forStmt = static_cast<ForStatementNode*>(argsMap["lower"].get());
+								auto* forStmt = dynamic_cast<ForStatementNode*>(argsMap["lower"].get());
+								if (!forStmt) {
+									throw std::runtime_error("Failed to cast lower limit to ForStatementNode.");
+								}
 								node->variable = forStmt->variable;
 								startExpr = std::move(forStmt->iterableExpr);
 							}
@@ -773,7 +823,8 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseArg(bool isBrace) {
 		return expr;
 	}
 	else {
-		return parseTerminal();
+		auto terminal = parseTerminal();
+		return terminal ? std::move(terminal) : std::make_unique<UnitNode>();
 	}
 
 	return nullptr;

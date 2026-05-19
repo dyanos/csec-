@@ -1,0 +1,28 @@
+def doubleAll(xs: Vector[Int]): Int {
+    map (x <- xs) {
+        x * 2;
+    }
+    return 0;
+}
+
+def sumAll(xs: Vector[Int]): Int {
+    reduce (x <- xs, 0) {
+        x + 1;
+    }
+    return 0;
+}
+
+def keepPositive(xs: Vector[Int]): Int {
+    filter (x <- xs) {
+        x > 0;
+    }
+    return 0;
+}
+
+def main(): Int {
+    val data = [1, 2, 3, 4, 5];
+    doubleAll(data);
+    sumAll(data);
+    keepPositive(data);
+    return 0;
+}

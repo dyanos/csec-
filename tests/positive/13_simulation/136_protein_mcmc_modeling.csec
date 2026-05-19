@@ -1,0 +1,9 @@
+def main(): Int {
+    val foldScore = protein fold {
+        chain "ACDEFGHIKLMNPQRSTVWY";
+        mcmc steps 2000;
+        temperature 310.0;
+    };
+
+    return 0;
+}

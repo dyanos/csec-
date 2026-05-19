@@ -1,0 +1,16 @@
+external def malloc(size: Long): String;
+external def free(ptr: String): Void;
+external def printf(fmt: String): Int;
+external def strlen(s: String): Int;
+external def atoi(s: String): Int;
+external def abs(x: Int): Int;
+
+external class Socket(port: Int)
+external class FileHandle(path: String)
+external class Window(width: Int, height: Int)
+
+external object System
+external object Runtime
+external object Allocator
+
+def main(): Int = 0

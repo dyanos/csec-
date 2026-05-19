@@ -1,0 +1,9 @@
+template<typename T, Int N>
+class StaticArray(seed: T) {
+    def size(): Int = N
+}
+
+def main(): Int {
+    val xs = new StaticArray<Int, 16>(0);
+    return 0;
+}

@@ -1,0 +1,5 @@
+def main(): Int {
+    val 반지름 = 10;
+    val 넓이 = $$\pi * 반지름 * 반지름$$;
+    return 0;
+}

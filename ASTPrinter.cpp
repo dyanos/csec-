@@ -153,7 +153,7 @@ public:
         std::cout << "AssignmentExpression:" << std::endl;
         std::cout << "Left:" << std::endl;
         node.left->accept(*this);
-        std::cout << "Operator: =" << std::endl;
+        std::cout << "Operator: " << node.op << std::endl;
         std::cout << "Right:" << std::endl;
         node.right->accept(*this);
     }

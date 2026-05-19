@@ -1,0 +1,26 @@
+/* UTF-8 identifiers with LaTeX math */
+
+def 면적계산(반지름: Int): Int {
+    val 원주율 = $$\pi$$;
+    val 결과 = $$반지름^{2} * \pi$$;
+    return 반지름 * 반지름 * 3;
+}
+
+class 벡터(크기: Int) {
+    def 노름(): Int {
+        val 제곱합 = $$\sum_{i=1}^{크기} i^{2}$$;
+        return 크기;
+    }
+}
+
+object 수학상수 {
+    def 파이(): Int = 3
+    def 오일러(): Int = 2
+}
+
+def main(): Int {
+    val 면적 = 면적계산(5);
+    val v = new 벡터(3);
+    val 파이 = 수학상수.파이();
+    return 면적 + 파이;
+}

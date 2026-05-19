@@ -1,0 +1,17 @@
+def apply(f: (Int) => Int, x: Int): Int {
+    return f(x);
+}
+
+def applyBinary(f: (Int, Int) => Int, a: Int, b: Int): Int {
+    return f(a, b);
+}
+
+def applyPred(f: (Int) => Boolean, x: Int): Boolean {
+    return f(x);
+}
+
+def compose(f: (Int) => Int, g: (Int) => Int, x: Int): Int {
+    return f(g(x));
+}
+
+def main(): Int = 0

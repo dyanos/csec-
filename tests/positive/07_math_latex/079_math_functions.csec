@@ -1,0 +1,16 @@
+def main(): Int {
+    val a = $\sqrt{16}$;
+    val b = $\ln(x)$;
+    val c = $\log(x)$;
+    val d = $\exp(x)$;
+    val e = $\frac{1}{2}$;
+    val f = $\frac{a + b}{c - d}$;
+    val g = $\binom{10}{3}$;
+
+    val h = $$\lim_{x=0} \frac{\sin(x)}{x}$$;
+    val i = $\min(a)$;
+    val j = $\max(b)$;
+    val k = $\det(A)$;
+
+    return 0;
+}

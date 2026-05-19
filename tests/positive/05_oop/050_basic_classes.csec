@@ -1,0 +1,12 @@
+class Point(x: Int, y: Int) {
+    val zero: Int = 0;
+    var scale: Int = 1;
+
+    def sum(): Int = x + y
+
+    def shift(dx: Int, dy: Int): Int {
+        return x + y + dx + dy;
+    }
+}
+
+def main(): Int = 0

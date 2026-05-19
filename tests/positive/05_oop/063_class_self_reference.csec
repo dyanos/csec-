@@ -1,0 +1,24 @@
+class TreeNode(value: Int) {
+    var left: TreeNode = new TreeNode(0);
+    var right: TreeNode = new TreeNode(0);
+
+    def getValue(): Int = value
+}
+
+class LinkedNode(data: Int) {
+    var next: LinkedNode = new LinkedNode(0);
+
+    def getData(): Int = data
+}
+
+def main(): Int {
+    val root = new TreeNode(10);
+    val node1 = new TreeNode(5);
+    val node2 = new TreeNode(15);
+
+    val head = new LinkedNode(1);
+    val mid = new LinkedNode(2);
+    val tail = new LinkedNode(3);
+
+    return root.getValue();
+}

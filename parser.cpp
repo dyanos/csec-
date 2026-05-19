@@ -23,7 +23,21 @@ std::unique_ptr<ASTNode> Parser::parse() {
 }
 
 std::unique_ptr<Type> Parser::parseType() {
-	if (match(TokenType::IDENTIFIER)) {
+    if (match(TokenType::KEYWORD, "box")) {
+        return std::make_unique<BoxType>(parseType());
+    }
+
+    if (match(TokenType::OPERATOR, "&")) {
+        bool isMutableBorrow = match(TokenType::KEYWORD, "mut");
+        return std::make_unique<BorrowType>(parseType(), isMutableBorrow);
+    }
+
+    if (match(TokenType::KEYWORD, "unsafe")) {
+        expect(TokenType::OPERATOR, "*");
+        return std::make_unique<UnsafePointerType>(parseType());
+    }
+
+	if (match(TokenType::IDENTIFIER) || match(TokenType::KEYWORD, "mut")) {
 		std::string typeName = previous().value;
 
 		// Check if this identifier is a template type parameter
@@ -64,7 +78,7 @@ std::unique_ptr<Type> Parser::parseType() {
 		if (match(TokenType::OPERATOR, "<")) {
 			std::vector<std::unique_ptr<Type>> typeArgs;
 			do {
-				typeArgs.push_back(parseType());
+				typeArgs.push_back(parseTemplateArgumentAsType());
 			} while (match(TokenType::OPERATOR, ","));
 			expect(TokenType::OPERATOR, ">");
 			return std::make_unique<GenericType>(baseType, typeArgs);
@@ -90,6 +104,30 @@ std::unique_ptr<Type> Parser::parseType() {
 		error("Expected type after ':'");
 		return std::make_unique<UnknownType>();
 	}
+}
+
+std::unique_ptr<Type> Parser::parseTemplateArgumentAsType() {
+    if (check(TokenType::IDENTIFIER) || check(TokenType::OPERATOR, "(")) {
+        return parseType();
+    }
+
+    if (match(TokenType::INTEGER_LITERAL) ||
+        match(TokenType::HEX_LITERAL) ||
+        match(TokenType::BINARY_LITERAL) ||
+        match(TokenType::OCTAL_LITERAL)) {
+        return std::make_unique<TypeVariableType>(previous().value);
+    }
+
+    if (match(TokenType::FLOAT_LITERAL) || match(TokenType::EXPONENTIAL_LITERAL)) {
+        return std::make_unique<TypeVariableType>(previous().value);
+    }
+
+    if (match(TokenType::BOOLEAN_LITERAL)) {
+        return std::make_unique<TypeVariableType>(previous().value);
+    }
+
+    error("Expected template argument");
+    return std::make_unique<UnknownType>();
 }
 
 std::vector<std::string> Parser::parseTemplateParameters() {
@@ -130,6 +168,10 @@ std::vector<std::string> Parser::parseTemplateParameters() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseTopStatement() {
+    if (match(TokenType::OPERATOR, ";")) {
+        return nullptr;
+    }
+
 	std::unique_ptr<ASTNode> attributeNode = parseAnnotationStatement();
 
 	// Handle template declarations
@@ -170,6 +212,15 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 		advance();
 	}
 
+	bool isUnsafeFunction = false;
+	if (check(TokenType::KEYWORD, "unsafe")) {
+		isUnsafeFunction = true;
+		advance();
+		if (!check(TokenType::KEYWORD, "def")) {
+			error("'unsafe' modifier is only valid on function declarations");
+		}
+	}
+
 	std::unique_ptr<ASTNode> node = nullptr;
 	if (match(TokenType::KEYWORD, "import")) {
 		if (isExternal) {
@@ -206,9 +257,13 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 		auto targetNode = parseFunctionDeclaration(isExternal);
 		targetNode->isExternal = isExternal;
 		targetNode->isConstexpr = isConstexpr;
+		targetNode->isUnsafe = isUnsafeFunction;
 		node = std::move(targetNode);
 	}
 	else {
+		if (isUnsafeFunction) {
+			error("Expected 'def' after 'unsafe' at top level");
+		}
 		// constexpr can precede val/var in top-level statements
 		if (isConstexpr) {
 			if (match(TokenType::KEYWORD, "val") || match(TokenType::KEYWORD, "var")) {
@@ -236,7 +291,7 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseAnnotationExpression() {
-	if (match(TokenType::IDENTIFIER)) {
+	if (match(TokenType::IDENTIFIER) || match(TokenType::KEYWORD)) {
 		auto identifierNode = std::make_unique<IdentifierNode>(previous().value);
 		if (!match(TokenType::OPERATOR, "(")) {
 			return identifierNode;
@@ -272,10 +327,12 @@ std::unique_ptr<ClassBodyNode> Parser::parseClassBody() {
 
 		if (match(TokenType::KEYWORD, "def")) {
 			classBody->methods.push_back(parseFunctionDeclaration());
+            match(TokenType::OPERATOR, ";");
 		}
 		else if (match(TokenType::KEYWORD, "val") || match(TokenType::KEYWORD, "var")) {
 			bool isMutable = previous().value == "var";
 			classBody->fields.push_back(parseVariableDeclaration(isMutable));
+            match(TokenType::OPERATOR, ";");
 		}
 		else {
 			error("Unexpected token in class body");

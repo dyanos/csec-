@@ -1,0 +1,11 @@
+def make(): Int = 4
+
+def main(): Int {
+    var total: Int = 0;
+
+    for (x <- make()) {
+        total = total + x;
+    }
+
+    return total;
+}

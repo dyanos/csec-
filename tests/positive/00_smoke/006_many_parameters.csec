@@ -1,0 +1,9 @@
+def sum5(a: Int, b: Int, c: Int, d: Int, e: Int): Int {
+    return a + b + c + d + e;
+}
+
+def mixed(x: Int, y: Float, z: Double, s: String, flag: Boolean): Int {
+    return x;
+}
+
+def main(): Int = sum5(1, 2, 3, 4, 5)

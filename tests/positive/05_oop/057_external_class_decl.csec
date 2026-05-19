@@ -1,0 +1,11 @@
+external class TCPSocket(host: String, port: Int)
+external class UDPSocket(host: String, port: Int)
+external class File(path: String)
+external class Process(command: String)
+external class Thread(id: Int)
+
+external object OS
+external object Network
+external object FileSystem
+
+def main(): Int = 0

@@ -1,0 +1,18 @@
+def main(): Int {
+    val offset = 10;
+    val scale = 2;
+
+    val addOffset = [offset](x) -> {
+        return x + offset;
+    };
+
+    val scaleAndShift = [offset, scale](x) -> {
+        return x * scale + offset;
+    };
+
+    val withThree = [offset, scale](a, b, c) -> {
+        return a + b + c;
+    };
+
+    return 0;
+}

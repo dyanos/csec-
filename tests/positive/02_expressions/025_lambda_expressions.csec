@@ -1,0 +1,15 @@
+def main(): Int {
+    val addOne = [=](x) -> {
+        return x + 1;
+    };
+
+    val blend = [left, right](value) -> {
+        return value + left + right;
+    };
+
+    val refCapture = [&](x) -> {
+        return x;
+    };
+
+    return 0;
+}

@@ -1,0 +1,9 @@
+def main(): Int {
+    val lagrangian = $$\mathcal{L}$$;
+    val fourier = $$\mathcal{F}$$;
+    val bigO = $$\mathcal{O}$$;
+    val powerSet = $$\mathcal{P}$$;
+    val hilbert = $$\mathcal{H}$$;
+    val borel = $$\mathcal{B}$$;
+    return 0;
+}

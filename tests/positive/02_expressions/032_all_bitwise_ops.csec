@@ -1,0 +1,25 @@
+def main(): Int {
+    /* bitwise AND */
+    var a: Int = 0xFF & 0x0F;
+
+    /* bitwise OR */
+    var b: Int = 0xF0 | 0x0F;
+
+    /* bitwise XOR */
+    var c: Int = 0xFF ^ 0xAA;
+
+    /* bitwise NOT */
+    var d: Int = ~0;
+
+    /* left shift */
+    var e: Int = 1 << 8;
+
+    /* right shift */
+    var f: Int = 256 >> 4;
+
+    /* combined */
+    var g: Int = (a & b) | (c ^ d);
+    var h: Int = (1 << 4) | (1 << 2) | (1 << 0);
+
+    return h;
+}

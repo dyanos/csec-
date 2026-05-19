@@ -36,3 +36,7 @@
 /x64/Debug
 /csec++.vcxproj.filters
 /csec++.vcxproj.user
+/build/
+*.pdb
+.claude/
+.cr/

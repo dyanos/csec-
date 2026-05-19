@@ -26,6 +26,7 @@ public:
         this->isMutable = other.isMutable;
         this->isField = other.isField;
         this->isConstexpr = other.isConstexpr;
+        this->hasExplicitType = other.hasExplicitType;
     }
     VariableDeclarationNode& operator=(const VariableDeclarationNode& other) {
         if (this != &other) {
@@ -36,6 +37,7 @@ public:
             this->isMutable = other.isMutable;
             this->isField = other.isField;
             this->isConstexpr = other.isConstexpr;
+            this->hasExplicitType = other.hasExplicitType;
         }
         return *this;
     }
@@ -46,11 +48,15 @@ public:
     bool isMutable = false;
     bool isField = false;
     bool isConstexpr = false;
+    bool hasExplicitType = false;
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
 
     std::unique_ptr<Type> getType() override {
+        if (type) {
+            return type->clone();
+        }
         return std::make_unique<UnknownType>();
     }
     std::unique_ptr<ASTNode> clone() override {

@@ -1,0 +1,21 @@
+class Calculator(base: Int) {
+    def add(x: Int): Int = base + x
+    def sub(x: Int): Int = base - x
+    def mul(x: Int): Int = base * x
+    def div(x: Int): Int = base / x
+    def mod(x: Int): Int = base % x
+    def neg(): Int = 0 - base
+    def isZero(): Boolean = base == 0
+    def isPositive(): Boolean = base > 0
+    def double(): Int = base + base
+    def square(): Int = base * base
+}
+
+def main(): Int {
+    val calc = new Calculator(10);
+    val a = calc.add(5);
+    val b = calc.sub(3);
+    val c = calc.mul(2);
+    val d = calc.double();
+    return a + b + c + d;
+}

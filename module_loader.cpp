@@ -8,6 +8,7 @@
 #include "utils.h"
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <utility>
 
@@ -37,7 +38,7 @@ SymbolTable* ModuleLoader::loadModule(const std::vector<std::string>& path) {
             filepath += "/";
         }
     }
-    filepath += ".scala";
+    filepath += ".csec";
 
     auto moduleSymbols = std::make_unique<SymbolTable>();
     if (!parseModuleFile(filepath, *moduleSymbols)) {
@@ -61,7 +62,8 @@ llvm::Function* ModuleLoader::loadFunction(const std::string& name, llvm::Module
 
 bool ModuleLoader::parseModuleFile(const std::string& filepath, SymbolTable& moduleSymbols) {
     std::string code = read_utf8_file(filepath);
-    if (code.empty()) {
+    std::ifstream file(filepath, std::ios::binary);
+    if (!file.is_open()) {
         std::cerr << "Error: Unable to open module file: " << filepath << std::endl;
         return false;
     }
@@ -69,16 +71,31 @@ bool ModuleLoader::parseModuleFile(const std::string& filepath, SymbolTable& mod
     Lexer lexer(code);
     std::vector<Token> tokens = lexer.tokenize();
 
-    Parser parser(tokens);
-    auto ast = parser.parse();
+    std::unique_ptr<ASTNode> ast;
+    try {
+        Parser parser(tokens);
+        ast = parser.parse();
+    } catch (const std::exception& e) {
+        std::cerr << "Error: Failed to parse module file '" << filepath << "': " << e.what() << std::endl;
+        return false;
+    }
 
     auto& codegenSymbolTable = CodeGenerator::getInstance().symbolTable;
     auto savedSymbolTable = std::move(codegenSymbolTable);
-    codegenSymbolTable = std::move(moduleSymbols);
-    ast->codegen();
-
-    moduleSymbols = std::move(codegenSymbolTable);
-    codegenSymbolTable = std::move(savedSymbolTable);
+    try {
+        codegenSymbolTable = std::move(moduleSymbols);
+        ast->codegen();
+        moduleSymbols = std::move(codegenSymbolTable);
+        codegenSymbolTable = std::move(savedSymbolTable);
+    } catch (const std::exception& e) {
+        codegenSymbolTable = std::move(savedSymbolTable);
+        std::cerr << "Error: Failed to codegen module file '" << filepath << "': " << e.what() << std::endl;
+        return false;
+    } catch (...) {
+        codegenSymbolTable = std::move(savedSymbolTable);
+        std::cerr << "Error: Failed to codegen module file '" << filepath << "'" << std::endl;
+        return false;
+    }
 
     return true;
 }

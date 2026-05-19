@@ -1,0 +1,28 @@
+template<typename T>
+def identity(x: T): T = x
+
+template<typename T>
+class Holder(value: T) {
+    def get(): T = value
+}
+
+def main(): Int {
+    /* same template, different type args */
+    val a = identity<Int>(1);
+    val b = identity<Int>(2);
+    val c = identity<Int>(3);
+
+    val d = identity<Float>(1.0);
+    val e = identity<Double>(2.0);
+
+    /* same class template, different type args */
+    val h1 = new Holder<Int>(10);
+    val h2 = new Holder<Int>(20);
+    val h3 = new Holder<Float>(3.14);
+    val h4 = new Holder<String>("hello");
+
+    val v1 = h1.get();
+    val v2 = h2.get();
+
+    return a + b + c + v1 + v2;
+}

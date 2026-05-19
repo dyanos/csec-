@@ -1,0 +1,8 @@
+def main(): Int {
+    val matrix = new Tensor<Double, 3, 4>(1.0);
+    val row = matrix[1, :];
+    val columns = matrix[:, 1:3];
+    val stepped = matrix[::2, 0:4:2];
+    val tail = matrix[1:, :];
+    return 0;
+}

@@ -2,11 +2,14 @@
 
 #include "VariableDeclarationNode.h"
 #include "ASTVisitor.h"
+#include "ClassInstanceCreationNode.h"
+#include "ArrayCreationExpressionNode.h"
 
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/GlobalVariable.h>
 
 void VariableDeclarationNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -50,6 +53,21 @@ llvm::Value* VariableDeclarationNode::codegen() {
         }
     }
 
+    const bool bindPointerBackedValueDirectly =
+        initValue &&
+        initValue->getType()->isPointerTy() &&
+        (dynamic_cast<ClassInstanceCreationNode*>(initializer.get()) != nullptr ||
+         dynamic_cast<ArrayCreationExpressionNode*>(initializer.get()) != nullptr ||
+         type->getKind() == Type::Kind::CLASS ||
+         type->getKind() == Type::Kind::BOX);
+
+    if (bindPointerBackedValueDirectly) {
+        cg.symbolTable.addSymbol(
+            name,
+            std::make_unique<Symbol>(name, type->clone(), initValue, isMutable, SymbolType::VARIABLE));
+        return initValue;
+    }
+
     // constexpr: use constant value directly, no alloca
     if (this->isConstexpr) {
         auto* constVal = llvm::dyn_cast<llvm::Constant>(initValue);
@@ -67,6 +85,31 @@ llvm::Value* VariableDeclarationNode::codegen() {
     if (!varType) {
         std::cerr << "Error: Unsupported variable type '" << type->getName() << "'" << std::endl;
         return nullptr;
+    }
+    if (varType->isVoidTy()) {
+        cg.symbolTable.addSymbol(
+            name,
+            std::make_unique<Symbol>(name, type->clone(), nullptr, isMutable, SymbolType::VARIABLE));
+        return nullptr;
+    }
+
+    auto* currentSymbol = cg.symbolTable.getCurrentSymbol();
+    if (currentSymbol && currentSymbol->symbolType == SymbolType::NAMESPACE) {
+        llvm::Constant* globalInit = llvm::dyn_cast<llvm::Constant>(initValue);
+        if (!globalInit) {
+            globalInit = llvm::Constant::getNullValue(varType);
+        }
+        auto* global = new llvm::GlobalVariable(
+            *cg.module,
+            varType,
+            !isMutable,
+            llvm::GlobalValue::PrivateLinkage,
+            globalInit,
+            name);
+        cg.symbolTable.addSymbol(
+            name,
+            std::make_unique<Symbol>(name, type->clone(), global, isMutable, SymbolType::VARIABLE));
+        return global;
     }
 
     llvm::AllocaInst* alloc = cg.builder.CreateAlloca(varType, nullptr, name.c_str());

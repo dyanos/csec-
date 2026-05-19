@@ -1,0 +1,33 @@
+object Config {
+    val maxRetries: Int = 3;
+    val timeout: Int = 30;
+
+    def getMaxRetries(): Int = maxRetries
+    def getTimeout(): Int = timeout
+}
+
+class Client(name: String) {
+    val retries: Int = 0;
+
+    def connect(): Int {
+        val maxR = Config.getMaxRetries();
+        val tout = Config.getTimeout();
+        return maxR + tout;
+    }
+}
+
+class Server(port: Int) {
+    def start(): Int = port
+
+    def configure(): Int {
+        return Config.getTimeout();
+    }
+}
+
+def main(): Int {
+    val client = new Client("test");
+    val server = new Server(8080);
+    val a = client.connect();
+    val b = server.start();
+    return a + b;
+}

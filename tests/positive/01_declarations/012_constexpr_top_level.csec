@@ -1,0 +1,10 @@
+constexpr val SIZE: Int = 4;
+constexpr var SCALE: Int = 2;
+
+constexpr def square(x: Int): Int = x * x
+
+def main(): Int {
+    var result: Int = square(SIZE);
+    result = result + SCALE;
+    return result;
+}

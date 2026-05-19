@@ -23,7 +23,7 @@ public:
     }
 
     std::unique_ptr<Type> getType() override {
-        return std::make_unique<UnknownType>();
+        return std::make_unique<BasicType>("Unit");
     }
     std::unique_ptr<ASTNode> clone() override {
         return std::make_unique<UnitNode>(*this);

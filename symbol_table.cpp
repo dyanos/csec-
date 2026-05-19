@@ -348,6 +348,31 @@ Symbol* checkSymbol(Symbol* symbol, const std::string& name) {
     }
     break;
 
+    case SymbolType::VARIABLE:
+    case SymbolType::FIELD:
+    {
+        if (!symbol->type || symbol->type->getKind() != Type::Kind::CLASS) {
+            return nullptr;
+        }
+
+        auto* classSymbol = CodeGenerator::getInstance().symbolTable.lookupClass(symbol->type->getName());
+        if (!classSymbol) {
+            return nullptr;
+        }
+
+        if (classSymbol->methods.count(name) != 0) {
+            return classSymbol->methods[name].get();
+        }
+        if (classSymbol->fields.count(name) != 0) {
+            return classSymbol->fields[name].get();
+        }
+        if (classSymbol->constructorParams.count(name) != 0) {
+            return classSymbol->constructorParams[name].get();
+        }
+        return nullptr;
+    }
+    break;
+
     default:
         std::cerr << "Unsupported symbol type for lookup: " << (int)symbol->symbolType << std::endl;
         break;
@@ -357,14 +382,31 @@ Symbol* checkSymbol(Symbol* symbol, const std::string& name) {
 }
 
 Symbol* SymbolTable::lookup(const std::string& name) {
-    // TODO : name?? path(A.B.C)?? ??? o?? ???
-    auto& ctxt = Context::getInstance();
-	//auto root = ctxt.getRootNamespace();
+    auto names = split(name, '.');
 
-	auto names = split(name, '.');
+    if (names.size() > 1) {
+        // Multi-part name: resolve first part via scope chain, then walk members
+        Symbol* current = nullptr;
+        Scope* curScope = this->currentScope;
+        while (curScope != nullptr) {
+            auto it = curScope->symbols.find(names[0]);
+            if (it != curScope->symbols.end()) {
+                current = it->second.get();
+                break;
+            }
+            curScope = curScope->outer;
+        }
+        if (!current) return nullptr;
 
-	// ???? ?????????? ??????? ???? ???????? ?o??? ???
-	Scope* curScope = this->currentScope;
+        for (size_t i = 1; i < names.size(); ++i) {
+            current = checkSymbol(current, names[i]);
+            if (!current) return nullptr;
+        }
+        return current;
+    }
+
+    // Single-part name: scope chain walk
+    Scope* curScope = this->currentScope;
     while (curScope != nullptr) {
         for (auto& pair : curScope->symbols) {
             if (pair.first != name) {
@@ -376,81 +418,6 @@ Symbol* SymbolTable::lookup(const std::string& name) {
 
         curScope = curScope->outer;
     }
-    /*        switch (pair.second->symbolType) {
-            case SymbolType::NAMESPACE:
-                root = static_cast<NamespaceSymbol*>(pair.second);
-
-                for (auto& function : root->functions) {
-                    if (function.first == name) {
-                        return function.second;
-                    }
-                }
-
-                for (auto& variable : root->variables) {
-                    if (variable.first == name) {
-                        return variable.second;
-                    }
-                }
-
-                for (auto& classSymbol : root->classes) {
-                    if (classSymbol.first == name) {
-                        return classSymbol.second;
-                    }
-                }
-
-                for (auto& namespaceSymbol : root->namespaces) {
-                    if (namespaceSymbol.first == name) {
-                        return namespaceSymbol.second;
-                    }
-                }
-
-                break;
-
-            case SymbolType::CLASS:
-            {
-                auto classSymbol = static_cast<ClassSymbol*>(pair.second);
-                for (auto& method : classSymbol->methods) {
-                    if (method.first == name) {
-                        return method.second;
-                    }
-                }
-                for (auto& field : classSymbol->fields) {
-                    if (field.first == name) {
-                        return field.second;
-                    }
-                }
-            }
-            break;
-
-            case SymbolType::FUNCTION:
-            {
-                auto functionSymbol = static_cast<FunctionSymbol*>(pair.second);
-                for (auto& symbol : functionSymbol->symbols) {
-                    if (symbol->name == name) {
-                        return symbol;
-                    }
-                }
-            }
-            break;
-
-            case SymbolType::METHOD:
-            {
-                auto methodSymbol = static_cast<FunctionSymbol*>(pair.second);
-                for (auto& symbol : methodSymbol->symbols) {
-                    if (symbol->name == name) {
-                        return symbol;
-                    }
-                }
-            }
-            break;
-
-            default:
-                printf("Unsupported current symbol type for lookup: %d\n", (int)this->currentSymbol->symbolType);
-                break;
-            }
-        }
-        curScope = curScope->outer;
-    }*/
 
     return nullptr;
 }
@@ -566,5 +533,4 @@ void SymbolTable::print(std::ostream& os, int indent) const {
     };
     printNamespace(root, indent);
 }
-
 

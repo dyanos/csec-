@@ -1,0 +1,14 @@
+template<typename A, typename B, typename C>
+def triple(a: A, b: B, c: C): A = a
+
+template<typename T, typename U>
+class Container(first: T, second: U) {
+    def getFirst(): T = first
+    def getSecond(): U = second
+}
+
+def main(): Int {
+    val r = triple<Int, Float, Double>(42, 3.14, 2.718);
+    val c = new Container<Int, String>(1, "hello");
+    return r;
+}

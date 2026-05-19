@@ -1,0 +1,28 @@
+class EmptyClass() {
+    def value(): Int = 0
+}
+
+class Singleton() {
+    val id: Int = 1;
+    def getId(): Int = id
+}
+
+class Counter() {
+    var count: Int = 0;
+
+    def increment(): Int {
+        count = count + 1;
+        return count;
+    }
+
+    def get(): Int = count
+}
+
+def main(): Int {
+    val e = new EmptyClass();
+    val s = new Singleton();
+    val c = new Counter();
+    c.increment();
+    c.increment();
+    return e.value() + s.getId() + c.get();
+}

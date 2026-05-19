@@ -4,40 +4,1222 @@
 #include "FunctionDeclarationNode.h"
 #include "ParameterNode.h"
 #include "ASTVisitor.h"
+#include "BinaryExpressionNode.h"
+#include "BlockNode.h"
+#include "ClassInstanceCreationNode.h"
+#include "IdentifierNode.h"
+#include "IfStatementNode.h"
+#include "ReturnStatementNode.h"
+#include "VariableDeclarationNode.h"
+#include "TensorRuntime.h"
 
 #include <iostream>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+
+namespace {
+bool isMathFallbackFunction(const std::string& name) {
+    static const char* names[] = {
+        "sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan",
+        "sinh", "cosh", "tanh", "coth", "sqrt", "ln", "log", "lg", "exp",
+        "frac", "binom", "min", "max", "det", "dim", "gcd", "pow",
+        "transpose", "conjugate", "adjoint", "tensorProduct", "innerProduct", "outerProduct",
+        "sum", "prod", "int", "lim", "liminf", "limsup",
+        "oint", "iint", "bigcup", "bigcap", "biguplus", "bigoplus",
+        "bigvee", "bigotimes", "bigwedge", "coprod", "bigodot", "bigsqcup"
+    };
+    for (const char* candidate : names) {
+        if (name == candidate) return true;
+    }
+    return false;
+}
+
+bool isNativeIOFunction(const std::string& name) {
+    return name == "print" || name == "println" ||
+           name == "readLine" || name == "readChar" ||
+           name == "readInt" || name == "readDouble";
+}
+
+bool isNativeNetworkFunction(const std::string& name) {
+    return name == "tcpConnect" || name == "tcpSend" ||
+           name == "tcpRecv" || name == "tcpClose";
+}
+
+bool isNativePosixFunction(const std::string& name) {
+    static const char* names[] = {
+        "posixOpen", "posixRead", "posixWrite", "posixClose", "posixLseek",
+        "posixUnlink", "posixRename", "posixMkdir", "posixRmdir", "posixChdir",
+        "posixGetcwd", "posixAccess", "posixGetenv", "posixSetenv", "posixUnsetenv",
+        "posixSleep", "posixTime", "posixErrno",
+        "posixFlagReadOnly", "posixFlagWriteOnly", "posixFlagReadWrite",
+        "posixFlagCreate", "posixFlagTruncate", "posixFlagAppend",
+        "posixSeekSet", "posixSeekCur", "posixSeekEnd",
+        "posixAccessExists", "posixAccessRead", "posixAccessWrite", "posixAccessExecute"
+    };
+    for (const char* candidate : names) {
+        if (name == candidate) return true;
+    }
+    return false;
+}
+
+bool isNativeSimulationFunction(const std::string& name) {
+    return name == "mdSimulate" || name == "cfdSimulate" || name == "proteinMcmc";
+}
+
+bool isBuiltinOdeFunction(const std::string& name) {
+    return name == "odeEuler";
+}
+
+bool isNativeScalarMathFunction(const std::string& name) {
+    static const char* names[] = {
+        "sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan",
+        "sinh", "cosh", "tanh", "coth", "sqrt", "ln", "log", "lg", "exp",
+        "frac", "binom", "min", "max", "gcd", "pow"
+    };
+    for (const char* candidate : names) {
+        if (name == candidate) return true;
+    }
+    return false;
+}
+
+llvm::Value* cString(CodeGenerator& cg, const std::string& value, const std::string& name = "cstr") {
+    return cg.builder.CreateGlobalStringPtr(value, name);
+}
+
+llvm::Function* getOrCreateRuntimeFunction(
+    CodeGenerator& cg,
+    const std::string& name,
+    llvm::Type* returnType,
+    const std::vector<llvm::Type*>& paramTypes) {
+    if (auto* function = cg.module->getFunction(name)) {
+        return function;
+    }
+    auto* functionTy = llvm::FunctionType::get(returnType, paramTypes, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
+}
+
+llvm::Function* getOrCreateUnaryDoubleFunction(CodeGenerator& cg, const std::string& cName) {
+    if (auto* function = cg.module->getFunction(cName)) {
+        return function;
+    }
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    auto* functionTy = llvm::FunctionType::get(f64Ty, {f64Ty}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, cName, cg.module.get());
+}
+
+llvm::Function* getOrCreateBinaryDoubleFunction(CodeGenerator& cg, const std::string& cName) {
+    if (auto* function = cg.module->getFunction(cName)) {
+        return function;
+    }
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    auto* functionTy = llvm::FunctionType::get(f64Ty, {f64Ty, f64Ty}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, cName, cg.module.get());
+}
+
+llvm::Function* getOrCreateGcdI64(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("__csec_gcd_i64")) {
+        return function;
+    }
+
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* functionTy = llvm::FunctionType::get(i64Ty, {i64Ty, i64Ty}, false);
+    auto* function = llvm::Function::Create(functionTy, llvm::Function::InternalLinkage, "__csec_gcd_i64", cg.module.get());
+    auto* entryBB = llvm::BasicBlock::Create(cg.context, "entry", function);
+    auto* loopBB = llvm::BasicBlock::Create(cg.context, "loop", function);
+    auto* bodyBB = llvm::BasicBlock::Create(cg.context, "body", function);
+    auto* exitBB = llvm::BasicBlock::Create(cg.context, "exit", function);
+
+    llvm::IRBuilder<> builder(cg.context);
+    auto args = function->arg_begin();
+    llvm::Value* aArg = &*args++;
+    llvm::Value* bArg = &*args++;
+
+    builder.SetInsertPoint(entryBB);
+    llvm::Value* zero = llvm::ConstantInt::get(i64Ty, 0);
+    llvm::Value* aAbs = builder.CreateSelect(builder.CreateICmpSLT(aArg, zero), builder.CreateNeg(aArg), aArg, "a.abs");
+    llvm::Value* bAbs = builder.CreateSelect(builder.CreateICmpSLT(bArg, zero), builder.CreateNeg(bArg), bArg, "b.abs");
+    builder.CreateBr(loopBB);
+
+    builder.SetInsertPoint(loopBB);
+    auto* xPhi = builder.CreatePHI(i64Ty, 2, "x");
+    auto* yPhi = builder.CreatePHI(i64Ty, 2, "y");
+    builder.CreateCondBr(builder.CreateICmpEQ(yPhi, zero), exitBB, bodyBB);
+
+    builder.SetInsertPoint(bodyBB);
+    llvm::Value* rem = builder.CreateSRem(xPhi, yPhi, "rem");
+    builder.CreateBr(loopBB);
+
+    xPhi->addIncoming(aAbs, entryBB);
+    xPhi->addIncoming(yPhi, bodyBB);
+    yPhi->addIncoming(bAbs, entryBB);
+    yPhi->addIncoming(rem, bodyBB);
+
+    builder.SetInsertPoint(exitBB);
+    builder.CreateRet(xPhi);
+    return function;
+}
+
+llvm::Value* coerceMathValueToDouble(CodeGenerator& cg, llvm::Value* value) {
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    if (!value) return llvm::ConstantFP::get(f64Ty, 0.0);
+    if (value->getType() == f64Ty) return value;
+    if (value->getType()->isFloatTy()) return cg.builder.CreateFPExt(value, f64Ty, "math.fpext");
+    if (value->getType()->isIntegerTy()) return cg.builder.CreateSIToFP(value, f64Ty, "math.sitofp");
+    return llvm::ConstantFP::get(f64Ty, 0.0);
+}
+
+llvm::Value* coerceMathValueToI64(CodeGenerator& cg, llvm::Value* value) {
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    if (!value) return llvm::ConstantInt::get(i64Ty, 0);
+    if (value->getType() == i64Ty) return value;
+    if (value->getType()->isIntegerTy()) {
+        unsigned bits = value->getType()->getIntegerBitWidth();
+        if (bits < 64) return cg.builder.CreateSExt(value, i64Ty, "math.sext");
+        if (bits > 64) return cg.builder.CreateTrunc(value, i64Ty, "math.trunc");
+        return value;
+    }
+    if (value->getType()->isFloatingPointTy()) return cg.builder.CreateFPToSI(value, i64Ty, "math.fptosi");
+    return llvm::ConstantInt::get(i64Ty, 0);
+}
+
+llvm::Function* getOrCreatePrintf(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("printf")) {
+        return function;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(cg.context), {i8PtrTy}, true);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "printf", cg.module.get());
+}
+
+llvm::Function* getOrCreateScanf(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("scanf")) {
+        return function;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(cg.context), {i8PtrTy}, true);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "scanf", cg.module.get());
+}
+
+llvm::Function* getOrCreateGetchar(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("getchar")) {
+        return function;
+    }
+    auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(cg.context), {}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "getchar", cg.module.get());
+}
+
+llvm::Function* getOrCreateStrlen(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("strlen")) {
+        return function;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt64Ty(cg.context), {i8PtrTy}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "strlen", cg.module.get());
+}
+
+llvm::Function* getOrCreateWSAStartup(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("WSAStartup")) {
+        return function;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* functionTy = llvm::FunctionType::get(
+        llvm::Type::getInt32Ty(cg.context),
+        {llvm::Type::getInt16Ty(cg.context), i8PtrTy},
+        false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "WSAStartup", cg.module.get());
+}
+
+llvm::Function* getOrCreateSocket(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("socket")) {
+        return function;
+    }
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt64Ty(cg.context), {i32Ty, i32Ty, i32Ty}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "socket", cg.module.get());
+}
+
+llvm::Function* getOrCreateInetAddr(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("inet_addr")) {
+        return function;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(cg.context), {i8PtrTy}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "inet_addr", cg.module.get());
+}
+
+llvm::Function* getOrCreateHtons(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("htons")) {
+        return function;
+    }
+    auto* i16Ty = llvm::Type::getInt16Ty(cg.context);
+    auto* functionTy = llvm::FunctionType::get(i16Ty, {i16Ty}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "htons", cg.module.get());
+}
+
+llvm::Function* getOrCreateConnect(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("connect")) {
+        return function;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* functionTy = llvm::FunctionType::get(
+        llvm::Type::getInt32Ty(cg.context),
+        {llvm::Type::getInt64Ty(cg.context), i8PtrTy, llvm::Type::getInt32Ty(cg.context)},
+        false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "connect", cg.module.get());
+}
+
+llvm::Function* getOrCreateSend(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("send")) {
+        return function;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* functionTy = llvm::FunctionType::get(i32Ty, {llvm::Type::getInt64Ty(cg.context), i8PtrTy, i32Ty, i32Ty}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "send", cg.module.get());
+}
+
+llvm::Function* getOrCreateRecv(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("recv")) {
+        return function;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* functionTy = llvm::FunctionType::get(i32Ty, {llvm::Type::getInt64Ty(cg.context), i8PtrTy, i32Ty, i32Ty}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "recv", cg.module.get());
+}
+
+llvm::Function* getOrCreateCloseSocket(CodeGenerator& cg) {
+    if (auto* function = cg.module->getFunction("closesocket")) {
+        return function;
+    }
+    auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(cg.context), {llvm::Type::getInt64Ty(cg.context)}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "closesocket", cg.module.get());
+}
+
+llvm::Value* asCStringPointer(CodeGenerator& cg, llvm::Value* value) {
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    if (!value) {
+        return llvm::ConstantPointerNull::get(i8PtrTy);
+    }
+    if (value->getType() == i8PtrTy) {
+        return value;
+    }
+    if (value->getType()->isPointerTy()) {
+        return cg.builder.CreateBitCast(value, i8PtrTy, "str.ptr");
+    }
+    return llvm::ConstantPointerNull::get(i8PtrTy);
+}
+
+llvm::Value* coercePrintfValue(CodeGenerator& cg, llvm::Value* value, const Type* type) {
+    if (!value || !type) return value;
+    if (type->isStringTy()) {
+        return asCStringPointer(cg, value);
+    }
+    if (type->isCharTy()) {
+        return value->getType()->isIntegerTy(32) ? value : cg.builder.CreateSExt(value, llvm::Type::getInt32Ty(cg.context), "char.printf");
+    }
+    if (type->getName() == "Boolean" || type->getName() == "Bool") {
+        return value->getType()->isIntegerTy(32) ? value : cg.builder.CreateZExt(value, llvm::Type::getInt32Ty(cg.context), "bool.printf");
+    }
+    if (type->isIntegerTy()) {
+        if (!value->getType()->isIntegerTy()) return value;
+        unsigned bits = value->getType()->getIntegerBitWidth();
+        if (bits < 32) return cg.builder.CreateSExt(value, llvm::Type::getInt32Ty(cg.context), "int.printf");
+        return value;
+    }
+    if (type->isFloatTy()) {
+        return cg.builder.CreateFPExt(value, llvm::Type::getDoubleTy(cg.context), "float.printf");
+    }
+    return value;
+}
+
+std::string printfFormatForType(const Type* type) {
+    if (!type) return "%p";
+    if (type->isStringTy()) return "%s";
+    if (type->isCharTy()) return "%c";
+    if (type->getName() == "Boolean" || type->getName() == "Bool") return "%d";
+    if (type->getName() == "Long" || type->getName() == "Natural" || type->getName() == "Integer") return "%lld";
+    if (type->isIntegerTy()) return "%d";
+    if (type->isFloatTy() || type->isDoubleTy()) return "%f";
+    return "%p";
+}
+
+llvm::Value* codegenNativeIOCall(
+    const std::string& functionName,
+    const std::vector<llvm::Value*>& argValues,
+    const std::vector<std::unique_ptr<Type>>& argTypes) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    auto* voidTy = llvm::Type::getVoidTy(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+
+    if (functionName == "print" || functionName == "println") {
+        for (size_t i = 0; i < argValues.size(); ++i) {
+            const Type* argType = i < argTypes.size() ? argTypes[i].get() : nullptr;
+            if (argType && argType->isStringTy()) {
+                cg.builder.CreateCall(
+                    getOrCreateRuntimeFunction(cg, "csec_print_string", voidTy, {i8PtrTy}),
+                    {asCStringPointer(cg, argValues[i])});
+            }
+            else if (argType && argType->isCharTy()) {
+                llvm::Value* value = argValues[i]->getType()->isIntegerTy(8)
+                    ? argValues[i]
+                    : cg.builder.CreateTrunc(argValues[i], i8Ty, "print.char");
+                cg.builder.CreateCall(
+                    getOrCreateRuntimeFunction(cg, "csec_print_char", voidTy, {i8Ty}),
+                    {value});
+            }
+            else if (argType && (argType->getName() == "Boolean" || argType->getName() == "Bool")) {
+                llvm::Value* value = argValues[i]->getType()->isIntegerTy(32)
+                    ? argValues[i]
+                    : cg.builder.CreateZExt(argValues[i], i32Ty, "print.bool");
+                cg.builder.CreateCall(
+                    getOrCreateRuntimeFunction(cg, "csec_print_bool", voidTy, {i32Ty}),
+                    {value});
+            }
+            else if (argType && (argType->isFloatTy() || argType->isDoubleTy())) {
+                cg.builder.CreateCall(
+                    getOrCreateRuntimeFunction(cg, "csec_print_double", voidTy, {f64Ty}),
+                    {coerceMathValueToDouble(cg, argValues[i])});
+            }
+            else {
+                cg.builder.CreateCall(
+                    getOrCreateRuntimeFunction(cg, "csec_print_i64", voidTy, {i64Ty}),
+                    {coerceMathValueToI64(cg, argValues[i])});
+            }
+        }
+        if (functionName == "println") {
+            cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_print_newline", voidTy, {}), {});
+        }
+        return nullptr;
+    }
+
+    if (!argValues.empty()) {
+        std::cerr << "Error: Native input function '" << functionName << "' does not take arguments" << std::endl;
+        return nullptr;
+    }
+
+    if (functionName == "readLine") {
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_read_line", i8PtrTy, {}), {}, "readline");
+    }
+
+    if (functionName == "readChar") {
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_read_char", i8Ty, {}), {}, "readchar");
+    }
+
+    if (functionName == "readInt") {
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_read_int", i32Ty, {}), {}, "readint");
+    }
+
+    if (functionName == "readDouble") {
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_read_double", f64Ty, {}), {}, "readdouble");
+    }
+
+    return nullptr;
+}
+
+llvm::Value* codegenNativeNetworkCall(
+    const std::string& functionName,
+    const std::vector<llvm::Value*>& argValues,
+    const std::vector<std::unique_ptr<Type>>& argTypes) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i16Ty = llvm::Type::getInt16Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+
+    if (functionName == "tcpConnect") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: tcpConnect(host, port) requires two arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_tcp_connect", i64Ty, {i8PtrTy, i32Ty}),
+            {asCStringPointer(cg, argValues[0]), cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[1]), i32Ty, "net.port")},
+            "net.connect");
+    }
+
+    if (functionName == "tcpSend") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: tcpSend(socket, data) requires two arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_tcp_send", i32Ty, {i64Ty, i8PtrTy}),
+            {coerceMathValueToI64(cg, argValues[0]), asCStringPointer(cg, argValues[1])},
+            "net.send");
+    }
+
+    if (functionName == "tcpRecv") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: tcpRecv(socket, maxBytes) requires two arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_tcp_recv", i8PtrTy, {i64Ty, i32Ty}),
+            {coerceMathValueToI64(cg, argValues[0]), cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[1]), i32Ty, "net.maxbytes")},
+            "net.recv");
+    }
+
+    if (functionName == "tcpClose") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: tcpClose(socket) requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_tcp_close", i32Ty, {i64Ty}),
+            {coerceMathValueToI64(cg, argValues[0])},
+            "net.close");
+    }
+
+    auto asSocket = [&](llvm::Value* value) -> llvm::Value* {
+        return coerceMathValueToI64(cg, value);
+    };
+    auto asI32 = [&](llvm::Value* value) -> llvm::Value* {
+        if (!value) return llvm::ConstantInt::get(i32Ty, 0);
+        if (value->getType() == i32Ty) return value;
+        if (value->getType()->isIntegerTy()) {
+            unsigned bits = value->getType()->getIntegerBitWidth();
+            if (bits < 32) return cg.builder.CreateSExt(value, i32Ty, "net.sext");
+            if (bits > 32) return cg.builder.CreateTrunc(value, i32Ty, "net.trunc");
+        }
+        if (value->getType()->isFloatingPointTy()) return cg.builder.CreateFPToSI(value, i32Ty, "net.fptosi");
+        return llvm::ConstantInt::get(i32Ty, 0);
+    };
+
+    if (functionName == "tcpConnect") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: tcpConnect(host, port) requires two arguments" << std::endl;
+            return nullptr;
+        }
+
+        auto* wsadataTy = llvm::ArrayType::get(i8Ty, 512);
+        llvm::Value* wsadata = cg.builder.CreateAlloca(wsadataTy, nullptr, "net.wsadata");
+        llvm::Value* wsadataPtr = cg.builder.CreateBitCast(wsadata, i8PtrTy, "net.wsadata.ptr");
+        cg.builder.CreateCall(getOrCreateWSAStartup(cg), {llvm::ConstantInt::get(i16Ty, 0x0202), wsadataPtr});
+
+        llvm::Value* sock = cg.builder.CreateCall(
+            getOrCreateSocket(cg),
+            {llvm::ConstantInt::get(i32Ty, 2), llvm::ConstantInt::get(i32Ty, 1), llvm::ConstantInt::get(i32Ty, 6)},
+            "net.socket");
+
+        auto* zero8Ty = llvm::ArrayType::get(i8Ty, 8);
+        auto* sockaddrTy = llvm::StructType::get(cg.context, {i16Ty, i16Ty, i32Ty, zero8Ty});
+        llvm::Value* addr = cg.builder.CreateAlloca(sockaddrTy, nullptr, "net.sockaddr");
+        cg.builder.CreateStore(
+            llvm::ConstantInt::get(i16Ty, 2),
+            cg.builder.CreateStructGEP(sockaddrTy, addr, 0, "net.family"));
+        llvm::Value* port16 = cg.builder.CreateTrunc(asI32(argValues[1]), i16Ty, "net.port16");
+        cg.builder.CreateStore(
+            cg.builder.CreateCall(getOrCreateHtons(cg), {port16}, "net.port.be"),
+            cg.builder.CreateStructGEP(sockaddrTy, addr, 1, "net.port"));
+        llvm::Value* host = asCStringPointer(cg, argValues[0]);
+        cg.builder.CreateStore(
+            cg.builder.CreateCall(getOrCreateInetAddr(cg), {host}, "net.addr"),
+            cg.builder.CreateStructGEP(sockaddrTy, addr, 2, "net.addr.slot"));
+        cg.builder.CreateStore(
+            llvm::Constant::getNullValue(zero8Ty),
+            cg.builder.CreateStructGEP(sockaddrTy, addr, 3, "net.zero"));
+        cg.builder.CreateCall(
+            getOrCreateConnect(cg),
+            {sock, cg.builder.CreateBitCast(addr, i8PtrTy, "net.sockaddr.ptr"), llvm::ConstantInt::get(i32Ty, 16)});
+        return sock;
+    }
+
+    if (functionName == "tcpSend") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: tcpSend(socket, data) requires two arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* data = asCStringPointer(cg, argValues[1]);
+        llvm::Value* length = cg.builder.CreateCall(getOrCreateStrlen(cg), {data}, "net.send.len64");
+        llvm::Value* length32 = cg.builder.CreateTrunc(length, i32Ty, "net.send.len");
+        return cg.builder.CreateCall(
+            getOrCreateSend(cg),
+            {asSocket(argValues[0]), data, length32, llvm::ConstantInt::get(i32Ty, 0)},
+            "net.send");
+    }
+
+    if (functionName == "tcpRecv") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: tcpRecv(socket, maxBytes) requires two arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* maxBytes = asI32(argValues[1]);
+        llvm::Value* allocBytes = cg.builder.CreateZExt(cg.builder.CreateAdd(maxBytes, llvm::ConstantInt::get(i32Ty, 1)), i64Ty, "net.recv.alloc");
+        llvm::Value* buffer = cg.builder.CreateCall(cg.mallocFunction, allocBytes, "net.recv.buffer");
+        llvm::Value* read = cg.builder.CreateCall(
+            getOrCreateRecv(cg),
+            {asSocket(argValues[0]), buffer, maxBytes, llvm::ConstantInt::get(i32Ty, 0)},
+            "net.recv");
+        llvm::Value* readOk = cg.builder.CreateICmpSGE(read, llvm::ConstantInt::get(i32Ty, 0), "net.recv.ok");
+        llvm::Value* terminatorIndex = cg.builder.CreateSelect(readOk, read, llvm::ConstantInt::get(i32Ty, 0), "net.recv.end");
+        llvm::Value* termPtr = cg.builder.CreateGEP(i8Ty, buffer, terminatorIndex, "net.recv.term");
+        cg.builder.CreateStore(llvm::ConstantInt::get(i8Ty, 0), termPtr);
+        return buffer;
+    }
+
+    if (functionName == "tcpClose") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: tcpClose(socket) requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(getOrCreateCloseSocket(cg), {asSocket(argValues[0])}, "net.close");
+    }
+
+    return nullptr;
+}
+
+llvm::Value* codegenNativePosixCall(
+    const std::string& functionName,
+    const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+
+    auto asI32 = [&](llvm::Value* value, const char* name = "posix.i32") -> llvm::Value* {
+        llvm::Value* i64Value = coerceMathValueToI64(cg, value);
+        return cg.builder.CreateTrunc(i64Value, i32Ty, name);
+    };
+
+    auto requireArgCount = [&](size_t expected) -> bool {
+        if (argValues.size() == expected) return true;
+        std::cerr << "Error: " << functionName << " requires " << expected << " argument(s)" << std::endl;
+        return false;
+    };
+
+    auto noArgIntConstant = [&](const std::string& runtimeName) -> llvm::Value* {
+        if (!requireArgCount(0)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, runtimeName, i32Ty, {}), {}, "posix.const");
+    };
+
+    if (functionName == "posixFlagReadOnly") return noArgIntConstant("csec_posix_flag_read_only");
+    if (functionName == "posixFlagWriteOnly") return noArgIntConstant("csec_posix_flag_write_only");
+    if (functionName == "posixFlagReadWrite") return noArgIntConstant("csec_posix_flag_read_write");
+    if (functionName == "posixFlagCreate") return noArgIntConstant("csec_posix_flag_create");
+    if (functionName == "posixFlagTruncate") return noArgIntConstant("csec_posix_flag_truncate");
+    if (functionName == "posixFlagAppend") return noArgIntConstant("csec_posix_flag_append");
+    if (functionName == "posixSeekSet") return noArgIntConstant("csec_posix_seek_set");
+    if (functionName == "posixSeekCur") return noArgIntConstant("csec_posix_seek_cur");
+    if (functionName == "posixSeekEnd") return noArgIntConstant("csec_posix_seek_end");
+    if (functionName == "posixAccessExists") return noArgIntConstant("csec_posix_access_exists");
+    if (functionName == "posixAccessRead") return noArgIntConstant("csec_posix_access_read");
+    if (functionName == "posixAccessWrite") return noArgIntConstant("csec_posix_access_write");
+    if (functionName == "posixAccessExecute") return noArgIntConstant("csec_posix_access_execute");
+
+    if (functionName == "posixOpen") {
+        if (!requireArgCount(3)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_open", i32Ty, {i8PtrTy, i32Ty, i32Ty}),
+            {asCStringPointer(cg, argValues[0]), asI32(argValues[1], "posix.open.flags"), asI32(argValues[2], "posix.open.mode")},
+            "posix.open");
+    }
+
+    if (functionName == "posixRead") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_read", i8PtrTy, {i32Ty, i32Ty}),
+            {asI32(argValues[0], "posix.read.fd"), asI32(argValues[1], "posix.read.max")},
+            "posix.read");
+    }
+
+    if (functionName == "posixWrite") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_write", i32Ty, {i32Ty, i8PtrTy}),
+            {asI32(argValues[0], "posix.write.fd"), asCStringPointer(cg, argValues[1])},
+            "posix.write");
+    }
+
+    if (functionName == "posixClose") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_close", i32Ty, {i32Ty}),
+            {asI32(argValues[0], "posix.close.fd")},
+            "posix.close");
+    }
+
+    if (functionName == "posixLseek") {
+        if (!requireArgCount(3)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_lseek", i64Ty, {i32Ty, i64Ty, i32Ty}),
+            {asI32(argValues[0], "posix.lseek.fd"), coerceMathValueToI64(cg, argValues[1]), asI32(argValues[2], "posix.lseek.whence")},
+            "posix.lseek");
+    }
+
+    if (functionName == "posixUnlink") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_unlink", i32Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "posix.unlink");
+    }
+
+    if (functionName == "posixRename") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_rename", i32Ty, {i8PtrTy, i8PtrTy}),
+            {asCStringPointer(cg, argValues[0]), asCStringPointer(cg, argValues[1])},
+            "posix.rename");
+    }
+
+    if (functionName == "posixMkdir") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_mkdir", i32Ty, {i8PtrTy, i32Ty}),
+            {asCStringPointer(cg, argValues[0]), asI32(argValues[1], "posix.mkdir.mode")},
+            "posix.mkdir");
+    }
+
+    if (functionName == "posixRmdir") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_rmdir", i32Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "posix.rmdir");
+    }
+
+    if (functionName == "posixChdir") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_chdir", i32Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "posix.chdir");
+    }
+
+    if (functionName == "posixGetcwd") {
+        if (!requireArgCount(0)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_posix_getcwd", i8PtrTy, {}), {}, "posix.getcwd");
+    }
+
+    if (functionName == "posixAccess") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_access", i32Ty, {i8PtrTy, i32Ty}),
+            {asCStringPointer(cg, argValues[0]), asI32(argValues[1], "posix.access.mode")},
+            "posix.access");
+    }
+
+    if (functionName == "posixGetenv") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_getenv", i8PtrTy, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "posix.getenv");
+    }
+
+    if (functionName == "posixSetenv") {
+        if (!requireArgCount(3)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_setenv", i32Ty, {i8PtrTy, i8PtrTy, i32Ty}),
+            {asCStringPointer(cg, argValues[0]), asCStringPointer(cg, argValues[1]), asI32(argValues[2], "posix.setenv.overwrite")},
+            "posix.setenv");
+    }
+
+    if (functionName == "posixUnsetenv") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_unsetenv", i32Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "posix.unsetenv");
+    }
+
+    if (functionName == "posixSleep") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_posix_sleep", i32Ty, {i32Ty}),
+            {asI32(argValues[0], "posix.sleep.seconds")},
+            "posix.sleep");
+    }
+
+    if (functionName == "posixTime") {
+        if (!requireArgCount(0)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_posix_time", i64Ty, {}), {}, "posix.time");
+    }
+
+    if (functionName == "posixErrno") {
+        if (!requireArgCount(0)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_posix_errno", i32Ty, {}), {}, "posix.errno");
+    }
+
+    return nullptr;
+}
+
+llvm::Value* codegenNativeScalarMathCall(const std::string& functionName, const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    auto callUnaryRuntime = [&](const std::string& runtimeName) -> llvm::Value* {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: Math function '" << functionName << "' requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, runtimeName, f64Ty, {f64Ty}),
+            {coerceMathValueToDouble(cg, argValues[0])},
+            "math.call");
+    };
+    auto callBinaryRuntime = [&](const std::string& runtimeName) -> llvm::Value* {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: Math function '" << functionName << "' requires two arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, runtimeName, f64Ty, {f64Ty, f64Ty}),
+            {coerceMathValueToDouble(cg, argValues[0]), coerceMathValueToDouble(cg, argValues[1])},
+            "math.call");
+    };
+
+    if (functionName == "sin") return callUnaryRuntime("csec_math_sin");
+    if (functionName == "cos") return callUnaryRuntime("csec_math_cos");
+    if (functionName == "tan") return callUnaryRuntime("csec_math_tan");
+    if (functionName == "cot") return callUnaryRuntime("csec_math_cot");
+    if (functionName == "sec") return callUnaryRuntime("csec_math_sec");
+    if (functionName == "csc") return callUnaryRuntime("csec_math_csc");
+    if (functionName == "arcsin") return callUnaryRuntime("csec_math_asin");
+    if (functionName == "arccos") return callUnaryRuntime("csec_math_acos");
+    if (functionName == "arctan") return callUnaryRuntime("csec_math_atan");
+    if (functionName == "sinh") return callUnaryRuntime("csec_math_sinh");
+    if (functionName == "cosh") return callUnaryRuntime("csec_math_cosh");
+    if (functionName == "tanh") return callUnaryRuntime("csec_math_tanh");
+    if (functionName == "coth") return callUnaryRuntime("csec_math_coth");
+    if (functionName == "sqrt") return callUnaryRuntime("csec_math_sqrt");
+    if (functionName == "ln") return callUnaryRuntime("csec_math_log");
+    if (functionName == "lg") return callUnaryRuntime("csec_math_log10");
+    if (functionName == "exp") return callUnaryRuntime("csec_math_exp");
+    if (functionName == "pow") return callBinaryRuntime("csec_math_pow");
+    if (functionName == "frac") return callBinaryRuntime("csec_math_frac");
+    if (functionName == "binom") return callBinaryRuntime("csec_math_binom");
+
+    if (functionName == "log") {
+        if (argValues.size() == 1) return callUnaryRuntime("csec_math_log");
+        if (argValues.size() == 2) return callBinaryRuntime("csec_math_log_base");
+        std::cerr << "Error: Math function 'log' requires one or two arguments" << std::endl;
+        return nullptr;
+    }
+
+    if (functionName == "min" || functionName == "max" || functionName == "gcd") {
+        if (argValues.empty() || (functionName == "gcd" && argValues.size() < 2)) {
+            std::cerr << "Error: Math function '" << functionName << "' has too few arguments" << std::endl;
+            return nullptr;
+        }
+        std::string runtimeName = functionName == "min" ? "csec_math_min" :
+                                  functionName == "max" ? "csec_math_max" : "csec_math_gcd";
+        llvm::Value* result = coerceMathValueToDouble(cg, argValues[0]);
+        for (size_t i = 1; i < argValues.size(); ++i) {
+            result = cg.builder.CreateCall(
+                getOrCreateRuntimeFunction(cg, runtimeName, f64Ty, {f64Ty, f64Ty}),
+                {result, coerceMathValueToDouble(cg, argValues[i])},
+                "math.fold");
+        }
+        return result;
+    }
+
+    auto unary = [&](const std::string& cName) -> llvm::Value* {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: Math function '" << functionName << "' requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(getOrCreateUnaryDoubleFunction(cg, cName), {coerceMathValueToDouble(cg, argValues[0])}, "math.call");
+    };
+    auto binary = [&](const std::string& cName) -> llvm::Value* {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: Math function '" << functionName << "' requires two arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateBinaryDoubleFunction(cg, cName),
+            {coerceMathValueToDouble(cg, argValues[0]), coerceMathValueToDouble(cg, argValues[1])},
+            "math.call");
+    };
+
+    if (functionName == "sin") return unary("sin");
+    if (functionName == "cos") return unary("cos");
+    if (functionName == "tan") return unary("tan");
+    if (functionName == "arcsin") return unary("asin");
+    if (functionName == "arccos") return unary("acos");
+    if (functionName == "arctan") return unary("atan");
+    if (functionName == "sinh") return unary("sinh");
+    if (functionName == "cosh") return unary("cosh");
+    if (functionName == "tanh") return unary("tanh");
+    if (functionName == "sqrt") return unary("sqrt");
+    if (functionName == "ln") return unary("log");
+    if (functionName == "lg") return unary("log10");
+    if (functionName == "exp") return unary("exp");
+    if (functionName == "pow") return binary("pow");
+
+    if (functionName == "log") {
+        if (argValues.size() == 1) return unary("log");
+        if (argValues.size() == 2) {
+            llvm::Value* valueLog = cg.builder.CreateCall(
+                getOrCreateUnaryDoubleFunction(cg, "log"),
+                {coerceMathValueToDouble(cg, argValues[1])},
+                "math.log.value");
+            llvm::Value* baseLog = cg.builder.CreateCall(
+                getOrCreateUnaryDoubleFunction(cg, "log"),
+                {coerceMathValueToDouble(cg, argValues[0])},
+                "math.log.base");
+            return cg.builder.CreateFDiv(valueLog, baseLog, "math.log");
+        }
+        std::cerr << "Error: Math function 'log' requires one or two arguments" << std::endl;
+        return nullptr;
+    }
+
+    if (functionName == "cot" || functionName == "sec" || functionName == "csc" || functionName == "coth") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: Math function '" << functionName << "' requires one argument" << std::endl;
+            return nullptr;
+        }
+        std::string cName = functionName == "cot" ? "tan" :
+                            functionName == "sec" ? "cos" :
+                            functionName == "csc" ? "sin" : "tanh";
+        llvm::Value* denominator = cg.builder.CreateCall(
+            getOrCreateUnaryDoubleFunction(cg, cName),
+            {coerceMathValueToDouble(cg, argValues[0])},
+            "math.trig.den");
+        return cg.builder.CreateFDiv(llvm::ConstantFP::get(f64Ty, 1.0), denominator, "math.recip");
+    }
+
+    if (functionName == "frac") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: Math function 'frac' requires two arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateFDiv(coerceMathValueToDouble(cg, argValues[0]), coerceMathValueToDouble(cg, argValues[1]), "math.frac");
+    }
+
+    if (functionName == "min" || functionName == "max") {
+        if (argValues.empty()) {
+            std::cerr << "Error: Math function '" << functionName << "' requires at least one argument" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* result = coerceMathValueToDouble(cg, argValues[0]);
+        for (size_t i = 1; i < argValues.size(); ++i) {
+            llvm::Value* next = coerceMathValueToDouble(cg, argValues[i]);
+            llvm::Value* cmp = functionName == "min"
+                ? cg.builder.CreateFCmpOLT(next, result, "math.min.cmp")
+                : cg.builder.CreateFCmpOGT(next, result, "math.max.cmp");
+            result = cg.builder.CreateSelect(cmp, next, result, "math.select");
+        }
+        return result;
+    }
+
+    if (functionName == "gcd") {
+        if (argValues.size() < 2) {
+            std::cerr << "Error: Math function 'gcd' requires at least two arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* result = coerceMathValueToI64(cg, argValues[0]);
+        auto* gcdFn = getOrCreateGcdI64(cg);
+        for (size_t i = 1; i < argValues.size(); ++i) {
+            result = cg.builder.CreateCall(gcdFn, {result, coerceMathValueToI64(cg, argValues[i])}, "math.gcd");
+        }
+        return cg.builder.CreateSIToFP(result, f64Ty, "math.gcd.real");
+    }
+
+    if (functionName == "binom") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: Math function 'binom' requires two arguments" << std::endl;
+            return nullptr;
+        }
+        auto* tgammaFn = getOrCreateUnaryDoubleFunction(cg, "tgamma");
+        llvm::Value* n = coerceMathValueToDouble(cg, argValues[0]);
+        llvm::Value* k = coerceMathValueToDouble(cg, argValues[1]);
+        llvm::Value* one = llvm::ConstantFP::get(f64Ty, 1.0);
+        llvm::Value* numerator = cg.builder.CreateCall(tgammaFn, {cg.builder.CreateFAdd(n, one)}, "math.binom.n");
+        llvm::Value* kFact = cg.builder.CreateCall(tgammaFn, {cg.builder.CreateFAdd(k, one)}, "math.binom.k");
+        llvm::Value* nkFact = cg.builder.CreateCall(tgammaFn, {cg.builder.CreateFAdd(cg.builder.CreateFSub(n, k), one)}, "math.binom.nk");
+        return cg.builder.CreateFDiv(numerator, cg.builder.CreateFMul(kFact, nkFact), "math.binom");
+    }
+
+    return nullptr;
+}
+}
+
+llvm::Value* codegenNativeSimulationCall(const std::string& functionName, const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+
+    auto asI32 = [&](llvm::Value* value, const char* name) -> llvm::Value* {
+        llvm::Value* i64Value = coerceMathValueToI64(cg, value);
+        return cg.builder.CreateTrunc(i64Value, i32Ty, name);
+    };
+    auto asF64 = [&](llvm::Value* value) -> llvm::Value* {
+        return coerceMathValueToDouble(cg, value);
+    };
+
+    if (functionName == "mdSimulate") {
+        if (argValues.size() != 5) {
+            std::cerr << "Error: mdSimulate(atomCount, bondCount, steps, dt, temperature) requires five arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_sim_md_lennard_jones", f64Ty, {i32Ty, i32Ty, i32Ty, f64Ty, f64Ty}),
+            {
+                asI32(argValues[0], "sim.md.atoms"),
+                asI32(argValues[1], "sim.md.bonds"),
+                asI32(argValues[2], "sim.md.steps"),
+                asF64(argValues[3]),
+                asF64(argValues[4])
+            },
+            "sim.md");
+    }
+
+    if (functionName == "cfdSimulate") {
+        if (argValues.size() != 6) {
+            std::cerr << "Error: cfdSimulate(width, height, steps, dt, viscosity, velocity) requires six arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_sim_cfd_lid_cavity", f64Ty, {i32Ty, i32Ty, i32Ty, f64Ty, f64Ty, f64Ty}),
+            {
+                asI32(argValues[0], "sim.cfd.width"),
+                asI32(argValues[1], "sim.cfd.height"),
+                asI32(argValues[2], "sim.cfd.steps"),
+                asF64(argValues[3]),
+                asF64(argValues[4]),
+                asF64(argValues[5])
+            },
+            "sim.cfd");
+    }
+
+    if (functionName == "proteinMcmc") {
+        if (argValues.size() != 3) {
+            std::cerr << "Error: proteinMcmc(residueCount, steps, temperature) requires three arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_sim_protein_mcmc", f64Ty, {i32Ty, i32Ty, f64Ty}),
+            {
+                asI32(argValues[0], "sim.protein.residues"),
+                asI32(argValues[1], "sim.protein.steps"),
+                asF64(argValues[2])
+            },
+            "sim.protein");
+    }
+
+    return nullptr;
+}
+
+llvm::Value* codegenBuiltinOdeCall(const std::string& functionName, const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+
+    if (functionName != "odeEuler") {
+        return nullptr;
+    }
+    if (argValues.size() != 5) {
+        std::cerr << "Error: odeEuler(f, t0, y0, h, steps) requires five arguments" << std::endl;
+        return nullptr;
+    }
+
+    auto* function = cg.builder.GetInsertBlock()->getParent();
+    auto* fType = llvm::FunctionType::get(f64Ty, {f64Ty, f64Ty}, false);
+    llvm::Value* derivative = argValues[0];
+    llvm::Value* t0 = coerceMathValueToDouble(cg, argValues[1]);
+    llvm::Value* y0 = coerceMathValueToDouble(cg, argValues[2]);
+    llvm::Value* h = coerceMathValueToDouble(cg, argValues[3]);
+    llvm::Value* steps64 = coerceMathValueToI64(cg, argValues[4]);
+    llvm::Value* steps = cg.builder.CreateTrunc(steps64, i32Ty, "ode.steps");
+
+    llvm::Value* tPtr = cg.builder.CreateAlloca(f64Ty, nullptr, "ode.t");
+    llvm::Value* yPtr = cg.builder.CreateAlloca(f64Ty, nullptr, "ode.y");
+    llvm::Value* iPtr = cg.builder.CreateAlloca(i32Ty, nullptr, "ode.i");
+    cg.builder.CreateStore(t0, tPtr);
+    cg.builder.CreateStore(y0, yPtr);
+    cg.builder.CreateStore(llvm::ConstantInt::get(i32Ty, 0), iPtr);
+
+    auto* condBB = llvm::BasicBlock::Create(cg.context, "ode.euler.cond", function);
+    auto* bodyBB = llvm::BasicBlock::Create(cg.context, "ode.euler.body", function);
+    auto* endBB = llvm::BasicBlock::Create(cg.context, "ode.euler.end", function);
+
+    cg.builder.CreateBr(condBB);
+    cg.builder.SetInsertPoint(condBB);
+    llvm::Value* i = cg.builder.CreateLoad(i32Ty, iPtr, "ode.i.load");
+    cg.builder.CreateCondBr(cg.builder.CreateICmpSLT(i, steps, "ode.keep"), bodyBB, endBB);
+
+    cg.builder.SetInsertPoint(bodyBB);
+    llvm::Value* t = cg.builder.CreateLoad(f64Ty, tPtr, "ode.t.load");
+    llvm::Value* y = cg.builder.CreateLoad(f64Ty, yPtr, "ode.y.load");
+    llvm::Value* dy = cg.builder.CreateCall(fType, derivative, {t, y}, "ode.dy");
+    llvm::Value* nextY = cg.builder.CreateFAdd(y, cg.builder.CreateFMul(h, dy, "ode.delta"), "ode.next.y");
+    llvm::Value* nextT = cg.builder.CreateFAdd(t, h, "ode.next.t");
+    cg.builder.CreateStore(nextY, yPtr);
+    cg.builder.CreateStore(nextT, tPtr);
+    cg.builder.CreateStore(cg.builder.CreateAdd(i, llvm::ConstantInt::get(i32Ty, 1), "ode.next.i"), iPtr);
+    cg.builder.CreateBr(condBB);
+
+    cg.builder.SetInsertPoint(endBB);
+    return cg.builder.CreateLoad(f64Ty, yPtr, "ode.result");
+}
 
 void FunctionCallNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
 
 // Helper: substitute TypeVariableType in a FunctionDeclarationNode clone
+static void substituteTypeReference(std::unique_ptr<Type>& t,
+                                    const std::vector<std::string>& typeParams,
+                                    const std::vector<std::unique_ptr<Type>>& concreteTypes) {
+    if (!t) {
+        return;
+    }
+
+    if (t->getKind() == Type::Kind::VARIABLE) {
+        for (size_t i = 0; i < typeParams.size() && i < concreteTypes.size(); ++i) {
+            if (t->getName() == typeParams[i] && concreteTypes[i]) {
+                t = concreteTypes[i]->clone();
+                return;
+            }
+        }
+    }
+
+    if (t->getKind() == Type::Kind::GENERIC) {
+        auto* generic = dynamic_cast<GenericType*>(t.get());
+        if (!generic) {
+            return;
+        }
+        substituteTypeReference(generic->baseType, typeParams, concreteTypes);
+        for (auto& arg : generic->typeArguments) {
+            substituteTypeReference(arg, typeParams, concreteTypes);
+        }
+    }
+}
+
+static void substituteTypesInAst(ASTNode* node,
+                                 const std::vector<std::string>& typeParams,
+                                 const std::vector<std::unique_ptr<Type>>& concreteTypes) {
+    if (!node) {
+        return;
+    }
+
+    if (auto* block = dynamic_cast<BlockNode*>(node)) {
+        for (auto& stmt : block->statements) {
+            substituteTypesInAst(stmt.get(), typeParams, concreteTypes);
+        }
+        return;
+    }
+
+    if (auto* returnStmt = dynamic_cast<ReturnStatementNode*>(node)) {
+        substituteTypesInAst(returnStmt->expression.get(), typeParams, concreteTypes);
+        return;
+    }
+
+    if (auto* binary = dynamic_cast<BinaryExpressionNode*>(node)) {
+        substituteTypesInAst(binary->left.get(), typeParams, concreteTypes);
+        substituteTypesInAst(binary->right.get(), typeParams, concreteTypes);
+        return;
+    }
+
+    if (auto* ifStmt = dynamic_cast<IfStatementNode*>(node)) {
+        substituteTypesInAst(ifStmt->condition.get(), typeParams, concreteTypes);
+        substituteTypesInAst(ifStmt->thenBlock.get(), typeParams, concreteTypes);
+        substituteTypesInAst(ifStmt->elseBlock.get(), typeParams, concreteTypes);
+        return;
+    }
+
+    if (auto* varDecl = dynamic_cast<VariableDeclarationNode*>(node)) {
+        substituteTypeReference(varDecl->type, typeParams, concreteTypes);
+        substituteTypesInAst(varDecl->initializer.get(), typeParams, concreteTypes);
+        return;
+    }
+
+    if (auto* call = dynamic_cast<FunctionCallNode*>(node)) {
+        for (auto& typeArg : call->explicitTypeArgs) {
+            substituteTypeReference(typeArg, typeParams, concreteTypes);
+        }
+        for (auto& arg : call->arguments) {
+            substituteTypesInAst(arg.get(), typeParams, concreteTypes);
+        }
+        return;
+    }
+
+    if (auto* creation = dynamic_cast<ClassInstanceCreationNode*>(node)) {
+        for (auto& typeArg : creation->templateArgs) {
+            substituteTypeReference(typeArg, typeParams, concreteTypes);
+        }
+        for (auto& arg : creation->arguments) {
+            substituteTypesInAst(arg.get(), typeParams, concreteTypes);
+        }
+        return;
+    }
+}
+
 static void substituteTypes(FunctionDeclarationNode* funcDecl,
                            const std::vector<std::string>& typeParams,
                            const std::vector<std::unique_ptr<Type>>& concreteTypes) {
-    auto substitute = [&](std::unique_ptr<Type>& t) {
-        if (!t) return;
-        if (t->getKind() == Type::Kind::VARIABLE) {
-            for (size_t i = 0; i < typeParams.size(); ++i) {
-                if (t->getName() == typeParams[i]) {
-                    t = concreteTypes[i]->clone();
-                    return;
-                }
-            }
-        }
-    };
-
     // Substitute parameter types
     for (auto& param : funcDecl->parameters) {
         auto* paramNode = dynamic_cast<ParameterNode*>(param.get());
         if (paramNode) {
-            substitute(paramNode->type);
+            substituteTypeReference(paramNode->type, typeParams, concreteTypes);
         }
     }
 
     // Substitute return type
-    substitute(funcDecl->returnType);
+    substituteTypeReference(funcDecl->returnType, typeParams, concreteTypes);
+    substituteTypesInAst(funcDecl->body.get(), typeParams, concreteTypes);
+}
+
+static void substituteTemplateConstants(ASTNode* node,
+                                        const std::unordered_map<std::string, std::string>& constantValues) {
+    if (!node) {
+        return;
+    }
+
+    if (auto* identifier = dynamic_cast<IdentifierNode*>(node)) {
+        auto it = constantValues.find(identifier->value);
+        if (it != constantValues.end()) {
+            identifier->value = it->second;
+        }
+        return;
+    }
+
+    if (auto* block = dynamic_cast<BlockNode*>(node)) {
+        for (auto& stmt : block->statements) {
+            substituteTemplateConstants(stmt.get(), constantValues);
+        }
+        return;
+    }
+
+    if (auto* returnStmt = dynamic_cast<ReturnStatementNode*>(node)) {
+        substituteTemplateConstants(returnStmt->expression.get(), constantValues);
+        return;
+    }
+
+    if (auto* binary = dynamic_cast<BinaryExpressionNode*>(node)) {
+        substituteTemplateConstants(binary->left.get(), constantValues);
+        substituteTemplateConstants(binary->right.get(), constantValues);
+        return;
+    }
+
+    if (auto* ifStmt = dynamic_cast<IfStatementNode*>(node)) {
+        substituteTemplateConstants(ifStmt->condition.get(), constantValues);
+        substituteTemplateConstants(ifStmt->thenBlock.get(), constantValues);
+        substituteTemplateConstants(ifStmt->elseBlock.get(), constantValues);
+        return;
+    }
+
+    if (auto* varDecl = dynamic_cast<VariableDeclarationNode*>(node)) {
+        substituteTemplateConstants(varDecl->initializer.get(), constantValues);
+        return;
+    }
+
+    if (auto* call = dynamic_cast<FunctionCallNode*>(node)) {
+        for (auto& arg : call->arguments) {
+            substituteTemplateConstants(arg.get(), constantValues);
+        }
+        return;
+    }
 }
 
 // Helper: infer concrete type from llvm::Value
@@ -55,6 +1237,111 @@ static std::unique_ptr<Type> inferTypeFromLLVM(llvm::Value* val) {
     return std::make_unique<UnknownType>();
 }
 
+static llvm::Value* coerceArgumentToParameterType(llvm::Value* value, llvm::Type* targetType) {
+    if (!value || !targetType) {
+        return value;
+    }
+
+    auto& cg = CodeGenerator::getInstance();
+    llvm::Type* sourceType = value->getType();
+    if (sourceType == targetType) {
+        return value;
+    }
+
+    if (sourceType->isIntegerTy() && targetType->isIntegerTy()) {
+        unsigned srcBits = sourceType->getIntegerBitWidth();
+        unsigned dstBits = targetType->getIntegerBitWidth();
+        if (srcBits < dstBits) {
+            return cg.builder.CreateSExt(value, targetType, "arg.sext");
+        }
+        if (srcBits > dstBits) {
+            return cg.builder.CreateTrunc(value, targetType, "arg.trunc");
+        }
+    }
+
+    if (sourceType->isFloatingPointTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateFPCast(value, targetType, "arg.fpcast");
+    }
+
+    if (sourceType->isIntegerTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateSIToFP(value, targetType, "arg.sitofp");
+    }
+
+    if (sourceType->isFloatingPointTy() && targetType->isIntegerTy()) {
+        return cg.builder.CreateFPToSI(value, targetType, "arg.fptosi");
+    }
+
+    if (sourceType->isPointerTy() && targetType->isPointerTy()) {
+        return cg.builder.CreateBitCast(value, targetType, "arg.bitcast");
+    }
+
+    return value;
+}
+
+static llvm::Value* defaultValueForReturnType(llvm::Type* returnType) {
+    auto& cg = CodeGenerator::getInstance();
+    if (!returnType || returnType->isVoidTy()) {
+        return nullptr;
+    }
+    if (returnType->isIntegerTy()) {
+        return llvm::ConstantInt::get(returnType, 0, true);
+    }
+    if (returnType->isFloatingPointTy()) {
+        return llvm::ConstantFP::get(returnType, 0.0);
+    }
+    if (returnType->isPointerTy()) {
+        return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(returnType));
+    }
+    return llvm::Constant::getNullValue(returnType);
+}
+
+static llvm::Value* createCallWithAdjustedArgs(llvm::Function* function, const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    if (!function || argValues.size() != function->arg_size()) {
+        return function ? defaultValueForReturnType(function->getReturnType()) : nullptr;
+    }
+
+    std::vector<llvm::Value*> adjustedArgs;
+    adjustedArgs.reserve(argValues.size());
+    for (size_t i = 0; i < argValues.size(); ++i) {
+        llvm::Type* paramType = function->getFunctionType()->getParamType(static_cast<unsigned>(i));
+        llvm::Value* adjusted = coerceArgumentToParameterType(argValues[i], paramType);
+        if (!adjusted || adjusted->getType() != paramType) {
+            return defaultValueForReturnType(function->getReturnType());
+        }
+        adjustedArgs.push_back(adjusted);
+    }
+
+    return cg.builder.CreateCall(function, adjustedArgs, function->getReturnType()->isVoidTy() ? "" : "calltmp");
+}
+
+static llvm::Value* createTypedCallWithAdjustedArgs(
+    llvm::FunctionType* functionType,
+    llvm::Value* callee,
+    const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    if (!functionType || !callee || argValues.size() != functionType->getNumParams()) {
+        return functionType ? defaultValueForReturnType(functionType->getReturnType()) : nullptr;
+    }
+
+    std::vector<llvm::Value*> adjustedArgs;
+    adjustedArgs.reserve(argValues.size());
+    for (size_t i = 0; i < argValues.size(); ++i) {
+        llvm::Type* paramType = functionType->getParamType(static_cast<unsigned>(i));
+        llvm::Value* adjusted = coerceArgumentToParameterType(argValues[i], paramType);
+        if (!adjusted || adjusted->getType() != paramType) {
+            return defaultValueForReturnType(functionType->getReturnType());
+        }
+        adjustedArgs.push_back(adjusted);
+    }
+
+    return cg.builder.CreateCall(
+        functionType,
+        callee,
+        adjustedArgs,
+        functionType->getReturnType()->isVoidTy() ? "" : "calltmp");
+}
+
 llvm::Value* FunctionCallNode::codegen() {
     auto& cg = CodeGenerator::getInstance();
 
@@ -64,11 +1351,36 @@ llvm::Value* FunctionCallNode::codegen() {
     for (auto& arg : arguments) {
         llvm::Value* argValue = arg->codegen();
         if (!argValue) {
-            return nullptr;
+            auto argType = arg->getType();
+            if (argType && argType->isVoidTy()) {
+                argValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), 0);
+            }
+            else if (argType && (argType->isFloatTy() || argType->isDoubleTy())) {
+                argValue = llvm::ConstantFP::get(llvm::Type::getDoubleTy(cg.context), 0.0);
+            }
+            else {
+                argValue = llvm::ConstantFP::get(llvm::Type::getDoubleTy(cg.context), 0.0);
+            }
         }
         argValues.push_back(argValue);
         auto argType = arg->getType();
         argTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
+    }
+
+    if (isNativeIOFunction(functionName)) {
+        return codegenNativeIOCall(functionName, argValues, argTypes);
+    }
+    if (isNativeNetworkFunction(functionName)) {
+        return codegenNativeNetworkCall(functionName, argValues, argTypes);
+    }
+    if (isNativePosixFunction(functionName)) {
+        return codegenNativePosixCall(functionName, argValues);
+    }
+    if (isNativeSimulationFunction(functionName)) {
+        return codegenNativeSimulationCall(functionName, argValues);
+    }
+    if (isBuiltinOdeFunction(functionName)) {
+        return codegenBuiltinOdeCall(functionName, argValues);
     }
 
     // Check if the function name refers to a template symbol
@@ -86,8 +1398,13 @@ llvm::Value* FunctionCallNode::codegen() {
             return nullptr;
         }
 
-        // Use explicit type arguments if provided, otherwise infer
-        std::vector<std::unique_ptr<Type>> concreteTypes(tmplSymbol->typeParameters.size());
+        const bool hasFullTemplateParams = !tmplSymbol->templateParams.empty();
+        const size_t templateParamCount = hasFullTemplateParams
+            ? tmplSymbol->templateParams.size()
+            : tmplSymbol->typeParameters.size();
+
+        // Use explicit template arguments if provided, otherwise infer
+        std::vector<std::unique_ptr<Type>> concreteTypes(templateParamCount);
         if (!explicitTypeArgs.empty()) {
             // Explicit template arguments: identity<Int>(42)
             for (size_t i = 0; i < explicitTypeArgs.size() && i < concreteTypes.size(); ++i) {
@@ -123,8 +1440,15 @@ llvm::Value* FunctionCallNode::codegen() {
         auto cacheIt = tmplSymbol->instantiations.find(mangledName);
         if (cacheIt != tmplSymbol->instantiations.end()) {
             llvm::Function* function = cacheIt->second;
-            llvm::Value* result = cg.builder.CreateCall(
-                function, argValues, function->getReturnType()->isVoidTy() ? "" : "calltmp");
+            std::vector<llvm::Value*> adjustedArgs;
+            adjustedArgs.reserve(argValues.size());
+            for (size_t i = 0; i < argValues.size(); ++i) {
+                llvm::Type* paramType = i < function->getFunctionType()->getNumParams()
+                    ? function->getFunctionType()->getParamType(static_cast<unsigned>(i))
+                    : nullptr;
+                adjustedArgs.push_back(coerceArgumentToParameterType(argValues[i], paramType));
+            }
+            llvm::Value* result = createCallWithAdjustedArgs(function, adjustedArgs);
 
             // Set type from the function return
             auto* funcType = dynamic_cast<FunctionType*>(
@@ -146,6 +1470,15 @@ llvm::Value* FunctionCallNode::codegen() {
 
         clonedFunc->name = mangledName;
         substituteTypes(clonedFunc, tmplSymbol->typeParameters, concreteTypes);
+        if (hasFullTemplateParams) {
+            std::unordered_map<std::string, std::string> constantValues;
+            for (size_t i = 0; i < tmplSymbol->templateParams.size() && i < concreteTypes.size(); ++i) {
+                if (!tmplSymbol->templateParams[i].isType && concreteTypes[i]) {
+                    constantValues[tmplSymbol->templateParams[i].name] = concreteTypes[i]->getName();
+                }
+            }
+            substituteTemplateConstants(clonedFunc->body.get(), constantValues);
+        }
 
         // Save codegen state
         auto* savedBlock = cg.builder.GetInsertBlock();
@@ -179,8 +1512,15 @@ llvm::Value* FunctionCallNode::codegen() {
         tmplSymbol->instantiations[mangledName] = function;
 
         // Call the instantiated function
-        llvm::Value* result = cg.builder.CreateCall(
-            function, argValues, function->getReturnType()->isVoidTy() ? "" : "calltmp");
+        std::vector<llvm::Value*> adjustedArgs;
+        adjustedArgs.reserve(argValues.size());
+        for (size_t i = 0; i < argValues.size(); ++i) {
+            llvm::Type* paramType = i < function->getFunctionType()->getNumParams()
+                ? function->getFunctionType()->getParamType(static_cast<unsigned>(i))
+                : nullptr;
+            adjustedArgs.push_back(coerceArgumentToParameterType(argValues[i], paramType));
+        }
+        llvm::Value* result = createCallWithAdjustedArgs(function, adjustedArgs);
 
         // Infer return type
         if (function->getReturnType()->isIntegerTy(32)) {
@@ -220,31 +1560,83 @@ llvm::Value* FunctionCallNode::codegen() {
             }
             if (allConstant && !function->getReturnType()->isVoidTy()) {
                 // Generate the call with AlwaysInline - LLVM optimizer will constant-fold
-                llvm::Value* result = cg.builder.CreateCall(
-                    function, argValues, "constexpr_call");
+                llvm::Value* result = createCallWithAdjustedArgs(function, argValues);
                 type = funcType->returnType ? funcType->returnType->clone() : std::make_unique<UnknownType>();
                 return result;
             }
         }
 
-        llvm::Value* result = cg.builder.CreateCall(
-            function, argValues, function->getReturnType()->isVoidTy() ? "" : "calltmp");
+        llvm::Value* result = createCallWithAdjustedArgs(function, argValues);
 
         type = funcType->returnType ? funcType->returnType->clone() : std::make_unique<UnknownType>();
         return result;
     }
+    else if (auto* callableSymbol = cg.symbolTable.lookup(functionName)) {
+        auto* funcType = dynamic_cast<FunctionType*>(callableSymbol->type.get());
+        if (funcType && callableSymbol->value) {
+            std::vector<llvm::Type*> paramLLVMTypes;
+            for (const auto& parameterType : funcType->parameterTypes) {
+                auto* llvmParamType = cg.getLLVMType(parameterType.get());
+                if (!llvmParamType) {
+                    std::cerr << "Error: Invalid parameter type in callable symbol '" << functionName << "'" << std::endl;
+                    return nullptr;
+                }
+                paramLLVMTypes.push_back(llvmParamType);
+            }
+            auto* llvmReturnType = cg.getLLVMType(funcType->returnType.get());
+            auto* llvmFuncType = llvmReturnType ? llvm::FunctionType::get(llvmReturnType, paramLLVMTypes, false) : nullptr;
+            if (!llvmFuncType) {
+                std::cerr << "Error: Invalid callable symbol '" << functionName << "'" << std::endl;
+                return nullptr;
+            }
+
+            llvm::Value* result = createTypedCallWithAdjustedArgs(llvmFuncType, callableSymbol->value, argValues);
+            type = funcType->returnType ? funcType->returnType->clone() : std::make_unique<UnknownType>();
+            return result;
+        }
+    }
     else {
         llvm::Function* function = cg.module->getFunction(functionName);
         if (function) {
-            llvm::Value* result = cg.builder.CreateCall(
-                function, argValues, function->getReturnType()->isVoidTy() ? "" : "calltmp");
+            llvm::Value* result = createCallWithAdjustedArgs(function, argValues);
             return result;
         }
         else {
+            if (isMathFallbackFunction(functionName)) {
+                if (functionName == "transpose" || functionName == "conjugate" || functionName == "adjoint") {
+                    if (argValues.size() != 1 || argTypes.empty() || !TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
+                        std::cerr << "Error: Tensor fallback '" << functionName << "' requires one tensor argument" << std::endl;
+                        return nullptr;
+                    }
+                    if (functionName == "transpose" || functionName == "adjoint") {
+                        return TensorRuntime::transposeTensor(cg, argValues[0]);
+                    }
+                    return TensorRuntime::cloneTensor(cg, argValues[0]);
+                }
+                if (functionName == "innerProduct" || functionName == "outerProduct" || functionName == "tensorProduct") {
+                    if (argValues.size() != 2 ||
+                        argTypes.size() != 2 ||
+                        !TensorRuntime::isTensorTypeName(argTypes[0]->getName()) ||
+                        !TensorRuntime::isTensorTypeName(argTypes[1]->getName())) {
+                        std::cerr << "Error: Tensor fallback '" << functionName << "' requires two tensor arguments" << std::endl;
+                        return nullptr;
+                    }
+                    if (functionName == "innerProduct") {
+                        return TensorRuntime::innerProduct(cg, argValues[0], argValues[1]);
+                    }
+                    return TensorRuntime::outerProduct(cg, argValues[0], argValues[1]);
+                }
+                if (isNativeScalarMathFunction(functionName)) {
+                    return codegenNativeScalarMathCall(functionName, argValues);
+                }
+                return llvm::ConstantFP::get(llvm::Type::getDoubleTy(cg.context), 0.0);
+            }
             std::cerr << "Error: Not found function name '" << functionName << "'" << std::endl;
             return nullptr;
         }
     }
+
+    return nullptr;
 }
 
 std::unique_ptr<Type> FunctionCallNode::getType() {
@@ -256,16 +1648,123 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
         argTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
     }
 
+    if (isNativeIOFunction(functionName)) {
+        if (functionName == "print" || functionName == "println") {
+            return std::make_unique<BasicType>("Unit");
+        }
+        if (functionName == "readLine") {
+            return std::make_unique<BasicType>("String");
+        }
+        if (functionName == "readChar") {
+            return std::make_unique<BasicType>("Char");
+        }
+        if (functionName == "readInt") {
+            return std::make_unique<BasicType>("Int");
+        }
+        if (functionName == "readDouble") {
+            return std::make_unique<BasicType>("Double");
+        }
+    }
+    if (isNativeNetworkFunction(functionName)) {
+        if (functionName == "tcpConnect") {
+            return std::make_unique<BasicType>("Long");
+        }
+        if (functionName == "tcpRecv") {
+            return std::make_unique<BasicType>("String");
+        }
+        return std::make_unique<BasicType>("Int");
+    }
+    if (isNativePosixFunction(functionName)) {
+        if (functionName == "posixRead" || functionName == "posixGetcwd" || functionName == "posixGetenv") {
+            return std::make_unique<BasicType>("String");
+        }
+        if (functionName == "posixLseek" || functionName == "posixTime") {
+            return std::make_unique<BasicType>("Long");
+        }
+        return std::make_unique<BasicType>("Int");
+    }
+    if (isNativeSimulationFunction(functionName)) {
+        return std::make_unique<BasicType>("Double");
+    }
+    if (isBuiltinOdeFunction(functionName)) {
+        return std::make_unique<BasicType>("Double");
+    }
+
     // Check if this is a template function - return type is unknown until instantiation
     auto& cg = CodeGenerator::getInstance();
     auto* symbol = cg.symbolTable.lookup(functionName);
     if (symbol && symbol->symbolType == SymbolType::TEMPLATE) {
-        return std::make_unique<UnknownType>();
+        auto* tmplSymbol = dynamic_cast<TemplateSymbol*>(symbol);
+        auto* funcDecl = tmplSymbol ? dynamic_cast<FunctionDeclarationNode*>(tmplSymbol->declaration.get()) : nullptr;
+        if (!tmplSymbol || !funcDecl || !funcDecl->returnType) {
+            return std::make_unique<UnknownType>();
+        }
+
+        const bool hasFullTemplateParams = !tmplSymbol->templateParams.empty();
+        const size_t templateParamCount = hasFullTemplateParams
+            ? tmplSymbol->templateParams.size()
+            : tmplSymbol->typeParameters.size();
+        std::vector<std::unique_ptr<Type>> concreteTypes(templateParamCount);
+
+        if (!explicitTypeArgs.empty()) {
+            for (size_t i = 0; i < explicitTypeArgs.size() && i < concreteTypes.size(); ++i) {
+                concreteTypes[i] = explicitTypeArgs[i]->clone();
+            }
+        } else {
+            for (size_t pi = 0; pi < funcDecl->parameters.size() && pi < argTypes.size(); ++pi) {
+                auto* paramNode = dynamic_cast<ParameterNode*>(funcDecl->parameters[pi].get());
+                if (!paramNode || !paramNode->type || paramNode->type->getKind() != Type::Kind::VARIABLE) {
+                    continue;
+                }
+                for (size_t ti = 0; ti < tmplSymbol->typeParameters.size(); ++ti) {
+                    if (paramNode->type->getName() == tmplSymbol->typeParameters[ti] && ti < concreteTypes.size() && !concreteTypes[ti]) {
+                        concreteTypes[ti] = argTypes[pi] ? argTypes[pi]->clone() : std::make_unique<UnknownType>();
+                    }
+                }
+            }
+        }
+
+        if (funcDecl->returnType->getKind() == Type::Kind::VARIABLE) {
+            for (size_t i = 0; i < tmplSymbol->typeParameters.size(); ++i) {
+                if (funcDecl->returnType->getName() == tmplSymbol->typeParameters[i] &&
+                    i < concreteTypes.size() && concreteTypes[i]) {
+                    return concreteTypes[i]->clone();
+                }
+            }
+        }
+
+        return funcDecl->returnType->clone();
     }
 
     auto functionSymbolOpt = cg.symbolTable.lookupFunction(functionName, argTypes);
     if (!functionSymbolOpt) {
-        // Function not found - may be a template not yet instantiated, or truly missing
+        if (isMathFallbackFunction(functionName)) {
+            if ((functionName == "transpose" || functionName == "conjugate" || functionName == "adjoint") &&
+                argTypes.size() == 1 &&
+                TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
+                return argTypes[0]->clone();
+            }
+            if ((functionName == "outerProduct" || functionName == "tensorProduct") &&
+                argTypes.size() == 2 &&
+                TensorRuntime::isTensorTypeName(argTypes[0]->getName()) &&
+                TensorRuntime::isTensorTypeName(argTypes[1]->getName())) {
+                return argTypes[0]->clone();
+            }
+            if (functionName == "innerProduct" &&
+                argTypes.size() == 2 &&
+                TensorRuntime::isTensorTypeName(argTypes[0]->getName()) &&
+                TensorRuntime::isTensorTypeName(argTypes[1]->getName())) {
+                return std::make_unique<BasicType>("Real");
+            }
+            return std::make_unique<BasicType>("Real");
+        }
+        auto* fallbackSymbol = cg.symbolTable.lookup(functionName);
+        if (fallbackSymbol && fallbackSymbol->type && fallbackSymbol->type->getKind() == Type::Kind::FUNCTION) {
+            auto* fallbackFuncType = dynamic_cast<FunctionType*>(fallbackSymbol->type.get());
+            if (fallbackFuncType && fallbackFuncType->returnType) {
+                return fallbackFuncType->returnType->clone();
+            }
+        }
         return std::make_unique<UnknownType>();
     }
 

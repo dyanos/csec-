@@ -1,0 +1,36 @@
+class Point(x: Int, y: Int) {
+    def sum(): Int = x + y
+}
+
+class Node(value: Int) {
+    def get(): Int = value
+}
+
+class Empty() {
+    def zero(): Int = 0
+}
+
+def main(): Int {
+    /* new with arguments */
+    val p = new Point(3, 4);
+
+    /* new with no arguments */
+    val e = new Empty;
+
+    /* new with empty parens */
+    val e2 = new Empty();
+
+    /* new array single dimension */
+    val arr1 = new Int[10];
+
+    /* new array multi dimension */
+    val arr2 = new Int[3, 4];
+    val arr3 = new Double[2, 3, 4];
+
+    /* multiple instantiations */
+    val n1 = new Node(1);
+    val n2 = new Node(2);
+    val n3 = new Node(3);
+
+    return 0;
+}

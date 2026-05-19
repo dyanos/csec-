@@ -1,0 +1,12 @@
+def main(): Int {
+    val line: String = readLine();
+    val ch: Char = readChar();
+    val n: Int = readInt();
+    val x: Double = readDouble();
+
+    println(line);
+    println(ch);
+    println(n);
+    println(x);
+    return 0;
+}

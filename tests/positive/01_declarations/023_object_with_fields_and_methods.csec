@@ -1,0 +1,25 @@
+object MathConstants {
+    val pi: Int = 3;
+    val e: Int = 2;
+    val phi: Int = 1;
+
+    def getPi(): Int = pi
+    def getE(): Int = e
+    def sum(): Int = pi + e + phi
+}
+
+object Counter {
+    var count: Int = 0;
+
+    def increment(): Int {
+        count = count + 1;
+        return count;
+    }
+
+    def reset(): Int {
+        count = 0;
+        return count;
+    }
+}
+
+def main(): Int = MathConstants.sum()

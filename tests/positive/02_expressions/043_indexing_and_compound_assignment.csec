@@ -1,0 +1,13 @@
+def main(): Int {
+    val xs = [10, 20, 30];
+    val nested = [[1, 2], [3, 4]];
+    var total: Int = xs[0];
+
+    total += xs[1];
+    total -= nested[0][1];
+    total *= 2;
+    total /= 2;
+    total %= 100;
+
+    return total;
+}

@@ -1,0 +1,16 @@
+def getArray(): Int = 5
+
+def main(): Int {
+    var total: Int = 0;
+
+    for (x <- getArray()) {
+        total = total + x;
+    }
+
+    val arr = [1, 2, 3, 4, 5];
+    for (y <- arr) {
+        total = total + y;
+    }
+
+    return total;
+}

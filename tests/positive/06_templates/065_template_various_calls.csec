@@ -1,0 +1,17 @@
+template<typename T>
+def identity(x: T): T = x
+
+template<typename T>
+def defaultVal(): T {
+    return identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(identity<T>(0))))))))))))))))))));
+}
+
+def main(): Int {
+    val a = identity<Int>(1);
+    val b = identity<Float>(3.14);
+    val c = identity<Double>(2.718);
+    val d = identity<Boolean>(true);
+    val e = identity<String>("hello");
+    val f = identity<Long>(999);
+    return a;
+}

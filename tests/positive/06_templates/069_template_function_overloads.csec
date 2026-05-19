@@ -1,0 +1,18 @@
+template<typename T>
+def first(a: T, b: T): T = a
+
+template<typename T>
+def second(a: T, b: T): T = b
+
+template<typename T>
+def apply(f: (T) => T, x: T): T {
+    return f(x);
+}
+
+def main(): Int {
+    val a = first<Int>(1, 2);
+    val b = second<Int>(1, 2);
+    val c = first<String>("hello", "world");
+    val d = second<Float>(1.0, 2.0);
+    return a + b;
+}

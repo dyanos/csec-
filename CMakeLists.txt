@@ -315,6 +315,16 @@ set_target_properties(csec_native_runtime PROPERTIES
 if(WIN32)
     target_link_libraries(csec_native_runtime PRIVATE ws2_32)
 endif()
+add_dependencies(${PROJECT_NAME} csec_native_runtime)
+target_link_libraries(${PROJECT_NAME} PRIVATE csec_native_runtime)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:csec_native_runtime>
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
+if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH)
+endif()
 
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(ROOT_NAMESPACE csec)

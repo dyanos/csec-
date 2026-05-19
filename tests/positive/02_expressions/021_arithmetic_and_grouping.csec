@@ -1,0 +1,7 @@
+def main(): Int {
+    var value: Int = (1 + 2) * (3 + 4);
+    value = value / 7;
+    value = value % 5;
+    value = value + -1;
+    return value;
+}

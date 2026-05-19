@@ -30,6 +30,8 @@ Unlike C++, pointer types are only available with the `unsafe` keyword — every
 
 - Primitive types (`int`, `float`, `double`, `char`) are atomic and safe to use across threads.
 - Complex types are treated as objects and passed by reference or non-reference as needed.
+- Owned heap values are intended to use unique ownership by default, with explicit operator-style transfer (`target <- source`, `fn(<- source)`) and borrows (`&x`, `&mut x`).
+- See [`docs/memory-management.md`](docs/memory-management.md) for the proposed ownership, borrow, move, and unsafe pointer model.
 - All control constructs (`block`, `if`, `for`, `match`) are guaranteed thread-safe.
 
 ### Opt-In Unsafe Mode
@@ -62,6 +64,7 @@ The language is currently in its **initial development phase**:
 * [ ] Implement tensor type system (language support)
 * [ ] Integrate Torch C++ API for tensor computations
 * [ ] Unsafe pointer support (explicit only)
+* [ ] Unique ownership and operator-style move/borrow checking
 * [ ] Thread-safe primitives and control constructs
 * [ ] `unatomic` keyword to disable safety guarantees
 

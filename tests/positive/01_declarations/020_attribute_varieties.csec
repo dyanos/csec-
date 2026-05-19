@@ -1,0 +1,14 @@
+[@entry]
+def main(): Int = 0
+
+[@native("cdecl")]
+def externalFunc(): Int = 0
+
+[@deprecated]
+def oldFunc(): Int = 0
+
+[@inline]
+def fastFunc(x: Int): Int = x + 1
+
+[@align(16)]
+def alignedFunc(): Int = 0

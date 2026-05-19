@@ -1,0 +1,24 @@
+def main(): Int {
+    var a = if (true) {
+        10;
+    }
+    else {
+        20;
+    };
+
+    var b = if (false) {
+        100;
+    }
+    else {
+        200;
+    };
+
+    var c = if (1 > 0) {
+        1;
+    }
+    else {
+        0;
+    };
+
+    return a + b + c;
+}

@@ -1,0 +1,10 @@
+def main(): Int {
+    val simple = "hello";
+    val withSpace = "hello world";
+    val withEscape = "line1\nline2";
+    val withTab = "col1\tcol2";
+    val withQuote = "she said \"hi\"";
+    val withBackslash = "path\\to\\file";
+    val empty = "";
+    return 0;
+}

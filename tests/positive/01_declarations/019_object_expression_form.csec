@@ -1,0 +1,16 @@
+object Config = {
+    val timeout: Int = 30;
+    return timeout;
+}
+
+object Simple = {
+    return 42;
+}
+
+object WithCalc = {
+    val x: Int = 10;
+    val y: Int = 20;
+    return x + y;
+}
+
+def main(): Int = 0

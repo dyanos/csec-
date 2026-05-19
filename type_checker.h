@@ -6,6 +6,8 @@
 
 #include "ASTVisitor.h"
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 // TypeChecker 클래스는 AST를 방문하여 타입 검사를 수행합니다.
 class TypeChecker : public ASTVisitor {
@@ -115,7 +117,27 @@ public:
 	void visit(TemplateDeclarationNode& node) override;
 
 private:
+    struct OwnershipState {
+        bool moved = false;
+        int immutableBorrows = 0;
+        bool mutableBorrowed = false;
+        bool owned = false;
+    };
+
     int errorCount = 0;
+    int unsafeContextDepth = 0;
+    std::vector<std::unordered_map<std::string, OwnershipState>> ownershipScopes;
     void reportError(const std::string& message);
     void checkTypeResolved(const std::unique_ptr<Type>& type, const std::string& context);
+    void enterOwnershipScope();
+    void exitOwnershipScope();
+    void declareOwnership(const std::string& name, const std::unique_ptr<Type>& type);
+    OwnershipState* findOwnership(const std::string& name);
+    void checkIdentifierUse(const std::string& name);
+    void markMoved(const std::string& name);
+    void markBorrowed(const std::string& name, bool isMutableBorrow);
+    void releaseBorrow(const std::string& name, bool isMutableBorrow);
+    void checkFunctionArguments(const std::vector<std::unique_ptr<ASTNode>>& arguments,
+                                const std::vector<std::unique_ptr<Type>>& parameterTypes,
+                                const std::string& callName);
 };

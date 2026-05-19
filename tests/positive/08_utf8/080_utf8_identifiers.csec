@@ -1,0 +1,11 @@
+def 합계(시작: Int, 끝: Int): Int {
+    var 결과: Int = 0;
+
+    for (항 <- 시작 to 끝) {
+        결과 = 결과 + 항;
+    }
+
+    return 결과;
+}
+
+def main(): Int = 합계(1, 4)

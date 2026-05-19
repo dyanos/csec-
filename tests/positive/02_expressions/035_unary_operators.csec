@@ -1,0 +1,30 @@
+def main(): Int {
+    var a: Int = 5;
+
+    /* unary minus */
+    var b: Int = -a;
+
+    /* unary plus */
+    var c: Int = +a;
+
+    /* logical NOT */
+    val d = !true;
+    val e = !false;
+
+    /* bitwise NOT */
+    var f: Int = ~0;
+    var g: Int = ~255;
+
+    /* prefix increment/decrement */
+    ++a;
+    --a;
+
+    /* postfix increment/decrement */
+    a++;
+    a--;
+
+    /* combined */
+    var h: Int = -(-a);
+
+    return a;
+}

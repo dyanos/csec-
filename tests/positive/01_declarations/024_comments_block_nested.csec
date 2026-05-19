@@ -1,0 +1,19 @@
+/* This is a top-level block comment */
+
+// Single line comment
+def add(a: Int, b: Int): Int = a + b // trailing comment
+
+/*
+ * Multi-line
+ * block comment
+ * with stars
+ */
+def sub(a: Int, b: Int): Int = a - b
+
+def main(): Int {
+    // comment inside function
+    val x = 10; // inline comment
+    /* block comment inside function */
+    val y = 20;
+    return x + y;
+}

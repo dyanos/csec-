@@ -1,0 +1,8 @@
+def main(): Int {
+    val scalar: Tensor<Double, 0> = new Tensor<Double, 0>(1.0);
+    val vector: Tensor<Double, 3> = new Tensor<Double, 3>(0.0);
+    val matrix: Tensor<Double, 2, 3> = new Tensor<Double, 2, 3>(0.0);
+    val cube: Tensor<Int, 2, 2, 2> = new Tensor<Int, 2, 2, 2>(0);
+
+    return 0;
+}

@@ -1,6 +1,18 @@
 #include "parser.h"
 #include "all_ast.h"
 
+#include <string>
+
+namespace {
+std::unique_ptr<ValueNode> intLiteral(int value) {
+	return std::make_unique<ValueNode>(std::to_string(value), TokenType::INTEGER_LITERAL);
+}
+
+std::unique_ptr<ValueNode> doubleLiteral(double value) {
+	return std::make_unique<ValueNode>(std::to_string(value), TokenType::FLOAT_LITERAL);
+}
+}
+
 std::unique_ptr<ASTNode> Parser::parseStatement() {
 	bool isConstexpr = false;
 	if (check(TokenType::KEYWORD, "constexpr")) {
@@ -8,7 +20,28 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
 		advance();
 	}
 
-	if (match(TokenType::KEYWORD, "val") || match(TokenType::KEYWORD, "var")) {
+	if (match(TokenType::KEYWORD, "unsafe")) {
+		if (match(TokenType::KEYWORD, "def")) {
+			auto functionNode = parseFunctionDeclaration();
+			functionNode->isUnsafe = true;
+			return functionNode;
+		}
+		expect(TokenType::OPERATOR, "{");
+		auto block = parseBlock();
+		if (block) {
+			block->isUnsafeContext = true;
+		}
+		return block;
+	}
+	else if (match(TokenType::KEYWORD, "unatomic")) {
+		expect(TokenType::OPERATOR, "{");
+		auto block = parseBlock();
+		if (block) {
+			block->isUnatomic = true;
+		}
+		return block;
+	}
+	else if (match(TokenType::KEYWORD, "val") || match(TokenType::KEYWORD, "var")) {
 		bool isMutable = previous().value == "var";
 		auto expr = parseVariableDeclaration(isMutable);
 		expr->isConstexpr = isConstexpr;
@@ -62,6 +95,246 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
 	}
 }
 
+std::unique_ptr<ASTNode> Parser::parseMoleculeSimulationExpression() {
+	if (match(TokenType::IDENTIFIER)) {
+		// Optional model name.
+	}
+	expect(TokenType::OPERATOR, "{");
+
+	int atomCount = 0;
+	int bondCount = 0;
+	std::unique_ptr<ASTNode> steps = intLiteral(100);
+	std::unique_ptr<ASTNode> dt = doubleLiteral(0.001);
+	std::unique_ptr<ASTNode> temperature = doubleLiteral(300.0);
+
+	while (!check(TokenType::OPERATOR, "}")) {
+		if (isAtEnd()) {
+			error("Unterminated molecule simulation block");
+			return nullptr;
+		}
+
+		if (match(TokenType::KEYWORD, "atom")) {
+			if (!check(TokenType::KEYWORD, "at") && (match(TokenType::IDENTIFIER) || match(TokenType::KEYWORD))) {
+				// Optional atom label or element symbol.
+			}
+			if (match(TokenType::KEYWORD, "at")) {
+				expect(TokenType::OPERATOR, "(");
+				parseExpression();
+				expect(TokenType::OPERATOR, ",");
+				parseExpression();
+				expect(TokenType::OPERATOR, ",");
+				parseExpression();
+				expect(TokenType::OPERATOR, ")");
+			}
+			++atomCount;
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "lattice")) {
+			if (!match(TokenType::INTEGER_LITERAL)) {
+				error("Expected lattice width");
+			}
+			int width = std::stoi(previous().value);
+			expect(TokenType::IDENTIFIER, "x");
+			if (!match(TokenType::INTEGER_LITERAL)) {
+				error("Expected lattice height");
+			}
+			int height = std::stoi(previous().value);
+			if (match(TokenType::KEYWORD, "spacing")) {
+				parsePrimaryExpression();
+			}
+			atomCount += width * height;
+			bondCount += (width > 1 ? (width - 1) * height : 0) + (height > 1 ? width * (height - 1) : 0);
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "bond")) {
+			parseExpression();
+			if (match(TokenType::OPERATOR, ",")) {
+				parseExpression();
+			}
+			else {
+				parseExpression();
+			}
+			++bondCount;
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "steps")) {
+			steps = parseExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "dt")) {
+			dt = parseExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "temperature")) {
+			temperature = parseExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else {
+			error("Expected atom, bond, steps, dt, or temperature in molecule block");
+			advance();
+		}
+	}
+	expect(TokenType::OPERATOR, "}");
+
+	auto callNode = std::make_unique<FunctionCallNode>();
+	callNode->functionName = "mdSimulate";
+	callNode->arguments.push_back(intLiteral(atomCount));
+	callNode->arguments.push_back(intLiteral(bondCount));
+	callNode->arguments.push_back(std::move(steps));
+	callNode->arguments.push_back(std::move(dt));
+	callNode->arguments.push_back(std::move(temperature));
+	return callNode;
+}
+
+std::unique_ptr<ASTNode> Parser::parseCfdSimulationExpression() {
+	if (match(TokenType::IDENTIFIER)) {
+		// Optional case name.
+	}
+	expect(TokenType::OPERATOR, "{");
+
+	std::unique_ptr<ASTNode> width = intLiteral(32);
+	std::unique_ptr<ASTNode> height = intLiteral(32);
+	std::unique_ptr<ASTNode> steps = intLiteral(100);
+	std::unique_ptr<ASTNode> dt = doubleLiteral(0.01);
+	std::unique_ptr<ASTNode> viscosity = doubleLiteral(0.001);
+	std::unique_ptr<ASTNode> velocity = doubleLiteral(1.0);
+
+	while (!check(TokenType::OPERATOR, "}")) {
+		if (isAtEnd()) {
+			error("Unterminated cfd simulation block");
+			return nullptr;
+		}
+
+		if (match(TokenType::KEYWORD, "grid")) {
+			width = parseExpression();
+			if (match(TokenType::IDENTIFIER, "x") || match(TokenType::OPERATOR, ",")) {
+				height = parseExpression();
+			}
+			else {
+				error("Expected 'x' or ',' in cfd grid declaration");
+			}
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "steps")) {
+			steps = parseExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "dt")) {
+			dt = parseExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "viscosity")) {
+			viscosity = parseExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "velocity")) {
+			velocity = parseExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else {
+			error("Expected grid, steps, dt, viscosity, or velocity in cfd block");
+			advance();
+		}
+	}
+	expect(TokenType::OPERATOR, "}");
+
+	auto callNode = std::make_unique<FunctionCallNode>();
+	callNode->functionName = "cfdSimulate";
+	callNode->arguments.push_back(std::move(width));
+	callNode->arguments.push_back(std::move(height));
+	callNode->arguments.push_back(std::move(steps));
+	callNode->arguments.push_back(std::move(dt));
+	callNode->arguments.push_back(std::move(viscosity));
+	callNode->arguments.push_back(std::move(velocity));
+	return callNode;
+}
+
+std::unique_ptr<ASTNode> Parser::parseProteinMcmcExpression() {
+	if (match(TokenType::IDENTIFIER)) {
+		// Optional model name.
+	}
+	expect(TokenType::OPERATOR, "{");
+
+	int residueCount = 0;
+	std::unique_ptr<ASTNode> steps = intLiteral(1000);
+	std::unique_ptr<ASTNode> temperature = doubleLiteral(300.0);
+
+	while (!check(TokenType::OPERATOR, "}")) {
+		if (isAtEnd()) {
+			error("Unterminated protein MCMC block");
+			return nullptr;
+		}
+
+		if (match(TokenType::KEYWORD, "chain")) {
+			if (match(TokenType::STRING_LITERAL)) {
+				residueCount += static_cast<int>(previous().value.size());
+			}
+			else {
+				error("Expected protein chain string literal");
+			}
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "mcmc")) {
+			expect(TokenType::KEYWORD, "steps");
+			steps = parsePrimaryExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "temperature")) {
+			temperature = parsePrimaryExpression();
+			match(TokenType::OPERATOR, ";");
+		}
+		else {
+			error("Expected chain, mcmc, or temperature in protein block");
+			advance();
+		}
+	}
+	expect(TokenType::OPERATOR, "}");
+
+	auto callNode = std::make_unique<FunctionCallNode>();
+	callNode->functionName = "proteinMcmc";
+	callNode->arguments.push_back(intLiteral(residueCount));
+	callNode->arguments.push_back(std::move(steps));
+	callNode->arguments.push_back(std::move(temperature));
+	return callNode;
+}
+
+std::unique_ptr<ASTNode> Parser::parseOdeSimulationExpression() {
+	if (!match(TokenType::KEYWORD, "euler")) {
+		error("Expected ODE solver name 'euler'");
+	}
+
+	std::unique_ptr<ASTNode> differentialFunction;
+	if (match(TokenType::IDENTIFIER) || match(TokenType::KEYWORD)) {
+		differentialFunction = std::make_unique<IdentifierNode>(previous().value);
+	}
+	else {
+		error("Expected differential function name after 'ode euler'");
+		differentialFunction = std::make_unique<IdentifierNode>("unknown");
+	}
+
+	expect(TokenType::KEYWORD, "from");
+	expect(TokenType::OPERATOR, "(");
+	auto t0 = parsePrimaryExpression();
+	expect(TokenType::OPERATOR, ",");
+	auto y0 = parsePrimaryExpression();
+	expect(TokenType::OPERATOR, ")");
+
+	expect(TokenType::KEYWORD, "step");
+	auto h = parsePrimaryExpression();
+
+	expect(TokenType::KEYWORD, "steps");
+	auto n = parsePrimaryExpression();
+
+	auto callNode = std::make_unique<FunctionCallNode>();
+	callNode->functionName = "odeEuler";
+	callNode->arguments.push_back(std::move(differentialFunction));
+	callNode->arguments.push_back(std::move(t0));
+	callNode->arguments.push_back(std::move(y0));
+	callNode->arguments.push_back(std::move(h));
+	callNode->arguments.push_back(std::move(n));
+	return callNode;
+}
+
 std::unique_ptr<BlockNode> Parser::parseBlock() {
 	auto block = std::make_unique<BlockNode>();
 	while (!match(TokenType::OPERATOR, "}")) {
@@ -100,8 +373,13 @@ std::unique_ptr<ASTNode> Parser::parseIfStatement() {
 		if (match(TokenType::OPERATOR, "{")) {
 			ifNode->elseBlock = parseBlock();
 		}
+		else if (match(TokenType::KEYWORD, "if")) {
+			auto elseIfBlock = std::make_unique<BlockNode>();
+			elseIfBlock->statements.push_back(parseIfStatement());
+			ifNode->elseBlock = std::move(elseIfBlock);
+		}
 		else {
-			error("Expected '{' after 'else'");
+			error("Expected '{' or 'if' after 'else'");
 		}
 	}
 

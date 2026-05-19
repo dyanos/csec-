@@ -1,0 +1,5 @@
+unsafe def read_pointer(ptr: unsafe *Int): Int = *ptr
+
+def main(): Int {
+    return 0;
+}

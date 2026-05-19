@@ -28,6 +28,7 @@ private:
     const Token& previous() const;
     bool check(TokenType type, const std::string& value = "") const;
     bool match(TokenType type, const std::string& value = "");
+    bool matchIdentifierName();
     // 현재 Token position 저장/복원
     bool saveTokenPosition();
     void restoreTokenPosition();
@@ -60,6 +61,10 @@ private:
     std::unique_ptr<ASTNode> parsePMapStatement();
     std::unique_ptr<ASTNode> parseReduceStatement();
     std::unique_ptr<ASTNode> parseFilterStatement();
+    std::unique_ptr<ASTNode> parseMoleculeSimulationExpression();
+    std::unique_ptr<ASTNode> parseCfdSimulationExpression();
+    std::unique_ptr<ASTNode> parseProteinMcmcExpression();
+    std::unique_ptr<ASTNode> parseOdeSimulationExpression();
     std::unique_ptr<ASTNode> parseLambdaExpression();
     std::unique_ptr<ASTNode> parseSimpleExpression();
     std::unique_ptr<ASTNode> parseInlineMathLatex();
@@ -83,6 +88,7 @@ private:
 	std::unique_ptr<ASTNode> parsePrefixExpression();
     std::unique_ptr<ASTNode> parseExpression();
     std::vector<std::unique_ptr<ASTNode>> parseArgumentList();
+    std::unique_ptr<Type> parseTemplateArgumentAsType();
 
     std::vector<std::unique_ptr<ASTNode>> parseCallParameterList();
     std::vector<std::unique_ptr<ParameterNode>> parseParameterList();

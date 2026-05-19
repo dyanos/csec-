@@ -1,0 +1,6 @@
+def main(): Int {
+    val alphaExpr = $$\alpha + \beta + \gamma$$;
+    val setExpr = $$\mathbb{Z} + \mathbb{Q}$$;
+    val limExpr = $$\lim_{x=0} \frac{\sin(x)}{x}$$;
+    return 0;
+}

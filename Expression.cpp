@@ -6,11 +6,33 @@
 std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 	std::unique_ptr<ASTNode> expr;
 
-	if (match(TokenType::IDENTIFIER)) {
+	if (match(TokenType::KEYWORD, "if")) {
+		return parseIfStatement();
+	}
+    else if (match(TokenType::KEYWORD, "molecule")) {
+        return parseMoleculeSimulationExpression();
+    }
+    else if (match(TokenType::KEYWORD, "cfd")) {
+        return parseCfdSimulationExpression();
+    }
+    else if (match(TokenType::KEYWORD, "protein")) {
+        return parseProteinMcmcExpression();
+    }
+    else if (match(TokenType::KEYWORD, "ode")) {
+        return parseOdeSimulationExpression();
+    }
+	else if (check(TokenType::IDENTIFIER) ||
+        (check(TokenType::KEYWORD, "this") ||
+         check(TokenType::KEYWORD, "super") ||
+         check(TokenType::KEYWORD, "box"))) {
+        advance();
+        if (previous().value == "_") {
+            return std::make_unique<UnitNode>();
+        }
 		std::vector<std::string> pathComponents;
 		pathComponents.push_back(previous().value);
 		while (match(TokenType::OPERATOR, ".")) {
-			if (match(TokenType::IDENTIFIER)) {
+			if (matchIdentifierName()) {
 				pathComponents.push_back(previous().value);
 			}
 			else {
@@ -20,17 +42,27 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 		}
 
 		// Check for explicit template arguments: identifier<Type, ...>(args)
-		if (pathComponents.size() == 1 && check(TokenType::OPERATOR, "<")) {
+		if (pathComponents.size() == 1 &&
+            check(TokenType::OPERATOR, "<") &&
+            (peek(1).type == TokenType::IDENTIFIER ||
+             peek(1).type == TokenType::INTEGER_LITERAL ||
+             peek(1).type == TokenType::FLOAT_LITERAL ||
+             peek(1).type == TokenType::EXPONENTIAL_LITERAL ||
+             peek(1).type == TokenType::HEX_LITERAL ||
+             peek(1).type == TokenType::BINARY_LITERAL ||
+             peek(1).type == TokenType::OCTAL_LITERAL ||
+             peek(1).type == TokenType::BOOLEAN_LITERAL ||
+             (peek(1).type == TokenType::OPERATOR && peek(1).value == "("))) {
 			saveTokenPosition();
 			advance(); // consume '<'
 			std::vector<std::unique_ptr<Type>> typeArgs;
 			bool isTemplateCall = false;
-			// Try to parse type list followed by '>' and '('
-			auto firstType = parseType();
+			// Try to parse template arg list followed by '>' and '('
+			auto firstType = parseTemplateArgumentAsType();
 			if (firstType && firstType->getKind() != Type::Kind::UNKNOWN) {
 				typeArgs.push_back(std::move(firstType));
 				while (match(TokenType::OPERATOR, ",")) {
-					typeArgs.push_back(parseType());
+					typeArgs.push_back(parseTemplateArgumentAsType());
 				}
 				if (match(TokenType::OPERATOR, ">") && match(TokenType::OPERATOR, "(")) {
 					isTemplateCall = true;
@@ -71,11 +103,28 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 			}
 		}
 		else if (match(TokenType::OPERATOR, "=") || match(TokenType::OPERATOR, "<-")) {
+            std::string op = previous().value;
 			auto assignNode = std::make_unique<AssignmentExpressionNode>();
+            assignNode->op = op;
 			assignNode->left = std::make_unique<IdentifierNode>(join(pathComponents, "."));
 			assignNode->right = parseExpression();
 			return assignNode;
 		}
+        else if (match(TokenType::OPERATOR, "+=") ||
+            match(TokenType::OPERATOR, "-=") ||
+            match(TokenType::OPERATOR, "*=") ||
+            match(TokenType::OPERATOR, "/=") ||
+            match(TokenType::OPERATOR, "%=")) {
+            std::string op = previous().value.substr(0, 1);
+            auto assignNode = std::make_unique<AssignmentExpressionNode>();
+            auto leftName = join(pathComponents, ".");
+            assignNode->left = std::make_unique<IdentifierNode>(leftName);
+            assignNode->right = std::make_unique<BinaryExpressionNode>(
+                std::make_unique<IdentifierNode>(leftName),
+                op,
+                parseExpression());
+            return assignNode;
+        }
 
 		return std::make_unique<IdentifierNode>(join(pathComponents, "."));
 	}
@@ -85,6 +134,7 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 		match(TokenType::HEX_LITERAL) ||
 		match(TokenType::BINARY_LITERAL) ||
 		match(TokenType::OCTAL_LITERAL) ||
+        match(TokenType::CHAR_LITERAL) ||
 		match(TokenType::STRING_LITERAL) ||
 		match(TokenType::BOOLEAN_LITERAL)) {
 		return std::make_unique<ValueNode>(previous().value, previous().type);
@@ -106,27 +156,33 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 		return parseBlock();
 	}
 	else if (check(TokenType::OPERATOR, "[")) {
-		saveTokenPosition();
-		auto lambdaExpr = parseLambdaExpression();
-		if (lambdaExpr) {
-			discardTokenPosition();
-			expr = std::move(lambdaExpr);
+        bool looksLikeLambda =
+            peek(1).value == "&" ||
+            peek(1).value == "=" ||
+            peek(1).type == TokenType::IDENTIFIER ||
+            peek(1).value == "]";
+
+        if (looksLikeLambda) {
+		    saveTokenPosition();
+		    auto lambdaExpr = parseLambdaExpression();
+		    if (lambdaExpr) {
+			    discardTokenPosition();
+			    return lambdaExpr;
+		    }
+            restoreTokenPosition();
+        }
+
+		advance(); // consume '['
+		std::vector<std::unique_ptr<ASTNode>> elements;
+		if (!check(TokenType::OPERATOR, "]")) {
+			do {
+				elements.push_back(parseExpression());
+			} while (match(TokenType::OPERATOR, ","));
 		}
-		else {
-			restoreTokenPosition();
-			// Array literal parsing code commented out for future implementation
-			advance(); // consume '['
-			std::vector<std::unique_ptr<ASTNode>> elements;
-			if (!check(TokenType::OPERATOR, "]")) {
-				do {
-					elements.push_back(parseExpression());
-				} while (match(TokenType::OPERATOR, ","));
-			}
-			expect(TokenType::OPERATOR, "]");
-			auto node = std::make_unique<ArrayLiteralNode>();
-			node->elements = std::move(elements);
-			return node;
-		}
+		expect(TokenType::OPERATOR, "]");
+		auto node = std::make_unique<ArrayLiteralNode>();
+		node->elements = std::move(elements);
+		return node;
 	}
 	else if (match(TokenType::KEYWORD, "new")) {
 		if (match(TokenType::IDENTIFIER)) {
@@ -136,7 +192,7 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 			std::vector<std::unique_ptr<Type>> tmplArgs;
 			if (match(TokenType::OPERATOR, "<")) {
 				do {
-					tmplArgs.push_back(parseType());
+					tmplArgs.push_back(parseTemplateArgumentAsType());
 				} while (match(TokenType::OPERATOR, ","));
 				expect(TokenType::OPERATOR, ">");
 			}
@@ -197,32 +253,30 @@ std::unique_ptr<ASTNode> Parser::parsePrimaryExpression() {
 		expect(TokenType::OPERATOR, ")");
 		return grouped;
 	}
-	else if (match(TokenType::OPERATOR, "-") ||
-		match(TokenType::OPERATOR, "+") ||
-		match(TokenType::OPERATOR, "~")) {
-		std::string op = previous().value;
-		auto rightCopy = parsePrimaryExpression();
-		return std::make_unique<UnaryExpressionNode>(op, std::move(rightCopy));
-	}
-	else if (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
-		std::string op = previous().value;
-		auto rightCopy = parsePrimaryExpression();
-		return std::make_unique<PrefixExpressionNode>(op, std::move(rightCopy));
-	}
-	else if (match(TokenType::OPERATOR, "!")) {
-		auto rightCopy = parsePrimaryExpression();
-		return std::make_unique<UnaryExpressionNode>("!", std::move(rightCopy));
-	}
 	else {
 		return parseSimpleExpression();
 	}
 }
 
 std::unique_ptr<ASTNode> Parser::parseMulDivExpression() {
-	std::unique_ptr<ASTNode> expr = parsePrimaryExpression();
-	while (match(TokenType::OPERATOR, "*") || match(TokenType::OPERATOR, "/") || match(TokenType::OPERATOR, "%")) {
+	std::unique_ptr<ASTNode> expr = parsePrefixExpression();
+	while (true) {
+        bool matched = match(TokenType::OPERATOR, "*") ||
+            match(TokenType::OPERATOR, "/") ||
+            match(TokenType::OPERATOR, "%") ||
+            match(TokenType::OPERATOR, "@");
+        if (!matched &&
+            (check(TokenType::IDENTIFIER, "inner") ||
+             check(TokenType::IDENTIFIER, "outer") ||
+             check(TokenType::IDENTIFIER, "tensor"))) {
+            advance();
+            matched = true;
+        }
+        if (!matched) {
+            break;
+        }
 		std::string op = previous().value;
-		auto rightCopy = parsePrimaryExpression();
+		auto rightCopy = parsePrefixExpression();
 		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
 	}
 	return expr;
@@ -301,7 +355,7 @@ std::unique_ptr<ASTNode> Parser::parseAndExpression() {
 
 std::unique_ptr<ASTNode> Parser::parseXorExpression() {
 	std::unique_ptr<ASTNode> expr = parseBitwiseAndExpression();
-	while (match(TokenType::KEYWORD, "xor")) {
+	while (match(TokenType::KEYWORD, "xor") || match(TokenType::OPERATOR, "^")) {
 		std::string op = previous().value;
 		auto rightCopy = parseBitwiseAndExpression();
 		expr = std::make_unique<BinaryExpressionNode>(std::move(expr), op, std::move(rightCopy));
@@ -330,21 +384,86 @@ std::unique_ptr<ASTNode> Parser::parseBitwiseAndExpression() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseUnaryExpression() {
-	if (match(TokenType::OPERATOR, "-") || match(TokenType::OPERATOR, "!")) {
+	if (match(TokenType::OPERATOR, "-") ||
+		match(TokenType::OPERATOR, "+") ||
+		match(TokenType::OPERATOR, "*") ||
+		match(TokenType::OPERATOR, "~") ||
+		match(TokenType::OPERATOR, "!")) {
 		std::string op = previous().value;
 		auto rightCopy = parseUnaryExpression();
 		return std::make_unique<UnaryExpressionNode>(op, std::move(rightCopy));
 	}
 	else {
-		return parseXorExpression();
+		return parsePrimaryExpression();
 	}
 }
 
 std::unique_ptr<ASTNode> Parser::parsePostfixExpression() {
 	auto expr = parseUnaryExpression();
-	while (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
-		std::string op = previous().value;
-		expr = std::make_unique<PostfixExpressionNode>(op, std::move(expr));
+	while (true) {
+		if (match(TokenType::OPERATOR, "++") || match(TokenType::OPERATOR, "--")) {
+			std::string op = previous().value;
+			expr = std::make_unique<PostfixExpressionNode>(op, std::move(expr));
+		}
+		else if (match(TokenType::OPERATOR, "[")) {
+            if (check(TokenType::OPERATOR, "]") || check(TokenType::OPERATOR, ",")) {
+                error("Expected index expression");
+            }
+            auto accessNode = std::make_unique<ArrayAccessNode>();
+            accessNode->array = std::move(expr);
+            do {
+                auto spec = std::make_unique<ArrayIndexSpec>();
+                if (match(TokenType::OPERATOR, ":")) {
+                    spec->isSlice = true;
+                    if (!check(TokenType::OPERATOR, "]") &&
+                        !check(TokenType::OPERATOR, ",") &&
+                        !check(TokenType::OPERATOR, ":")) {
+                        spec->end = parseExpression();
+                    }
+                    if (match(TokenType::OPERATOR, ":")) {
+                        if (!check(TokenType::OPERATOR, "]") && !check(TokenType::OPERATOR, ",")) {
+                            spec->step = parseExpression();
+                        }
+                    }
+                }
+                else {
+                    auto first = parseExpression();
+                    if (match(TokenType::OPERATOR, ":")) {
+                        spec->isSlice = true;
+                        spec->start = std::move(first);
+                        if (!check(TokenType::OPERATOR, "]") &&
+                            !check(TokenType::OPERATOR, ",") &&
+                            !check(TokenType::OPERATOR, ":")) {
+                            spec->end = parseExpression();
+                        }
+                        if (match(TokenType::OPERATOR, ":")) {
+                            if (!check(TokenType::OPERATOR, "]") && !check(TokenType::OPERATOR, ",")) {
+                                spec->step = parseExpression();
+                            }
+                        }
+                    }
+                    else {
+                        spec->index = std::move(first);
+                    }
+                }
+                if (!accessNode->index && !spec->isSlice && spec->index) {
+                    accessNode->index = spec->index->clone();
+                }
+                accessNode->indices.push_back(std::move(spec));
+                if (check(TokenType::OPERATOR, "]")) {
+                    break;
+                }
+                expect(TokenType::OPERATOR, ",");
+                if (check(TokenType::OPERATOR, "]")) {
+                    error("Expected index expression after ','");
+                }
+            } while (true);
+			expect(TokenType::OPERATOR, "]");
+            expr = std::move(accessNode);
+		}
+		else {
+			break;
+		}
 	}
 	return expr;
 }
@@ -356,6 +475,15 @@ std::unique_ptr<ASTNode> Parser::parsePrefixExpression()
 		auto rightCopy = parsePrefixExpression();
 		return std::make_unique<PrefixExpressionNode>(op, std::move(rightCopy));
 	}
+	else if (match(TokenType::OPERATOR, "<-")) {
+		auto rightCopy = parsePrefixExpression();
+		return std::make_unique<PrefixExpressionNode>("<-", std::move(rightCopy));
+	}
+	else if (match(TokenType::OPERATOR, "&")) {
+		std::string op = match(TokenType::KEYWORD, "mut") ? "&mut" : "&";
+		auto rightCopy = parsePrefixExpression();
+		return std::make_unique<PrefixExpressionNode>(op, std::move(rightCopy));
+	}
 	else {
 		return parsePostfixExpression();
 	}
@@ -363,6 +491,9 @@ std::unique_ptr<ASTNode> Parser::parsePrefixExpression()
 
 std::unique_ptr<ASTNode> Parser::parseExpression() {
 	std::unique_ptr<ASTNode> expr = parseOrExpression();
+    if (!expr) {
+        error("Expected expression");
+    }
 
 	if (match(TokenType::KEYWORD, "match")) {
 		auto matchNode = std::make_unique<MatchExpressionNode>();
@@ -426,10 +557,21 @@ std::unique_ptr<ASTNode> Parser::parseLambdaExpression() {
 	expect(TokenType::OPERATOR, "]");
 
 	expect(TokenType::OPERATOR, "(");
-	auto params = parseCallParameterList();
-	for (auto& arg : params) {
-		lambdaNode->arguments.push_back(std::move(arg));
-	}
+    if (!check(TokenType::OPERATOR, ")")) {
+        do {
+            expect(TokenType::IDENTIFIER);
+            auto paramNode = std::make_unique<ParameterNode>();
+            paramNode->name = previous().value;
+            if (match(TokenType::OPERATOR, ":")) {
+                paramNode->type = parseType();
+            }
+            else {
+                paramNode->type = std::make_unique<UnknownType>();
+            }
+            lambdaNode->arguments.push_back(std::move(paramNode));
+        } while (match(TokenType::OPERATOR, ","));
+    }
+    expect(TokenType::OPERATOR, ")");
 
 	expect(TokenType::OPERATOR, "->");
 	if (match(TokenType::OPERATOR, "{")) {

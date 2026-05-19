@@ -1,0 +1,22 @@
+def take(value: box Image): Int = 1
+
+def observe(value: &Int): Int = 2
+
+def update(value: &mut Int): Int = 3
+
+class Image() {
+    def id(): Int = 0
+}
+
+def main(): Int {
+    var source: box Image = new Image();
+    var target: box Image = new Image();
+    var count: Int = 7;
+
+    target <- source;
+    var moved: Int = take(<- target);
+    var borrowed: Int = observe(&count);
+    var mutableBorrowed: Int = update(&mut count);
+
+    return moved + borrowed + mutableBorrowed;
+}

@@ -1,0 +1,13 @@
+def zero(): Int = 0
+
+def id(x: Int): Int = x
+
+def add(a: Int, b: Int): Int = a + b
+
+def neg(x: Int): Int = 0 - x
+
+def constant(): String = "hello"
+
+def flag(): Boolean = true
+
+def main(): Int = add(id(3), neg(1))

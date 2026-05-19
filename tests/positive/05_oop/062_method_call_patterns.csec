@@ -1,0 +1,25 @@
+class Builder(seed: Int) {
+    def step1(x: Int): Int = seed + x
+    def step2(x: Int, y: Int): Int = x + y + seed
+    def noArgs(): Int = seed
+    def manyArgs(a: Int, b: Int, c: Int, d: Int): Int = a + b + c + d + seed
+}
+
+object Factory {
+    def create(x: Int): Int = x
+    def combine(a: Int, b: Int): Int = a + b
+}
+
+def main(): Int {
+    val b = new Builder(10);
+
+    val r1 = b.step1(5);
+    val r2 = b.step2(1, 2);
+    val r3 = b.noArgs();
+    val r4 = b.manyArgs(1, 2, 3, 4);
+
+    val f1 = Factory.create(42);
+    val f2 = Factory.combine(10, 20);
+
+    return r1 + r2 + r3 + r4 + f1 + f2;
+}

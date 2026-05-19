@@ -1,0 +1,38 @@
+def main(): Int {
+    /* decimal */
+    val d1 = 0;
+    val d2 = 1;
+    val d3 = 42;
+    val d4 = 999999;
+
+    /* hexadecimal */
+    val h1 = 0x0;
+    val h2 = 0xFF;
+    val h3 = 0x1A2B;
+    val h4 = 0XABcd;
+
+    /* binary */
+    val b1 = 0b0;
+    val b2 = 0b1;
+    val b3 = 0b101010;
+    val b4 = 0B11111111;
+
+    /* octal */
+    val o1 = 0o0;
+    val o2 = 0o7;
+    val o3 = 0o77;
+    val o4 = 0O755;
+
+    /* float */
+    val f1 = 0.0;
+    val f2 = 3.14;
+    val f3 = 0.001;
+
+    /* exponential */
+    val e1 = 1e3;
+    val e2 = 2.5E10;
+    val e3 = 1e-3;
+    val e4 = 9.8E+2;
+
+    return d3;
+}

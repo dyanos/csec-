@@ -1,0 +1,33 @@
+class 사각형(가로: Int, 세로: Int) {
+    def 넓이(): Int = 가로 * 세로
+    def 둘레(): Int = 2 * (가로 + 세로)
+}
+
+class 원(반지름: Int) {
+    def 지름(): Int = 반지름 * 2
+}
+
+object 도형공장 {
+    def 정사각형만들기(변: Int): Int = 변 * 변
+}
+
+def 최대값(가: Int, 나: Int): Int {
+    if (가 > 나) {
+        return 가;
+    }
+    else {
+        return 나;
+    }
+}
+
+def main(): Int {
+    val 사각 = new 사각형(10, 20);
+    val 동그라미 = new 원(5);
+
+    val 면적 = 사각.넓이();
+    val 둘레길이 = 사각.둘레();
+    val 원지름 = 동그라미.지름();
+
+    val 결과 = 최대값(면적, 둘레길이);
+    return 결과;
+}

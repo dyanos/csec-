@@ -41,7 +41,7 @@ public:
 private:
     Scope* currentScope = nullptr; // non-owning, owned by ownedScopes
     int currentScopeLevel = 0;
-    Symbol* currentSymbol = nullptr;
+    Symbol* currentSymbol = nullptr; // non-owning, points into scope symbols
     std::vector<std::unique_ptr<Scope>> ownedScopes;
     std::vector<Symbol*> symbolStack; // non-owning snapshot stack
 

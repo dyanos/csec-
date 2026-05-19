@@ -1,0 +1,18 @@
+def main(): Int {
+    val a = {
+        val x = 10;
+        val y = 20;
+        x + y;
+    };
+
+    val b = {
+        42;
+    };
+
+    val c = {
+        val temp = a + b;
+        temp * 2;
+    };
+
+    return c;
+}

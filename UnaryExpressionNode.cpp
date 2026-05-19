@@ -34,6 +34,19 @@ llvm::Value* UnaryExpressionNode::codegen()
 		// bitwise not
 		return CodeGenerator::getInstance().builder.CreateNot(value, "bnottmp");
 	}
+	else if (op == "*") {
+		if (!value->getType()->isPointerTy()) {
+			std::cerr << "Error: Cannot dereference non-pointer value" << std::endl;
+			return nullptr;
+		}
+		auto resultType = getType();
+		auto* llvmResultType = CodeGenerator::getInstance().getLLVMType(resultType.get());
+		if (!llvmResultType) {
+			std::cerr << "Error: Unsupported raw pointer dereference type" << std::endl;
+			return nullptr;
+		}
+		return CodeGenerator::getInstance().builder.CreateLoad(llvmResultType, value, "deref");
+	}
 	else if (op == "++") {
 		// increment
 		// byte, char, word, short, int, long, long long, float, double, long double만 가능하도록 변경
@@ -124,35 +137,21 @@ llvm::Value* UnaryExpressionNode::codegen()
 }
 
 std::unique_ptr<Type> UnaryExpressionNode::getType() {
-	auto res = this->codegen();
-	if (res->getType()->isVoidTy()) {
-		return std::make_unique<BasicType>("Void");
-	}
-	else if (res->getType()->isStructTy()) {
-		return std::make_unique<ClassType>(res->getType()->getStructName().str());
-	}
-	else if (res->getType()->isIntegerTy(1)) {
-		return std::make_unique<BasicType>("Bool");
-	}
-	else if (res->getType()->isIntegerTy(8)) {
-		return std::make_unique<BasicType>("Byte");
-	}
-	else if (res->getType()->isIntegerTy(16)) {
-		return std::make_unique<BasicType>("Short");
-	}
-	else if (res->getType()->isIntegerTy(32)) {
-		return std::make_unique<BasicType>("Int");
-	}
-	else if (res->getType()->isIntegerTy(64)) {
-		return std::make_unique<BasicType>("Long");
-	}
-	else if (res->getType()->isFloatTy()) {
-		return std::make_unique<BasicType>("Float");
-	}
-	else if (res->getType()->isDoubleTy()) {
-		return std::make_unique<BasicType>("Double");
-	}
-	else {
-		return std::make_unique<UnknownType>();
-	}
+    auto exprType = expression ? expression->getType() : std::make_unique<UnknownType>();
+    if (!exprType) {
+        return std::make_unique<UnknownType>();
+    }
+    if (op == "!") {
+        return std::make_unique<BasicType>("Boolean");
+    }
+    if (op == "+" || op == "-" || op == "~" || op == "++" || op == "--") {
+        return exprType->clone();
+    }
+    if (op == "*") {
+        auto unsafePointerType = dynamic_cast<UnsafePointerType*>(exprType.get());
+        if (unsafePointerType && unsafePointerType->baseType) {
+            return unsafePointerType->baseType->clone();
+        }
+    }
+    return std::make_unique<UnknownType>();
 }

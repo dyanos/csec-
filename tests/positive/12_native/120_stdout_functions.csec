@@ -1,0 +1,11 @@
+def main(): Int {
+    print("value=");
+    print(42);
+    print(" ");
+    print(3.5);
+    print(" ");
+    print(true);
+    println();
+    println("done");
+    return 0;
+}

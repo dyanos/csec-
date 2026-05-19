@@ -1,0 +1,7 @@
+def main(): Int {
+    val a = $$\left( \frac{a}{b} \right)$$;
+    val b = $$\left[ x + y \right]$$;
+    val c = $$\sqrt{a^{2} + b^{2}}$$;
+
+    return 0;
+}

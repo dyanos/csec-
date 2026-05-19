@@ -1,0 +1,7 @@
+import 수학.대수.행렬
+
+object 계산기 {
+    def 두배(x: Int): Int = x + x
+}
+
+def main(): Int = 계산기.두배(3)

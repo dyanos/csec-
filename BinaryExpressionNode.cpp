@@ -1,8 +1,43 @@
 #include "codegen.h"
 #include "BinaryExpressionNode.h"
 #include "ASTVisitor.h"
+#include "TensorRuntime.h"
 
 #include <iostream>
+
+namespace {
+bool isArithmeticOperator(const std::string& op) {
+    return op == "+" || op == "-" || op == "*" || op == "/" || op == "%";
+}
+
+bool isTensorOperator(const std::string& op) {
+    return op == "@" || op == "inner" || op == "outer" || op == "tensor";
+}
+
+bool isNumericTypeName(const std::string& name) {
+    return name == "Int" || name == "Short" || name == "Byte" || name == "Long" ||
+           name == "Natural" || name == "Integer" || name == "Float" ||
+           name == "Double" || name == "Real";
+}
+
+llvm::Value* coerceNumericValue(llvm::Value* value, llvm::Type* targetType) {
+    auto& cg = CodeGenerator::getInstance();
+    if (!value || !targetType || value->getType() == targetType) return value;
+    if (value->getType()->isIntegerTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateSIToFP(value, targetType, "num.sitofp");
+    }
+    if (value->getType()->isFloatingPointTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateFPCast(value, targetType, "num.fpcast");
+    }
+    if (value->getType()->isIntegerTy() && targetType->isIntegerTy()) {
+        unsigned srcBits = value->getType()->getIntegerBitWidth();
+        unsigned dstBits = targetType->getIntegerBitWidth();
+        if (srcBits < dstBits) return cg.builder.CreateSExt(value, targetType, "num.sext");
+        if (srcBits > dstBits) return cg.builder.CreateTrunc(value, targetType, "num.trunc");
+    }
+    return value;
+}
+}
 
 
 void BinaryExpressionNode::accept(ASTVisitor& visitor) {
@@ -238,7 +273,9 @@ llvm::Value* BinaryExpressionNode::codegen() {
             std::cerr << "Type error: Cannot determine type of left operand" << std::endl;
             return nullptr;
         }
-        leftValue = cg.builder.CreateLoad(cg.getLLVMType(leftType.get()), leftValue, "loadtmp");
+        if (!TensorRuntime::isTensorTypeName(leftType->getName())) {
+            leftValue = cg.builder.CreateLoad(cg.getLLVMType(leftType.get()), leftValue, "loadtmp");
+        }
     }
 
     // Short-circuit logical AND
@@ -361,7 +398,9 @@ llvm::Value* BinaryExpressionNode::codegen() {
             std::cerr << "Type error: Cannot determine type of right operand" << std::endl;
             return nullptr;
         }
-        rightValue = cg.builder.CreateLoad(cg.getLLVMType(rightType.get()), rightValue, "loadtmp");
+        if (!TensorRuntime::isTensorTypeName(rightType->getName())) {
+            rightValue = cg.builder.CreateLoad(cg.getLLVMType(rightType.get()), rightValue, "loadtmp");
+        }
     }
 
     // Struct type arithmetic (Complex, Rational, Quaternion)
@@ -384,6 +423,39 @@ llvm::Value* BinaryExpressionNode::codegen() {
     }
 
     auto& cg = CodeGenerator::getInstance();
+
+    if (isTensorOperator(op)) {
+        if (!TensorRuntime::isTensorTypeName(leftTypeName) || !TensorRuntime::isTensorTypeName(rightTypeName)) {
+            std::cerr << "Type error: Tensor operator '" << op << "' requires tensor operands" << std::endl;
+            return nullptr;
+        }
+        if (op == "inner") {
+            return TensorRuntime::innerProduct(cg, leftValue, rightValue);
+        }
+        if (op == "outer" || op == "tensor") {
+            return TensorRuntime::outerProduct(cg, leftValue, rightValue);
+        }
+        if (op == "@") {
+            return TensorRuntime::matrixProduct(cg, leftValue, rightValue);
+        }
+    }
+
+    if (isArithmeticOperator(op) && isNumericTypeName(leftTypeName) && isNumericTypeName(rightTypeName) &&
+        leftTypeName != rightTypeName) {
+        auto* targetType = (leftValue->getType()->isDoubleTy() || rightValue->getType()->isDoubleTy() ||
+                            leftTypeName == "Real" || rightTypeName == "Real")
+            ? llvm::Type::getDoubleTy(cg.context)
+            : (leftValue->getType()->isFloatTy() || rightValue->getType()->isFloatTy()
+                ? llvm::Type::getFloatTy(cg.context)
+                : llvm::Type::getInt64Ty(cg.context));
+        leftValue = coerceNumericValue(leftValue, targetType);
+        rightValue = coerceNumericValue(rightValue, targetType);
+        if (op == "+") return targetType->isFloatingPointTy() ? cg.builder.CreateFAdd(leftValue, rightValue, "faddtmp") : cg.builder.CreateAdd(leftValue, rightValue, "addtmp");
+        if (op == "-") return targetType->isFloatingPointTy() ? cg.builder.CreateFSub(leftValue, rightValue, "fsubtmp") : cg.builder.CreateSub(leftValue, rightValue, "subtmp");
+        if (op == "*") return targetType->isFloatingPointTy() ? cg.builder.CreateFMul(leftValue, rightValue, "fmultmp") : cg.builder.CreateMul(leftValue, rightValue, "multmp");
+        if (op == "/") return targetType->isFloatingPointTy() ? cg.builder.CreateFDiv(leftValue, rightValue, "fdivtmp") : cg.builder.CreateSDiv(leftValue, rightValue, "divtmp");
+        if (op == "%") return targetType->isFloatingPointTy() ? cg.builder.CreateFRem(leftValue, rightValue, "fmodtmp") : cg.builder.CreateSRem(leftValue, rightValue, "modtmp");
+    }
 
     if (op == "+") {
         if (leftTypeName == rightTypeName) {
@@ -489,9 +561,13 @@ llvm::Value* BinaryExpressionNode::codegen() {
         }
         return cg.builder.CreateOr(leftValue, rightValue, "ortmp");
     }
-    else if (op == "xor") {
-        if (leftTypeName != rightTypeName || !left->getType()->isIntegerTy()) {
-            std::cerr << "Type error: Operator '" << op << "' requires same integer operand types" << std::endl;
+    else if (op == "xor" || op == "^") {
+        const bool isBooleanXor =
+            (leftTypeName == "Boolean" || leftTypeName == "Bool") &&
+            (rightTypeName == "Boolean" || rightTypeName == "Bool");
+        if ((leftTypeName != rightTypeName && !isBooleanXor) ||
+            (!isBooleanXor && !left->getType()->isIntegerTy())) {
+            std::cerr << "Type error: Operator '" << op << "' requires same integer or boolean operand types" << std::endl;
             return nullptr;
         }
         return cg.builder.CreateXor(leftValue, rightValue, "xortmp");
@@ -532,6 +608,10 @@ llvm::Value* BinaryExpressionNode::codegen() {
         return nullptr;
     }
 
+    if (isNumericTypeName(leftTypeName) && isNumericTypeName(rightTypeName)) {
+        return llvm::ConstantFP::get(llvm::Type::getDoubleTy(cg.context), 0.0);
+    }
+
     std::cerr << "Type error: unsupported operator '" << op << "'" << std::endl;
     return nullptr;
 }
@@ -543,15 +623,35 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
     auto rightType = right->getType();
 
     if (!leftType || !rightType) {
-        std::cerr << "Type error: Cannot determine type of operand in binary expression" << std::endl;
         return std::make_unique<UnknownType>();
     }
 
     if (!leftType->equals(rightType)) {
-        std::cerr << "Type error: Left and right expressions have different types" << std::endl;
+        if (isTensorOperator(op)) {
+            if (op == "inner") {
+                return std::make_unique<BasicType>("Real");
+            }
+            return leftType ? leftType->clone() : std::make_unique<UnknownType>();
+        }
+        if (isArithmeticOperator(op) && isNumericTypeName(leftType->getName()) && isNumericTypeName(rightType->getName())) {
+            if (leftType->getName() == "Real" || rightType->getName() == "Real" ||
+                leftType->getName() == "Double" || rightType->getName() == "Double") {
+                return std::make_unique<BasicType>("Real");
+            }
+            if (leftType->getName() == "Float" || rightType->getName() == "Float") {
+                return std::make_unique<BasicType>("Float");
+            }
+            return std::make_unique<BasicType>("Long");
+        }
         return std::make_unique<UnknownType>();
     }
 
+    if (isTensorOperator(op)) {
+        if (op == "inner") {
+            return std::make_unique<BasicType>("Real");
+        }
+        return left->getType();
+    }
     if (op == "+" || op == "-" || op == "*" || op == "/" || op == "%") {
         if (leftType->getName() == "Int" || leftType->getName() == "Float" || leftType->getName() == "Double"
             || leftType->getName() == "Long" || leftType->getName() == "Natural" || leftType->getName() == "Integer"
@@ -560,7 +660,6 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
             return left->getType();
         }
         else {
-            std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << leftType->getName() << "'" << std::endl;
             return std::make_unique<UnknownType>();
         }
     }
@@ -570,12 +669,24 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
     else if (op == "and" || op == "or") {
         return std::make_unique<BasicType>("Boolean");
     }
-    else if (op == "xor" || op == "&" || op == "|" || op == "<<" || op == ">>") {
+    else if (op == "xor" || op == "^") {
+        if (leftType->getName() == "Boolean" || leftType->getName() == "Bool") {
+            return std::make_unique<BasicType>("Boolean");
+        }
         if (!leftType->isIntegerTy()) {
-            std::cerr << "Type error: Operator '" << op << "' requires integer operand type" << std::endl;
             return std::make_unique<UnknownType>();
         }
         return left->getType();
+    }
+    else if (op == "&" || op == "|" || op == "<<" || op == ">>") {
+        if (!leftType->isIntegerTy()) {
+            return std::make_unique<UnknownType>();
+        }
+        return left->getType();
+    }
+
+    if (isNumericTypeName(leftType->getName()) && isNumericTypeName(rightType->getName())) {
+        return std::make_unique<BasicType>("Real");
     }
 
     return std::make_unique<UnknownType>();

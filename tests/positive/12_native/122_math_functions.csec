@@ -1,0 +1,21 @@
+def main(): Int {
+    val a = sin(0.0);
+    val b = cos(0.0);
+    val c = tan(0.0);
+    val d = sqrt(9.0);
+    val e = pow(2.0, 8.0);
+    val f = log(2.0, 8.0);
+    val g = ln(exp(1.0));
+    val h = lg(100.0);
+    val i = min(3, 2.5, 8);
+    val j = max(3, 2.5, 8);
+    val k = gcd(84, 18);
+    val l = frac(1, 2);
+    val m = binom(5, 2);
+    val n = cot(1.0) + sec(1.0) + csc(1.0) + coth(1.0);
+    val o = arcsin(0.5) + arccos(0.5) + arctan(1.0);
+    val p = sinh(1.0) + cosh(1.0) + tanh(1.0);
+
+    println(a + b + c + d + e + f + g + h + i + j + k + l + m + n + o + p);
+    return 0;
+}

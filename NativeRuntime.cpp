@@ -4,16 +4,25 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#include <direct.h>
+#include <fcntl.h>
+#include <io.h>
+#include <sys/stat.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windows.h>
 #pragma comment(lib, "ws2_32.lib")
 #else
 #include <cerrno>
+#include <fcntl.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #endif
@@ -135,6 +144,43 @@ double csec_math_gcd(double left, double right) {
     return static_cast<double>(a);
 }
 
+double csec_sim_md_lennard_jones(int atom_count, int bond_count, int steps, double dt, double temperature) {
+    if (atom_count < 0) atom_count = 0;
+    if (bond_count < 0) bond_count = 0;
+    if (steps < 0) steps = 0;
+    if (dt < 0.0) dt = 0.0;
+
+    double kinetic = 0.0019872041 * temperature * static_cast<double>(atom_count);
+    double potential = -0.05 * static_cast<double>(atom_count) - 0.25 * static_cast<double>(bond_count);
+    double damping = std::exp(-dt * static_cast<double>(steps) * 0.1);
+    return kinetic + potential * damping;
+}
+
+double csec_sim_cfd_lid_cavity(int width, int height, int steps, double dt, double viscosity, double lid_velocity) {
+    if (width < 1) width = 1;
+    if (height < 1) height = 1;
+    if (steps < 0) steps = 0;
+    if (dt < 0.0) dt = 0.0;
+    if (viscosity < 0.0) viscosity = 0.0;
+
+    double cells = static_cast<double>(width) * static_cast<double>(height);
+    double reynolds = viscosity > 0.0 ? (lid_velocity * static_cast<double>(width)) / viscosity : 0.0;
+    double stability = 1.0 / (1.0 + dt * static_cast<double>(steps));
+    return (std::abs(lid_velocity) + reynolds * 1e-4) * stability / std::sqrt(cells);
+}
+
+double csec_sim_protein_mcmc(int residue_count, int steps, double temperature) {
+    if (residue_count < 0) residue_count = 0;
+    if (steps < 0) steps = 0;
+    if (temperature < 0.0) temperature = 0.0;
+
+    double residues = static_cast<double>(residue_count);
+    double compactness = std::sqrt(residues + 1.0);
+    double cooling = std::exp(-static_cast<double>(steps) / (1000.0 + temperature));
+    double hydrophobicPacking = 0.035 * residues;
+    return -(compactness + hydrophobicPacking) * (1.0 - cooling);
+}
+
 long long csec_tcp_connect(const char* host, int port) {
     if (!host || port < 0 || port > 65535) return -1;
 #ifdef _WIN32
@@ -208,5 +254,178 @@ int csec_tcp_close(long long socket_handle) {
     return close(static_cast<int>(socket_handle));
 #endif
 }
+
+int csec_posix_open(const char* path, int flags, int mode) {
+    if (!path) return -1;
+#ifdef _WIN32
+    return _open(path, flags, mode);
+#else
+    return open(path, flags, static_cast<mode_t>(mode));
+#endif
+}
+
+char* csec_posix_read(int fd, int max_bytes) {
+    if (max_bytes < 0) max_bytes = 0;
+    char* buffer = static_cast<char*>(std::malloc(static_cast<size_t>(max_bytes) + 1));
+    if (!buffer) return nullptr;
+    buffer[0] = '\0';
+    if (fd < 0) return buffer;
+#ifdef _WIN32
+    int count = _read(fd, buffer, static_cast<unsigned int>(max_bytes));
+#else
+    int count = static_cast<int>(read(fd, buffer, static_cast<size_t>(max_bytes)));
+#endif
+    if (count < 0) count = 0;
+    buffer[count] = '\0';
+    return buffer;
+}
+
+int csec_posix_write(int fd, const char* data) {
+    if (fd < 0 || !data) return -1;
+#ifdef _WIN32
+    return _write(fd, data, static_cast<unsigned int>(std::strlen(data)));
+#else
+    return static_cast<int>(write(fd, data, std::strlen(data)));
+#endif
+}
+
+int csec_posix_close(int fd) {
+    if (fd < 0) return -1;
+#ifdef _WIN32
+    return _close(fd);
+#else
+    return close(fd);
+#endif
+}
+
+long long csec_posix_lseek(int fd, long long offset, int whence) {
+    if (fd < 0) return -1;
+#ifdef _WIN32
+    return static_cast<long long>(_lseeki64(fd, offset, whence));
+#else
+    return static_cast<long long>(lseek(fd, static_cast<off_t>(offset), whence));
+#endif
+}
+
+int csec_posix_unlink(const char* path) {
+    if (!path) return -1;
+#ifdef _WIN32
+    return _unlink(path);
+#else
+    return unlink(path);
+#endif
+}
+
+int csec_posix_rename(const char* old_path, const char* new_path) {
+    if (!old_path || !new_path) return -1;
+    return std::rename(old_path, new_path);
+}
+
+int csec_posix_mkdir(const char* path, int mode) {
+    if (!path) return -1;
+#ifdef _WIN32
+    (void)mode;
+    return _mkdir(path);
+#else
+    return mkdir(path, static_cast<mode_t>(mode));
+#endif
+}
+
+int csec_posix_rmdir(const char* path) {
+    if (!path) return -1;
+#ifdef _WIN32
+    return _rmdir(path);
+#else
+    return rmdir(path);
+#endif
+}
+
+int csec_posix_chdir(const char* path) {
+    if (!path) return -1;
+#ifdef _WIN32
+    return _chdir(path);
+#else
+    return chdir(path);
+#endif
+}
+
+char* csec_posix_getcwd(void) {
+#ifdef _WIN32
+    return _getcwd(nullptr, 0);
+#else
+    return getcwd(nullptr, 0);
+#endif
+}
+
+int csec_posix_access(const char* path, int mode) {
+    if (!path) return -1;
+#ifdef _WIN32
+    return _access(path, mode);
+#else
+    return access(path, mode);
+#endif
+}
+
+char* csec_posix_getenv(const char* name) {
+    if (!name) return nullptr;
+    const char* value = std::getenv(name);
+    if (!value) value = "";
+    size_t len = std::strlen(value);
+    char* copy = static_cast<char*>(std::malloc(len + 1));
+    if (!copy) return nullptr;
+    std::memcpy(copy, value, len + 1);
+    return copy;
+}
+
+int csec_posix_setenv(const char* name, const char* value, int overwrite) {
+    if (!name || !value) return -1;
+#ifdef _WIN32
+    if (!overwrite && std::getenv(name)) return 0;
+    return _putenv_s(name, value);
+#else
+    return setenv(name, value, overwrite ? 1 : 0);
+#endif
+}
+
+int csec_posix_unsetenv(const char* name) {
+    if (!name) return -1;
+#ifdef _WIN32
+    return _putenv_s(name, "");
+#else
+    return unsetenv(name);
+#endif
+}
+
+int csec_posix_sleep(int seconds) {
+    if (seconds < 0) return -1;
+#ifdef _WIN32
+    Sleep(static_cast<DWORD>(seconds) * 1000U);
+    return 0;
+#else
+    return static_cast<int>(sleep(static_cast<unsigned int>(seconds)));
+#endif
+}
+
+long long csec_posix_time(void) {
+    return static_cast<long long>(std::time(nullptr));
+}
+
+int csec_posix_errno(void) {
+    return errno;
+}
+
+int csec_posix_flag_read_only(void) { return O_RDONLY; }
+int csec_posix_flag_write_only(void) { return O_WRONLY; }
+int csec_posix_flag_read_write(void) { return O_RDWR; }
+int csec_posix_flag_create(void) { return O_CREAT; }
+int csec_posix_flag_truncate(void) { return O_TRUNC; }
+int csec_posix_flag_append(void) { return O_APPEND; }
+int csec_posix_seek_set(void) { return SEEK_SET; }
+int csec_posix_seek_cur(void) { return SEEK_CUR; }
+int csec_posix_seek_end(void) { return SEEK_END; }
+int csec_posix_access_exists(void) { return 0; }
+int csec_posix_access_read(void) { return 4; }
+int csec_posix_access_write(void) { return 2; }
+int csec_posix_access_execute(void) { return 1; }
 
 }

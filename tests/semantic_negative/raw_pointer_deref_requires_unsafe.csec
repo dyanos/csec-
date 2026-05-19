@@ -1,0 +1,6 @@
+external def ptr_source(): unsafe *Int
+
+def main(): Int {
+    var ptr: unsafe *Int = ptr_source();
+    return *ptr;
+}

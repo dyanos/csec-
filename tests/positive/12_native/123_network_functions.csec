@@ -1,0 +1,11 @@
+def main(): Int {
+    val socket: Long = tcpConnect("127.0.0.1", 80);
+    val sent: Int = tcpSend(socket, "GET / HTTP/1.0\r\n\r\n");
+    val response: String = tcpRecv(socket, 1024);
+    val closed: Int = tcpClose(socket);
+
+    println(sent);
+    println(response);
+    println(closed);
+    return 0;
+}

@@ -1,0 +1,22 @@
+template<typename T, Int N>
+def repeatSum(): Int = N + N
+
+template<typename T, Int ROWS, Int COLS>
+class Matrix2D(fill: T) {
+    def rows(): Int = ROWS
+    def cols(): Int = COLS
+    def total(): Int = ROWS * COLS
+}
+
+template<Int SIZE>
+def bufferSize(): Int = SIZE * 2
+
+def main(): Int {
+    val a = repeatSum<Int, 5>();
+    val m = new Matrix2D<Double, 3, 4>(0.0);
+    val r = m.rows();
+    val c = m.cols();
+    val t = m.total();
+    val b = bufferSize<128>();
+    return a + r + c + t + b;
+}

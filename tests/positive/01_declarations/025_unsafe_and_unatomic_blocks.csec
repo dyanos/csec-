@@ -1,0 +1,15 @@
+unsafe def read_pointer(ptr: unsafe *Int): Int = *ptr
+
+def main(): Int {
+    var count: Int = 1;
+
+    unatomic {
+        count += 1;
+    }
+
+    unsafe {
+        count += 1;
+    }
+
+    return count;
+}

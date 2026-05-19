@@ -14,7 +14,11 @@ std::unique_ptr<Type> Type::makeArray(std::unique_ptr<Type> base, int size) {
 
 std::unique_ptr<Type> Type::makeStruct(const std::string& name,
     const std::vector<std::pair<std::string, std::unique_ptr<Type>>>& fields) {
-    return std::make_unique<StructType>(name);
+    auto result = std::make_unique<StructType>(name);
+    for (const auto& f : fields) {
+        result->fields.push_back({f.first, f.second ? f.second->clone() : nullptr});
+    }
+    return result;
 }
 
 std::unique_ptr<Type> Type::makeFunction(const std::unique_ptr<Type>& ret,
@@ -81,6 +85,12 @@ bool Type::isSubtypeOf(const Type& other) const {
 
         return flag;
     }
+
+    case Kind::BOX:
+    case Kind::BORROW:
+    case Kind::MUTABLE_BORROW:
+    case Kind::UNSAFE_POINTER:
+        return equals(other);
 
     case Kind::GENERIC:
         return this->checkGenericSubtype(other);

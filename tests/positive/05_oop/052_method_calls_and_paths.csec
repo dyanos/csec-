@@ -1,0 +1,14 @@
+object MathOps {
+    def twice(x: Int): Int = x + x
+}
+
+class Counter(seed: Int) {
+    def inc(x: Int): Int = seed + x
+}
+
+def main(): Int {
+    val c = new Counter(10);
+    val a = MathOps.twice(3);
+    val b = c.inc(5);
+    return a + b;
+}

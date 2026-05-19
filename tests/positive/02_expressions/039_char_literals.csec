@@ -1,0 +1,11 @@
+def main(): Int {
+    val a = 'A';
+    val b = 'z';
+    val c = '0';
+    val d = ' ';
+    val e = '\n';
+    val f = '\t';
+    val g = '\\';
+    val h = '\'';
+    return 0;
+}

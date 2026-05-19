@@ -1,0 +1,14 @@
+def applyTwice(f: (Int) => Int, x: Int): Int {
+    val first = f(x);
+    return f(first);
+}
+
+def transform(f: (Int, Int) => Int, a: Int, b: Int): Int {
+    return f(a, b);
+}
+
+def predicate(check: (Int) => Boolean, x: Int): Boolean {
+    return check(x);
+}
+
+def main(): Int = 0

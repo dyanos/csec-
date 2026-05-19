@@ -1,0 +1,16 @@
+def main(): Int {
+    val u: Tensor<Double, 3> = new Tensor<Double, 3>(0.0);
+    val v: Tensor<Double, 3> = new Tensor<Double, 3>(1.0);
+    val a: Tensor<Double, 2, 3> = new Tensor<Double, 2, 3>(0.0);
+    val b: Tensor<Double, 3, 2> = new Tensor<Double, 3, 2>(0.0);
+
+    val dot1 = u inner v;
+    val dot2 = innerProduct(u, v);
+    val outer1 = u outer v;
+    val outer2 = outerProduct(u, v);
+    val kron1 = a tensor b;
+    val kron2 = tensorProduct(a, b);
+    val matmul = a @ b;
+
+    return 0;
+}

@@ -1,0 +1,32 @@
+/* Generic container using templates */
+
+template<typename T>
+class Optional(hasValue: Boolean) {
+    var value: T = new T;
+
+    def isPresent(): Boolean = hasValue
+
+    def get(): T = value
+}
+
+template<typename T>
+class Result(success: Boolean) {
+    var data: T = new T;
+    var errorCode: Int = 0;
+
+    def isOk(): Boolean = success
+    def getError(): Int = errorCode
+}
+
+template<typename K, typename V>
+class Entry(key: K, value: V) {
+    def getKey(): K = key
+    def getValue(): V = value
+}
+
+def main(): Int {
+    val opt = new Optional<Int>(true);
+    val res = new Result<String>(true);
+    val entry = new Entry<String, Int>("age", 25);
+    return 0;
+}

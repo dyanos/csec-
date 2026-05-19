@@ -1,0 +1,39 @@
+def main(): Int {
+    /* lowercase greek */
+    val v01 = $\alpha$;
+    val v02 = $\beta$;
+    val v03 = $\gamma$;
+    val v04 = $\delta$;
+    val v05 = $\epsilon$;
+    val v06 = $\zeta$;
+    val v07 = $\eta$;
+    val v08 = $\theta$;
+    val v09 = $\iota$;
+    val v10 = $\kappa$;
+    val v11 = $\lambda$;
+    val v12 = $\mu$;
+    val v13 = $\nu$;
+    val v14 = $\xi$;
+    val v15 = $\pi$;
+    val v16 = $\rho$;
+    val v17 = $\sigma$;
+    val v18 = $\tau$;
+    val v19 = $\phi$;
+    val v20 = $\chi$;
+    val v21 = $\psi$;
+    val v22 = $\omega$;
+
+    /* uppercase greek */
+    val u01 = $\Gamma$;
+    val u02 = $\Delta$;
+    val u03 = $\Theta$;
+    val u04 = $\Lambda$;
+    val u05 = $\Xi$;
+    val u06 = $\Pi$;
+    val u07 = $\Sigma$;
+    val u08 = $\Phi$;
+    val u09 = $\Psi$;
+    val u10 = $\Omega$;
+
+    return 0;
+}

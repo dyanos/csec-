@@ -1,0 +1,21 @@
+class Node(value: Int) {
+    var next: Node = new Node(0);
+    def getValue(): Int = value
+}
+
+class List(head: Node) {
+    var size: Int = 1;
+
+    def getSize(): Int = size
+
+    def getHead(): Node = head
+}
+
+def main(): Int {
+    val n1 = new Node(10);
+    val n2 = new Node(20);
+    val n3 = new Node(30);
+
+    val list = new List(n1);
+    return list.getSize();
+}

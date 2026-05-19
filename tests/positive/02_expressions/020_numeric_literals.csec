@@ -1,0 +1,12 @@
+def main(): Int {
+    val a = 42;
+    val b = 0x2A;
+    val c = 0b101010;
+    val d = 052;
+    val e = 3.14;
+    val f = 1.25e3;
+    val g = true;
+    val h = false;
+    val i = "hello";
+    return a + b + c + d;
+}

@@ -1,0 +1,12 @@
+def start(): Int = 0
+def limit(): Int = 10
+
+def main(): Int {
+    var total: Int = 0;
+
+    for (i <- start() to limit()) {
+        total = total + i;
+    }
+
+    return total;
+}

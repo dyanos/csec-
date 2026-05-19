@@ -46,6 +46,23 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
 
+    auto* structType = llvm::dyn_cast<llvm::StructType>(classSymbol->classType);
+    if (!structType) {
+        std::cerr << "Error: Class '" << baseType->getName() << "' has invalid LLVM struct type" << std::endl;
+        return nullptr;
+    }
+
+    llvm::Value* basePtr = thisSymbol->value;
+    if (!basePtr || !basePtr->getType()->isPointerTy()) {
+        std::cerr << "Error: Base object value is not a pointer" << std::endl;
+        return nullptr;
+    }
+
+    auto* targetPtrType = llvm::PointerType::getUnqual(structType);
+    if (basePtr->getType() != targetPtrType) {
+        basePtr = CodeGenerator::getInstance().builder.CreateBitCast(basePtr, targetPtrType, "obj.cast");
+    }
+
     auto targetName = fieldIdentifier->value;
 
     int fieldIndex = findFieldIndex(classSymbol, targetName);
@@ -56,9 +73,9 @@ llvm::Value* AccessFieldNode::codegen() {
     }
 
     return CodeGenerator::getInstance().builder.CreateStructGEP(
-        CodeGenerator::getInstance().getLLVMType(field->getType().get()),
-        thisSymbol->value,
-        fieldIndex + 1,
+        structType,
+        basePtr,
+        static_cast<unsigned>(fieldIndex),
         targetName
     );
 }
@@ -84,5 +101,6 @@ int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string&
 }
 
 std::unique_ptr<Type> AccessFieldNode::getType() {
+    if (!field) return std::make_unique<UnknownType>();
     return field->getType();
 }

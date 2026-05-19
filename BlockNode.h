@@ -11,6 +11,8 @@ public:
 		for (const auto& stmt : other.statements) {
 			statements.push_back(stmt->clone());
         }
+        isUnsafeContext = other.isUnsafeContext;
+        isUnatomic = other.isUnatomic;
 		nodeType = ASTNodeType::BLOCK;
 	}
     BlockNode& operator=(const BlockNode& other) {
@@ -20,19 +22,30 @@ public:
             for (const auto& stmt : other.statements) {
                 statements.push_back(stmt ? stmt->clone() : nullptr);
             }
+            isUnsafeContext = other.isUnsafeContext;
+            isUnatomic = other.isUnatomic;
             nodeType = ASTNodeType::BLOCK;
         }
         return *this;
     }
 
     std::vector<std::unique_ptr<ASTNode>> statements;
+    bool isUnsafeContext = false;
+    bool isUnatomic = false;
 
     void accept(ASTVisitor& visitor) override;
 
     llvm::Value* codegen() override;
 
     std::unique_ptr<Type> getType() override {
-		return std::make_unique<UnknownType>();
+        if (type) {
+            return type->clone();
+        }
+        if (statements.empty() || !statements.back()) {
+		    return std::make_unique<UnknownType>();
+        }
+        auto lastType = statements.back()->getType();
+        return lastType ? lastType->clone() : std::make_unique<UnknownType>();
     }
 	std::unique_ptr<ASTNode> clone() override {
 		return std::make_unique<BlockNode>(*this);

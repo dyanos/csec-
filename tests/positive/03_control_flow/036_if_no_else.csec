@@ -1,0 +1,24 @@
+def abs(x: Int): Int {
+    if (x < 0) {
+        return 0 - x;
+    }
+    return x;
+}
+
+def clamp(x: Int): Int {
+    if (x > 100) {
+        return 100;
+    }
+    if (x < 0) {
+        return 0;
+    }
+    return x;
+}
+
+def main(): Int {
+    var result: Int = 0;
+    if (true) {
+        result = 1;
+    }
+    return abs(0 - 5) + clamp(200);
+}

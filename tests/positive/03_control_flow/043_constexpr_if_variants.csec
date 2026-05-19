@@ -1,0 +1,24 @@
+constexpr def selectA(useFirst: Boolean): Int {
+    if constexpr (useFirst) {
+        return 10;
+    }
+    else {
+        return 20;
+    }
+}
+
+constexpr def selectB(flag: Boolean): Int {
+    if constexpr (flag) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+def main(): Int {
+    val a = selectA(true);
+    val b = selectA(false);
+    val c = selectB(true);
+    return a + b + c;
+}

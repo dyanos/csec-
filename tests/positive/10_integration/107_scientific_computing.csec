@@ -2,7 +2,7 @@
 
 def main(): Int {
     /* Euler's identity components */
-    val euler = $\e^{\i * \pi} + 1$;
+    val eulerExpr = $\e^{\i * \pi} + 1$;
 
     /* Quadratic formula */
     val discriminant = $$b^{2} - 4 * a * c$$;

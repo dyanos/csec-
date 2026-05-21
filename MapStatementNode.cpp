@@ -7,6 +7,21 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Constants.h>
 
+namespace {
+std::unique_ptr<Type> mapElementSourceType(const std::unique_ptr<Type>& type) {
+    if (!type) return std::make_unique<UnknownType>();
+    if (auto* arrType = dynamic_cast<ArrayType*>(type.get())) {
+        return arrType->elementType ? arrType->elementType->clone() : std::make_unique<UnknownType>();
+    }
+    if (auto* genType = dynamic_cast<GenericType*>(type.get())) {
+        if (genType->baseType && genType->baseType->getName() == "Array" && !genType->typeArguments.empty()) {
+            return genType->typeArguments[0] ? genType->typeArguments[0]->clone() : std::make_unique<UnknownType>();
+        }
+    }
+    return std::make_unique<UnknownType>();
+}
+}
+
 void MapStatementNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
@@ -74,11 +89,7 @@ llvm::Value* MapStatementNode::codegen() {
     // Bind loop variable in scope (once, outside loop)
     cg.symbolTable.enterScope();
     std::unique_ptr<Type> varType;
-    if (auto* arrType = dynamic_cast<ArrayType*>(iterType.get())) {
-        varType = arrType->elementType->clone();
-    } else {
-        varType = std::make_unique<UnknownType>();
-    }
+    varType = mapElementSourceType(iterType);
     cg.symbolTable.addSymbol(variable, std::make_unique<Symbol>(
         variable, std::move(varType), varPtr, false, SymbolType::VARIABLE));
 

@@ -63,6 +63,13 @@ bool isNativePosixFunction(const std::string& name) {
     return false;
 }
 
+bool isNativeParallelFunction(const std::string& name) {
+    return name == "parallelThreads" ||
+           name == "setParallelThreads" ||
+           name == "parallelBackendAvailable" ||
+           name == "parallelBackendImplemented";
+}
+
 bool isNativeSimulationFunction(const std::string& name) {
     return name == "mdSimulate" || name == "cfdSimulate" || name == "proteinMcmc";
 }
@@ -753,6 +760,62 @@ llvm::Value* codegenNativePosixCall(
     return nullptr;
 }
 
+llvm::Value* codegenNativeParallelCall(
+    const std::string& functionName,
+    const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* voidTy = llvm::Type::getVoidTy(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+
+    if (functionName == "parallelThreads") {
+        if (!argValues.empty()) {
+            std::cerr << "Error: parallelThreads() does not take arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_parallel_get_num_threads", i32Ty, {}),
+            {},
+            "parallel.threads");
+    }
+
+    if (functionName == "setParallelThreads") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: setParallelThreads(count) requires one argument" << std::endl;
+            return nullptr;
+        }
+        cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_parallel_set_num_threads", voidTy, {i32Ty}),
+            {cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[0]), i32Ty, "parallel.thread.count")});
+        return llvm::ConstantInt::get(i32Ty, 0);
+    }
+
+    if (functionName == "parallelBackendAvailable") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: parallelBackendAvailable(name) requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_parallel_backend_available", i32Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "parallel.backend.available");
+    }
+
+    if (functionName == "parallelBackendImplemented") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: parallelBackendImplemented(name) requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_parallel_backend_implemented", i32Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "parallel.backend.implemented");
+    }
+
+    return nullptr;
+}
+
 llvm::Value* codegenNativeScalarMathCall(const std::string& functionName, const std::vector<llvm::Value*>& argValues) {
     auto& cg = CodeGenerator::getInstance();
     auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
@@ -1376,6 +1439,9 @@ llvm::Value* FunctionCallNode::codegen() {
     if (isNativePosixFunction(functionName)) {
         return codegenNativePosixCall(functionName, argValues);
     }
+    if (isNativeParallelFunction(functionName)) {
+        return codegenNativeParallelCall(functionName, argValues);
+    }
     if (isNativeSimulationFunction(functionName)) {
         return codegenNativeSimulationCall(functionName, argValues);
     }
@@ -1681,6 +1747,9 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
         if (functionName == "posixLseek" || functionName == "posixTime") {
             return std::make_unique<BasicType>("Long");
         }
+        return std::make_unique<BasicType>("Int");
+    }
+    if (isNativeParallelFunction(functionName)) {
         return std::make_unique<BasicType>("Int");
     }
     if (isNativeSimulationFunction(functionName)) {

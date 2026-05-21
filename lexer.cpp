@@ -60,7 +60,7 @@ void Lexer::initializeKeywords() {
         "import", "lazy", "match", "new", "null", "object", "override",
         "package", "private", "protected", "return", "sealed", "super",
         "this", "throw", "trait", "try", "true", "type", "val", "var",
-		"while", "with", "yield", "to", "until", "and", "or", "xor", "map", "pmap", "reduce", "filter", "external", "inline", "constexpr",
+		"while", "with", "yield", "to", "until", "and", "or", "xor", "map", "pmap", "reduce", "preduce", "filter", "external", "inline", "constexpr",
 		"template", "typename", "mut", "box", "unsafe", "unatomic",
         "molecule", "atom", "bond", "at", "steps", "dt", "temperature",
         "cfd", "grid", "viscosity", "velocity",

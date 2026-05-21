@@ -82,6 +82,7 @@ Statement
   / MapStatement
   / PMapStatement
   / ReduceStatement
+  / PReduceStatement
   / FilterStatement
   / ObjectDeclaration
   / Expression StatementEnd?
@@ -99,10 +100,16 @@ MapStatement
   = "map" _ "(" _ Identifier _ "<-" _ Expression _ ")" _ Block
 
 PMapStatement
-  = "pmap" _ "(" _ Identifier _ "<-" _ Expression _ ")" _ Block
+  = "pmap" _ "(" _ (PMapBackend _ "," _)? Identifier _ "<-" _ Expression _ ")" _ Block
+
+PMapBackend
+  = "cpu" / "openmp" / "gpu" / "simd"
 
 ReduceStatement
   = "reduce" _ "(" _ Identifier _ "<-" _ Expression _ "," _ Expression _ ")" _ Block
+
+PReduceStatement
+  = "preduce" _ "(" _ PMapBackend _ "," _ Identifier _ "," _ Identifier _ "<-" _ Expression _ "," _ Expression _ ")" _ Block
 
 FilterStatement
   = "filter" _ "(" _ Identifier _ "<-" _ Expression _ ")" _ Block
@@ -168,6 +175,11 @@ IndexSuffix
 
 PrimaryExpression
   = IfStatement
+  / MapStatement
+  / PMapStatement
+  / ReduceStatement
+  / PReduceStatement
+  / FilterStatement
   / LambdaExpression
   / NewExpression
   / ArrayLiteral
@@ -245,7 +257,7 @@ ReservedWord
      "extends" / "external" / "false" / "final" / "finally" / "for" /
      "if" / "import" / "match" / "mut" / "new" / "null" / "object" /
      "return" / "super" / "template" / "this" / "true" / "typename" /
-     "unsafe" / "unatomic" / "val" / "var" / "while") ![A-Za-z0-9_]
+     "unsafe" / "unatomic" / "val" / "var" / "while" / "preduce") ![A-Za-z0-9_]
 
 IntegralType
   = "Int" / "Long" / "Short" / "Byte" / "Boolean" / "Bool"

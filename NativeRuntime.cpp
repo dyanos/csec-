@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <thread>
+#include <vector>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -28,6 +30,19 @@
 #endif
 
 namespace {
+int& configuredParallelThreads() {
+    static int value = []() {
+        unsigned int hardware = std::thread::hardware_concurrency();
+        return hardware == 0 ? 1 : static_cast<int>(hardware);
+    }();
+    return value;
+}
+
+void setConfiguredParallelThreads(int count) {
+    if (count < 1) count = 1;
+    configuredParallelThreads() = count;
+}
+
 #ifdef _WIN32
 bool ensureSocketRuntime() {
     static bool initialized = []() {
@@ -179,6 +194,72 @@ double csec_sim_protein_mcmc(int residue_count, int steps, double temperature) {
     double cooling = std::exp(-static_cast<double>(steps) / (1000.0 + temperature));
     double hydrophobicPacking = 0.035 * residues;
     return -(compactness + hydrophobicPacking) * (1.0 - cooling);
+}
+
+int csec_parallel_get_num_threads(void) {
+    return configuredParallelThreads();
+}
+
+void csec_parallel_set_num_threads(int count) {
+    setConfiguredParallelThreads(count);
+}
+
+int csec_parallel_backend_available(const char* name) {
+    if (!name) return 0;
+    if (std::strcmp(name, "cpu") == 0) return 1;
+    if (std::strcmp(name, "simd") == 0) return 1;
+#if defined(_OPENMP)
+    if (std::strcmp(name, "openmp") == 0) return 1;
+#else
+    if (std::strcmp(name, "openmp") == 0) return 0;
+#endif
+    if (std::strcmp(name, "gpu") == 0) return 0;
+    return 0;
+}
+
+int csec_parallel_backend_implemented(const char* name) {
+    if (!name) return 0;
+    if (std::strcmp(name, "cpu") == 0) return 1;
+    if (std::strcmp(name, "simd") == 0) return 1;
+#if defined(_OPENMP)
+    if (std::strcmp(name, "openmp") == 0) return 1;
+#else
+    if (std::strcmp(name, "openmp") == 0) return 0;
+#endif
+    if (std::strcmp(name, "gpu") == 0) return 0;
+    return 0;
+}
+
+void csec_parallel_for_i32(int start, int end, void* context, csec_parallel_for_i32_fn callback) {
+    if (!callback || end <= start) return;
+
+    int count = end - start;
+    int requested = configuredParallelThreads();
+    if (requested < 1) requested = 1;
+    int workerCount = requested < count ? requested : count;
+
+    if (workerCount <= 1) {
+        for (int i = start; i < end; ++i) {
+            callback(context, i);
+        }
+        return;
+    }
+
+    std::vector<std::thread> workers;
+    workers.reserve(static_cast<size_t>(workerCount));
+    for (int worker = 0; worker < workerCount; ++worker) {
+        int chunkStart = start + (count * worker) / workerCount;
+        int chunkEnd = start + (count * (worker + 1)) / workerCount;
+        workers.emplace_back([=]() {
+            for (int i = chunkStart; i < chunkEnd; ++i) {
+                callback(context, i);
+            }
+        });
+    }
+
+    for (auto& worker : workers) {
+        worker.join();
+    }
 }
 
 long long csec_tcp_connect(const char* host, int port) {

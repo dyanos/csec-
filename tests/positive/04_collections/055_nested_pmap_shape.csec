@@ -1,0 +1,11 @@
+def main(): Int {
+    val xs = [1, 2, 3];
+    val outerScale = 2;
+    val ys = pmap(openmp, x <- xs) {
+        val zs = pmap(openmp, y <- xs) {
+            y + outerScale;
+        };
+        x + outerScale;
+    };
+    return 0;
+}

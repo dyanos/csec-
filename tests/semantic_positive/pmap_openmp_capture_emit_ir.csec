@@ -1,0 +1,8 @@
+def main(): Int {
+    val xs = [1, 2, 3, 4];
+    val scale = 3;
+    val ys = pmap(openmp, x <- xs) {
+        x * scale;
+    };
+    return 0;
+}

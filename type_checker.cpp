@@ -19,6 +19,19 @@ bool isTensorLikeType(const std::unique_ptr<Type>& type) {
     return name == "Tensor" || name.rfind("Tensor$", 0) == 0;
 }
 
+std::unique_ptr<Type> collectionElementType(const std::unique_ptr<Type>& type) {
+    if (!type) return std::make_unique<UnknownType>();
+    if (auto* arrType = dynamic_cast<ArrayType*>(type.get())) {
+        return arrType->elementType ? arrType->elementType->clone() : std::make_unique<UnknownType>();
+    }
+    if (auto* genType = dynamic_cast<GenericType*>(type.get())) {
+        if (genType->baseType && genType->baseType->getName() == "Array" && !genType->typeArguments.empty()) {
+            return genType->typeArguments[0] ? genType->typeArguments[0]->clone() : std::make_unique<UnknownType>();
+        }
+    }
+    return std::make_unique<UnknownType>();
+}
+
 FunctionSymbol* ensureFunctionSymbol(FunctionDeclarationNode& node) {
     auto& cg = CodeGenerator::getInstance();
     auto* existing = cg.symbolTable.lookupFunction(node.name, {});
@@ -960,13 +973,15 @@ void TypeChecker::visit(LambdaExpressionNode& node) {
 
 void TypeChecker::visit(MapStatementNode& node) {
     auto& cg = CodeGenerator::getInstance();
+    std::unique_ptr<Type> elementType = std::make_unique<UnknownType>();
     if (node.iterableExpr) {
         node.iterableExpr->accept(*this);
+        elementType = collectionElementType(node.iterableExpr->getType());
     }
     cg.symbolTable.enterScope();
     enterOwnershipScope();
-    bindVariable(node.variable, std::make_unique<BasicType>("Int"), false);
-    declareOwnership(node.variable, std::make_unique<BasicType>("Int"));
+    bindVariable(node.variable, elementType, false);
+    declareOwnership(node.variable, elementType);
     if (node.body) {
         node.body->accept(*this);
     }
@@ -982,13 +997,21 @@ void TypeChecker::visit(MapStatementNode& node) {
 
 void TypeChecker::visit(PMapStatementNode& node) {
     auto& cg = CodeGenerator::getInstance();
+    std::unique_ptr<Type> elementType = std::make_unique<UnknownType>();
     if (node.iterableExpr) {
         node.iterableExpr->accept(*this);
+        elementType = collectionElementType(node.iterableExpr->getType());
+    }
+    if (node.backend != "cpu" && node.backend != "openmp" && node.backend != "gpu" && node.backend != "simd") {
+        reportError("Type error: unsupported pmap backend '" + node.backend + "'");
+    }
+    if (node.backend == "gpu") {
+        reportError("Type error: pmap(gpu) is reserved but GPU lowering is not implemented yet");
     }
     cg.symbolTable.enterScope();
     enterOwnershipScope();
-    bindVariable(node.variable, std::make_unique<BasicType>("Int"), false);
-    declareOwnership(node.variable, std::make_unique<BasicType>("Int"));
+    bindVariable(node.variable, elementType, false);
+    declareOwnership(node.variable, elementType);
     if (node.body) {
         node.body->accept(*this);
     }
@@ -1004,15 +1027,26 @@ void TypeChecker::visit(PMapStatementNode& node) {
 
 void TypeChecker::visit(ReduceStatementNode& node) {
     auto& cg = CodeGenerator::getInstance();
+    std::unique_ptr<Type> elementType = std::make_unique<UnknownType>();
     if (node.iterableExpr) {
         node.iterableExpr->accept(*this);
+        elementType = collectionElementType(node.iterableExpr->getType());
+    }
+    if (node.isParallel) {
+        if (node.backend != "cpu" && node.backend != "simd" && node.backend != "openmp" && node.backend != "gpu") {
+            reportError("Type error: unsupported preduce backend '" + node.backend + "'");
+        }
+        if (node.backend == "openmp" || node.backend == "gpu") {
+            reportError("Type error: preduce(" + node.backend + ") is reserved but parallel reduction lowering is not implemented yet");
+        }
     }
     cg.symbolTable.enterScope();
     enterOwnershipScope();
-    bindVariable(node.variable, std::make_unique<BasicType>("Int"), false);
-    declareOwnership(node.variable, std::make_unique<BasicType>("Int"));
-    bindVariable("$acc", std::make_unique<BasicType>("Int"), true);
-    declareOwnership("$acc", std::make_unique<BasicType>("Int"));
+    bindVariable(node.variable, elementType, false);
+    declareOwnership(node.variable, elementType);
+    std::unique_ptr<Type> accType = node.initialValue ? node.initialValue->getType() : std::make_unique<UnknownType>();
+    bindVariable(node.accumulatorVariable, accType, true);
+    declareOwnership(node.accumulatorVariable, accType);
     if (node.body) {
         node.body->accept(*this);
     }
@@ -1026,13 +1060,15 @@ void TypeChecker::visit(ReduceStatementNode& node) {
 
 void TypeChecker::visit(FilterStatementNode& node) {
     auto& cg = CodeGenerator::getInstance();
+    std::unique_ptr<Type> elementType = std::make_unique<UnknownType>();
     if (node.iterableExpr) {
         node.iterableExpr->accept(*this);
+        elementType = collectionElementType(node.iterableExpr->getType());
     }
     cg.symbolTable.enterScope();
     enterOwnershipScope();
-    bindVariable(node.variable, std::make_unique<BasicType>("Int"), false);
-    declareOwnership(node.variable, std::make_unique<BasicType>("Int"));
+    bindVariable(node.variable, elementType, false);
+    declareOwnership(node.variable, elementType);
     if (node.body) {
         node.body->accept(*this);
     }

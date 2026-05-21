@@ -6,6 +6,40 @@
 #include <iostream>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Metadata.h>
+
+namespace {
+std::unique_ptr<Type> reduceElementSourceType(const std::unique_ptr<Type>& type) {
+    if (!type) return std::make_unique<UnknownType>();
+    if (auto* arrType = dynamic_cast<ArrayType*>(type.get())) {
+        return arrType->elementType ? arrType->elementType->clone() : std::make_unique<UnknownType>();
+    }
+    if (auto* genType = dynamic_cast<GenericType*>(type.get())) {
+        if (genType->baseType && genType->baseType->getName() == "Array" && !genType->typeArguments.empty()) {
+            return genType->typeArguments[0] ? genType->typeArguments[0]->clone() : std::make_unique<UnknownType>();
+        }
+    }
+    return std::make_unique<UnknownType>();
+}
+
+void attachReduceLoopMetadata(llvm::LLVMContext& context, llvm::BranchInst* latch, const std::string& backend) {
+    if (!latch || backend == "cpu") return;
+
+    auto temp = llvm::MDNode::getTemporary(context, {});
+    llvm::Metadata* vectorizeOperands[] = {
+        llvm::MDString::get(context, "llvm.loop.vectorize.enable"),
+        llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), true))
+    };
+    llvm::Metadata* operands[] = {
+        temp.get(),
+        llvm::MDNode::get(context, vectorizeOperands),
+        llvm::MDNode::get(context, llvm::MDString::get(context, "csec.preduce.backend." + backend))
+    };
+    auto* loopId = llvm::MDNode::getDistinct(context, operands);
+    loopId->replaceOperandWith(0, loopId);
+    latch->setMetadata(llvm::LLVMContext::MD_loop, loopId);
+}
+}
 
 void ReduceStatementNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -14,6 +48,11 @@ void ReduceStatementNode::accept(ASTVisitor& visitor) {
 llvm::Value* ReduceStatementNode::codegen() {
     auto& cg = CodeGenerator::getInstance();
     llvm::Function* function = cg.builder.GetInsertBlock()->getParent();
+
+    if (isParallel && (backend == "openmp" || backend == "gpu")) {
+        std::cerr << "Error: preduce(" << backend << ") is reserved, but parallel reduction lowering is not implemented yet" << std::endl;
+        return nullptr;
+    }
 
     llvm::Value* arrayPtr = iterableExpr->codegen();
     if (!arrayPtr) return nullptr;
@@ -83,19 +122,15 @@ llvm::Value* ReduceStatementNode::codegen() {
     // Bind loop variable and accumulator in scope (once, outside loop)
     cg.symbolTable.enterScope();
     std::unique_ptr<Type> varType;
-    if (auto* arrType = dynamic_cast<ArrayType*>(iterType.get())) {
-        varType = arrType->elementType->clone();
-    } else {
-        varType = std::make_unique<UnknownType>();
-    }
+    varType = reduceElementSourceType(iterType);
     cg.symbolTable.addSymbol(variable, std::make_unique<Symbol>(
         variable, std::move(varType), varPtr, false, SymbolType::VARIABLE));
 
-    // Expose accumulator as "$acc" so body can reference it
+    // Expose accumulator in scope. Legacy reduce uses "$acc"; preduce names it explicitly.
     auto initValType = initialValue->getType();
     auto accType = initValType ? initValType->clone() : std::make_unique<UnknownType>();
-    cg.symbolTable.addSymbol("$acc", std::make_unique<Symbol>(
-        "$acc", std::move(accType), accPtr, true, SymbolType::VARIABLE));
+    cg.symbolTable.addSymbol(accumulatorVariable, std::make_unique<Symbol>(
+        accumulatorVariable, std::move(accType), accPtr, true, SymbolType::VARIABLE));
 
     // Enforce reduce body type to match accumulator type
     auto initType = initialValue->getType();
@@ -149,7 +184,10 @@ llvm::Value* ReduceStatementNode::codegen() {
     // Increment counter
     llvm::Value* nextIdx = cg.builder.CreateAdd(idx, cg.builder.getInt32(1), "next_i");
     cg.builder.CreateStore(nextIdx, counterPtr);
-    cg.builder.CreateBr(condBB);
+    auto* latch = cg.builder.CreateBr(condBB);
+    if (isParallel) {
+        attachReduceLoopMetadata(cg.context, latch, backend);
+    }
 
     // After — return accumulated value
     cg.builder.SetInsertPoint(afterBB);

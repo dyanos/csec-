@@ -1,0 +1,10 @@
+def main(): Int {
+    val xs = [1, 2, 3, 4];
+    val cpuSum = preduce(cpu, acc, x <- xs, 0) {
+        acc + x;
+    };
+    val simdProduct = preduce(simd, acc, x <- xs, 1) {
+        acc * x;
+    };
+    return cpuSum + simdProduct;
+}

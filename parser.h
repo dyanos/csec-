@@ -60,6 +60,7 @@ private:
     std::unique_ptr<ASTNode> parseMapStatement();
     std::unique_ptr<ASTNode> parsePMapStatement();
     std::unique_ptr<ASTNode> parseReduceStatement();
+    std::unique_ptr<ASTNode> parsePReduceStatement();
     std::unique_ptr<ASTNode> parseFilterStatement();
     std::unique_ptr<ASTNode> parseMoleculeSimulationExpression();
     std::unique_ptr<ASTNode> parseCfdSimulationExpression();

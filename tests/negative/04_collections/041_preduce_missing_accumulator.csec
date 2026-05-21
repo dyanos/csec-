@@ -1,0 +1,7 @@
+def main(): Int {
+    val xs = [1, 2, 3, 4];
+    val sum = preduce(cpu, x <- xs, 0) {
+        x;
+    };
+    return sum;
+}

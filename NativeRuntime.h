@@ -55,6 +55,13 @@ CSEC_NATIVE_API double csec_sim_md_lennard_jones(int atom_count, int bond_count,
 CSEC_NATIVE_API double csec_sim_cfd_lid_cavity(int width, int height, int steps, double dt, double viscosity, double lid_velocity);
 CSEC_NATIVE_API double csec_sim_protein_mcmc(int residue_count, int steps, double temperature);
 
+CSEC_NATIVE_API int csec_parallel_get_num_threads(void);
+CSEC_NATIVE_API void csec_parallel_set_num_threads(int count);
+CSEC_NATIVE_API int csec_parallel_backend_available(const char* name);
+CSEC_NATIVE_API int csec_parallel_backend_implemented(const char* name);
+typedef void (*csec_parallel_for_i32_fn)(void* context, int index);
+CSEC_NATIVE_API void csec_parallel_for_i32(int start, int end, void* context, csec_parallel_for_i32_fn callback);
+
 CSEC_NATIVE_API long long csec_tcp_connect(const char* host, int port);
 CSEC_NATIVE_API int csec_tcp_send(long long socket_handle, const char* data);
 CSEC_NATIVE_API char* csec_tcp_recv(long long socket_handle, int max_bytes);

@@ -245,7 +245,9 @@ public:
     }
 
     void visit(ReduceStatementNode& node) override {
-        std::cout << "ReduceStatement:" << std::endl;
+        std::cout << (node.isParallel ? "PReduceStatement:" : "ReduceStatement:") << std::endl;
+        if (node.isParallel) std::cout << "Backend: " << node.backend << std::endl;
+        std::cout << "Accumulator: " << node.accumulatorVariable << std::endl;
         std::cout << "Variable: " << node.variable << std::endl;
         std::cout << "Iterable Expression:" << std::endl;
         node.iterableExpr->accept(*this);

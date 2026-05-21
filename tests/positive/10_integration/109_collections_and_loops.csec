@@ -19,7 +19,7 @@ def main(): Int {
 
     /* allocated arrays */
     val buffer = new Int[100];
-    val grid = new Int[10, 10];
+    val gridData = new Int[10, 10];
 
     /* map: square each element */
     map (x <- small) {

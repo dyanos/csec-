@@ -1,0 +1,7 @@
+def main(): Int {
+    val xs = [1, 2, 3, 4];
+    val sum = preduce(openmp, acc, x <- xs, 0) {
+        acc + x;
+    };
+    return sum;
+}

@@ -18,8 +18,23 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
     else if (match(TokenType::KEYWORD, "protein")) {
         return parseProteinMcmcExpression();
     }
-    else if (match(TokenType::KEYWORD, "ode")) {
+	else if (match(TokenType::KEYWORD, "ode")) {
         return parseOdeSimulationExpression();
+    }
+    else if (match(TokenType::KEYWORD, "map")) {
+        return parseMapStatement();
+    }
+    else if (match(TokenType::KEYWORD, "pmap")) {
+        return parsePMapStatement();
+    }
+    else if (match(TokenType::KEYWORD, "reduce")) {
+        return parseReduceStatement();
+    }
+    else if (match(TokenType::KEYWORD, "preduce")) {
+        return parsePReduceStatement();
+    }
+    else if (match(TokenType::KEYWORD, "filter")) {
+        return parseFilterStatement();
     }
 	else if (check(TokenType::IDENTIFIER) ||
         (check(TokenType::KEYWORD, "this") ||

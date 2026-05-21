@@ -82,6 +82,9 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
 	else if (match(TokenType::KEYWORD, "reduce")) {
 		return parseReduceStatement();
 	}
+	else if (match(TokenType::KEYWORD, "preduce")) {
+		return parsePReduceStatement();
+	}
 	else if (match(TokenType::KEYWORD, "filter")) {
 		return parseFilterStatement();
 	}
@@ -487,6 +490,12 @@ std::unique_ptr<ASTNode> Parser::parsePMapStatement() {
 
 	expect(TokenType::OPERATOR, "(");
 
+    if ((check(TokenType::IDENTIFIER) || check(TokenType::KEYWORD)) &&
+        peek(1).type == TokenType::OPERATOR && peek(1).value == ",") {
+        pmapNode->backend = advance().value;
+        expect(TokenType::OPERATOR, ",");
+    }
+
 	if (match(TokenType::IDENTIFIER)) {
 		pmapNode->variable = previous().value;
 
@@ -545,6 +554,59 @@ std::unique_ptr<ASTNode> Parser::parseReduceStatement() {
 	}
 	else {
 		error("Expected '{' after 'reduce' statement");
+	}
+
+	return reduceNode;
+}
+
+std::unique_ptr<ASTNode> Parser::parsePReduceStatement() {
+	auto reduceNode = std::make_unique<ReduceStatementNode>();
+	reduceNode->isParallel = true;
+
+	expect(TokenType::OPERATOR, "(");
+
+	if (match(TokenType::IDENTIFIER) || match(TokenType::KEYWORD)) {
+		reduceNode->backend = previous().value;
+	}
+	else {
+		error("Expected backend policy in preduce statement");
+	}
+	expect(TokenType::OPERATOR, ",");
+
+	if (match(TokenType::IDENTIFIER)) {
+		reduceNode->accumulatorVariable = previous().value;
+	}
+	else {
+		error("Expected accumulator identifier in preduce statement");
+	}
+	expect(TokenType::OPERATOR, ",");
+
+	if (match(TokenType::IDENTIFIER)) {
+		reduceNode->variable = previous().value;
+
+		if (match(TokenType::OPERATOR, "<-")) {
+			reduceNode->iterableExpr = parseExpression();
+		}
+		else {
+			error("Expected '<-' in preduce statement");
+		}
+	}
+	else {
+		error("Expected element identifier in preduce statement");
+	}
+
+	if (!match(TokenType::OPERATOR, ",")) {
+		error("Expected ',' and initial value in preduce statement");
+	}
+	reduceNode->initialValue = parseExpression();
+
+	expect(TokenType::OPERATOR, ")");
+
+	if (match(TokenType::OPERATOR, "{")) {
+		reduceNode->body = parseBlock();
+	}
+	else {
+		error("Expected '{' after 'preduce' statement");
 	}
 
 	return reduceNode;

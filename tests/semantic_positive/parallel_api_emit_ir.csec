@@ -1,0 +1,8 @@
+def main(): Int {
+    setParallelThreads(2);
+    val threads = parallelThreads();
+    val hasCpu = parallelBackendAvailable("cpu");
+    val hasGpu = parallelBackendAvailable("gpu");
+    val gpuImplemented = parallelBackendImplemented("gpu");
+    return threads + hasCpu + hasGpu + gpuImplemented;
+}

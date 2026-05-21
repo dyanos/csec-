@@ -9,6 +9,7 @@ public:
     }
     PMapStatementNode(const PMapStatementNode& other) {
         this->variable = other.variable;
+        this->backend = other.backend;
         this->iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
         this->body = other.body ? other.body->clone() : nullptr;
         nodeType = ASTNodeType::PMAP_STATEMENT;
@@ -16,20 +17,23 @@ public:
     PMapStatementNode& operator=(const PMapStatementNode& other) {
         if (this != &other) {
             variable = other.variable;
+            backend = other.backend;
             iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
             body = other.body ? other.body->clone() : nullptr;
             nodeType = ASTNodeType::PMAP_STATEMENT;
         }
         return *this;
     }
-    PMapStatementNode(std::string variable, std::unique_ptr<ASTNode> iterableExpr, std::unique_ptr<ASTNode> body) {
+    PMapStatementNode(std::string variable, std::unique_ptr<ASTNode> iterableExpr, std::unique_ptr<ASTNode> body, std::string backend = "cpu") {
         this->variable = variable;
+        this->backend = backend;
         this->iterableExpr = std::move(iterableExpr);
         this->body = std::move(body);
         nodeType = ASTNodeType::PMAP_STATEMENT;
     }
 
     std::string variable;
+    std::string backend = "cpu";
     std::unique_ptr<ASTNode> iterableExpr;
     std::unique_ptr<ASTNode> body;
 

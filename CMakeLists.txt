@@ -298,6 +298,10 @@ add_library(csec_native_runtime SHARED
 )
 target_compile_features(csec_native_runtime PRIVATE cxx_std_17)
 target_compile_definitions(csec_native_runtime PRIVATE CSEC_NATIVE_RUNTIME_BUILD)
+find_package(OpenMP QUIET)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(csec_native_runtime PRIVATE OpenMP::OpenMP_CXX)
+endif()
 if(WIN32)
     target_compile_definitions(csec_native_runtime PRIVATE
         _CRT_SECURE_NO_WARNINGS

@@ -1,0 +1,13 @@
+def main(): Int {
+    setParallelThreads(0);
+    val clamped = parallelThreads();
+    setParallelThreads(4);
+    val requested = parallelThreads();
+    val cpu = parallelBackendAvailable("cpu");
+    val openmp = parallelBackendAvailable("openmp");
+    val simd = parallelBackendAvailable("simd");
+    val gpu = parallelBackendAvailable("gpu");
+    val gpuImplemented = parallelBackendImplemented("gpu");
+    val unknown = parallelBackendAvailable("metal");
+    return clamped + requested + cpu + openmp + simd + gpu + gpuImplemented + unknown;
+}

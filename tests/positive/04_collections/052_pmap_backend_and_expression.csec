@@ -1,0 +1,14 @@
+def main(): Int {
+    val xs = [1, 2, 3, 4];
+    val scale = 2;
+    val ys = pmap(openmp, x <- xs) {
+        x * scale;
+    };
+    val zs = map (y <- ys) {
+        y + 1;
+    };
+    val threads = parallelThreads();
+    setParallelThreads(threads);
+    val hasOpenMp = parallelBackendAvailable("openmp");
+    return 0;
+}

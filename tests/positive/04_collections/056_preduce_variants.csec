@@ -1,0 +1,30 @@
+def main(): Int {
+    val xs = [1, 2, 3, 4, 5];
+    val weights = [2, 4, 6, 8, 10];
+
+    val sum = preduce(cpu, acc, x <- xs, 0) {
+        acc + x;
+    };
+
+    val weighted = preduce(simd, total, w <- weights, 10) {
+        total + w * 2;
+    };
+
+    val squares = map (x <- xs) {
+        x * x;
+    };
+
+    val sumSquares = preduce(cpu, acc, x <- squares, 0) {
+        acc + x;
+    };
+
+    val filtered = filter (x <- xs) {
+        x > 2;
+    };
+
+    val count = preduce(cpu, acc, x <- filtered, 0) {
+        acc + 1;
+    };
+
+    return sum + weighted + sumSquares + count;
+}

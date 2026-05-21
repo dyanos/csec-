@@ -9,6 +9,9 @@ public:
     ReduceStatementNode(const ReduceStatementNode& other) {
         nodeType = other.nodeType;
         variable = other.variable;
+        accumulatorVariable = other.accumulatorVariable;
+        backend = other.backend;
+        isParallel = other.isParallel;
         iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
         body = other.body ? other.body->clone() : nullptr;
         initialValue = other.initialValue ? other.initialValue->clone() : nullptr;
@@ -17,6 +20,9 @@ public:
         if (this != &other) {
             nodeType = other.nodeType;
             variable = other.variable;
+            accumulatorVariable = other.accumulatorVariable;
+            backend = other.backend;
+            isParallel = other.isParallel;
             iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
             body = other.body ? other.body->clone() : nullptr;
             initialValue = other.initialValue ? other.initialValue->clone() : nullptr;
@@ -35,6 +41,9 @@ public:
     }
 
     std::string variable;
+    std::string accumulatorVariable = "$acc";
+    std::string backend = "cpu";
+    bool isParallel = false;
     std::unique_ptr<ASTNode> iterableExpr;
     std::unique_ptr<ASTNode> body;
     std::unique_ptr<ASTNode> initialValue;

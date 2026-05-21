@@ -2,7 +2,7 @@ def main(): Int {
     val a: Tensor<Double, 2, 3> = new Tensor<Double, 2, 3>(0.0);
     val z: Tensor<Double, 2, 3> = new Tensor<Double, 2, 3>(1.0);
 
-    val at = transpose(a);
+    val transposeA = transpose(a);
     val ac = conjugate(a);
     val ah = adjoint(a);
     val ct = transpose(conjugate(z));

@@ -1,0 +1,26 @@
+def main(): Int {
+    val power: Real = 2.0 ** 3.0;
+    val quotient: Long = 17 div 5;
+    val remainder: Long = 17 mod 5;
+
+    val evens: Long = (1 << 2) union (1 << 4);
+    val odds: Long = (1 << 1) union (1 << 3);
+    val numbers: Long = evens union odds;
+    val overlap: Long = numbers intersect evens;
+    val removed: Long = numbers diff odds;
+    val toggled: Long = numbers symdiff evens;
+
+    val hasTwo: Boolean = 2 in numbers;
+    val lacksFive: Boolean = 5 notin numbers;
+    val evensSubset: Boolean = evens subset numbers;
+    val numbersSuperset: Boolean = numbers superset odds;
+    val proper: Boolean = evens properSubset numbers;
+    val equivalent: Boolean = (hasTwo and lacksFive) iff (evensSubset and numbersSuperset);
+    val implication: Boolean = proper implies equivalent;
+
+    if (power > 7.9 and quotient == 3 and remainder == 2 and
+        overlap == evens and removed == evens and toggled == odds and implication) {
+        return 0;
+    }
+    return 1;
+}

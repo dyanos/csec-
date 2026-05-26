@@ -7,11 +7,30 @@
 
 namespace {
 bool isArithmeticOperator(const std::string& op) {
-    return op == "+" || op == "-" || op == "*" || op == "/" || op == "%";
+    return op == "+" || op == "-" || op == "*" || op == "/" || op == "%" ||
+           op == "**" || op == "div" || op == "mod";
 }
 
 bool isTensorOperator(const std::string& op) {
     return op == "@" || op == "inner" || op == "outer" || op == "tensor";
+}
+
+bool isTensorArithmeticOperator(const std::string& op) {
+    return op == "+" || op == "-" || op == "*" || op == "/";
+}
+
+bool isSetOperator(const std::string& op) {
+    return op == "union" || op == "intersect" || op == "diff" ||
+           op == "without" || op == "symdiff";
+}
+
+bool isSetPredicateOperator(const std::string& op) {
+    return op == "in" || op == "notin" || op == "subset" ||
+           op == "superset" || op == "properSubset" || op == "properSuperset";
+}
+
+bool isLogicalOperator(const std::string& op) {
+    return op == "implies" || op == "iff";
 }
 
 bool isNumericTypeName(const std::string& name) {
@@ -36,6 +55,40 @@ llvm::Value* coerceNumericValue(llvm::Value* value, llvm::Type* targetType) {
         if (srcBits > dstBits) return cg.builder.CreateTrunc(value, targetType, "num.trunc");
     }
     return value;
+}
+
+llvm::Value* coerceToBool(llvm::Value* value) {
+    auto& cg = CodeGenerator::getInstance();
+    if (!value) return nullptr;
+    if (value->getType()->isIntegerTy(1)) return value;
+    if (value->getType()->isIntegerTy()) {
+        return cg.builder.CreateICmpNE(value, llvm::ConstantInt::get(value->getType(), 0), "tobool");
+    }
+    if (value->getType()->isFloatingPointTy()) {
+        return cg.builder.CreateFCmpONE(value, llvm::ConstantFP::get(value->getType(), 0.0), "tobool");
+    }
+    return nullptr;
+}
+
+llvm::Value* coerceToI64(llvm::Value* value) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    if (!value) return nullptr;
+    if (value->getType()->isIntegerTy()) {
+        return coerceNumericValue(value, i64Ty);
+    }
+    if (value->getType()->isFloatingPointTy()) {
+        return cg.builder.CreateFPToSI(value, i64Ty, "num.fptosi");
+    }
+    return nullptr;
+}
+
+llvm::Function* getOrCreateRuntimeDoubleBinary(const std::string& name) {
+    auto& cg = CodeGenerator::getInstance();
+    if (auto* function = cg.module->getFunction(name)) return function;
+    auto* doubleTy = llvm::Type::getDoubleTy(cg.context);
+    auto* functionTy = llvm::FunctionType::get(doubleTy, { doubleTy, doubleTy }, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
 }
 }
 
@@ -424,9 +477,64 @@ llvm::Value* BinaryExpressionNode::codegen() {
 
     auto& cg = CodeGenerator::getInstance();
 
+    if (isLogicalOperator(op)) {
+        llvm::Value* leftBool = coerceToBool(leftValue);
+        llvm::Value* rightBool = coerceToBool(rightValue);
+        if (!leftBool || !rightBool) {
+            std::cerr << "Type error: Operator '" << op << "' requires boolean or numeric operands" << std::endl;
+            return nullptr;
+        }
+        if (op == "implies") {
+            return cg.builder.CreateOr(cg.builder.CreateNot(leftBool, "notlhs"), rightBool, "impliestmp");
+        }
+        return cg.builder.CreateICmpEQ(leftBool, rightBool, "ifftmp");
+    }
+
+    if (isSetOperator(op)) {
+        llvm::Value* leftSet = coerceToI64(leftValue);
+        llvm::Value* rightSet = coerceToI64(rightValue);
+        if (!leftSet || !rightSet) {
+            std::cerr << "Type error: Set operator '" << op << "' requires numeric bitset operands" << std::endl;
+            return nullptr;
+        }
+        if (op == "union") return cg.builder.CreateOr(leftSet, rightSet, "setunion");
+        if (op == "intersect") return cg.builder.CreateAnd(leftSet, rightSet, "setintersect");
+        if (op == "symdiff") return cg.builder.CreateXor(leftSet, rightSet, "setsymdiff");
+        return cg.builder.CreateAnd(leftSet, cg.builder.CreateNot(rightSet, "setnotrhs"), "setdiff");
+    }
+
+    if (isSetPredicateOperator(op)) {
+        llvm::Value* leftSet = coerceToI64(leftValue);
+        llvm::Value* rightSet = coerceToI64(rightValue);
+        if (!leftSet || !rightSet) {
+            std::cerr << "Type error: Set predicate '" << op << "' requires numeric bitset operands" << std::endl;
+            return nullptr;
+        }
+
+        auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+        llvm::Value* zero = llvm::ConstantInt::get(i64Ty, 0);
+        if (op == "in" || op == "notin") {
+            llvm::Value* one = llvm::ConstantInt::get(i64Ty, 1);
+            llvm::Value* bit = cg.builder.CreateShl(one, leftSet, "memberbit");
+            llvm::Value* contains = cg.builder.CreateICmpNE(cg.builder.CreateAnd(rightSet, bit, "membermask"), zero, "contains");
+            return op == "notin" ? cg.builder.CreateNot(contains, "notcontains") : contains;
+        }
+
+        llvm::Value* leftMinusRight = cg.builder.CreateAnd(leftSet, cg.builder.CreateNot(rightSet, "prednotrhs"), "leftminusright");
+        llvm::Value* rightMinusLeft = cg.builder.CreateAnd(rightSet, cg.builder.CreateNot(leftSet, "prednotlhs"), "rightminusleft");
+        llvm::Value* leftSubsetRight = cg.builder.CreateICmpEQ(leftMinusRight, zero, "subsettmp");
+        llvm::Value* leftSupersetRight = cg.builder.CreateICmpEQ(rightMinusLeft, zero, "supersettmp");
+        if (op == "subset") return leftSubsetRight;
+        if (op == "superset") return leftSupersetRight;
+
+        llvm::Value* notEqual = cg.builder.CreateICmpNE(leftSet, rightSet, "setnetmp");
+        if (op == "properSubset") return cg.builder.CreateAnd(leftSubsetRight, notEqual, "propersubsettmp");
+        return cg.builder.CreateAnd(leftSupersetRight, notEqual, "propersupersettmp");
+    }
+
     const bool leftIsTensor = TensorRuntime::isTensorTypeName(leftTypeName);
     const bool rightIsTensor = TensorRuntime::isTensorTypeName(rightTypeName);
-    if (isArithmeticOperator(op) && (leftIsTensor || rightIsTensor)) {
+    if (isTensorArithmeticOperator(op) && (leftIsTensor || rightIsTensor)) {
         if (leftIsTensor && rightIsTensor) {
             return TensorRuntime::elementwiseTensorTensor(cg, leftValue, rightValue, op);
         }
@@ -471,6 +579,14 @@ llvm::Value* BinaryExpressionNode::codegen() {
         if (op == "*") return targetType->isFloatingPointTy() ? cg.builder.CreateFMul(leftValue, rightValue, "fmultmp") : cg.builder.CreateMul(leftValue, rightValue, "multmp");
         if (op == "/") return targetType->isFloatingPointTy() ? cg.builder.CreateFDiv(leftValue, rightValue, "fdivtmp") : cg.builder.CreateSDiv(leftValue, rightValue, "divtmp");
         if (op == "%") return targetType->isFloatingPointTy() ? cg.builder.CreateFRem(leftValue, rightValue, "fmodtmp") : cg.builder.CreateSRem(leftValue, rightValue, "modtmp");
+        if (op == "mod") return cg.builder.CreateSRem(coerceToI64(leftValue), coerceToI64(rightValue), "imodtmp");
+        if (op == "div") return cg.builder.CreateSDiv(coerceToI64(leftValue), coerceToI64(rightValue), "idivtmp");
+        if (op == "**") {
+            auto* doubleTy = llvm::Type::getDoubleTy(cg.context);
+            llvm::Value* leftDouble = coerceNumericValue(leftValue, doubleTy);
+            llvm::Value* rightDouble = coerceNumericValue(rightValue, doubleTy);
+            return cg.builder.CreateCall(getOrCreateRuntimeDoubleBinary("csec_math_pow"), { leftDouble, rightDouble }, "powtmp");
+        }
     }
 
     if (op == "+") {
@@ -544,6 +660,30 @@ llvm::Value* BinaryExpressionNode::codegen() {
             std::cerr << "Type error: Operator '" << op << "' not applicable to type '" << leftTypeName << "' and '" << rightTypeName << "'" << std::endl;
             return nullptr;
         }
+    }
+    else if (op == "div") {
+        if (leftTypeName == rightTypeName && isNumericTypeName(leftTypeName)) {
+            return cg.builder.CreateSDiv(coerceToI64(leftValue), coerceToI64(rightValue), "idivtmp");
+        }
+        std::cerr << "Type error: Operator '" << op << "' requires numeric operands" << std::endl;
+        return nullptr;
+    }
+    else if (op == "**") {
+        if (isNumericTypeName(leftTypeName) && isNumericTypeName(rightTypeName)) {
+            auto* doubleTy = llvm::Type::getDoubleTy(cg.context);
+            llvm::Value* leftDouble = coerceNumericValue(leftValue, doubleTy);
+            llvm::Value* rightDouble = coerceNumericValue(rightValue, doubleTy);
+            return cg.builder.CreateCall(getOrCreateRuntimeDoubleBinary("csec_math_pow"), { leftDouble, rightDouble }, "powtmp");
+        }
+        std::cerr << "Type error: Operator '" << op << "' requires numeric operands" << std::endl;
+        return nullptr;
+    }
+    else if (op == "mod") {
+        if (leftTypeName == rightTypeName && isNumericTypeName(leftTypeName)) {
+            return cg.builder.CreateSRem(coerceToI64(leftValue), coerceToI64(rightValue), "imodtmp");
+        }
+        std::cerr << "Type error: Operator '" << op << "' requires numeric operands" << std::endl;
+        return nullptr;
     }
     else if (op == "%") {
         if (leftTypeName == rightTypeName) {
@@ -658,9 +798,15 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
     }
 
     if (!leftType->equals(rightType)) {
+        if (isSetOperator(op)) {
+            return std::make_unique<BasicType>("Long");
+        }
+        if (isSetPredicateOperator(op) || isLogicalOperator(op)) {
+            return std::make_unique<BasicType>("Boolean");
+        }
         const bool leftIsTensor = TensorRuntime::isTensorTypeName(leftType->getName());
         const bool rightIsTensor = TensorRuntime::isTensorTypeName(rightType->getName());
-        if (isArithmeticOperator(op) && (leftIsTensor || rightIsTensor)) {
+        if (isTensorArithmeticOperator(op) && (leftIsTensor || rightIsTensor)) {
             if (leftIsTensor) {
                 return leftType->clone();
             }
@@ -675,6 +821,12 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
             return leftType ? leftType->clone() : std::make_unique<UnknownType>();
         }
         if (isArithmeticOperator(op) && isNumericTypeName(leftType->getName()) && isNumericTypeName(rightType->getName())) {
+            if (op == "**") {
+                return std::make_unique<BasicType>("Real");
+            }
+            if (op == "div" || op == "mod") {
+                return std::make_unique<BasicType>("Long");
+            }
             if (leftType->getName() == "Real" || rightType->getName() == "Real" ||
                 leftType->getName() == "Double" || rightType->getName() == "Double") {
                 return std::make_unique<BasicType>("Real");
@@ -687,15 +839,34 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
         return std::make_unique<UnknownType>();
     }
 
+    if (isSetOperator(op)) {
+        return std::make_unique<BasicType>("Long");
+    }
+    if (isSetPredicateOperator(op) || isLogicalOperator(op)) {
+        return std::make_unique<BasicType>("Boolean");
+    }
+
     if (isTensorOperator(op)) {
         if (op == "inner") {
             return std::make_unique<BasicType>("Real");
         }
         return left->getType();
     }
-    if (op == "+" || op == "-" || op == "*" || op == "/" || op == "%") {
-        if (TensorRuntime::isTensorTypeName(leftType->getName())) {
+    if (isArithmeticOperator(op)) {
+        if (TensorRuntime::isTensorTypeName(leftType->getName()) && isTensorArithmeticOperator(op)) {
             return left->getType();
+        }
+        if (op == "**") {
+            if (isNumericTypeName(leftType->getName())) {
+                return std::make_unique<BasicType>("Real");
+            }
+            return std::make_unique<UnknownType>();
+        }
+        if (op == "div" || op == "mod") {
+            if (isNumericTypeName(leftType->getName())) {
+                return std::make_unique<BasicType>("Long");
+            }
+            return std::make_unique<UnknownType>();
         }
         if (leftType->getName() == "Int" || leftType->getName() == "Float" || leftType->getName() == "Double"
             || leftType->getName() == "Long" || leftType->getName() == "Natural" || leftType->getName() == "Integer"

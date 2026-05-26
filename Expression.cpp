@@ -97,6 +97,32 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 			}
 		}
 
+        int derivativeOrder = 0;
+        if (pathComponents.size() == 1) {
+            while (match(TokenType::OPERATOR, "'")) {
+                ++derivativeOrder;
+            }
+        }
+
+        if (derivativeOrder > 0) {
+            if (derivativeOrder > 2) {
+                error("Only first and second derivative postfix syntax is supported");
+            }
+            expect(TokenType::OPERATOR, "(");
+            auto derivativeArgs = parseCallParameterList();
+            if (derivativeArgs.size() != 1) {
+                error("Derivative call syntax requires exactly one argument");
+                return nullptr;
+            }
+
+            auto callNode = std::make_unique<FunctionCallNode>();
+            callNode->functionName = "numericDerivative";
+            callNode->arguments.push_back(std::make_unique<IdentifierNode>(pathComponents[0]));
+            callNode->arguments.push_back(std::make_unique<ValueNode>(std::to_string(derivativeOrder), TokenType::INTEGER_LITERAL));
+            callNode->arguments.push_back(std::move(derivativeArgs[0]));
+            return callNode;
+        }
+
 		if (match(TokenType::OPERATOR, "(")) {
 			if (pathComponents.size() == 1) {
 				auto callNode = std::make_unique<FunctionCallNode>();

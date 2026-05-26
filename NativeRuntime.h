@@ -54,6 +54,7 @@ CSEC_NATIVE_API double csec_math_gcd(double left, double right);
 CSEC_NATIVE_API double csec_sim_md_lennard_jones(int atom_count, int bond_count, int steps, double dt, double temperature);
 CSEC_NATIVE_API double csec_sim_cfd_lid_cavity(int width, int height, int steps, double dt, double viscosity, double lid_velocity);
 CSEC_NATIVE_API double csec_sim_protein_mcmc(int residue_count, int steps, double temperature);
+CSEC_NATIVE_API double csec_sim_black_hole_merge(double mass1, double mass2, double separation, double relative_velocity, int steps, double dt);
 
 CSEC_NATIVE_API int csec_parallel_get_num_threads(void);
 CSEC_NATIVE_API void csec_parallel_set_num_threads(int count);

@@ -603,7 +603,22 @@ llvm::Value* BinaryExpressionNode::codegen() {
         return cg.builder.CreateAShr(leftValue, rightValue, "ashrtmp");
     }
     else if (op == ">" || op == "<" || op == "==" || op == "!=" || op == ">=" || op == "<=") {
-        const bool isFloatCompare = left->getType()->isFloatTy() || left->getType()->isDoubleTy();
+        if (isNumericTypeName(leftTypeName) && isNumericTypeName(rightTypeName) &&
+            leftValue->getType() != rightValue->getType()) {
+            llvm::Type* targetType =
+                (leftValue->getType()->isDoubleTy() || rightValue->getType()->isDoubleTy() ||
+                 leftTypeName == "Real" || rightTypeName == "Real" ||
+                 leftTypeName == "Double" || rightTypeName == "Double")
+                    ? llvm::Type::getDoubleTy(cg.context)
+                    : (leftValue->getType()->isFloatTy() || rightValue->getType()->isFloatTy() ||
+                       leftTypeName == "Float" || rightTypeName == "Float")
+                        ? llvm::Type::getFloatTy(cg.context)
+                        : llvm::Type::getInt64Ty(cg.context);
+            leftValue = coerceNumericValue(leftValue, targetType);
+            rightValue = coerceNumericValue(rightValue, targetType);
+        }
+
+        const bool isFloatCompare = leftValue->getType()->isFloatingPointTy();
         if (isFloatCompare) {
             if (op == ">") return cg.builder.CreateFCmpOGT(leftValue, rightValue, "gttmp");
             if (op == "<") return cg.builder.CreateFCmpOLT(leftValue, rightValue, "lttmp");

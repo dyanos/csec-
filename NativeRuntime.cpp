@@ -196,6 +196,29 @@ double csec_sim_protein_mcmc(int residue_count, int steps, double temperature) {
     return -(compactness + hydrophobicPacking) * (1.0 - cooling);
 }
 
+double csec_sim_black_hole_merge(double mass1, double mass2, double separation, double relative_velocity, int steps, double dt) {
+    if (mass1 < 0.0) mass1 = 0.0;
+    if (mass2 < 0.0) mass2 = 0.0;
+    if (separation < 1e-9) separation = 1e-9;
+    if (relative_velocity < 0.0) relative_velocity = -relative_velocity;
+    if (steps < 0) steps = 0;
+    if (dt < 0.0) dt = 0.0;
+
+    double totalMass = mass1 + mass2;
+    if (totalMass <= 0.0) {
+        return 0.0;
+    }
+
+    double symmetricMassRatio = (mass1 * mass2) / (totalMass * totalMass);
+    double compactness = totalMass / separation;
+    double velocityTerm = relative_velocity * relative_velocity;
+    double inspiralRate = (compactness * 0.001) + (relative_velocity / separation);
+    double mergerProgress = 1.0 - std::exp(-static_cast<double>(steps) * dt * inspiralRate);
+    double efficiency = 0.02 + 0.08 * mergerProgress;
+
+    return symmetricMassRatio * totalMass * efficiency * (1.0 + velocityTerm);
+}
+
 int csec_parallel_get_num_threads(void) {
     return configuredParallelThreads();
 }

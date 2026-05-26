@@ -71,11 +71,11 @@ bool isNativeParallelFunction(const std::string& name) {
 }
 
 bool isNativeSimulationFunction(const std::string& name) {
-    return name == "mdSimulate" || name == "cfdSimulate" || name == "proteinMcmc";
+    return name == "mdSimulate" || name == "cfdSimulate" || name == "proteinMcmc" || name == "blackHoleMerge";
 }
 
 bool isBuiltinOdeFunction(const std::string& name) {
-    return name == "odeEuler";
+    return name == "odeEuler" || name == "numericDerivative" || name == "integral";
 }
 
 bool isNativeScalarMathFunction(const std::string& name) {
@@ -1069,6 +1069,24 @@ llvm::Value* codegenNativeSimulationCall(const std::string& functionName, const 
             "sim.protein");
     }
 
+    if (functionName == "blackHoleMerge") {
+        if (argValues.size() != 6) {
+            std::cerr << "Error: blackHoleMerge(mass1, mass2, separation, relativeVelocity, steps, dt) requires six arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_sim_black_hole_merge", f64Ty, {f64Ty, f64Ty, f64Ty, f64Ty, i32Ty, f64Ty}),
+            {
+                asF64(argValues[0]),
+                asF64(argValues[1]),
+                asF64(argValues[2]),
+                asF64(argValues[3]),
+                asI32(argValues[4], "sim.blackhole.steps"),
+                asF64(argValues[5])
+            },
+            "sim.blackhole");
+    }
+
     return nullptr;
 }
 
@@ -1076,6 +1094,100 @@ llvm::Value* codegenBuiltinOdeCall(const std::string& functionName, const std::v
     auto& cg = CodeGenerator::getInstance();
     auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+
+    if (functionName == "numericDerivative") {
+        if (argValues.size() != 3) {
+            std::cerr << "Error: numericDerivative(f, order, x) requires three arguments" << std::endl;
+            return nullptr;
+        }
+
+        auto* fType = llvm::FunctionType::get(f64Ty, {f64Ty}, false);
+        llvm::Value* derivativeFunction = argValues[0];
+        llvm::Value* order = cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[1]), i32Ty, "derivative.order");
+        llvm::Value* x = coerceMathValueToDouble(cg, argValues[2]);
+        llvm::Value* h = llvm::ConstantFP::get(f64Ty, 1e-5);
+        llvm::Value* two = llvm::ConstantFP::get(f64Ty, 2.0);
+
+        llvm::Value* xPlus = cg.builder.CreateFAdd(x, h, "derivative.x.plus");
+        llvm::Value* xMinus = cg.builder.CreateFSub(x, h, "derivative.x.minus");
+        llvm::Value* fPlus = cg.builder.CreateCall(fType, derivativeFunction, {xPlus}, "derivative.f.plus");
+        llvm::Value* fMinus = cg.builder.CreateCall(fType, derivativeFunction, {xMinus}, "derivative.f.minus");
+        llvm::Value* first = cg.builder.CreateFDiv(
+            cg.builder.CreateFSub(fPlus, fMinus, "derivative.first.numerator"),
+            cg.builder.CreateFMul(two, h, "derivative.first.denominator"),
+            "derivative.first");
+
+        llvm::Value* fCenter = cg.builder.CreateCall(fType, derivativeFunction, {x}, "derivative.f.center");
+        llvm::Value* secondNumerator = cg.builder.CreateFAdd(
+            cg.builder.CreateFSub(fPlus, cg.builder.CreateFMul(two, fCenter, "derivative.twice.center"), "derivative.second.left"),
+            fMinus,
+            "derivative.second.numerator");
+        llvm::Value* second = cg.builder.CreateFDiv(
+            secondNumerator,
+            cg.builder.CreateFMul(h, h, "derivative.second.denominator"),
+            "derivative.second");
+
+        llvm::Value* isSecond = cg.builder.CreateICmpEQ(order, llvm::ConstantInt::get(i32Ty, 2), "derivative.is.second");
+        return cg.builder.CreateSelect(isSecond, second, first, "derivative.result");
+    }
+
+    if (functionName == "integral") {
+        if (argValues.size() != 3 && argValues.size() != 4) {
+            std::cerr << "Error: integral(f, a, b[, steps]) requires three or four arguments" << std::endl;
+            return nullptr;
+        }
+
+        auto* function = cg.builder.GetInsertBlock()->getParent();
+        auto* fType = llvm::FunctionType::get(f64Ty, {f64Ty}, false);
+        llvm::Value* integrand = argValues[0];
+        llvm::Value* a = coerceMathValueToDouble(cg, argValues[1]);
+        llvm::Value* b = coerceMathValueToDouble(cg, argValues[2]);
+        llvm::Value* steps = argValues.size() == 4
+            ? cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[3]), i32Ty, "integral.steps")
+            : llvm::ConstantInt::get(i32Ty, 1024);
+
+        llvm::Value* zero = llvm::ConstantInt::get(i32Ty, 0);
+        llvm::Value* one = llvm::ConstantInt::get(i32Ty, 1);
+        steps = cg.builder.CreateSelect(
+            cg.builder.CreateICmpSGT(steps, zero, "integral.positive.steps"),
+            steps,
+            one,
+            "integral.safe.steps");
+
+        llvm::Value* stepsAsDouble = cg.builder.CreateSIToFP(steps, f64Ty, "integral.steps.fp");
+        llvm::Value* width = cg.builder.CreateFDiv(cg.builder.CreateFSub(b, a, "integral.range"), stepsAsDouble, "integral.width");
+        llvm::Value* half = llvm::ConstantFP::get(f64Ty, 0.5);
+
+        llvm::Value* iPtr = cg.builder.CreateAlloca(i32Ty, nullptr, "integral.i");
+        llvm::Value* sumPtr = cg.builder.CreateAlloca(f64Ty, nullptr, "integral.sum");
+        cg.builder.CreateStore(zero, iPtr);
+        cg.builder.CreateStore(llvm::ConstantFP::get(f64Ty, 0.0), sumPtr);
+
+        auto* condBB = llvm::BasicBlock::Create(cg.context, "integral.cond", function);
+        auto* bodyBB = llvm::BasicBlock::Create(cg.context, "integral.body", function);
+        auto* endBB = llvm::BasicBlock::Create(cg.context, "integral.end", function);
+
+        cg.builder.CreateBr(condBB);
+
+        cg.builder.SetInsertPoint(condBB);
+        llvm::Value* i = cg.builder.CreateLoad(i32Ty, iPtr, "integral.i.load");
+        cg.builder.CreateCondBr(cg.builder.CreateICmpSLT(i, steps, "integral.keep"), bodyBB, endBB);
+
+        cg.builder.SetInsertPoint(bodyBB);
+        llvm::Value* iAsDouble = cg.builder.CreateSIToFP(i, f64Ty, "integral.i.fp");
+        llvm::Value* midpoint = cg.builder.CreateFAdd(
+            a,
+            cg.builder.CreateFMul(cg.builder.CreateFAdd(iAsDouble, half, "integral.mid.index"), width, "integral.offset"),
+            "integral.midpoint");
+        llvm::Value* sample = cg.builder.CreateCall(fType, integrand, {midpoint}, "integral.sample");
+        llvm::Value* sum = cg.builder.CreateLoad(f64Ty, sumPtr, "integral.sum.load");
+        cg.builder.CreateStore(cg.builder.CreateFAdd(sum, sample, "integral.next.sum"), sumPtr);
+        cg.builder.CreateStore(cg.builder.CreateAdd(i, one, "integral.next.i"), iPtr);
+        cg.builder.CreateBr(condBB);
+
+        cg.builder.SetInsertPoint(endBB);
+        return cg.builder.CreateFMul(cg.builder.CreateLoad(f64Ty, sumPtr, "integral.sum.result"), width, "integral.result");
+    }
 
     if (functionName != "odeEuler") {
         return nullptr;

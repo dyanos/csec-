@@ -197,6 +197,71 @@ inline llvm::Value* cloneTensor(CodeGenerator& cg, llvm::Value* source) {
     return result;
 }
 
+inline llvm::Value* applyElementwiseOp(CodeGenerator& cg, const std::string& op, llvm::Value* left, llvm::Value* right) {
+    if (op == "+") return cg.builder.CreateFAdd(left, right, "tensor.add");
+    if (op == "-") return cg.builder.CreateFSub(left, right, "tensor.sub");
+    if (op == "*") return cg.builder.CreateFMul(left, right, "tensor.mul");
+    if (op == "/") return cg.builder.CreateFDiv(left, right, "tensor.div");
+    return left;
+}
+
+inline llvm::Value* elementwiseTensorTensor(CodeGenerator& cg, llvm::Value* left, llvm::Value* right, const std::string& op) {
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* rank = loadRank(cg, left);
+    llvm::Value* count = loadCount(cg, left);
+    llvm::Value* result = allocateTensor(cg, rank, count);
+    llvm::Value* leftDims = loadDims(cg, left);
+    llvm::Value* dstDims = loadDims(cg, result);
+    llvm::Value* leftData = loadData(cg, left);
+    llvm::Value* rightData = loadData(cg, right);
+    llvm::Value* dstData = loadData(cg, result);
+
+    emitCountedLoop(cg, rank, "tensor.elem.dims", [&](llvm::Value* index) {
+        llvm::Value* srcSlot = cg.builder.CreateGEP(i64Ty, leftDims, index, "tensor.elem.src.dim");
+        llvm::Value* dstSlot = cg.builder.CreateGEP(i64Ty, dstDims, index, "tensor.elem.dst.dim");
+        cg.builder.CreateStore(cg.builder.CreateLoad(i64Ty, srcSlot, "tensor.elem.dim"), dstSlot);
+    });
+
+    emitCountedLoop(cg, count, "tensor.elem.data", [&](llvm::Value* index) {
+        llvm::Value* leftValue = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, leftData, index, "tensor.elem.left"), "tensor.elem.l");
+        llvm::Value* rightValue = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, rightData, index, "tensor.elem.right"), "tensor.elem.r");
+        cg.builder.CreateStore(
+            applyElementwiseOp(cg, op, leftValue, rightValue),
+            cg.builder.CreateGEP(f64Ty, dstData, index, "tensor.elem.dst"));
+    });
+    return result;
+}
+
+inline llvm::Value* elementwiseTensorScalar(CodeGenerator& cg, llvm::Value* tensor, llvm::Value* scalar, const std::string& op, bool tensorOnLeft) {
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* rank = loadRank(cg, tensor);
+    llvm::Value* count = loadCount(cg, tensor);
+    llvm::Value* result = allocateTensor(cg, rank, count);
+    llvm::Value* srcDims = loadDims(cg, tensor);
+    llvm::Value* dstDims = loadDims(cg, result);
+    llvm::Value* srcData = loadData(cg, tensor);
+    llvm::Value* dstData = loadData(cg, result);
+    llvm::Value* scalarValue = toDouble(cg, scalar);
+
+    emitCountedLoop(cg, rank, "tensor.scalar.dims", [&](llvm::Value* index) {
+        llvm::Value* srcSlot = cg.builder.CreateGEP(i64Ty, srcDims, index, "tensor.scalar.src.dim");
+        llvm::Value* dstSlot = cg.builder.CreateGEP(i64Ty, dstDims, index, "tensor.scalar.dst.dim");
+        cg.builder.CreateStore(cg.builder.CreateLoad(i64Ty, srcSlot, "tensor.scalar.dim"), dstSlot);
+    });
+
+    emitCountedLoop(cg, count, "tensor.scalar.data", [&](llvm::Value* index) {
+        llvm::Value* tensorValue = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, srcData, index, "tensor.scalar.src"), "tensor.scalar.tensor");
+        llvm::Value* leftValue = tensorOnLeft ? tensorValue : scalarValue;
+        llvm::Value* rightValue = tensorOnLeft ? scalarValue : tensorValue;
+        cg.builder.CreateStore(
+            applyElementwiseOp(cg, op, leftValue, rightValue),
+            cg.builder.CreateGEP(f64Ty, dstData, index, "tensor.scalar.dst"));
+    });
+    return result;
+}
+
 inline llvm::Value* tensorLinearIndex(CodeGenerator& cg, llvm::Value* coords, llvm::Value* dims, llvm::Value* rank) {
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
     auto* resultPtr = cg.builder.CreateAlloca(i64Ty, nullptr, "tensor.linear.ptr");

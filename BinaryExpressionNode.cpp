@@ -424,6 +424,22 @@ llvm::Value* BinaryExpressionNode::codegen() {
 
     auto& cg = CodeGenerator::getInstance();
 
+    const bool leftIsTensor = TensorRuntime::isTensorTypeName(leftTypeName);
+    const bool rightIsTensor = TensorRuntime::isTensorTypeName(rightTypeName);
+    if (isArithmeticOperator(op) && (leftIsTensor || rightIsTensor)) {
+        if (leftIsTensor && rightIsTensor) {
+            return TensorRuntime::elementwiseTensorTensor(cg, leftValue, rightValue, op);
+        }
+        if (leftIsTensor && isNumericTypeName(rightTypeName)) {
+            return TensorRuntime::elementwiseTensorScalar(cg, leftValue, rightValue, op, true);
+        }
+        if (rightIsTensor && isNumericTypeName(leftTypeName)) {
+            return TensorRuntime::elementwiseTensorScalar(cg, rightValue, leftValue, op, false);
+        }
+        std::cerr << "Type error: Tensor arithmetic requires tensor or numeric operands" << std::endl;
+        return nullptr;
+    }
+
     if (isTensorOperator(op)) {
         if (!TensorRuntime::isTensorTypeName(leftTypeName) || !TensorRuntime::isTensorTypeName(rightTypeName)) {
             std::cerr << "Type error: Tensor operator '" << op << "' requires tensor operands" << std::endl;
@@ -627,6 +643,16 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
     }
 
     if (!leftType->equals(rightType)) {
+        const bool leftIsTensor = TensorRuntime::isTensorTypeName(leftType->getName());
+        const bool rightIsTensor = TensorRuntime::isTensorTypeName(rightType->getName());
+        if (isArithmeticOperator(op) && (leftIsTensor || rightIsTensor)) {
+            if (leftIsTensor) {
+                return leftType->clone();
+            }
+            if (rightIsTensor) {
+                return rightType->clone();
+            }
+        }
         if (isTensorOperator(op)) {
             if (op == "inner") {
                 return std::make_unique<BasicType>("Real");
@@ -653,6 +679,9 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
         return left->getType();
     }
     if (op == "+" || op == "-" || op == "*" || op == "/" || op == "%") {
+        if (TensorRuntime::isTensorTypeName(leftType->getName())) {
+            return left->getType();
+        }
         if (leftType->getName() == "Int" || leftType->getName() == "Float" || leftType->getName() == "Double"
             || leftType->getName() == "Long" || leftType->getName() == "Natural" || leftType->getName() == "Integer"
             || leftType->getName() == "Real" || leftType->getName() == "Complex" || leftType->getName() == "Rational"

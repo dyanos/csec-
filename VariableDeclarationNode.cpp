@@ -56,6 +56,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
     const bool bindPointerBackedValueDirectly =
         initValue &&
         initValue->getType()->isPointerTy() &&
+        !(isMutable && type && type->getName() == "Tensor") &&
         (dynamic_cast<ClassInstanceCreationNode*>(initializer.get()) != nullptr ||
          dynamic_cast<ArrayCreationExpressionNode*>(initializer.get()) != nullptr ||
          type->getKind() == Type::Kind::CLASS ||

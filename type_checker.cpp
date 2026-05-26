@@ -406,7 +406,9 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
 
         if (node.returnType) {
             if (isResolvedType(node.returnType) && isResolvedType(bodyType) &&
-                !node.returnType->isVoidTy() && !node.returnType->equals(bodyType)) {
+                !node.returnType->isVoidTy() &&
+                !node.returnType->equals(bodyType) &&
+                !(isTensorLikeType(node.returnType) && isTensorLikeType(bodyType))) {
                 reportError(
                     "Type error: Function '" + node.name + "' declared to return '" +
                     node.returnType->getName() + "' but returns '" + bodyType->getName() + "'");

@@ -100,6 +100,17 @@ CSEC_NATIVE_API int csec_posix_flag_read_write(void);
 CSEC_NATIVE_API int csec_posix_flag_create(void);
 CSEC_NATIVE_API int csec_posix_flag_truncate(void);
 CSEC_NATIVE_API int csec_posix_flag_append(void);
+
+CSEC_NATIVE_API long long csec_load_library(const char* path);
+CSEC_NATIVE_API long long csec_get_symbol(long long library_handle, const char* symbol_name);
+CSEC_NATIVE_API int csec_close_library(long long library_handle);
+CSEC_NATIVE_API long long csec_call_native0(long long symbol);
+CSEC_NATIVE_API long long csec_call_native1(long long symbol, long long arg0);
+CSEC_NATIVE_API long long csec_call_native2(long long symbol, long long arg0, long long arg1);
+CSEC_NATIVE_API long long csec_call_native3(long long symbol, long long arg0, long long arg1, long long arg2);
+CSEC_NATIVE_API double csec_call_native_double0(long long symbol);
+CSEC_NATIVE_API double csec_call_native_double1(long long symbol, double arg0);
+CSEC_NATIVE_API double csec_call_native_double2(long long symbol, double arg0, double arg1);
 CSEC_NATIVE_API int csec_posix_seek_set(void);
 CSEC_NATIVE_API int csec_posix_seek_cur(void);
 CSEC_NATIVE_API int csec_posix_seek_end(void);

@@ -56,7 +56,9 @@ void printUsage(const char* programName) {
         << "  --emit-ir, -S                Write LLVM IR (.ll)\n"
         << "  --emit-obj, -c               Write native object code (.obj/.o)\n"
         << "  --emit-exe                   Write native executable (.exe)\n"
-        << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n";
+        << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
+        << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
+        << "  --link-path <path>           Add a native library search path\n";
 }
 
 std::string defaultOutputPath(const std::string& inputFile, OutputMode mode) {
@@ -166,9 +168,19 @@ std::string quoteCommandArg(const std::string& value) {
 
 bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool announce = true) {
     std::filesystem::path llcPath = std::filesystem::absolute(
-        std::filesystem::path("..") / "llvm-project" / "build" / "bin" / "llc.exe");
+        std::filesystem::path("..") / "llvm-project" / "build" / "bin" /
+#ifdef _WIN32
+        "llc.exe"
+#else
+        "llc"
+#endif
+    );
     if (!std::filesystem::exists(llcPath)) {
+#ifdef _WIN32
         llcPath = "llc.exe";
+#else
+        llcPath = "llc";
+#endif
     }
     else {
         std::error_code canonicalError;
@@ -197,6 +209,23 @@ bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool
         std::cout << "Wrote object file: " << outputPath << std::endl;
     }
     return true;
+}
+
+std::string nativeLinkLibraryArg(const std::string& library) {
+    if (library.empty()) {
+        return "";
+    }
+    if (library.rfind("-l", 0) == 0 || library.rfind("-Wl,", 0) == 0) {
+        return library;
+    }
+
+    std::filesystem::path path(library);
+    const bool hasDirectory = path.has_parent_path();
+    const std::string extension = path.extension().string();
+    if (hasDirectory || extension == ".o" || extension == ".a" || extension == ".so" || extension == ".dylib") {
+        return quoteCommandArg(library);
+    }
+    return "-l" + library;
 }
 
 std::filesystem::path findWindowsLinker() {
@@ -319,10 +348,64 @@ bool compileNativeRuntimeObject(const std::filesystem::path& linkPath, const std
 }
 #endif
 
-bool writeExecutableToFile(llvm::Module& module, const std::string& outputPath) {
+bool writeExecutableToFile(
+    llvm::Module& module,
+    const std::string& outputPath,
+    const std::vector<std::string>& linkLibraries,
+    const std::vector<std::string>& linkPaths) {
 #ifndef _WIN32
-    std::cerr << "--emit-exe is currently implemented for Windows/MSVC only." << std::endl;
-    return false;
+    std::filesystem::path tempObject = std::filesystem::path(outputPath).replace_extension(".tmp.o");
+    if (!writeObjectToFile(module, tempObject.string(), false)) {
+        return false;
+    }
+
+    std::filesystem::path tempRuntimeObject = std::filesystem::path(outputPath).replace_extension(".native.tmp.o");
+    const char* cxxEnv = std::getenv("CXX");
+    std::string cxx = (cxxEnv && *cxxEnv) ? cxxEnv : "c++";
+    std::string compileCommand =
+        quoteCommandArg(cxx) +
+        " -std=c++17 -O2 -DCSEC_NATIVE_RUNTIME_BUILD -c " +
+        quoteCommandArg(std::filesystem::absolute("NativeRuntime.cpp").string()) +
+        " -o " + quoteCommandArg(tempRuntimeObject.string());
+    int compileResult = std::system(compileCommand.c_str());
+    if (compileResult != 0) {
+        std::error_code removeError;
+        std::filesystem::remove(tempObject, removeError);
+        std::cerr << "Failed to compile NativeRuntime.cpp. Command exited with code " << compileResult << std::endl;
+        return false;
+    }
+
+    std::string linkCommand =
+        quoteCommandArg(cxx) +
+        " -o " + quoteCommandArg(outputPath) + " " +
+        quoteCommandArg(tempObject.string()) + " " +
+        quoteCommandArg(tempRuntimeObject.string());
+    for (const auto& linkPathArg : linkPaths) {
+        if (!linkPathArg.empty()) {
+            linkCommand += " -L" + quoteCommandArg(linkPathArg);
+        }
+    }
+    for (const auto& library : linkLibraries) {
+        std::string linkArg = nativeLinkLibraryArg(library);
+        if (!linkArg.empty()) {
+            linkCommand += " " + linkArg;
+        }
+    }
+#ifndef __APPLE__
+    linkCommand += " -ldl";
+#endif
+
+    int linkResult = std::system(linkCommand.c_str());
+    std::error_code removeError;
+    std::filesystem::remove(tempObject, removeError);
+    std::filesystem::remove(tempRuntimeObject, removeError);
+    if (linkResult != 0) {
+        std::cerr << "Failed to emit executable via native linker. Command exited with code " << linkResult << std::endl;
+        return false;
+    }
+
+    std::cout << "Wrote executable: " << outputPath << std::endl;
+    return true;
 #else
     std::filesystem::path tempObject = std::filesystem::path(outputPath).replace_extension(".tmp.obj");
     if (!writeObjectToFile(module, tempObject.string(), false)) {
@@ -354,12 +437,22 @@ bool writeExecutableToFile(llvm::Module& module, const std::string& outputPath) 
         linkArgs.push_back("/LIBPATH:" + quoteCommandArg((sdkLibRoot / "ucrt" / "x64").string()));
         linkArgs.push_back("/LIBPATH:" + quoteCommandArg((sdkLibRoot / "um" / "x64").string()));
     }
+    for (const auto& linkPathArg : linkPaths) {
+        if (!linkPathArg.empty()) {
+            linkArgs.push_back("/LIBPATH:" + quoteCommandArg(linkPathArg));
+        }
+    }
     linkArgs.push_back("libcmt.lib");
     linkArgs.push_back("libvcruntime.lib");
     linkArgs.push_back("libucrt.lib");
     linkArgs.push_back("kernel32.lib");
     linkArgs.push_back("ws2_32.lib");
     linkArgs.push_back("legacy_stdio_definitions.lib");
+    for (const auto& library : linkLibraries) {
+        if (!library.empty()) {
+            linkArgs.push_back(quoteCommandArg(library));
+        }
+    }
 
     std::string command;
     for (size_t i = 0; i < linkArgs.size(); ++i) {
@@ -385,25 +478,6 @@ bool writeExecutableToFile(llvm::Module& module, const std::string& outputPath) 
 }
 
 int main(int argc, char** argv) {
-    llvm::PassBuilder PB;
-
-    llvm::ModulePassManager MPM;
-
-    llvm::FunctionPassManager FPM;
-    FPM.addPass(llvm::PromotePass());
-    MPM.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(FPM)));
-
-    llvm::LoopAnalysisManager LAM;
-    llvm::FunctionAnalysisManager FAM;
-    llvm::CGSCCAnalysisManager CGAM;
-    llvm::ModuleAnalysisManager MAM;
-
-    PB.registerModuleAnalyses(MAM);
-    PB.registerFunctionAnalyses(FAM);
-    PB.registerLoopAnalyses(LAM);
-    PB.registerCGSCCAnalyses(CGAM);
-    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
-
 #ifdef _WIN32
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
@@ -440,6 +514,8 @@ int main(int argc, char** argv) {
     std::string inputFile = "sample2.csec";
     bool inputFileSet = false;
     std::string outputFile;
+    std::vector<std::string> linkLibraries;
+    std::vector<std::string> linkPaths;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--syntax-only" || arg == "--parse-only") {
@@ -469,6 +545,24 @@ int main(int argc, char** argv) {
                 return 1;
             }
             outputFile = argv[++i];
+            continue;
+        }
+        if (arg == "--link-lib") {
+            if (i + 1 >= argc) {
+                std::cerr << "Missing library after --link-lib" << std::endl;
+                printUsage(argv[0]);
+                return 1;
+            }
+            linkLibraries.push_back(argv[++i]);
+            continue;
+        }
+        if (arg == "--link-path") {
+            if (i + 1 >= argc) {
+                std::cerr << "Missing path after --link-path" << std::endl;
+                printUsage(argv[0]);
+                return 1;
+            }
+            linkPaths.push_back(argv[++i]);
             continue;
         }
         if (arg == "--help" || arg == "-h") {
@@ -517,6 +611,7 @@ int main(int argc, char** argv) {
 
     std::cout << "Parsing completed successfully." << std::endl;
     if (outputMode == OutputMode::SyntaxOnly) {
+        ast.reset();
         return 0;
     }
 
@@ -556,6 +651,22 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    llvm::PassBuilder PB;
+    llvm::ModulePassManager MPM;
+    llvm::FunctionPassManager FPM;
+    FPM.addPass(llvm::PromotePass());
+    MPM.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(FPM)));
+
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
+
+    PB.registerModuleAnalyses(MAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
     MPM.run(*codeGen.module, MAM);
 
     if (outputMode == OutputMode::EmitIR || outputMode == OutputMode::EmitObject ||
@@ -572,7 +683,29 @@ int main(int argc, char** argv) {
             return writeObjectToFile(*codeGen.module, outputFile) ? 0 : 1;
         }
 
-        return writeExecutableToFile(*codeGen.module, outputFile) ? 0 : 1;
+        std::vector<std::string> allLinkLibraries = linkLibraries;
+        for (const auto& library : codeGen.externalLinkLibraries) {
+            bool exists = false;
+            for (const auto& current : allLinkLibraries) {
+                if (current == library) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) allLinkLibraries.push_back(library);
+        }
+        std::vector<std::string> allLinkPaths = linkPaths;
+        for (const auto& path : codeGen.externalLinkPaths) {
+            bool exists = false;
+            for (const auto& current : allLinkPaths) {
+                if (current == path) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) allLinkPaths.push_back(path);
+        }
+        return writeExecutableToFile(*codeGen.module, outputFile, allLinkLibraries, allLinkPaths) ? 0 : 1;
     }
 
     std::string errStr;

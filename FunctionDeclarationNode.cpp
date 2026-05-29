@@ -50,10 +50,11 @@ llvm::Value* FunctionDeclarationNode::codegen() {
             CodeGenerator::getInstance().getLLVMType(this->returnType.get()),
             paramTypes,
             false);
+        const std::string llvmName = this->externalSymbolName.empty() ? this->name : this->externalSymbolName;
         llvm::Function * function = llvm::Function::Create(
             funcType,
             llvm::Function::ExternalLinkage,
-            this->name,
+            llvmName,
             CodeGenerator::getInstance().module.get()
 		);
 

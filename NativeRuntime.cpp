@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <dlfcn.h>
 #endif
 
 namespace {
@@ -562,5 +563,72 @@ int csec_posix_access_exists(void) { return 0; }
 int csec_posix_access_read(void) { return 4; }
 int csec_posix_access_write(void) { return 2; }
 int csec_posix_access_execute(void) { return 1; }
+
+long long csec_load_library(const char* path) {
+    if (!path) return 0;
+#ifdef _WIN32
+    return reinterpret_cast<long long>(LoadLibraryA(path));
+#else
+    return reinterpret_cast<long long>(dlopen(path, RTLD_LAZY));
+#endif
+}
+
+long long csec_get_symbol(long long library_handle, const char* symbol_name) {
+    if (!symbol_name) return 0;
+#ifdef _WIN32
+    HMODULE module = reinterpret_cast<HMODULE>(library_handle);
+    if (!module) {
+        module = GetModuleHandleA(nullptr);
+    }
+    return reinterpret_cast<long long>(GetProcAddress(module, symbol_name));
+#else
+    void* handle = reinterpret_cast<void*>(library_handle);
+    return reinterpret_cast<long long>(dlsym(handle ? handle : RTLD_DEFAULT, symbol_name));
+#endif
+}
+
+int csec_close_library(long long library_handle) {
+    if (!library_handle) return 0;
+#ifdef _WIN32
+    return FreeLibrary(reinterpret_cast<HMODULE>(library_handle)) ? 0 : -1;
+#else
+    return dlclose(reinterpret_cast<void*>(library_handle));
+#endif
+}
+
+long long csec_call_native0(long long symbol) {
+    using Fn = long long (*)();
+    return symbol ? reinterpret_cast<Fn>(symbol)() : 0;
+}
+
+long long csec_call_native1(long long symbol, long long arg0) {
+    using Fn = long long (*)(long long);
+    return symbol ? reinterpret_cast<Fn>(symbol)(arg0) : 0;
+}
+
+long long csec_call_native2(long long symbol, long long arg0, long long arg1) {
+    using Fn = long long (*)(long long, long long);
+    return symbol ? reinterpret_cast<Fn>(symbol)(arg0, arg1) : 0;
+}
+
+long long csec_call_native3(long long symbol, long long arg0, long long arg1, long long arg2) {
+    using Fn = long long (*)(long long, long long, long long);
+    return symbol ? reinterpret_cast<Fn>(symbol)(arg0, arg1, arg2) : 0;
+}
+
+double csec_call_native_double0(long long symbol) {
+    using Fn = double (*)();
+    return symbol ? reinterpret_cast<Fn>(symbol)() : 0.0;
+}
+
+double csec_call_native_double1(long long symbol, double arg0) {
+    using Fn = double (*)(double);
+    return symbol ? reinterpret_cast<Fn>(symbol)(arg0) : 0.0;
+}
+
+double csec_call_native_double2(long long symbol, double arg0, double arg1) {
+    using Fn = double (*)(double, double);
+    return symbol ? reinterpret_cast<Fn>(symbol)(arg0, arg1) : 0.0;
+}
 
 }

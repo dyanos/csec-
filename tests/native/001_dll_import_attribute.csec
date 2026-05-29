@@ -1,0 +1,10 @@
+[@DllImport("legacy_stdio_definitions.lib", "puts")]
+external def nativePuts(message: String): Int;
+
+def main(): Int {
+    val written: Int = nativePuts("dll import attribute");
+    if (written >= 0) {
+        return 0;
+    }
+    return 1;
+}

@@ -72,6 +72,18 @@ bool isNativeParallelFunction(const std::string& name) {
            name == "parallelBackendImplemented";
 }
 
+bool isNativeDynamicLibraryFunction(const std::string& name) {
+    static const char* names[] = {
+        "loadLibrary", "getSymbol", "closeLibrary",
+        "callNative0", "callNative1", "callNative2", "callNative3",
+        "callNativeDouble0", "callNativeDouble1", "callNativeDouble2"
+    };
+    for (const char* candidate : names) {
+        if (name == candidate) return true;
+    }
+    return false;
+}
+
 bool isNativeSimulationFunction(const std::string& name) {
     return name == "mdSimulate" || name == "cfdSimulate" || name == "proteinMcmc" || name == "blackHoleMerge";
 }
@@ -815,6 +827,84 @@ llvm::Value* codegenNativeParallelCall(
             getOrCreateRuntimeFunction(cg, "csec_parallel_backend_implemented", i32Ty, {i8PtrTy}),
             {asCStringPointer(cg, argValues[0])},
             "parallel.backend.implemented");
+    }
+
+    return nullptr;
+}
+
+llvm::Value* codegenNativeDynamicLibraryCall(
+    const std::string& functionName,
+    const std::vector<llvm::Value*>& rawArgValues,
+    const std::vector<std::unique_ptr<Type>>& argTypes) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    std::vector<llvm::Value*> argValues = rawArgValues;
+    for (size_t i = 0; i < argValues.size() && i < argTypes.size(); ++i) {
+        if (!argValues[i] || !argValues[i]->getType()->isPointerTy()) continue;
+        if (!argTypes[i] || argTypes[i]->isStringTy() || TensorRuntime::isTensorTypeName(argTypes[i]->getName())) continue;
+        if (auto* valueType = cg.getLLVMType(argTypes[i].get())) {
+            argValues[i] = cg.builder.CreateLoad(valueType, argValues[i], "dyn.arg.load");
+        }
+    }
+
+    auto requireArgCount = [&](size_t expected) -> bool {
+        if (argValues.size() == expected) return true;
+        std::cerr << "Error: " << functionName << " requires " << expected << " argument(s)" << std::endl;
+        return false;
+    };
+
+    if (functionName == "loadLibrary") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_load_library", i64Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "dynlib.handle");
+    }
+    if (functionName == "getSymbol") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_get_symbol", i64Ty, {i64Ty, i8PtrTy}),
+            {coerceMathValueToI64(cg, argValues[0]), asCStringPointer(cg, argValues[1])},
+            "dynlib.symbol");
+    }
+    if (functionName == "closeLibrary") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_close_library", i32Ty, {i64Ty}),
+            {coerceMathValueToI64(cg, argValues[0])},
+            "dynlib.close");
+    }
+    if (functionName == "callNative0") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_call_native0", i64Ty, {i64Ty}), {coerceMathValueToI64(cg, argValues[0])}, "native.call");
+    }
+    if (functionName == "callNative1") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_call_native1", i64Ty, {i64Ty, i64Ty}), {coerceMathValueToI64(cg, argValues[0]), coerceMathValueToI64(cg, argValues[1])}, "native.call");
+    }
+    if (functionName == "callNative2") {
+        if (!requireArgCount(3)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_call_native2", i64Ty, {i64Ty, i64Ty, i64Ty}), {coerceMathValueToI64(cg, argValues[0]), coerceMathValueToI64(cg, argValues[1]), coerceMathValueToI64(cg, argValues[2])}, "native.call");
+    }
+    if (functionName == "callNative3") {
+        if (!requireArgCount(4)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_call_native3", i64Ty, {i64Ty, i64Ty, i64Ty, i64Ty}), {coerceMathValueToI64(cg, argValues[0]), coerceMathValueToI64(cg, argValues[1]), coerceMathValueToI64(cg, argValues[2]), coerceMathValueToI64(cg, argValues[3])}, "native.call");
+    }
+    if (functionName == "callNativeDouble0") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_call_native_double0", f64Ty, {i64Ty}), {coerceMathValueToI64(cg, argValues[0])}, "native.dcall");
+    }
+    if (functionName == "callNativeDouble1") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_call_native_double1", f64Ty, {i64Ty, f64Ty}), {coerceMathValueToI64(cg, argValues[0]), coerceMathValueToDouble(cg, argValues[1])}, "native.dcall");
+    }
+    if (functionName == "callNativeDouble2") {
+        if (!requireArgCount(3)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_call_native_double2", f64Ty, {i64Ty, f64Ty, f64Ty}), {coerceMathValueToI64(cg, argValues[0]), coerceMathValueToDouble(cg, argValues[1]), coerceMathValueToDouble(cg, argValues[2])}, "native.dcall");
     }
 
     return nullptr;
@@ -1665,6 +1755,9 @@ llvm::Value* FunctionCallNode::codegen() {
     if (isNativeParallelFunction(functionName)) {
         return codegenNativeParallelCall(functionName, argValues);
     }
+    if (isNativeDynamicLibraryFunction(functionName)) {
+        return codegenNativeDynamicLibraryCall(functionName, argValues, argTypes);
+    }
     if (isNativeSimulationFunction(functionName)) {
         return codegenNativeSimulationCall(functionName, argValues);
     }
@@ -2003,6 +2096,16 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
     }
     if (isNativeParallelFunction(functionName)) {
         return std::make_unique<BasicType>("Int");
+    }
+    if (isNativeDynamicLibraryFunction(functionName)) {
+        if (functionName == "closeLibrary") {
+            return std::make_unique<BasicType>("Int");
+        }
+        if (functionName == "callNativeDouble0" || functionName == "callNativeDouble1" ||
+            functionName == "callNativeDouble2") {
+            return std::make_unique<BasicType>("Double");
+        }
+        return std::make_unique<BasicType>("Long");
     }
     if (isNativeSimulationFunction(functionName)) {
         return std::make_unique<BasicType>("Double");

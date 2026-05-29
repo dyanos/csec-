@@ -1,0 +1,11 @@
+def main(): Int {
+    val kernel32: Long = loadLibrary("kernel32.dll");
+    val getCurrentProcessId: Long = getSymbol(kernel32, "GetCurrentProcessId");
+    val pid: Long = callNative0(getCurrentProcessId);
+    val closed: Int = closeLibrary(kernel32);
+
+    if (kernel32 != 0 and getCurrentProcessId != 0 and pid != 0 and closed == 0) {
+        return 0;
+    }
+    return 1;
+}

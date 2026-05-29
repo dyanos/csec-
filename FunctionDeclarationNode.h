@@ -36,6 +36,8 @@ public:
         isExternal = other.isExternal;
         isConstexpr = other.isConstexpr;
         isUnsafe = other.isUnsafe;
+        dllImportLibrary = other.dllImportLibrary;
+        externalSymbolName = other.externalSymbolName;
     }
     FunctionDeclarationNode& operator=(const FunctionDeclarationNode& other) {
         if (this != &other) {
@@ -51,6 +53,8 @@ public:
             isExternal = other.isExternal;
             isConstexpr = other.isConstexpr;
             isUnsafe = other.isUnsafe;
+            dllImportLibrary = other.dllImportLibrary;
+            externalSymbolName = other.externalSymbolName;
         }
         return *this;
     }
@@ -58,6 +62,8 @@ public:
     bool isExternal = false;
     bool isConstexpr = false;
     bool isUnsafe = false;
+    std::string dllImportLibrary;
+    std::string externalSymbolName;
 
     std::string name;
     std::vector<std::unique_ptr<ASTNode>> parameters;

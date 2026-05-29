@@ -1,0 +1,25 @@
+def main(): Int {
+    val negative: Tensor<Double, 2, 2> = new Tensor<Double, 2, 2>(0.0 - 2.0);
+    val zeros: Tensor<Double, 2, 2> = relu(negative);
+    val zeroSum: Real = sum(zeros);
+
+    val logits: Tensor<Double, 1, 4> = new Tensor<Double, 1, 4>(0.0);
+    val probabilities: Tensor<Double, 1, 4> = softmax(logits);
+    val probabilityMass: Real = sum(probabilities);
+
+    val prediction: Tensor<Double, 2, 2> = new Tensor<Double, 2, 2>(3.0);
+    val target: Tensor<Double, 2, 2> = new Tensor<Double, 2, 2>(1.0);
+    val difference: Tensor<Double, 2, 2> = prediction - target;
+    val loss: Real = mse(prediction, target);
+    val average: Real = mean(prediction);
+    val length: Real = norm(difference);
+
+    if (approxEq(zeroSum, 0.0, 0.000001) and
+        approxEq(probabilityMass, 1.0, 0.000001) and
+        approxEq(loss, 4.0, 0.000001) and
+        approxEq(average, 3.0, 0.000001) and
+        approxEq(length, 4.0, 0.000001)) {
+        return 0;
+    }
+    return 1;
+}

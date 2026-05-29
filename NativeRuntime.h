@@ -50,6 +50,13 @@ CSEC_NATIVE_API double csec_math_binom(double n, double k);
 CSEC_NATIVE_API double csec_math_min(double left, double right);
 CSEC_NATIVE_API double csec_math_max(double left, double right);
 CSEC_NATIVE_API double csec_math_gcd(double left, double right);
+CSEC_NATIVE_API double csec_math_abs(double value);
+CSEC_NATIVE_API double csec_math_sign(double value);
+CSEC_NATIVE_API double csec_math_floor(double value);
+CSEC_NATIVE_API double csec_math_ceil(double value);
+CSEC_NATIVE_API double csec_math_round(double value);
+CSEC_NATIVE_API double csec_math_lcm(double left, double right);
+CSEC_NATIVE_API long long csec_set_cardinality(long long value);
 
 CSEC_NATIVE_API double csec_sim_md_lennard_jones(int atom_count, int bond_count, int steps, double dt, double temperature);
 CSEC_NATIVE_API double csec_sim_cfd_lid_cavity(int width, int height, int steps, double dt, double viscosity, double lid_velocity);

@@ -1,0 +1,36 @@
+def main(): Int {
+    val universe: Long = (1 << 1) union (1 << 2) union (1 << 3) union (1 << 4);
+    val left: Long = (1 << 1) union (1 << 3);
+    val right: Long = (1 << 2) union (1 << 4);
+    val mixed: Long = left union (1 << 2);
+
+    val a: Real = abs(0.0 - 7.5);
+    val s1: Real = sign(-9);
+    val s2: Real = sign(0);
+    val s3: Real = sign(12);
+    val floored: Real = floor(3.9);
+    val ceiled: Real = ceil(3.1);
+    val rounded: Real = round(3.6);
+    val leastCommon: Real = lcm(12, 18);
+
+    val approximatelyEqual: Boolean = approxEq(0.1 + 0.2, 0.3, 0.000001);
+    val clamped: Real = clamp(12, 0, 10);
+    val inRange: Boolean = between(5, 1, 9);
+
+    val singletonThree: Long = singleton(3);
+    val empty: Long = emptySet();
+    val countLeft: Long = cardinality(left);
+    val countUniverse: Long = cardinality(universe);
+    val separate: Boolean = disjoint(left, right);
+    val notSeparate: Boolean = disjoint(left, mixed);
+    val missing: Long = complement(left, universe);
+
+    if (a == 7.5 and s1 == (0.0 - 1.0) and s2 == 0.0 and s3 == 1.0 and
+        floored == 3.0 and ceiled == 4.0 and rounded == 4.0 and
+        leastCommon == 36.0 and approximatelyEqual and clamped == 10.0 and inRange and
+        singletonThree == (1 << 3) and empty == 0 and countLeft == 2 and
+        countUniverse == 4 and separate and notSeparate == false and missing == right) {
+        return 0;
+    }
+    return 1;
+}

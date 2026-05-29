@@ -24,8 +24,10 @@ bool isMathFallbackFunction(const std::string& name) {
         "sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan",
         "sinh", "cosh", "tanh", "coth", "sqrt", "ln", "log", "lg", "exp",
         "frac", "binom", "min", "max", "det", "dim", "gcd", "pow",
+        "abs", "sign", "floor", "ceil", "round", "lcm", "approxEq", "clamp", "between",
+        "emptySet", "singleton", "cardinality", "disjoint", "complement",
         "transpose", "conjugate", "adjoint", "tensorProduct", "innerProduct", "outerProduct",
-        "sum", "prod", "int", "lim", "liminf", "limsup",
+        "sum", "mean", "norm", "relu", "softmax", "mse", "prod", "int", "lim", "liminf", "limsup",
         "oint", "iint", "bigcup", "bigcap", "biguplus", "bigoplus",
         "bigvee", "bigotimes", "bigwedge", "coprod", "bigodot", "bigsqcup"
     };
@@ -82,7 +84,9 @@ bool isNativeScalarMathFunction(const std::string& name) {
     static const char* names[] = {
         "sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan",
         "sinh", "cosh", "tanh", "coth", "sqrt", "ln", "log", "lg", "exp",
-        "frac", "binom", "min", "max", "gcd", "pow"
+        "frac", "binom", "min", "max", "gcd", "pow",
+        "abs", "sign", "floor", "ceil", "round", "lcm", "approxEq", "clamp", "between",
+        "emptySet", "singleton", "cardinality", "disjoint", "complement"
     };
     for (const char* candidate : names) {
         if (name == candidate) return true;
@@ -816,9 +820,22 @@ llvm::Value* codegenNativeParallelCall(
     return nullptr;
 }
 
-llvm::Value* codegenNativeScalarMathCall(const std::string& functionName, const std::vector<llvm::Value*>& argValues) {
+llvm::Value* codegenNativeScalarMathCall(
+    const std::string& functionName,
+    const std::vector<llvm::Value*>& rawArgValues,
+    const std::vector<std::unique_ptr<Type>>& argTypes) {
     auto& cg = CodeGenerator::getInstance();
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
     auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    std::vector<llvm::Value*> argValues = rawArgValues;
+    for (size_t i = 0; i < argValues.size() && i < argTypes.size(); ++i) {
+        if (!argValues[i] || !argValues[i]->getType()->isPointerTy()) continue;
+        if (argTypes[i] && TensorRuntime::isTensorTypeName(argTypes[i]->getName())) continue;
+        llvm::Type* valueType = cg.getLLVMType(argTypes[i].get());
+        if (valueType) {
+            argValues[i] = cg.builder.CreateLoad(valueType, argValues[i], "math.arg.load");
+        }
+    }
     auto callUnaryRuntime = [&](const std::string& runtimeName) -> llvm::Value* {
         if (argValues.size() != 1) {
             std::cerr << "Error: Math function '" << functionName << "' requires one argument" << std::endl;
@@ -857,9 +874,103 @@ llvm::Value* codegenNativeScalarMathCall(const std::string& functionName, const 
     if (functionName == "ln") return callUnaryRuntime("csec_math_log");
     if (functionName == "lg") return callUnaryRuntime("csec_math_log10");
     if (functionName == "exp") return callUnaryRuntime("csec_math_exp");
+    if (functionName == "abs") return callUnaryRuntime("csec_math_abs");
+    if (functionName == "sign") return callUnaryRuntime("csec_math_sign");
+    if (functionName == "floor") return callUnaryRuntime("csec_math_floor");
+    if (functionName == "ceil") return callUnaryRuntime("csec_math_ceil");
+    if (functionName == "round") return callUnaryRuntime("csec_math_round");
     if (functionName == "pow") return callBinaryRuntime("csec_math_pow");
     if (functionName == "frac") return callBinaryRuntime("csec_math_frac");
     if (functionName == "binom") return callBinaryRuntime("csec_math_binom");
+    if (functionName == "lcm") return callBinaryRuntime("csec_math_lcm");
+
+    if (functionName == "approxEq") {
+        if (argValues.size() != 3) {
+            std::cerr << "Error: approxEq(a, b, eps) requires three arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* diff = cg.builder.CreateFSub(
+            coerceMathValueToDouble(cg, argValues[0]),
+            coerceMathValueToDouble(cg, argValues[1]),
+            "approx.diff");
+        llvm::Value* absDiff = cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_math_abs", f64Ty, {f64Ty}),
+            {diff},
+            "approx.abs");
+        return cg.builder.CreateFCmpOLE(absDiff, coerceMathValueToDouble(cg, argValues[2]), "approx.eq");
+    }
+
+    if (functionName == "clamp") {
+        if (argValues.size() != 3) {
+            std::cerr << "Error: clamp(value, min, max) requires three arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* value = coerceMathValueToDouble(cg, argValues[0]);
+        llvm::Value* minValue = coerceMathValueToDouble(cg, argValues[1]);
+        llvm::Value* maxValue = coerceMathValueToDouble(cg, argValues[2]);
+        llvm::Value* aboveMin = cg.builder.CreateSelect(cg.builder.CreateFCmpOLT(value, minValue), minValue, value, "clamp.min");
+        return cg.builder.CreateSelect(cg.builder.CreateFCmpOGT(aboveMin, maxValue), maxValue, aboveMin, "clamp.max");
+    }
+
+    if (functionName == "between") {
+        if (argValues.size() != 3) {
+            std::cerr << "Error: between(value, min, max) requires three arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* value = coerceMathValueToDouble(cg, argValues[0]);
+        llvm::Value* minValue = coerceMathValueToDouble(cg, argValues[1]);
+        llvm::Value* maxValue = coerceMathValueToDouble(cg, argValues[2]);
+        return cg.builder.CreateAnd(
+            cg.builder.CreateFCmpOGE(value, minValue, "between.lo"),
+            cg.builder.CreateFCmpOLE(value, maxValue, "between.hi"),
+            "between.result");
+    }
+
+    if (functionName == "emptySet") {
+        if (!argValues.empty()) {
+            std::cerr << "Error: emptySet() does not take arguments" << std::endl;
+            return nullptr;
+        }
+        return llvm::ConstantInt::get(i64Ty, 0);
+    }
+
+    if (functionName == "singleton") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: singleton(value) requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateShl(llvm::ConstantInt::get(i64Ty, 1), coerceMathValueToI64(cg, argValues[0]), "set.singleton");
+    }
+
+    if (functionName == "cardinality") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: cardinality(set) requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_set_cardinality", i64Ty, {i64Ty}),
+            {coerceMathValueToI64(cg, argValues[0])},
+            "set.cardinality");
+    }
+
+    if (functionName == "disjoint") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: disjoint(a, b) requires two arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* overlap = cg.builder.CreateAnd(coerceMathValueToI64(cg, argValues[0]), coerceMathValueToI64(cg, argValues[1]), "set.overlap");
+        return cg.builder.CreateICmpEQ(overlap, llvm::ConstantInt::get(i64Ty, 0), "set.disjoint");
+    }
+
+    if (functionName == "complement") {
+        if (argValues.size() != 2) {
+            std::cerr << "Error: complement(set, universe) requires two arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* setValue = coerceMathValueToI64(cg, argValues[0]);
+        llvm::Value* universe = coerceMathValueToI64(cg, argValues[1]);
+        return cg.builder.CreateAnd(universe, cg.builder.CreateNot(setValue, "set.not"), "set.complement");
+    }
 
     if (functionName == "log") {
         if (argValues.size() == 1) return callUnaryRuntime("csec_math_log");
@@ -1791,6 +1902,35 @@ llvm::Value* FunctionCallNode::codegen() {
                     }
                     return TensorRuntime::cloneTensor(cg, argValues[0]);
                 }
+                if (functionName == "relu" || functionName == "softmax") {
+                    if (argValues.size() != 1 || argTypes.empty() || !TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
+                        std::cerr << "Error: Tensor fallback '" << functionName << "' requires one tensor argument" << std::endl;
+                        return nullptr;
+                    }
+                    if (functionName == "relu") {
+                        return TensorRuntime::mapTensor(cg, argValues[0], "relu");
+                    }
+                    return TensorRuntime::softmaxTensor(cg, argValues[0]);
+                }
+                if (functionName == "sum" || functionName == "mean" || functionName == "norm") {
+                    if (argValues.size() != 1 || argTypes.empty() || !TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
+                        std::cerr << "Error: Tensor fallback '" << functionName << "' requires one tensor argument" << std::endl;
+                        return nullptr;
+                    }
+                    if (functionName == "sum") return TensorRuntime::sumTensor(cg, argValues[0]);
+                    if (functionName == "mean") return TensorRuntime::meanTensor(cg, argValues[0]);
+                    return TensorRuntime::normTensor(cg, argValues[0]);
+                }
+                if (functionName == "mse") {
+                    if (argValues.size() != 2 ||
+                        argTypes.size() != 2 ||
+                        !TensorRuntime::isTensorTypeName(argTypes[0]->getName()) ||
+                        !TensorRuntime::isTensorTypeName(argTypes[1]->getName())) {
+                        std::cerr << "Error: Tensor fallback 'mse' requires two tensor arguments" << std::endl;
+                        return nullptr;
+                    }
+                    return TensorRuntime::mseTensor(cg, argValues[0], argValues[1]);
+                }
                 if (functionName == "innerProduct" || functionName == "outerProduct" || functionName == "tensorProduct") {
                     if (argValues.size() != 2 ||
                         argTypes.size() != 2 ||
@@ -1805,7 +1945,7 @@ llvm::Value* FunctionCallNode::codegen() {
                     return TensorRuntime::outerProduct(cg, argValues[0], argValues[1]);
                 }
                 if (isNativeScalarMathFunction(functionName)) {
-                    return codegenNativeScalarMathCall(functionName, argValues);
+                    return codegenNativeScalarMathCall(functionName, argValues, argTypes);
                 }
                 return llvm::ConstantFP::get(llvm::Type::getDoubleTy(cg.context), 0.0);
             }
@@ -1924,6 +2064,29 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
                 argTypes.size() == 1 &&
                 TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
                 return argTypes[0]->clone();
+            }
+            if ((functionName == "relu" || functionName == "softmax") &&
+                argTypes.size() == 1 &&
+                TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
+                return argTypes[0]->clone();
+            }
+            if ((functionName == "sum" || functionName == "mean" || functionName == "norm") &&
+                argTypes.size() == 1 &&
+                TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
+                return std::make_unique<BasicType>("Real");
+            }
+            if (functionName == "mse" &&
+                argTypes.size() == 2 &&
+                TensorRuntime::isTensorTypeName(argTypes[0]->getName()) &&
+                TensorRuntime::isTensorTypeName(argTypes[1]->getName())) {
+                return std::make_unique<BasicType>("Real");
+            }
+            if (functionName == "approxEq" || functionName == "between" || functionName == "disjoint") {
+                return std::make_unique<BasicType>("Boolean");
+            }
+            if (functionName == "emptySet" || functionName == "singleton" ||
+                functionName == "cardinality" || functionName == "complement") {
+                return std::make_unique<BasicType>("Long");
             }
             if ((functionName == "outerProduct" || functionName == "tensorProduct") &&
                 argTypes.size() == 2 &&

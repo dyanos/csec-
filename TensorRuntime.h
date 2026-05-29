@@ -205,6 +205,146 @@ inline llvm::Value* applyElementwiseOp(CodeGenerator& cg, const std::string& op,
     return left;
 }
 
+inline llvm::Function* getOrCreateUnaryDoubleRuntime(CodeGenerator& cg, const std::string& name) {
+    if (auto* function = cg.module->getFunction(name)) return function;
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    auto* functionTy = llvm::FunctionType::get(f64Ty, {f64Ty}, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
+}
+
+inline llvm::Value* mapTensor(CodeGenerator& cg, llvm::Value* source, const std::string& op) {
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* rank = loadRank(cg, source);
+    llvm::Value* count = loadCount(cg, source);
+    llvm::Value* result = allocateTensor(cg, rank, count);
+    llvm::Value* srcDims = loadDims(cg, source);
+    llvm::Value* dstDims = loadDims(cg, result);
+    llvm::Value* srcData = loadData(cg, source);
+    llvm::Value* dstData = loadData(cg, result);
+
+    emitCountedLoop(cg, rank, "tensor.map.dims", [&](llvm::Value* index) {
+        llvm::Value* srcSlot = cg.builder.CreateGEP(i64Ty, srcDims, index, "tensor.map.src.dim");
+        llvm::Value* dstSlot = cg.builder.CreateGEP(i64Ty, dstDims, index, "tensor.map.dst.dim");
+        cg.builder.CreateStore(cg.builder.CreateLoad(i64Ty, srcSlot, "tensor.map.dim"), dstSlot);
+    });
+
+    emitCountedLoop(cg, count, "tensor.map.data", [&](llvm::Value* index) {
+        llvm::Value* value = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, srcData, index, "tensor.map.src"), "tensor.map.value");
+        llvm::Value* mapped = value;
+        if (op == "relu") {
+            mapped = cg.builder.CreateSelect(
+                cg.builder.CreateFCmpOGT(value, llvm::ConstantFP::get(f64Ty, 0.0), "tensor.relu.gt0"),
+                value,
+                llvm::ConstantFP::get(f64Ty, 0.0),
+                "tensor.relu");
+        }
+        cg.builder.CreateStore(mapped, cg.builder.CreateGEP(f64Ty, dstData, index, "tensor.map.dst"));
+    });
+    return result;
+}
+
+inline llvm::Value* sumTensor(CodeGenerator& cg, llvm::Value* source) {
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* count = loadCount(cg, source);
+    llvm::Value* data = loadData(cg, source);
+    llvm::Value* sumPtr = cg.builder.CreateAlloca(f64Ty, nullptr, "tensor.sum.ptr");
+    cg.builder.CreateStore(llvm::ConstantFP::get(f64Ty, 0.0), sumPtr);
+    emitCountedLoop(cg, count, "tensor.sum", [&](llvm::Value* index) {
+        llvm::Value* value = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, data, index, "tensor.sum.slot"), "tensor.sum.value");
+        llvm::Value* current = cg.builder.CreateLoad(f64Ty, sumPtr, "tensor.sum.current");
+        cg.builder.CreateStore(cg.builder.CreateFAdd(current, value, "tensor.sum.next"), sumPtr);
+    });
+    return cg.builder.CreateLoad(f64Ty, sumPtr, "tensor.sum.result");
+}
+
+inline llvm::Value* meanTensor(CodeGenerator& cg, llvm::Value* source) {
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* count = loadCount(cg, source);
+    llvm::Value* countDouble = cg.builder.CreateUIToFP(count, f64Ty, "tensor.mean.count");
+    return cg.builder.CreateFDiv(sumTensor(cg, source), countDouble, "tensor.mean");
+}
+
+inline llvm::Value* normTensor(CodeGenerator& cg, llvm::Value* source) {
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* count = loadCount(cg, source);
+    llvm::Value* data = loadData(cg, source);
+    llvm::Value* sumPtr = cg.builder.CreateAlloca(f64Ty, nullptr, "tensor.norm.sum.ptr");
+    cg.builder.CreateStore(llvm::ConstantFP::get(f64Ty, 0.0), sumPtr);
+    emitCountedLoop(cg, count, "tensor.norm", [&](llvm::Value* index) {
+        llvm::Value* value = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, data, index, "tensor.norm.slot"), "tensor.norm.value");
+        llvm::Value* square = cg.builder.CreateFMul(value, value, "tensor.norm.square");
+        llvm::Value* current = cg.builder.CreateLoad(f64Ty, sumPtr, "tensor.norm.current");
+        cg.builder.CreateStore(cg.builder.CreateFAdd(current, square, "tensor.norm.next"), sumPtr);
+    });
+    return cg.builder.CreateCall(
+        getOrCreateUnaryDoubleRuntime(cg, "csec_math_sqrt"),
+        {cg.builder.CreateLoad(f64Ty, sumPtr, "tensor.norm.sum")},
+        "tensor.norm.result");
+}
+
+inline llvm::Value* softmaxTensor(CodeGenerator& cg, llvm::Value* source) {
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* rank = loadRank(cg, source);
+    llvm::Value* count = loadCount(cg, source);
+    llvm::Value* result = allocateTensor(cg, rank, count);
+    llvm::Value* srcDims = loadDims(cg, source);
+    llvm::Value* dstDims = loadDims(cg, result);
+    llvm::Value* srcData = loadData(cg, source);
+    llvm::Value* dstData = loadData(cg, result);
+
+    emitCountedLoop(cg, rank, "tensor.softmax.dims", [&](llvm::Value* index) {
+        llvm::Value* srcSlot = cg.builder.CreateGEP(i64Ty, srcDims, index, "tensor.softmax.src.dim");
+        llvm::Value* dstSlot = cg.builder.CreateGEP(i64Ty, dstDims, index, "tensor.softmax.dst.dim");
+        cg.builder.CreateStore(cg.builder.CreateLoad(i64Ty, srcSlot, "tensor.softmax.dim"), dstSlot);
+    });
+
+    llvm::Function* expFn = getOrCreateUnaryDoubleRuntime(cg, "csec_math_exp");
+    llvm::Value* sumPtr = cg.builder.CreateAlloca(f64Ty, nullptr, "tensor.softmax.sum.ptr");
+    cg.builder.CreateStore(llvm::ConstantFP::get(f64Ty, 0.0), sumPtr);
+
+    emitCountedLoop(cg, count, "tensor.softmax.exp", [&](llvm::Value* index) {
+        llvm::Value* value = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, srcData, index, "tensor.softmax.src"), "tensor.softmax.value");
+        llvm::Value* expValue = cg.builder.CreateCall(expFn, {value}, "tensor.softmax.exp.value");
+        cg.builder.CreateStore(expValue, cg.builder.CreateGEP(f64Ty, dstData, index, "tensor.softmax.exp.dst"));
+        llvm::Value* current = cg.builder.CreateLoad(f64Ty, sumPtr, "tensor.softmax.sum.current");
+        cg.builder.CreateStore(cg.builder.CreateFAdd(current, expValue, "tensor.softmax.sum.next"), sumPtr);
+    });
+
+    emitCountedLoop(cg, count, "tensor.softmax.norm", [&](llvm::Value* index) {
+        llvm::Value* slot = cg.builder.CreateGEP(f64Ty, dstData, index, "tensor.softmax.norm.slot");
+        llvm::Value* expValue = cg.builder.CreateLoad(f64Ty, slot, "tensor.softmax.exp.load");
+        llvm::Value* sum = cg.builder.CreateLoad(f64Ty, sumPtr, "tensor.softmax.sum");
+        cg.builder.CreateStore(cg.builder.CreateFDiv(expValue, sum, "tensor.softmax.prob"), slot);
+    });
+
+    return result;
+}
+
+inline llvm::Value* mseTensor(CodeGenerator& cg, llvm::Value* prediction, llvm::Value* target) {
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* predCount = loadCount(cg, prediction);
+    llvm::Value* targetCount = loadCount(cg, target);
+    llvm::Value* count = cg.builder.CreateSelect(cg.builder.CreateICmpULT(predCount, targetCount), predCount, targetCount, "tensor.mse.count");
+    llvm::Value* predData = loadData(cg, prediction);
+    llvm::Value* targetData = loadData(cg, target);
+    llvm::Value* sumPtr = cg.builder.CreateAlloca(f64Ty, nullptr, "tensor.mse.sum.ptr");
+    cg.builder.CreateStore(llvm::ConstantFP::get(f64Ty, 0.0), sumPtr);
+
+    emitCountedLoop(cg, count, "tensor.mse", [&](llvm::Value* index) {
+        llvm::Value* predValue = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, predData, index, "tensor.mse.pred"), "tensor.mse.pred.value");
+        llvm::Value* targetValue = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, targetData, index, "tensor.mse.target"), "tensor.mse.target.value");
+        llvm::Value* diff = cg.builder.CreateFSub(predValue, targetValue, "tensor.mse.diff");
+        llvm::Value* square = cg.builder.CreateFMul(diff, diff, "tensor.mse.square");
+        llvm::Value* current = cg.builder.CreateLoad(f64Ty, sumPtr, "tensor.mse.current");
+        cg.builder.CreateStore(cg.builder.CreateFAdd(current, square, "tensor.mse.next"), sumPtr);
+    });
+
+    llvm::Value* countDouble = cg.builder.CreateUIToFP(count, f64Ty, "tensor.mse.count.fp");
+    return cg.builder.CreateFDiv(cg.builder.CreateLoad(f64Ty, sumPtr, "tensor.mse.sum"), countDouble, "tensor.mse.result");
+}
+
 inline llvm::Value* elementwiseTensorTensor(CodeGenerator& cg, llvm::Value* left, llvm::Value* right, const std::string& op) {
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
     auto* f64Ty = llvm::Type::getDoubleTy(cg.context);

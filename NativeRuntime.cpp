@@ -145,6 +145,11 @@ double csec_math_frac(double numerator, double denominator) { return numerator /
 double csec_math_binom(double n, double k) { return std::tgamma(n + 1.0) / (std::tgamma(k + 1.0) * std::tgamma(n - k + 1.0)); }
 double csec_math_min(double left, double right) { return left < right ? left : right; }
 double csec_math_max(double left, double right) { return left > right ? left : right; }
+double csec_math_abs(double value) { return std::fabs(value); }
+double csec_math_sign(double value) { return value > 0.0 ? 1.0 : (value < 0.0 ? -1.0 : 0.0); }
+double csec_math_floor(double value) { return std::floor(value); }
+double csec_math_ceil(double value) { return std::ceil(value); }
+double csec_math_round(double value) { return std::round(value); }
 
 double csec_math_gcd(double left, double right) {
     long long a = static_cast<long long>(left);
@@ -157,6 +162,32 @@ double csec_math_gcd(double left, double right) {
         b = r;
     }
     return static_cast<double>(a);
+}
+
+double csec_math_lcm(double left, double right) {
+    long long a = static_cast<long long>(left);
+    long long b = static_cast<long long>(right);
+    if (a == 0 || b == 0) return 0.0;
+    long long aa = a < 0 ? -a : a;
+    long long bb = b < 0 ? -b : b;
+    long long x = aa;
+    long long y = bb;
+    while (y != 0) {
+        long long r = x % y;
+        x = y;
+        y = r;
+    }
+    return static_cast<double>((aa / x) * bb);
+}
+
+long long csec_set_cardinality(long long value) {
+    unsigned long long bits = static_cast<unsigned long long>(value);
+    long long count = 0;
+    while (bits != 0) {
+        bits &= bits - 1;
+        ++count;
+    }
+    return count;
 }
 
 double csec_sim_md_lennard_jones(int atom_count, int bond_count, int steps, double dt, double temperature) {

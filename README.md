@@ -49,6 +49,8 @@ Optional requirements:
 - Ninja, for faster CMake builds.
 - OpenMP runtime/development package, used when available by the native parallel
   runtime.
+- libedit/readline-compatible development package when required by the installed
+  LLVM package. Some LLVM builds link `LLVMSupport` against editline.
 
 ### Linux Packages
 
@@ -57,20 +59,20 @@ Ubuntu/Debian example:
 ```sh
 sudo apt update
 sudo apt install build-essential cmake ninja-build llvm-dev clang lld
-sudo apt install libomp-dev
+sudo apt install libomp-dev libedit-dev
 ```
 
 Fedora example:
 
 ```sh
 sudo dnf install gcc-c++ cmake ninja-build llvm-devel clang lld
-sudo dnf install libomp-devel
+sudo dnf install libomp-devel libedit-devel
 ```
 
 Arch Linux example:
 
 ```sh
-sudo pacman -S base-devel cmake ninja llvm clang lld openmp
+sudo pacman -S base-devel cmake ninja llvm clang lld openmp libedit
 ```
 
 Package names vary by distribution. The important pieces are the LLVM CMake
@@ -81,7 +83,7 @@ package (`LLVMConfig.cmake`), LLVM libraries/headers, and the `llc` executable.
 Homebrew example:
 
 ```sh
-brew install cmake ninja llvm libomp
+brew install cmake ninja llvm libomp libedit
 ```
 
 Homebrew LLVM is not always on the default compiler/linker search path. Use
@@ -165,6 +167,8 @@ For dynamic library interop:
 external def nativeCos(value: Double): Double;
 
 def main(): Int {
+    val imported: Double = nativeCos(0.0);
+
     val handle: Long = loadLibrary("libm.so.6");
     val symbol: Long = getSymbol(handle, "cos");
     val value: Double = callNativeDouble1(symbol, 0.0);
@@ -176,6 +180,11 @@ def main(): Int {
 On macOS, use `.dylib` names such as `libm.dylib`. On Linux, use `.so` names such
 as `libm.so.6`. Passing `0` to `getSymbol` searches the default process symbol
 scope on POSIX platforms.
+
+`nativeCos` is the TensorScript name used at the call site. The actual C symbol
+is the second `DllImport` argument, `"cos"`. Avoid declaring the TensorScript
+function itself as `cos`, because `cos(...)` is already a built-in scalar math
+helper and will normally resolve through the native runtime math path.
 
 ## Parallel API Surface
 

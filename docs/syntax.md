@@ -46,6 +46,11 @@ Native library metadata can be attached with attributes:
 ```ts
 [@DllImport("legacy_stdio_definitions.lib", "puts")]
 external def nativePuts(message: String): Int;
+
+def main(): Int {
+    nativePuts("hello");
+    return 0;
+}
 ```
 
 ## Primitive Types
@@ -178,7 +183,12 @@ complement(a, universe);
 Runtime dynamic loading uses handles and symbol pointers represented as `Long`:
 
 ```ts
+[@DllImport("libm.so", "cos")]
+external def nativeCos(value: Double): Double;
+
 def main(): Int {
+    val imported: Double = nativeCos(0.0);
+
     val handle: Long = loadLibrary("libm.so.6");
     val symbol: Long = getSymbol(handle, "cos");
     val value: Double = callNativeDouble1(symbol, 0.0);
@@ -190,6 +200,10 @@ def main(): Int {
 Integer-like calls use `callNative0`, `callNative1`, `callNative2`, and
 `callNative3`. Floating-point calls use `callNativeDouble0`,
 `callNativeDouble1`, and `callNativeDouble2`.
+
+The local name `nativeCos` is intentionally different from the imported C symbol
+`"cos"`. A TensorScript call named `cos(...)` is already a built-in scalar math
+call, so use a different local name when importing the C library symbol directly.
 
 ## LaTeX-Inspired Math
 

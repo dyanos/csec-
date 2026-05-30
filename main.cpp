@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <string>
 #include <vector>
 
 namespace {
@@ -166,37 +167,77 @@ std::string quoteCommandArg(const std::string& value) {
     return quoted;
 }
 
-bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool announce = true) {
-    std::filesystem::path llcPath = std::filesystem::absolute(
-        std::filesystem::path("..") / "llvm-project" / "build" / "bin" /
+std::string getEnvironmentVariable(const std::string& name) {
 #ifdef _WIN32
-        "llc.exe"
-#else
-        "llc"
-#endif
-    );
-    if (!std::filesystem::exists(llcPath)) {
-#ifdef _WIN32
-        llcPath = "llc.exe";
-#else
-        llcPath = "llc";
-#endif
+    char* value = nullptr;
+    size_t length = 0;
+    if (_dupenv_s(&value, &length, name.c_str()) != 0 || !value) {
+        return "";
     }
-    else {
-        std::error_code canonicalError;
-        auto canonicalPath = std::filesystem::weakly_canonical(llcPath, canonicalError);
-        if (!canonicalError) {
-            llcPath = canonicalPath;
+    std::string result(value);
+    free(value);
+    return result;
+#else
+    const char* value = std::getenv(name.c_str());
+    return value ? std::string(value) : "";
+#endif
+}
+
+std::filesystem::path findToolPath(const std::string& envVar, const std::string& fallbackName) {
+    std::string envValue = getEnvironmentVariable(envVar);
+    if (!envValue.empty()) {
+        std::filesystem::path path(envValue);
+        std::error_code ec;
+        if (std::filesystem::is_directory(path, ec)) {
+            path /= fallbackName;
+        }
+        if (std::filesystem::exists(path, ec)) {
+            auto canonicalPath = std::filesystem::weakly_canonical(path, ec);
+            return ec ? path : canonicalPath;
+        }
+        return path;
+    }
+    return fallbackName;
+}
+
+std::filesystem::path findLlvmTool(const std::string& toolName) {
+    std::string llvmBin = getEnvironmentVariable("LLVM_BIN");
+    if (!llvmBin.empty()) {
+        std::filesystem::path candidate = std::filesystem::path(llvmBin) / toolName;
+        std::error_code ec;
+        if (std::filesystem::exists(candidate, ec)) {
+            auto canonicalPath = std::filesystem::weakly_canonical(candidate, ec);
+            return ec ? candidate : canonicalPath;
         }
     }
+
+    std::filesystem::path candidate = std::filesystem::absolute(
+        std::filesystem::path("..") / "llvm-project" / "build" / "bin" / toolName);
+    std::error_code ec;
+    if (std::filesystem::exists(candidate, ec)) {
+        auto canonicalPath = std::filesystem::weakly_canonical(candidate, ec);
+        return ec ? candidate : canonicalPath;
+    }
+    return toolName;
+}
+
+bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool announce = true) {
+#ifdef _WIN32
+    std::filesystem::path llcPath = findLlvmTool("llc.exe");
+#else
+    std::filesystem::path llcPath = findLlvmTool("llc");
+#endif
 
     std::filesystem::path tempIR = std::filesystem::path(outputPath).replace_extension(".tmp.ll");
     if (!writeIRToFile(module, tempIR.string(), false)) {
         return false;
     }
 
-    std::string command = "\"" + quoteCommandArg(llcPath.string()) +
-        " -filetype=obj -o " + quoteCommandArg(outputPath) + " " + quoteCommandArg(tempIR.string()) + "\"";
+    std::string command = quoteCommandArg(llcPath.string()) +
+        " -filetype=obj -o " + quoteCommandArg(outputPath) + " " + quoteCommandArg(tempIR.string());
+#ifdef _WIN32
+    command = "\"" + command + "\"";
+#endif
     int result = std::system(command.c_str());
     std::error_code removeError;
     std::filesystem::remove(tempIR, removeError);
@@ -222,8 +263,33 @@ std::string nativeLinkLibraryArg(const std::string& library) {
     std::filesystem::path path(library);
     const bool hasDirectory = path.has_parent_path();
     const std::string extension = path.extension().string();
-    if (hasDirectory || extension == ".o" || extension == ".a" || extension == ".so" || extension == ".dylib") {
+    if (hasDirectory || extension == ".o") {
         return quoteCommandArg(library);
+    }
+    if (extension == ".so") {
+        return "-l:" + path.filename().string();
+    }
+    if (extension == ".a") {
+#ifdef __APPLE__
+        std::string stemName = path.stem().string();
+        if (stemName.rfind("lib", 0) == 0 && stemName.size() > 3) {
+            return "-l" + stemName.substr(3);
+        }
+        return quoteCommandArg(library);
+#else
+        return "-l:" + path.filename().string();
+#endif
+    }
+    if (extension == ".dylib") {
+        std::string stem = path.stem().string();
+        if (stem.rfind("lib", 0) == 0 && stem.size() > 3) {
+            return "-l" + stem.substr(3);
+        }
+        return quoteCommandArg(library);
+    }
+    std::string stem = path.stem().string();
+    if (path.filename().string().rfind("lib", 0) == 0 && stem.size() > 3) {
+        return "-l" + stem.substr(3);
     }
     return "-l" + library;
 }
@@ -360,11 +426,11 @@ bool writeExecutableToFile(
     }
 
     std::filesystem::path tempRuntimeObject = std::filesystem::path(outputPath).replace_extension(".native.tmp.o");
-    const char* cxxEnv = std::getenv("CXX");
-    std::string cxx = (cxxEnv && *cxxEnv) ? cxxEnv : "c++";
+    std::filesystem::path cxxPath = findToolPath("CXX", "c++");
+    std::string cxx = cxxPath.string();
     std::string compileCommand =
         quoteCommandArg(cxx) +
-        " -std=c++17 -O2 -DCSEC_NATIVE_RUNTIME_BUILD -c " +
+        " -std=c++17 -O2 -pthread -DCSEC_NATIVE_RUNTIME_BUILD -c " +
         quoteCommandArg(std::filesystem::absolute("NativeRuntime.cpp").string()) +
         " -o " + quoteCommandArg(tempRuntimeObject.string());
     int compileResult = std::system(compileCommand.c_str());
@@ -391,6 +457,7 @@ bool writeExecutableToFile(
             linkCommand += " " + linkArg;
         }
     }
+    linkCommand += " -pthread";
 #ifndef __APPLE__
     linkCommand += " -ldl";
 #endif

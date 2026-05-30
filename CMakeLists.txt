@@ -298,6 +298,7 @@ add_library(csec_native_runtime SHARED
 )
 target_compile_features(csec_native_runtime PRIVATE cxx_std_17)
 target_compile_definitions(csec_native_runtime PRIVATE CSEC_NATIVE_RUNTIME_BUILD)
+find_package(Threads REQUIRED)
 find_package(OpenMP QUIET)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(csec_native_runtime PRIVATE OpenMP::OpenMP_CXX)
@@ -318,9 +319,11 @@ set_target_properties(csec_native_runtime PROPERTIES
 )
 if(WIN32)
     target_link_libraries(csec_native_runtime PRIVATE ws2_32)
+else()
+    target_link_libraries(csec_native_runtime PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
 endif()
 add_dependencies(${PROJECT_NAME} csec_native_runtime)
-target_link_libraries(${PROJECT_NAME} PRIVATE csec_native_runtime)
+target_link_libraries(${PROJECT_NAME} PRIVATE csec_native_runtime Threads::Threads)
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:csec_native_runtime>

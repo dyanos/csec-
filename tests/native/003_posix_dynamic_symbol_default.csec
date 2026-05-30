@@ -1,0 +1,9 @@
+def main(): Int {
+    val getpidSymbol: Long = getSymbol(0, "getpid");
+    val pid: Long = callNative0(getpidSymbol);
+
+    if (getpidSymbol != 0 and pid > 0) {
+        return 0;
+    }
+    return 1;
+}

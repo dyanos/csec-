@@ -221,6 +221,24 @@ std::filesystem::path findLlvmTool(const std::string& toolName) {
     return toolName;
 }
 
+std::filesystem::path findNativeRuntimeSource() {
+    std::vector<std::filesystem::path> candidates = {
+        std::filesystem::path("src") / "NativeRuntime.cpp",
+        std::filesystem::path("..") / "src" / "NativeRuntime.cpp",
+        std::filesystem::path("..") / ".." / "src" / "NativeRuntime.cpp",
+        std::filesystem::path("NativeRuntime.cpp")
+    };
+    std::error_code ec;
+    for (const auto& candidate : candidates) {
+        auto absolute = std::filesystem::absolute(candidate);
+        if (std::filesystem::exists(absolute, ec)) {
+            auto canonicalPath = std::filesystem::weakly_canonical(absolute, ec);
+            return ec ? absolute : canonicalPath;
+        }
+    }
+    return std::filesystem::absolute(std::filesystem::path("src") / "NativeRuntime.cpp");
+}
+
 bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool announce = true) {
 #ifdef _WIN32
     std::filesystem::path llcPath = findLlvmTool("llc.exe");
@@ -386,7 +404,7 @@ bool compileNativeRuntimeObject(const std::filesystem::path& linkPath, const std
         return false;
     }
 
-    std::filesystem::path sourcePath = std::filesystem::absolute("NativeRuntime.cpp");
+    std::filesystem::path sourcePath = findNativeRuntimeSource();
     const auto versionDir = linkPath.parent_path().parent_path().parent_path().parent_path();
     const auto vcInclude = versionDir / "include";
     const auto sdkRoot = findWindowsSdkLibRoot();
@@ -431,7 +449,7 @@ bool writeExecutableToFile(
     std::string compileCommand =
         quoteCommandArg(cxx) +
         " -std=c++17 -O2 -pthread -DCSEC_NATIVE_RUNTIME_BUILD -c " +
-        quoteCommandArg(std::filesystem::absolute("NativeRuntime.cpp").string()) +
+        quoteCommandArg(findNativeRuntimeSource().string()) +
         " -o " + quoteCommandArg(tempRuntimeObject.string());
     int compileResult = std::system(compileCommand.c_str());
     if (compileResult != 0) {

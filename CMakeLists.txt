@@ -272,11 +272,11 @@ set(___AST
 source_group("?ㅻ뜑 ?뚯씪\\AST" FILES ${___AST})
 
 file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
-list(REMOVE_ITEM PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/NativeRuntime.cpp")
+list(REMOVE_ITEM PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/NativeRuntime.cpp")
 file(GLOB PROJECT_HEADERS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
 )
 
 set(ALL_FILES
@@ -293,8 +293,8 @@ add_executable(${PROJECT_NAME} ${ALL_FILES})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 add_library(csec_native_runtime SHARED
-    "NativeRuntime.cpp"
-    "NativeRuntime.h"
+    "src/NativeRuntime.cpp"
+    "src/NativeRuntime.h"
 )
 target_compile_features(csec_native_runtime PRIVATE cxx_std_17)
 target_compile_definitions(csec_native_runtime PRIVATE CSEC_NATIVE_RUNTIME_BUILD)
@@ -370,11 +370,15 @@ endif()
 
 if(WIN32)
     target_include_directories(${PROJECT_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/build/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/llvm/include"
     )
 else()
-    target_include_directories(${PROJECT_NAME} PRIVATE ${LLVM_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        ${LLVM_INCLUDE_DIRS}
+    )
 endif()
 
 ################################################################################

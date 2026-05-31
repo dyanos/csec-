@@ -53,6 +53,43 @@ def main(): Int {
 }
 ```
 
+Static/import libraries can be linked either from the command line or from
+source attributes:
+
+```sh
+csec++ --emit-exe app.csec -o app.exe --link-path ./native/lib --link-lib mymath.lib
+csec++ --emit-exe app.csec -o app --link-path ./native/lib --link-lib libmymath.a
+```
+
+```ts
+[@LinkPath("./native/lib")]
+[@LinkLibrary("mymath.lib")]
+[@StaticLibraryImport("mymath.lib", "native_add")]
+external def nativeAdd(left: Int, right: Int): Int;
+
+[@CppImport("mymath.lib", "double Math::cos(double)", "msvc")]
+external def mathCos(value: Double): Double;
+
+def main(): Int {
+    println(nativeAdd(2, 3));
+    return 0;
+}
+```
+
+On Windows, pass `.lib` files. On Unix-like platforms, pass `.a`, `.so`,
+`-lname`, or a direct library path. `StaticLibraryImport` links the library and
+declares the external symbol at the same time; `LinkLibrary` only adds a link
+input. `CppImport` receives a C++ function signature and generates an ABI
+mangled symbol name. The optional third argument is `msvc` or `itanium`; when it
+is omitted, the current platform default is used.
+
+For inspection, the compiler can print generated names directly:
+
+```sh
+csec++ --mangle msvc "int add(int, int)"
+csec++ --mangle itanium "double Math::cos(double) const"
+```
+
 ## Primitive Types
 
 Common scalar types include:
@@ -82,6 +119,25 @@ the other primitive value is converted with the runtime `toString` path:
 
 ```ts
 val message = "score=" + 4 + ", ok=" + true;
+```
+
+Implemented `String` members include:
+
+```ts
+text.length;
+text.size();
+text.count();
+text.isEmpty();
+text.contains("needle");
+text.startsWith("prefix");
+text.endsWith("suffix");
+text.indexOf("needle");
+text.substring(1, 3);
+text.charAt(0);
+text.toUpper();
+text.toLower();
+text.trim();
+text.toString();
 ```
 
 ## Classes, Overloading, And Overriding

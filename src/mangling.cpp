@@ -1,610 +1,564 @@
 #include "mangling.h"
-#include "utils.h"
 
 #include <algorithm>
-#include <iostream>
+#include <cctype>
 #include <map>
 #include <memory>
-#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
+namespace {
 
-// --- Data Structures ---
-
-struct TypeNode;
-
-struct TypeNode {
-    std::string base_name;
-    std::vector<std::unique_ptr<TypeNode>> template_args;
-    std::vector<std::string> modifiers; // "const", "*", "&", "const_pre"
-    std::vector<std::unique_ptr<TypeNode>> scopes;
-
-    TypeNode(std::string name) : base_name(name) {}
-};
-
-struct FunctionSignature {
+struct CppType {
+    enum class Indirection { Pointer, LValueRef, RValueRef };
+    std::vector<std::string> scopes;
     std::string name;
-    std::vector<std::unique_ptr<TypeNode>> params;
-    std::unique_ptr<TypeNode> return_type;
-    std::vector<std::unique_ptr<TypeNode>> scopes;
-    bool is_const_method = false;
-
-    FunctionSignature(std::string n, std::vector<std::unique_ptr<TypeNode>> p)
-        : name(std::move(n)), params(std::move(p)) {
-    }
+    std::vector<CppType> templateArgs;
+    bool isConst = false;
+    bool isVolatile = false;
+    std::vector<std::pair<Indirection, bool>> indirections;
 };
 
-// --- Parser ---
+struct CppSignature {
+    std::string name;
+    std::vector<std::string> scopes;
+    std::vector<CppType> params;
+    std::unique_ptr<CppType> returnType;
+    bool isConstMethod = false;
+    bool isStaticMethod = false;
+};
 
-/*class CppParser {
+bool isIdentifierStart(char ch) {
+    return std::isalpha(static_cast<unsigned char>(ch)) || ch == '_';
+}
+
+bool isIdentifierContinue(char ch) {
+    return std::isalnum(static_cast<unsigned char>(ch)) || ch == '_';
+}
+
+std::vector<std::string> tokenize(const std::string& text) {
     std::vector<std::string> tokens;
-    size_t pos = 0;
-
-public:
-    CppParser(const std::vector<std::string>& t) : tokens(t) {}
-
-    std::string peek(int offset = 0) {
-        if (pos + offset < tokens.size()) {
-            return tokens[pos + offset];
+    for (size_t i = 0; i < text.size();) {
+        unsigned char ch = static_cast<unsigned char>(text[i]);
+        if (std::isspace(ch)) {
+            ++i;
+            continue;
         }
-        return "";
+        if (isIdentifierStart(text[i])) {
+            size_t start = i++;
+            while (i < text.size() && isIdentifierContinue(text[i])) ++i;
+            tokens.push_back(text.substr(start, i - start));
+            continue;
+        }
+        if (std::isdigit(ch)) {
+            size_t start = i++;
+            while (i < text.size() && std::isdigit(static_cast<unsigned char>(text[i]))) ++i;
+            tokens.push_back(text.substr(start, i - start));
+            continue;
+        }
+        if (i + 1 < text.size()) {
+            std::string two = text.substr(i, 2);
+            if (two == "::" || two == "&&" || two == "==" || two == "!=" ||
+                two == "<=" || two == ">=" || two == "<<" || two == ">>" ||
+                two == "++" || two == "--" || two == "->" || two == "[]" ||
+                two == "+=" || two == "-=" || two == "*=" ||
+                two == "/=" || two == "%=" || two == "&=" || two == "|=" ||
+                two == "^=") {
+                tokens.push_back(two);
+                i += 2;
+                continue;
+            }
+        }
+        tokens.push_back(std::string(1, text[i++]));
+    }
+    return tokens;
+}
+
+std::string joinTypeWords(const std::vector<std::string>& words) {
+    std::string out;
+    for (size_t i = 0; i < words.size(); ++i) {
+        if (i) out += " ";
+        out += words[i];
+    }
+    return out;
+}
+
+std::string normalizeBuiltinType(std::string name) {
+    if (name == "signed") return "int";
+    if (name == "unsigned") return "unsigned int";
+    if (name == "long int") return "long";
+    if (name == "unsigned long int") return "unsigned long";
+    if (name == "long long int") return "long long";
+    if (name == "unsigned long long int") return "unsigned long long";
+    if (name == "__int64") return "long long";
+    if (name == "unsigned __int64") return "unsigned long long";
+    return name;
+}
+
+bool isBuiltinTypeName(const std::string& name) {
+    static const std::vector<std::string> names = {
+        "void", "bool", "char", "signed char", "unsigned char", "wchar_t",
+        "char16_t", "char32_t", "short", "unsigned short", "int", "unsigned int",
+        "long", "unsigned long", "long long", "unsigned long long", "float",
+        "double", "long double", "std::nullptr_t"
+    };
+    return std::find(names.begin(), names.end(), name) != names.end();
+}
+
+class Parser {
+public:
+    explicit Parser(std::vector<std::string> tokens) : tokens_(std::move(tokens)) {}
+
+    const std::string& peek(size_t offset = 0) const {
+        static const std::string empty;
+        size_t index = pos_ + offset;
+        return index < tokens_.size() ? tokens_[index] : empty;
+    }
+
+    bool consumeIf(const std::string& token) {
+        if (peek() == token) {
+            ++pos_;
+            return true;
+        }
+        return false;
     }
 
     std::string consume() {
-        std::string t = peek();
-        if (!t.empty())
-            pos++;
-        return t;
+        if (pos_ >= tokens_.size()) throw std::runtime_error("unexpected end of C++ signature");
+        return tokens_[pos_++];
     }
 
-    static std::vector<std::string> tokenize(const std::string& text) {
-        std::vector<std::string> result;
-        // Regex to match identifiers, scope operator ::, or punctuation
-        std::regex re("(\\w+|::|[:<>,*&()])");
-        auto words_begin = std::sregex_iterator(text.begin(), text.end(), re);
-        auto words_end = std::sregex_iterator();
+    bool eof() const { return pos_ >= tokens_.size(); }
 
-        for (std::sregex_iterator i = words_begin; i != words_end; ++i) {
-            std::string match = i->str();
-            if (!match.empty()) {
-                result.push_back(match);
-            }
-        }
-        return result;
-    }
-
-    std::unique_ptr<TypeNode> parse_type() {
-        bool is_const = false;
-        if (peek() == "const") {
-            consume();
-            is_const = true;
+    CppType parseType() {
+        CppType type;
+        while (peek() == "const" || peek() == "volatile") {
+            if (consume() == "const") type.isConst = true;
+            else type.isVolatile = true;
         }
 
-        // Parse Scoped Types recursively
-        std::vector<std::unique_ptr<TypeNode>> segments;
-
-        while (true) {
-            std::string name = consume();
-            if (name.empty())
-                throw std::runtime_error("Unexpected end of type");
-
-            std::vector<std::unique_ptr<TypeNode>> args;
-            if (peek() == "<") {
-                consume();
-                while (peek() != ">") {
-                    args.push_back(parse_type());
-                    if (peek() == ",")
-                        consume();
-                }
-                consume(); // >
-            }
-
-            auto node = std::make_unique<TypeNode>(name);
-            node->template_args = args;
-            segments.push_back(node);
-
-            if (peek() == "::") {
-                consume();
-            }
-            else {
+        std::vector<std::string> nameWords;
+        while (!eof()) {
+            std::string token = peek();
+            if (token == "," || token == ")" || token == "*" || token == "&" ||
+                token == "&&" || token == "const" || token == "volatile") {
                 break;
             }
-        }
-
-        auto final_node = segments.back();
-        // Previous segments are scopes
-        for (size_t i = 0; i < segments.size() - 1; ++i) {
-            final_node->scopes.push_back(segments[i]);
-        }
-
-        std::vector<std::string> modifiers;
-        if (is_const)
-            modifiers.push_back("const_pre");
-
-        while (true) {
-            std::string t = peek();
-            if (t == "*" || t == "&" || t == "const") {
+            if (token == "::") {
+                if (nameWords.empty()) throw std::runtime_error("expected scope name before '::'");
+                type.scopes.push_back(joinTypeWords(nameWords));
+                nameWords.clear();
                 consume();
-                modifiers.push_back(t);
+                continue;
             }
-            else {
-                break;
+            if (token == "<") {
+                consume();
+                while (!consumeIf(">")) {
+                    type.templateArgs.push_back(parseType());
+                    consumeIf(",");
+                }
+                continue;
             }
+            nameWords.push_back(consume());
         }
-        final_node->modifiers = modifiers;
-        return final_node;
+
+        if (nameWords.empty()) throw std::runtime_error("expected C++ type name");
+        type.name = normalizeBuiltinType(joinTypeWords(nameWords));
+
+        while (peek() == "const" || peek() == "volatile") {
+            if (consume() == "const") type.isConst = true;
+            else type.isVolatile = true;
+        }
+
+        while (peek() == "*" || peek() == "&" || peek() == "&&") {
+            std::string token = consume();
+            CppType::Indirection kind = CppType::Indirection::Pointer;
+            if (token == "&") kind = CppType::Indirection::LValueRef;
+            if (token == "&&") kind = CppType::Indirection::RValueRef;
+            bool pointerConst = false;
+            while (peek() == "const" || peek() == "volatile") {
+                if (consume() == "const") pointerConst = true;
+            }
+            type.indirections.push_back({kind, pointerConst});
+        }
+
+        return type;
     }
 
-    FunctionSignature parse_signature() {
-        std::vector<std::string> pre_parens;
-        while (peek() != "(") {
-            if (peek() == "")
-                throw std::runtime_error("Invalid signature: No '(' found");
-            pre_parens.push_back(consume());
+private:
+    std::vector<std::string> tokens_;
+    size_t pos_ = 0;
+};
+
+CppType parseTypeTokens(std::vector<std::string> tokens, bool allowParameterName) {
+    auto parse = [](const std::vector<std::string>& input) {
+        Parser parser(input);
+        CppType type = parser.parseType();
+        if (!parser.eof()) throw std::runtime_error("unexpected token after C++ type");
+        return type;
+    };
+
+    try {
+        CppType type = parse(tokens);
+        if (!allowParameterName || isBuiltinTypeName(type.name) || type.name.find(' ') == std::string::npos) {
+            return type;
         }
-
-        if (pre_parens.empty())
-            throw std::runtime_error("No function name found");
-
-        std::vector<std::string> name_tokens;
-        int idx = (int)pre_parens.size() - 1;
-        int bracket_depth = 0;
-
-        // Backward scan to separate Name from Return Type
-        while (idx >= 0) {
-            std::string t = pre_parens[idx];
-            if (t == ">") {
-                bracket_depth++;
-                name_tokens.insert(name_tokens.begin(), t);
-                idx--;
-            }
-            else if (t == "<") {
-                bracket_depth--;
-                name_tokens.insert(name_tokens.begin(), t);
-                idx--;
-            }
-            else if (bracket_depth > 0) {
-                name_tokens.insert(name_tokens.begin(), t);
-                idx--;
-            }
-            else {
-                if (t == "::") {
-                    name_tokens.insert(name_tokens.begin(), t);
-                    idx--;
-                }
-                else if (std::regex_match(t, std::regex("\\w+"))) {
-                    // Check adjacent identifier boundary (Return Type vs Name)
-                    if (!name_tokens.empty()) {
-                        if (std::regex_match(name_tokens[0], std::regex("\\w+"))) {
-                            // Found boundary: t is part of return type, name_tokens[0] is
-                            // start of name
-                            break;
-                        }
-                    }
-                    name_tokens.insert(name_tokens.begin(), t);
-                    idx--;
-                }
-                else {
-                    break;
-                }
-            }
-        }
-
-        // Everything remaining in pre_parens from 0 to idx is Return Type
-        std::vector<std::string> ret_tokens;
-        for (int i = 0; i <= idx; ++i) {
-            ret_tokens.push_back(pre_parens[i]);
-        }
-
-        std::string func_name = "";
-        for (const auto& s : name_tokens)
-            func_name += s;
-
-        consume(); // (
-
-        std::vector<std::unique_ptr<TypeNode>> params;
-        if (peek() != ")") {
-            while (true) {
-                if (peek() == "void" && peek(1) == ")") {
-                    consume();
-                    break;
-                }
-                auto tp = parse_type();
-
-                // Eat variable name if present
-                if (peek() != "," && peek() != ")") {
-                    consume();
-                }
-
-                params.push_back(tp);
-                if (peek() == ",") {
-                    consume();
-                }
-                else {
-                    break;
-                }
-            }
-        }
-        consume(); // )
-
-        FunctionSignature sig(func_name, params);
-
-        // Check for 'const' method qualifier
-        if (peek() == "const") {
-            consume();
-            sig.is_const_method = true;
-        }
-
-        // Parse SCOPES from func_name
-        auto n_tokens = CppParser::tokenize(func_name);
-        CppParser n_parser(n_tokens);
-        std::vector<std::unique_ptr<TypeNode>> segments;
-
-        while (true) {
-            std::string s_name = n_parser.consume();
-            std::vector<std::unique_ptr<TypeNode>> s_args;
-            if (n_parser.peek() == "<") {
-                n_parser.consume();
-                while (n_parser.peek() != ">") {
-                    s_args.push_back(n_parser.parse_type());
-                    if (n_parser.peek() == ",")
-                        n_parser.consume();
-                }
-                n_parser.consume();
-            }
-            auto tn = std::make_unique<TypeNode>(s_name);
-            tn->template_args = s_args;
-            segments.push_back(tn);
-
-            if (n_parser.peek() == "::") {
-                n_parser.consume();
-            }
-            else {
-                break;
-            }
-        }
-
-        if (!segments.empty()) {
-            sig.name = segments.back()->base_name;
-            for (size_t i = 0; i < segments.size() - 1; ++i) {
-                sig.scopes.push_back(segments[i]);
-            }
-        }
-
-        // Parse Return Type if exists
-        if (!ret_tokens.empty()) {
-            CppParser ret_parser(ret_tokens);
-            // We assume return type is a valid type.
-            // If multiple tokens, parse_type should handle it?
-            // "unsigned int" -> unsigned is mod? No, "unsigned int" is 2 tokens.
-            // Our TypeNode structure is simple base_name.
-            // "unsigned int" needs mapping or collapsing?
-            // Use parse_type recursively?
-
-            // Simplification: Parse one type. If remaining, those are leading
-            // modifiers? (e.g. static?) Or "unsigned int" case? Python version didn't
-            // implement robust multi-word types. Let's rely on parse_type to consume
-            // what it can.
-            sig.return_type = ret_parser.parse_type();
-        }
-
-        return sig;
-    }
-};*/
-
-// --- Itanium Mangler ---
-
-std::map<std::string, std::string> ITANIUM_BASIC_TYPES = {
-    {"void", "v"},
-    {"bool", "b"},
-    {"char", "c"},
-    {"signed char", "a"},
-    {"unsigned char", "h"},
-    {"short", "s"},
-    {"unsigned short", "t"},
-    {"int", "i"},
-    {"unsigned int", "j"},
-    {"long", "l"},
-    {"unsigned long", "m"},
-    {"long long", "x"},
-    {"unsigned long long", "y"},
-    {"float", "f"},
-    {"double", "d"} };
-
-std::string mangle_itanium_type(const TypeNode* node);
-
-std::string mangle_itanium_entity(const TypeNode* node) {
-    std::string res = "";
-    if (node->base_name == "std") {
-        res += "St";
-    }
-    else {
-        res += std::to_string(node->base_name.length()) + node->base_name;
+    } catch (const std::exception&) {
     }
 
-    if (!node->template_args.empty()) {
-        res += "I";
-        for (auto& arg : node->template_args) {
-            res += mangle_itanium_type(arg.get());
-        }
-        res += "E";
+    if (allowParameterName && tokens.size() > 1 && isIdentifierStart(tokens.back()[0])) {
+        tokens.pop_back();
+        return parse(tokens);
     }
-    return res;
+
+    return parse(tokens);
 }
 
-std::string mangle_itanium_type(const TypeNode* node) {
-    std::string res = "";
-    // Modifiers reversed
-    for (int i = (int)node->modifiers.size() - 1; i >= 0; --i) {
-        std::string mod = node->modifiers[i];
-        if (mod == "*")
-            res += "P";
-        else if (mod == "&")
-            res += "R";
-        else if (mod == "const" || mod == "const_pre")
-            res += "K";
+int findMatchingParen(const std::vector<std::string>& tokens, int openIndex) {
+    int depth = 0;
+    for (int i = openIndex; i < static_cast<int>(tokens.size()); ++i) {
+        if (tokens[i] == "(") ++depth;
+        if (tokens[i] == ")" && --depth == 0) return i;
     }
-
-    if (!node->scopes.empty()) {
-        res += "N";
-        for (auto& s : node->scopes) {
-            res += mangle_itanium_entity(s.get());
-        }
-        res += mangle_itanium_entity(node);
-        res += "E";
-    }
-    else {
-        if (ITANIUM_BASIC_TYPES.count(node->base_name) &&
-            node->template_args.empty()) {
-            res += ITANIUM_BASIC_TYPES[node->base_name];
-        }
-        else {
-            res += mangle_itanium_entity(node);
-        }
-    }
-    return res;
+    return -1;
 }
 
-std::string mangle_itanium(FunctionSignature& sig) {
-    std::string res = "_Z";
+std::vector<std::string> slice(const std::vector<std::string>& tokens, int begin, int end) {
+    if (begin < 0) begin = 0;
+    if (end < begin) return {};
+    return std::vector<std::string>(tokens.begin() + begin, tokens.begin() + end);
+}
 
+std::string compactNameToken(const std::vector<std::string>& tokens) {
+    std::string out;
+    for (const auto& token : tokens) out += token;
+    return out;
+}
+
+std::vector<std::string> splitScopedName(const std::string& name) {
+    std::vector<std::string> parts;
+    size_t start = 0;
+    while (start <= name.size()) {
+        size_t pos = name.find("::", start);
+        if (pos == std::string::npos) {
+            parts.push_back(name.substr(start));
+            break;
+        }
+        parts.push_back(name.substr(start, pos - start));
+        start = pos + 2;
+    }
+    return parts;
+}
+
+bool tokenCanBeNamePart(const std::string& token) {
+    return token == "::" || token == "~" || token == "operator" ||
+           token == "[]" || token == "(" || token == ")" || (!token.empty() && isIdentifierContinue(token[0])) ||
+           token == "+" || token == "-" || token == "*" || token == "/" || token == "%" ||
+           token == "&" || token == "|" || token == "^" || token == "!" || token == "=" ||
+           token == "<" || token == ">" || token == "," || token == "->" || token == "++" ||
+           token == "--" || token == "==" || token == "!=" || token == "<=" || token == ">=" ||
+           token == "<<" || token == ">>" || token == "+=" || token == "-=" || token == "*=" ||
+           token == "/=" || token == "%=" || token == "&=" || token == "|=" || token == "^=";
+}
+
+bool isConstructorOrDestructor(const CppSignature& sig) {
+    return !sig.scopes.empty() && (sig.name == sig.scopes.back() || sig.name == "~" + sig.scopes.back());
+}
+
+std::vector<std::vector<std::string>> splitParameterTokens(const std::vector<std::string>& tokens) {
+    std::vector<std::vector<std::string>> params;
+    std::vector<std::string> current;
+    int templateDepth = 0;
+    for (const auto& token : tokens) {
+        if (token == "<") ++templateDepth;
+        if (token == ">") --templateDepth;
+        if (token == "," && templateDepth == 0) {
+            params.push_back(current);
+            current.clear();
+            continue;
+        }
+        current.push_back(token);
+    }
+    if (!current.empty()) params.push_back(current);
+    return params;
+}
+
+CppSignature parseSignature(const std::string& signature) {
+    auto tokens = tokenize(signature);
+    int open = -1;
+    int close = -1;
+    for (int i = static_cast<int>(tokens.size()) - 1; i >= 0; --i) {
+        if (tokens[i] != "(") continue;
+        int candidateClose = findMatchingParen(tokens, i);
+        if (candidateClose >= 0) {
+            open = i;
+            close = candidateClose;
+            break;
+        }
+    }
+    if (open < 0) throw std::runtime_error("C++ signature must contain a parameter list");
+    if (close < 0) throw std::runtime_error("unterminated C++ parameter list");
+
+    CppSignature sig;
+    std::vector<std::string> prefix = slice(tokens, 0, open);
+    while (!prefix.empty() && (prefix.front() == "extern" || prefix.front() == "inline" ||
+                              prefix.front() == "virtual" || prefix.front() == "constexpr" ||
+                              prefix.front() == "friend")) {
+        prefix.erase(prefix.begin());
+    }
+    if (!prefix.empty() && prefix.front() == "static") {
+        sig.isStaticMethod = true;
+        prefix.erase(prefix.begin());
+    }
+    if (prefix.empty()) throw std::runtime_error("missing C++ function name");
+
+    int nameStart = static_cast<int>(prefix.size()) - 1;
+    if (prefix.size() >= 3 && prefix[prefix.size() - 3] == "operator" &&
+        prefix[prefix.size() - 2] == "(" && prefix[prefix.size() - 1] == ")") {
+        nameStart = static_cast<int>(prefix.size()) - 3;
+    }
+    if (nameStart > 0 && prefix[nameStart - 1] == "~") --nameStart;
+    if (nameStart > 0 && prefix[nameStart - 1] == "operator") --nameStart;
+    while (nameStart > 1 && prefix[nameStart - 1] == "::" && tokenCanBeNamePart(prefix[nameStart - 2])) {
+        nameStart -= 2;
+    }
+
+    std::string fullName = compactNameToken(slice(prefix, nameStart, static_cast<int>(prefix.size())));
+    auto nameParts = splitScopedName(fullName);
+    sig.name = nameParts.back();
+    nameParts.pop_back();
+    sig.scopes = std::move(nameParts);
+
+    auto returnTokens = slice(prefix, 0, nameStart);
+    if (!returnTokens.empty() && !isConstructorOrDestructor(sig)) {
+        sig.returnType = std::make_unique<CppType>(parseTypeTokens(returnTokens, false));
+    }
+
+    auto paramTokens = slice(tokens, open + 1, close);
+    if (!(paramTokens.size() == 1 && paramTokens[0] == "void") && !paramTokens.empty()) {
+        for (const auto& param : splitParameterTokens(paramTokens)) {
+            if (!param.empty()) sig.params.push_back(parseTypeTokens(param, true));
+        }
+    }
+
+    for (int i = close + 1; i < static_cast<int>(tokens.size()); ++i) {
+        if (tokens[i] == "const") sig.isConstMethod = true;
+    }
+    return sig;
+}
+
+const std::map<std::string, std::string> kItaniumBuiltin = {
+    {"void", "v"}, {"bool", "b"}, {"char", "c"}, {"signed char", "a"},
+    {"unsigned char", "h"}, {"wchar_t", "w"}, {"char16_t", "Ds"}, {"char32_t", "Di"},
+    {"short", "s"}, {"unsigned short", "t"}, {"int", "i"}, {"unsigned int", "j"},
+    {"long", "l"}, {"unsigned long", "m"}, {"long long", "x"}, {"unsigned long long", "y"},
+    {"float", "f"}, {"double", "d"}, {"long double", "e"}, {"std::nullptr_t", "Dn"}
+};
+
+const std::map<std::string, std::string> kItaniumOperator = {
+    {"operator+", "pl"}, {"operator-", "mi"}, {"operator*", "ml"}, {"operator/", "dv"},
+    {"operator%", "rm"}, {"operator&", "an"}, {"operator|", "or"}, {"operator^", "eo"},
+    {"operator~", "co"}, {"operator!", "nt"}, {"operator=", "aS"}, {"operator<", "lt"},
+    {"operator>", "gt"}, {"operator+=", "pL"}, {"operator-=", "mI"}, {"operator*=", "mL"},
+    {"operator/=", "dV"}, {"operator%=", "rM"}, {"operator&=", "aN"}, {"operator|=", "oR"},
+    {"operator^=", "eO"}, {"operator<<", "ls"}, {"operator>>", "rs"}, {"operator<<=", "lS"},
+    {"operator>>=", "rS"}, {"operator==", "eq"}, {"operator!=", "ne"}, {"operator<=", "le"},
+    {"operator>=", "ge"}, {"operator&&", "aa"}, {"operator||", "oo"}, {"operator++", "pp"},
+    {"operator--", "mm"}, {"operator,", "cm"}, {"operator->", "pt"}, {"operator()", "cl"},
+    {"operator[]", "ix"}, {"operator new", "nw"}, {"operator delete", "dl"}
+};
+
+std::string itaniumName(const std::string& name) {
+    auto opIt = kItaniumOperator.find(name);
+    return opIt != kItaniumOperator.end() ? opIt->second : std::to_string(name.size()) + name;
+}
+
+std::string itaniumType(const CppType& type);
+
+std::string itaniumTemplateArgs(const std::vector<CppType>& args) {
+    if (args.empty()) return "";
+    std::string out = "I";
+    for (const auto& arg : args) out += itaniumType(arg);
+    out += "E";
+    return out;
+}
+
+std::string itaniumEntity(const CppType& type) {
+    std::string encodedName = itaniumName(type.name) + itaniumTemplateArgs(type.templateArgs);
+    if (type.scopes.empty()) return encodedName;
+    std::string out = "N";
+    for (const auto& scope : type.scopes) out += scope == "std" ? "St" : std::to_string(scope.size()) + scope;
+    out += encodedName + "E";
+    return out;
+}
+
+std::string itaniumFunctionName(const CppSignature& sig) {
+    if (isConstructorOrDestructor(sig)) return sig.name[0] == '~' ? "D1" : "C1";
+    return itaniumName(sig.name);
+}
+
+std::string itaniumType(const CppType& type) {
+    std::string out;
+    for (auto it = type.indirections.rbegin(); it != type.indirections.rend(); ++it) {
+        if (it->second) out += "K";
+        if (it->first == CppType::Indirection::Pointer) out += "P";
+        else if (it->first == CppType::Indirection::LValueRef) out += "R";
+        else out += "O";
+    }
+    if (type.isConst) out += "K";
+    if (type.isVolatile) out += "V";
+    auto builtin = kItaniumBuiltin.find(type.name);
+    if (type.scopes.empty() && type.templateArgs.empty() && builtin != kItaniumBuiltin.end()) return out + builtin->second;
+    return out + itaniumEntity(type);
+}
+
+std::string mangleItanium(const CppSignature& sig) {
+    std::string out = "_Z";
     if (!sig.scopes.empty()) {
-        res += "N";
-        if (sig.is_const_method)
-            res +=
-            "K"; // Const method qualifier usually wraps function type in N...E ?
-        // Actually for method: _ZN [Scope] [Name] E [Params]
-        // Const method: The 'this' parameter is type 'cost Scope*'.
-        // Itanium handles const methods by mangling the 'this' type?
-        // No, standard Itanium: encoded as part of function type if strictly
-        // needed, OR as 'K' after Name? GCC: `void Class::func() const` ->
-        // `_ZNK5Class4funcEv` `K` is placed AFTER nested name prefix `N`. _Z N K
-        // 5Class 4func E v
-
-        for (auto& s : sig.scopes) {
-            res += mangle_itanium_entity(s.get());
-        }
-        TypeNode nodeName(sig.name);
-        res += mangle_itanium_entity(&nodeName);
-        res += "E";
+        out += "N";
+        if (sig.isConstMethod) out += "K";
+        for (const auto& scope : sig.scopes) out += scope == "std" ? "St" : std::to_string(scope.size()) + scope;
+        out += itaniumFunctionName(sig) + "E";
+    } else {
+        out += itaniumName(sig.name);
     }
-    else {
-        res += std::to_string(sig.name.length()) + sig.name;
-    }
-
-    // Note: My N..K..E implementation details above for scopes might be slightly
-    // off. Correct logic: If const member, 'K' is emitted after 'N'.
-
-    // Let's refine the Scope start:
-    // If scopes exist, start with N. If const method, NK.
-    // BUT we already wrote the loop. Let's fix loop logic.
-
-    // This function body is getting replaced. I'll rewrite the string
-    // construction below.
-    return res;
+    if (sig.params.empty()) out += "v";
+    else for (const auto& param : sig.params) out += itaniumType(param);
+    return out;
 }
 
-// Rewriting mangle_itanium cleanly:
-std::string mangle_itanium_final(FunctionSignature& sig) {
-    std::string res = "_Z";
+const std::map<std::string, std::string> kMsvcBuiltin = {
+    {"void", "X"}, {"bool", "_N"}, {"char", "D"}, {"signed char", "C"},
+    {"unsigned char", "E"}, {"wchar_t", "_W"}, {"char16_t", "_S"}, {"char32_t", "_U"},
+    {"short", "F"}, {"unsigned short", "G"}, {"int", "H"}, {"unsigned int", "I"},
+    {"long", "J"}, {"unsigned long", "K"}, {"long long", "_J"}, {"unsigned long long", "_K"},
+    {"float", "M"}, {"double", "N"}, {"long double", "O"}
+};
 
-    if (!sig.scopes.empty()) {
-        res += "N";
-        if (sig.is_const_method)
-            res += "K"; // Const method
+const std::map<std::string, std::string> kMsvcOperator = {
+    {"operator new", "??2"}, {"operator delete", "??3"}, {"operator=", "??4"},
+    {"operator>>", "??5"}, {"operator<<", "??6"}, {"operator!", "??7"}, {"operator==", "??8"},
+    {"operator!=", "??9"}, {"operator[]", "??A"}, {"operator->", "??C"}, {"operator*", "??D"},
+    {"operator++", "??E"}, {"operator--", "??F"}, {"operator-", "??G"}, {"operator+", "??H"},
+    {"operator&", "??I"}, {"operator/", "??K"}, {"operator%", "??L"}, {"operator<", "??M"},
+    {"operator<=", "??N"}, {"operator>", "??O"}, {"operator>=", "??P"}, {"operator,", "??Q"},
+    {"operator()", "??R"}, {"operator~", "??S"}, {"operator^", "??T"}, {"operator|", "??U"},
+    {"operator&&", "??V"}, {"operator||", "??W"}, {"operator*=", "??X"}, {"operator+=", "??Y"},
+    {"operator-=", "??Z"}, {"operator/=", "??_0"}, {"operator%=", "??_1"}, {"operator>>=", "??_2"},
+    {"operator<<=", "??_3"}, {"operator&=", "??_4"}, {"operator|=", "??_5"}, {"operator^=", "??_6"}
+};
 
-        for (auto& s : sig.scopes) {
-            res += mangle_itanium_entity(s.get());
-        }
-        res += std::to_string(sig.name.length()) + sig.name;
-        res += "E";
+std::string msvcQualifiedName(const std::string& name, const std::vector<std::string>& scopes) {
+    if (!scopes.empty() && (name == scopes.back() || name == "~" + scopes.back())) {
+        std::string out = name[0] == '~' ? "??1" : "??0";
+        for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) out += *it + "@";
+        return out + "@";
     }
-    else {
-        res += std::to_string(sig.name.length()) + sig.name;
-        // Global const function? Meaningless usually (parameters const?)
-    }
-
-    if (sig.params.empty()) {
-        res += "v";
-    }
-    else {
-        for (auto& p : sig.params) {
-            res += mangle_itanium_type(p.get());
-        }
-    }
-    return res;
+    auto opIt = kMsvcOperator.find(name);
+    std::string out = opIt != kMsvcOperator.end() ? opIt->second : "?" + name;
+    out += "@";
+    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) out += *it + "@";
+    return out + "@";
 }
 
-// --- MSVC Mangler ---
-
-std::map<std::string, std::string> MSVC_BASIC_TYPES = {
-    {"void", "X"},          {"bool", "_N"},        {"char", "D"},
-    {"unsigned char", "E"}, {"short", "F"},        {"unsigned short", "G"},
-    {"int", "H"},           {"unsigned int", "I"}, {"long", "J"},
-    {"unsigned long", "K"}, {"float", "M"},        {"double", "N"} };
-
-std::string mangle_msvc_type(const TypeNode* node) {
-    std::string res = "";
-    if (node == nullptr)
-        return "X"; // Safe guard, void
-
-    for (int i = (int)node->modifiers.size() - 1; i >= 0; --i) {
-        std::string mod = node->modifiers[i];
-        if (mod == "*")
-            res += "PA";
-        else if (mod == "&")
-            res += "AA";
-    }
-
-    if (!node->scopes.empty() || !node->template_args.empty()) {
-        if (!node->template_args.empty()) {
-            res += "?$" + node->base_name + "@";
-            for (auto& arg : node->template_args) {
-                res += mangle_msvc_type(arg.get());
-            }
-            res += "@";
-        }
-        else {
-            res += node->base_name + "@";
-        }
-
-        for (int i = (int)node->scopes.size() - 1; i >= 0; --i) {
-            auto* s = node->scopes[i].get();
-            if (!s->template_args.empty()) {
-                res += "?$" + s->base_name + "@";
-                    for (auto& arg : s->template_args) {
-                    res += mangle_msvc_type(arg.get());
-                }
-                res += "@";
-            }
-            else {
-                res += s->base_name + "@";
-            }
-        }
-        res += "@";
-    }
-    else {
-        if (MSVC_BASIC_TYPES.count(node->base_name)) {
-            res += MSVC_BASIC_TYPES[node->base_name];
-        }
-        else {
-            res += node->base_name + "@@";
-        }
-    }
-    return res;
+std::string msvcClassName(const CppType& type) {
+    std::string out = type.name + "@";
+    for (auto it = type.scopes.rbegin(); it != type.scopes.rend(); ++it) out += *it + "@";
+    return out + "@";
 }
 
-std::string mangle_msvc(FunctionSignature& sig) {
-    std::string res = "?";
-    res += sig.name + "@";
-
-    for (int i = (int)sig.scopes.size() - 1; i >= 0; --i) {
-        auto* s = sig.scopes[i].get();
-        if (!s->template_args.empty()) {
-            res += "?$" + s->base_name + "@";
-            for (auto& arg : s->template_args) {
-                res += mangle_msvc_type(arg.get());
-            }
-            res += "@";
-        }
-        else {
-            res += s->base_name + "@";
-        }
+std::string msvcType(const CppType& type) {
+    if (!type.indirections.empty()) {
+        const auto& ind = type.indirections.back();
+        char cv = (type.isConst || ind.second) ? 'B' : 'A';
+        std::string prefix = ind.first == CppType::Indirection::Pointer ? std::string("PE") + cv :
+            (ind.first == CppType::Indirection::LValueRef ? std::string("AE") + cv : std::string("$$QE") + cv);
+        CppType base = type;
+        base.indirections.pop_back();
+        base.isConst = false;
+        return prefix + msvcType(base);
     }
-    res += "@";
+    auto builtin = kMsvcBuiltin.find(type.name);
+    if (type.scopes.empty() && type.templateArgs.empty() && builtin != kMsvcBuiltin.end()) return builtin->second;
+    return "V" + msvcClassName(type);
+}
 
-    // Calling Convention & Access Specifier
-    if (!sig.scopes.empty()) {
-        // Member Function
-        // Public (Q) + ThisCall (E) -> QE.
-        // If const?
-        // A: private, Q: public.
-        // B: private const, R: public const.
-        if (sig.is_const_method) {
-            res += "QB"; // Public Const? Wait.
-            // Documentation:
-            // Q = public near
-            // R = public near const
-            res += "R";
-        }
-        else {
-            res += "Q"; // Public
-        }
-        res += "E"; // __thiscall
-    }
+std::string mangleMSVC(const CppSignature& sig) {
+    std::string out = msvcQualifiedName(sig.name, sig.scopes);
+    if (!sig.scopes.empty()) out += sig.isStaticMethod ? "SA" : (sig.isConstMethod ? "QEBA" : "QEAA");
+    else out += "YA";
+    out += sig.returnType ? msvcType(*sig.returnType) : "X";
+    if (sig.params.empty()) out += "X";
     else {
-        // Global Function
-        res += "Y";
-        res += "A"; // __cdecl
+        for (const auto& param : sig.params) out += msvcType(param);
+        out += "@";
     }
+    return out + "Z";
+}
 
-    // Return Type
-    if (sig.return_type) {
-        res += mangle_msvc_type(sig.return_type.get());
-    }
-    else {
-        res += "X"; // Default void
-    }
+} // namespace
 
-    // Params
-    if (sig.params.empty()) {
-        res += "X";
+std::string mangleCppSignature(const std::string& signature, CppMangleStyle style) {
+    CppSignature parsed = parseSignature(signature);
+    return style == CppMangleStyle::Itanium ? mangleItanium(parsed) : mangleMSVC(parsed);
+}
+
+std::string mangleItaniumSignature(const std::string& signature) {
+    return mangleCppSignature(signature, CppMangleStyle::Itanium);
+}
+
+std::string mangleMSVCSignature(const std::string& signature) {
+    return mangleCppSignature(signature, CppMangleStyle::MSVC);
+}
+
+std::unordered_map<std::string, std::string> mangle(ClassDeclarationNode&) {
+    return {};
+}
+
+std::string mangle(ObjectDeclarationNode& node) {
+    return node.name;
+}
+
+std::string mangle(FunctionDeclarationNode& node) {
+    std::ostringstream signature;
+    signature << (node.returnType ? node.returnType->getName() : "void") << " " << node.name << "(";
+    for (size_t i = 0; i < node.parameters.size(); ++i) {
+        if (i) signature << ", ";
+        auto type = node.parameters[i] ? node.parameters[i]->getType() : nullptr;
+        signature << (type ? type->getName() : "void");
     }
-    else {
-        for (auto& p : sig.params) {
-            res += mangle_msvc_type(p.get());
-        }
-        res += "@";
-    }
-    res += "Z";
-    return res;
+    signature << ")";
+#ifdef _WIN32
+    return mangleMSVCSignature(signature.str());
+#else
+    return mangleItaniumSignature(signature.str());
+#endif
+}
+
+std::string mangle(ParameterNode& node) {
+    return node.type ? node.type->getName() : "";
 }
 
 #ifdef __TEST__
+#include <iostream>
 int main(int argc, char* argv[]) {
     if (argc < 3) {
-        std::cout << "Usage: mangler --style [itanium|msvc] \"signature\""
-            << std::endl;
+        std::cerr << "Usage: mangler --style [itanium|msvc] \"signature\"\n";
         return 1;
     }
-
-    std::string style_flag = argv[1];
-    std::string style = "";
-    std::string signature = "";
-
-    if (style_flag == "--style") {
-        style = argv[2];
-        if (argc > 3)
-            signature = argv[3];
-    }
-    else {
-        signature = argv[1];
-    }
-
+    std::string style = argv[1] == std::string("--style") && argc > 3 ? argv[2] : "itanium";
+    std::string signature = argv[1] == std::string("--style") && argc > 3 ? argv[3] : argv[2];
     try {
-        auto tokens = CppParser::tokenize(signature);
-        CppParser parser(tokens);
-        auto sig = parser.parse_signature();
-
-        if (style == "itanium") {
-            std::cout << mangle_itanium_final(sig) << std::endl;
-        }
-        else if (style == "msvc") {
-            std::cout << mangle_msvc(sig) << std::endl;
-        }
-        else {
-            std::cerr << "Unknown style: " << style << std::endl;
-        }
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        if (style == "itanium") std::cout << mangleItaniumSignature(signature) << "\n";
+        else if (style == "msvc") std::cout << mangleMSVCSignature(signature) << "\n";
+        else throw std::runtime_error("unknown style");
+    } catch (const std::exception& ex) {
+        std::cerr << ex.what() << "\n";
         return 1;
     }
-
     return 0;
 }
 #endif
-

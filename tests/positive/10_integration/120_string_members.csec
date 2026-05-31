@@ -1,0 +1,19 @@
+def main(): Int {
+    val text = "  Hello CSEC  ";
+    val trimmed = text.trim();
+    println(text.length);
+    println(text.size());
+    println(trimmed);
+    println(trimmed.length());
+    println(trimmed.isEmpty());
+    println(trimmed.contains("CSE"));
+    println(trimmed.startsWith("He"));
+    println(trimmed.endsWith("SEC"));
+    println(trimmed.indexOf("C"));
+    println(trimmed.substring(6, 4));
+    println(trimmed.charAt(0));
+    println(trimmed.toUpper());
+    println(trimmed.toLower());
+    println(trimmed.toString());
+    return 0;
+}

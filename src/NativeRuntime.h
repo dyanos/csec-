@@ -22,6 +22,17 @@ CSEC_NATIVE_API void csec_print_char(char value);
 CSEC_NATIVE_API void csec_print_newline(void);
 
 CSEC_NATIVE_API char* csec_string_concat(const char* left, const char* right);
+CSEC_NATIVE_API long long csec_string_length(const char* value);
+CSEC_NATIVE_API int csec_string_is_empty(const char* value);
+CSEC_NATIVE_API int csec_string_contains(const char* value, const char* needle);
+CSEC_NATIVE_API int csec_string_starts_with(const char* value, const char* prefix);
+CSEC_NATIVE_API int csec_string_ends_with(const char* value, const char* suffix);
+CSEC_NATIVE_API long long csec_string_index_of(const char* value, const char* needle);
+CSEC_NATIVE_API char csec_string_char_at(const char* value, int index);
+CSEC_NATIVE_API char* csec_string_substring(const char* value, int start, int length);
+CSEC_NATIVE_API char* csec_string_to_upper(const char* value);
+CSEC_NATIVE_API char* csec_string_to_lower(const char* value);
+CSEC_NATIVE_API char* csec_string_trim(const char* value);
 CSEC_NATIVE_API char* csec_to_string_i64(long long value);
 CSEC_NATIVE_API char* csec_to_string_double(double value);
 CSEC_NATIVE_API char* csec_to_string_bool(int value);

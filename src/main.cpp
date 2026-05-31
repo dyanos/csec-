@@ -12,6 +12,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "codegen.h"
+#include "mangling.h"
 #include "type_checker.h"
 #include "utils.h"
 
@@ -59,7 +60,27 @@ void printUsage(const char* programName) {
         << "  --emit-exe                   Write native executable (.exe)\n"
         << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
         << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
-        << "  --link-path <path>           Add a native library search path\n";
+        << "  --link-path <path>           Add a native library search path\n"
+        << "  --mangle <itanium|msvc> <signature>\n"
+        << "                               Print a C++ ABI mangled name and exit\n";
+}
+
+int printMangledName(const char* programName, const std::string& style, const std::string& signature) {
+    try {
+        if (style == "itanium") {
+            std::cout << mangleItaniumSignature(signature) << std::endl;
+            return 0;
+        }
+        if (style == "msvc") {
+            std::cout << mangleMSVCSignature(signature) << std::endl;
+            return 0;
+        }
+        std::cerr << "Unknown mangling style: " << style << std::endl;
+    } catch (const std::exception& ex) {
+        std::cerr << "Mangling failed: " << ex.what() << std::endl;
+    }
+    std::cerr << "Usage: " << programName << " --mangle <itanium|msvc> <signature>" << std::endl;
+    return 1;
 }
 
 std::string defaultOutputPath(const std::string& inputFile, OutputMode mode) {
@@ -568,6 +589,14 @@ int main(int argc, char** argv) {
 #endif
     //_CrtSetBreakAlloc(3404);
 
+    if (argc > 1 && std::string(argv[1]) == "--mangle") {
+        if (argc < 4) {
+            std::cerr << "Usage: " << argv[0] << " --mangle <itanium|msvc> <signature>" << std::endl;
+            return 1;
+        }
+        return printMangledName(argv[0], argv[2], argv[3]);
+    }
+
     /*if (argc < 2) {
         std::cout << "No input file provided." << std::endl;
         return -1;
@@ -603,6 +632,15 @@ int main(int argc, char** argv) {
     std::vector<std::string> linkPaths;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
+        if (arg == "--mangle") {
+            if (i + 2 >= argc) {
+                std::cerr << "Usage: " << argv[0] << " --mangle <itanium|msvc> <signature>" << std::endl;
+                return 1;
+            }
+            std::string style = argv[++i];
+            std::string signature = argv[++i];
+            return printMangledName(argv[0], style, signature);
+        }
         if (arg == "--syntax-only" || arg == "--parse-only") {
             outputMode = OutputMode::SyntaxOnly;
             continue;

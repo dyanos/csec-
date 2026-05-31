@@ -167,6 +167,12 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
             return assignNode;
         }
 
+        if (pathComponents.size() == 2) {
+            return std::make_unique<AccessFieldNode>(
+                std::make_unique<IdentifierNode>(pathComponents[0]),
+                std::make_unique<IdentifierNode>(pathComponents[1]));
+        }
+
 		return std::make_unique<IdentifierNode>(join(pathComponents, "."));
 	}
 	else if (match(TokenType::INTEGER_LITERAL) ||

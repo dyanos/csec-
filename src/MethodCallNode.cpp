@@ -87,6 +87,113 @@ llvm::Value* createMethodCallOrDefault(llvm::Function* function, std::vector<llv
     return cg.builder.CreateCall(function, adjustedArgs, function->getReturnType()->isVoidTy() ? "" : "calltmp");
 }
 
+llvm::Function* getOrCreateRuntimeFunction(CodeGenerator& cg, const std::string& name, llvm::Type* returnType, const std::vector<llvm::Type*>& paramTypes) {
+    if (auto* function = cg.module->getFunction(name)) return function;
+    auto* functionTy = llvm::FunctionType::get(returnType, paramTypes, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
+}
+
+llvm::Value* coerceStringIntArg(CodeGenerator& cg, llvm::Value* value) {
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    if (!value || value->getType() == i32Ty) {
+        return value;
+    }
+    if (value->getType()->isIntegerTy()) {
+        unsigned bits = value->getType()->getIntegerBitWidth();
+        return bits < 32
+            ? cg.builder.CreateSExt(value, i32Ty, "str.arg.sext")
+            : cg.builder.CreateTrunc(value, i32Ty, "str.arg.trunc");
+    }
+    return value;
+}
+
+llvm::Value* codegenStringMethod(CodeGenerator& cg, llvm::Value* objectValue, const std::string& methodName, const std::vector<std::unique_ptr<ASTNode>>& arguments) {
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+
+    auto boolCall = [&](const std::string& runtimeName, llvm::Value* rhs) -> llvm::Value* {
+        auto* raw = cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, runtimeName, i32Ty, {i8PtrTy, i8PtrTy}),
+            {objectValue, rhs},
+            "str.bool.i32");
+        return cg.builder.CreateICmpNE(raw, llvm::ConstantInt::get(i32Ty, 0), "str.bool");
+    };
+
+    if (methodName == "length" || methodName == "size" || methodName == "count") {
+        if (!arguments.empty()) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_string_length", i64Ty, {i8PtrTy}),
+            {objectValue},
+            "str.length");
+    }
+    if (methodName == "isEmpty") {
+        if (!arguments.empty()) return nullptr;
+        auto* raw = cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_string_is_empty", i32Ty, {i8PtrTy}),
+            {objectValue},
+            "str.empty.i32");
+        return cg.builder.CreateICmpNE(raw, llvm::ConstantInt::get(i32Ty, 0), "str.empty");
+    }
+    if (methodName == "toString") {
+        if (!arguments.empty()) return nullptr;
+        return objectValue;
+    }
+    if (methodName == "toUpper" || methodName == "upper") {
+        if (!arguments.empty()) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_string_to_upper", i8PtrTy, {i8PtrTy}),
+            {objectValue},
+            "str.upper");
+    }
+    if (methodName == "toLower" || methodName == "lower") {
+        if (!arguments.empty()) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_string_to_lower", i8PtrTy, {i8PtrTy}),
+            {objectValue},
+            "str.lower");
+    }
+    if (methodName == "trim") {
+        if (!arguments.empty()) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_string_trim", i8PtrTy, {i8PtrTy}),
+            {objectValue},
+            "str.trim");
+    }
+    if (methodName == "contains" || methodName == "startsWith" || methodName == "endsWith" || methodName == "indexOf") {
+        if (arguments.size() != 1) return nullptr;
+        llvm::Value* needle = arguments[0]->codegen();
+        if (!needle || !needle->getType()->isPointerTy()) return nullptr;
+        if (methodName == "contains") return boolCall("csec_string_contains", needle);
+        if (methodName == "startsWith") return boolCall("csec_string_starts_with", needle);
+        if (methodName == "endsWith") return boolCall("csec_string_ends_with", needle);
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_string_index_of", i64Ty, {i8PtrTy, i8PtrTy}),
+            {objectValue, needle},
+            "str.index");
+    }
+    if (methodName == "charAt") {
+        if (arguments.size() != 1) return nullptr;
+        llvm::Value* index = coerceStringIntArg(cg, arguments[0]->codegen());
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_string_char_at", i8Ty, {i8PtrTy, i32Ty}),
+            {objectValue, index},
+            "str.char");
+    }
+    if (methodName == "substring") {
+        if (arguments.size() != 2) return nullptr;
+        llvm::Value* start = coerceStringIntArg(cg, arguments[0]->codegen());
+        llvm::Value* length = coerceStringIntArg(cg, arguments[1]->codegen());
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_string_substring", i8PtrTy, {i8PtrTy, i32Ty, i32Ty}),
+            {objectValue, start, length},
+            "str.substring");
+    }
+
+    return nullptr;
+}
+
 bool canPassValueToParameter(llvm::Value* value, llvm::Type* parameterType) {
     if (!value || !parameterType) {
         return false;
@@ -226,6 +333,13 @@ llvm::Value* MethodCallNode::codegen() {
 
     auto typeValue = object->getType();
     auto* objectType = typeValue.get();
+    if (objectType && objectType->isStringTy()) {
+        if (auto* result = codegenStringMethod(cg, objectValue, methodName, arguments)) {
+            return result;
+        }
+        std::cerr << "Error: String method '" << methodName << "' not found" << std::endl;
+        return nullptr;
+    }
     if (!objectType || objectType->getKind() != Type::Kind::CLASS) {
         std::cerr << "Error: Method call on non-class type" << std::endl;
         return nullptr;
@@ -333,6 +447,22 @@ std::unique_ptr<Type> MethodCallNode::getType() {
 
     auto trueObject = object->getType();
     auto* objectType = trueObject.get();
+    if (objectType && objectType->isStringTy()) {
+        if (methodName == "length" || methodName == "size" || methodName == "count" || methodName == "indexOf") {
+            return std::make_unique<BasicType>("Long");
+        }
+        if (methodName == "isEmpty" || methodName == "contains" || methodName == "startsWith" || methodName == "endsWith") {
+            return std::make_unique<BasicType>("Boolean");
+        }
+        if (methodName == "charAt") {
+            return std::make_unique<BasicType>("Char");
+        }
+        if (methodName == "toString" || methodName == "substring" || methodName == "toUpper" ||
+            methodName == "upper" || methodName == "toLower" || methodName == "lower" || methodName == "trim") {
+            return std::make_unique<BasicType>("String");
+        }
+        return std::make_unique<UnknownType>();
+    }
     if (!objectType || objectType->getKind() != Type::Kind::CLASS) {
         return std::make_unique<BasicType>("Real");
     }

@@ -8,6 +8,7 @@
 #include "FunctionDeclarationNode.h"
 #include "ValueNode.h"
 #include "codegen.h"
+#include "mangling.h"
 
 namespace {
 std::string stringArgument(const FunctionCallNode* call, size_t index) {
@@ -28,6 +29,25 @@ void addUnique(std::vector<std::string>& values, const std::string& value) {
     }
     values.push_back(value);
 }
+
+CppMangleStyle platformDefaultMangleStyle() {
+#ifdef _WIN32
+    return CppMangleStyle::MSVC;
+#else
+    return CppMangleStyle::Itanium;
+#endif
+}
+
+CppMangleStyle mangleStyleArgument(const FunctionCallNode* call, size_t index) {
+    std::string value = stringArgument(call, index);
+    if (value == "itanium" || value == "Itanium" || value == "gnu" || value == "GCC" || value == "clang") {
+        return CppMangleStyle::Itanium;
+    }
+    if (value == "msvc" || value == "MSVC" || value == "windows") {
+        return CppMangleStyle::MSVC;
+    }
+    return platformDefaultMangleStyle();
+}
 }
 
 void AttributeNode::accept(ASTVisitor& visitor) {
@@ -40,9 +60,25 @@ llvm::Value* AttributeNode::codegen() {
     };
 
     if (auto* callNode = dynamic_cast<FunctionCallNode*>(this->expr.get())) {
+        if (callNode->functionName == "LinkLibrary" || callNode->functionName == "NativeLibrary") {
+            addUnique(CodeGenerator::getInstance().externalLinkLibraries, stringArgument(callNode, 0));
+            return applyToTarget();
+        }
         if (callNode->functionName == "DllImport" || callNode->functionName == "StaticLibraryImport") {
             std::string library = stringArgument(callNode, 0);
             std::string symbol = stringArgument(callNode, 1);
+            if (auto* function = dynamic_cast<FunctionDeclarationNode*>(this->target.get())) {
+                function->dllImportLibrary = library;
+                function->externalSymbolName = symbol;
+                function->isExternal = true;
+            }
+            addUnique(CodeGenerator::getInstance().externalLinkLibraries, library);
+            return applyToTarget();
+        }
+        if (callNode->functionName == "CppImport" || callNode->functionName == "CxxImport") {
+            std::string library = stringArgument(callNode, 0);
+            std::string signature = stringArgument(callNode, 1);
+            std::string symbol = mangleCppSignature(signature, mangleStyleArgument(callNode, 2));
             if (auto* function = dynamic_cast<FunctionDeclarationNode*>(this->target.get())) {
                 function->dllImportLibrary = library;
                 function->externalSymbolName = symbol;

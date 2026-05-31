@@ -1,6 +1,7 @@
 #include "NativeRuntime.h"
 
 #include <cmath>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -102,6 +103,108 @@ char* csec_string_concat(const char* left, const char* right) {
     std::memcpy(result, lhs, lhsLen);
     std::memcpy(result + lhsLen, rhs, rhsLen);
     result[lhsLen + rhsLen] = '\0';
+    return result;
+}
+
+long long csec_string_length(const char* value) {
+    return static_cast<long long>(std::strlen(value ? value : ""));
+}
+
+int csec_string_is_empty(const char* value) {
+    return csec_string_length(value) == 0 ? 1 : 0;
+}
+
+int csec_string_contains(const char* value, const char* needle) {
+    const char* haystack = value ? value : "";
+    const char* target = needle ? needle : "";
+    return std::strstr(haystack, target) != nullptr ? 1 : 0;
+}
+
+int csec_string_starts_with(const char* value, const char* prefix) {
+    const char* text = value ? value : "";
+    const char* start = prefix ? prefix : "";
+    size_t startLen = std::strlen(start);
+    return std::strncmp(text, start, startLen) == 0 ? 1 : 0;
+}
+
+int csec_string_ends_with(const char* value, const char* suffix) {
+    const char* text = value ? value : "";
+    const char* end = suffix ? suffix : "";
+    size_t textLen = std::strlen(text);
+    size_t endLen = std::strlen(end);
+    if (endLen > textLen) return 0;
+    return std::strcmp(text + textLen - endLen, end) == 0 ? 1 : 0;
+}
+
+long long csec_string_index_of(const char* value, const char* needle) {
+    const char* haystack = value ? value : "";
+    const char* target = needle ? needle : "";
+    const char* found = std::strstr(haystack, target);
+    return found ? static_cast<long long>(found - haystack) : -1;
+}
+
+char csec_string_char_at(const char* value, int index) {
+    const char* text = value ? value : "";
+    size_t len = std::strlen(text);
+    if (index < 0 || static_cast<size_t>(index) >= len) return '\0';
+    return text[index];
+}
+
+char* csec_string_substring(const char* value, int start, int length) {
+    const char* text = value ? value : "";
+    size_t len = std::strlen(text);
+    if (start < 0) start = 0;
+    size_t begin = static_cast<size_t>(start);
+    if (begin > len) begin = len;
+    if (length < 0 || begin + static_cast<size_t>(length) > len) {
+        length = static_cast<int>(len - begin);
+    }
+    char* result = static_cast<char*>(std::malloc(static_cast<size_t>(length) + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, text + begin, static_cast<size_t>(length));
+    result[length] = '\0';
+    return result;
+}
+
+char* csec_string_to_upper(const char* value) {
+    const char* text = value ? value : "";
+    size_t len = std::strlen(text);
+    char* result = static_cast<char*>(std::malloc(len + 1));
+    if (!result) return nullptr;
+    for (size_t i = 0; i < len; ++i) {
+        result[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(text[i])));
+    }
+    result[len] = '\0';
+    return result;
+}
+
+char* csec_string_to_lower(const char* value) {
+    const char* text = value ? value : "";
+    size_t len = std::strlen(text);
+    char* result = static_cast<char*>(std::malloc(len + 1));
+    if (!result) return nullptr;
+    for (size_t i = 0; i < len; ++i) {
+        result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(text[i])));
+    }
+    result[len] = '\0';
+    return result;
+}
+
+char* csec_string_trim(const char* value) {
+    const char* text = value ? value : "";
+    const char* begin = text;
+    while (*begin && std::isspace(static_cast<unsigned char>(*begin))) {
+        ++begin;
+    }
+    const char* end = text + std::strlen(text);
+    while (end > begin && std::isspace(static_cast<unsigned char>(*(end - 1)))) {
+        --end;
+    }
+    size_t len = static_cast<size_t>(end - begin);
+    char* result = static_cast<char*>(std::malloc(len + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, begin, len);
+    result[len] = '\0';
     return result;
 }
 

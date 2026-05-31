@@ -7,6 +7,15 @@
 
 #include <iostream>
 
+namespace {
+llvm::Function* getOrCreateRuntimeFunction(const std::string& name, llvm::Type* returnType, const std::vector<llvm::Type*>& paramTypes) {
+    auto& cg = CodeGenerator::getInstance();
+    if (auto* function = cg.module->getFunction(name)) return function;
+    auto* functionTy = llvm::FunctionType::get(returnType, paramTypes, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
+}
+}
+
 void AccessFieldNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
@@ -29,6 +38,35 @@ llvm::Value* AccessFieldNode::codegen() {
     }
 
     auto baseType = baseIdentifier->getType();
+    auto targetName = fieldIdentifier->value;
+    if (baseType && baseType->isStringTy()) {
+        llvm::Value* stringValue = baseIdentifier->codegen();
+        if (!stringValue) {
+            return nullptr;
+        }
+        if (targetName == "length" || targetName == "size" || targetName == "count") {
+            auto& cg = CodeGenerator::getInstance();
+            auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+            auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+            return cg.builder.CreateCall(
+                getOrCreateRuntimeFunction("csec_string_length", i64Ty, {i8PtrTy}),
+                {stringValue},
+                "str.length");
+        }
+        if (targetName == "isEmpty") {
+            auto& cg = CodeGenerator::getInstance();
+            auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+            auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+            auto* result = cg.builder.CreateCall(
+                getOrCreateRuntimeFunction("csec_string_is_empty", i32Ty, {i8PtrTy}),
+                {stringValue},
+                "str.empty.i32");
+            return cg.builder.CreateICmpNE(result, llvm::ConstantInt::get(i32Ty, 0), "str.empty");
+        }
+        std::cerr << "Error: String property '" << targetName << "' not found" << std::endl;
+        return nullptr;
+    }
+
     if (!baseType || baseType->getKind() != Type::Kind::CLASS) {
         std::cerr << "Error: Base must be a class type" << std::endl;
         return nullptr;
@@ -62,8 +100,6 @@ llvm::Value* AccessFieldNode::codegen() {
     if (basePtr->getType() != targetPtrType) {
         basePtr = CodeGenerator::getInstance().builder.CreateBitCast(basePtr, targetPtrType, "obj.cast");
     }
-
-    auto targetName = fieldIdentifier->value;
 
     int fieldIndex = findFieldIndex(classSymbol, targetName);
     if (fieldIndex == -1) {
@@ -101,6 +137,17 @@ int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string&
 }
 
 std::unique_ptr<Type> AccessFieldNode::getType() {
+    auto baseType = base ? base->getType() : nullptr;
+    auto* fieldIdentifier = dynamic_cast<IdentifierNode*>(field.get());
+    if (baseType && baseType->isStringTy() && fieldIdentifier) {
+        const std::string& targetName = fieldIdentifier->value;
+        if (targetName == "length" || targetName == "size" || targetName == "count") {
+            return std::make_unique<BasicType>("Long");
+        }
+        if (targetName == "isEmpty") {
+            return std::make_unique<BasicType>("Boolean");
+        }
+    }
     if (!field) return std::make_unique<UnknownType>();
     return field->getType();
 }

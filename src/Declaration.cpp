@@ -156,7 +156,14 @@ std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration(bool i
 		else if (match(TokenType::OPERATOR, "=")) {
 			auto expr = parseExpression();
 			body = std::make_unique<BlockNode>();
-			body->statements.push_back(std::move(expr));
+			if (returnType && !returnType->isVoidTy() && returnType->getName() != "Unit") {
+				auto returnNode = std::make_unique<ReturnStatementNode>();
+				returnNode->expression = std::move(expr);
+				body->statements.push_back(std::move(returnNode));
+			}
+			else {
+				body->statements.push_back(std::move(expr));
+			}
 		}
 		else {
 			error("Expected '{' or '=' after function declaration");

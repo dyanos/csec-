@@ -32,6 +32,59 @@ std::string mangleTemplateClassName(const std::string& className,
     return mangledName;
 }
 
+llvm::Type* storageTypeFor(const std::unique_ptr<Type>& declaredType) {
+    if (!declaredType) {
+        return nullptr;
+    }
+
+    auto& cg = CodeGenerator::getInstance();
+    llvm::Type* llvmType = cg.getLLVMType(declaredType.get());
+    if (!llvmType) {
+        return nullptr;
+    }
+
+    if (declaredType->getKind() == Type::Kind::CLASS) {
+        return llvm::PointerType::getUnqual(llvmType);
+    }
+
+    return llvmType;
+}
+
+llvm::Value* coerceForStore(llvm::Value* value, llvm::Type* targetType) {
+    if (!value || !targetType || value->getType() == targetType) {
+        return value;
+    }
+
+    auto& cg = CodeGenerator::getInstance();
+    llvm::Type* sourceType = value->getType();
+    if (sourceType->isIntegerTy() && targetType->isIntegerTy()) {
+        unsigned sourceBits = sourceType->getIntegerBitWidth();
+        unsigned targetBits = targetType->getIntegerBitWidth();
+        if (sourceBits < targetBits) {
+            return cg.builder.CreateSExt(value, targetType, "ctor.sext");
+        }
+        return cg.builder.CreateTrunc(value, targetType, "ctor.trunc");
+    }
+
+    if (sourceType->isFloatingPointTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateFPCast(value, targetType, "ctor.fpcast");
+    }
+
+    if (sourceType->isIntegerTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateSIToFP(value, targetType, "ctor.sitofp");
+    }
+
+    if (sourceType->isFloatingPointTy() && targetType->isIntegerTy()) {
+        return cg.builder.CreateFPToSI(value, targetType, "ctor.fptosi");
+    }
+
+    if (sourceType->isPointerTy() && targetType->isPointerTy()) {
+        return cg.builder.CreateBitCast(value, targetType, "ctor.ptrcast");
+    }
+
+    return value;
+}
+
 void substituteTypeVariables(std::unique_ptr<Type>& type,
                              const std::vector<std::string>& typeParams,
                              const std::vector<std::unique_ptr<Type>>& concreteArgs) {
@@ -270,12 +323,113 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         return nullptr;
     }
 
+    llvm::AllocaInst* instance = cg.builder.CreateAlloca(classType, nullptr, "newobj");
+
+    unsigned fieldIndex = 0;
+    auto initializeField = [&](const std::string& fieldName, const std::unique_ptr<Type>& fieldType, llvm::Value* value) -> bool {
+        llvm::Type* targetType = storageTypeFor(fieldType);
+        if (!targetType) {
+            std::cerr << "Error: Unsupported field type in class '" << resolvedClassName << "'" << std::endl;
+            return false;
+        }
+        if (!value) {
+            value = llvm::Constant::getNullValue(targetType);
+        }
+        value = coerceForStore(value, targetType);
+        if (!value || value->getType() != targetType) {
+            std::cerr << "Error: Constructor value for field '" << fieldName << "' has incompatible type" << std::endl;
+            return false;
+        }
+        llvm::Value* fieldPtr = cg.builder.CreateStructGEP(classType, instance, fieldIndex, fieldName + ".init");
+        cg.builder.CreateStore(value, fieldPtr);
+        fieldIndex += 1;
+        return true;
+    };
+
+    // Prefer the declaration order preserved in the instantiated ClassSymbol's
+    // struct body by re-reading the original class declaration when possible.
+    if (!templateArgs.empty()) {
+        auto* symbol = cg.symbolTable.lookup(className);
+        auto* tmplSymbol = symbol && symbol->symbolType == SymbolType::TEMPLATE ? dynamic_cast<TemplateSymbol*>(symbol) : nullptr;
+        auto* originalClass = tmplSymbol ? dynamic_cast<ClassDeclarationNode*>(tmplSymbol->declaration.get()) : nullptr;
+        if (originalClass) {
+            if (arguments.size() > originalClass->constructorParams.size()) {
+                std::cerr << "Error: Too many constructor arguments for class '" << resolvedClassName << "'" << std::endl;
+                return nullptr;
+            }
+
+            std::unordered_map<std::string, std::string> constantValues;
+            for (size_t i = 0; i < tmplSymbol->templateParams.size() && i < templateArgs.size(); ++i) {
+                if (!tmplSymbol->templateParams[i].isType && templateArgs[i]) {
+                    constantValues[tmplSymbol->templateParams[i].name] = templateArgs[i]->getName();
+                }
+            }
+
+            std::vector<std::unique_ptr<Type>> concreteTypes;
+            concreteTypes.reserve(templateArgs.size());
+            for (const auto& arg : templateArgs) {
+                concreteTypes.push_back(arg ? arg->clone() : std::make_unique<UnknownType>());
+            }
+
+            cg.symbolTable.enterScope();
+            auto failTemplateInitialization = [&]() -> llvm::Value* {
+                cg.symbolTable.exitScope();
+                return nullptr;
+            };
+
+            std::vector<std::unique_ptr<ASTNode>> clonedCtorParams;
+            clonedCtorParams.reserve(originalClass->constructorParams.size());
+            for (const auto& param : originalClass->constructorParams) {
+                clonedCtorParams.push_back(param ? param->clone() : nullptr);
+            }
+
+            for (size_t i = 0; i < clonedCtorParams.size(); ++i) {
+                auto* param = dynamic_cast<ParameterNode*>(clonedCtorParams[i].get());
+                if (!param) {
+                    continue;
+                }
+                substituteTypeVariables(param->type, tmplSymbol->typeParameters, concreteTypes);
+                llvm::Value* argValue = i < arguments.size() ? arguments[i]->codegen() : nullptr;
+                if (!initializeField(param->name, param->type, argValue)) {
+                    return failTemplateInitialization();
+                }
+                llvm::Type* targetType = storageTypeFor(param->type);
+                if (!argValue && targetType) {
+                    argValue = llvm::Constant::getNullValue(targetType);
+                }
+                argValue = coerceForStore(argValue, targetType);
+                cg.symbolTable.addSymbol(
+                    param->name,
+                    std::make_unique<Symbol>(param->name, param->type ? param->type->clone() : std::make_unique<UnknownType>(), argValue, false, SymbolType::VARIABLE));
+            }
+
+            if (auto* originalBody = dynamic_cast<ClassBodyNode*>(originalClass->body.get())) {
+                for (const auto& fieldAst : originalBody->fields) {
+                    auto clonedField = fieldAst ? fieldAst->clone() : nullptr;
+                    auto* fieldNode = dynamic_cast<VariableDeclarationNode*>(clonedField.get());
+                    if (!fieldNode) {
+                        continue;
+                    }
+                    substituteTypeVariables(fieldNode->type, tmplSymbol->typeParameters, concreteTypes);
+                    substituteTemplateConstants(fieldNode->initializer.get(), constantValues);
+                    llvm::Value* initValue = fieldNode->initializer ? fieldNode->initializer->codegen() : nullptr;
+                    if (!initializeField(fieldNode->name, fieldNode->type, initValue)) {
+                        return failTemplateInitialization();
+                    }
+                }
+            }
+
+            cg.symbolTable.exitScope();
+            return instance;
+        }
+    }
+
     if (!arguments.empty()) {
         std::cerr << "Warning: class constructor arguments are not fully supported yet for '" << resolvedClassName
                   << "'. Object is allocated without constructor invocation." << std::endl;
     }
 
-    return cg.builder.CreateAlloca(classType, nullptr, "newobj");
+    return instance;
 }
 
 std::unique_ptr<Type> ClassInstanceCreationNode::getType() {

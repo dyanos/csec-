@@ -175,8 +175,10 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
             std::cerr << "Error: Template class '" << mangledName << "' not instantiated yet" << std::endl;
             return nullptr;
         }
-        std::cerr << "Error: Unsupported generic type '" << genericType->baseType->getName() << "'" << std::endl;
-        return nullptr;
+        // Library-defined generic shapes such as Vector[Int] or Matrix[Double]
+        // may be declared before their concrete runtime representation exists.
+        // Treat them as opaque references so they can appear in signatures.
+        return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
     }
     else if (type->getKind() == Type::Kind::STRUCT) {
         auto* structSymbol = symbolTable.lookupStruct(type->getName());

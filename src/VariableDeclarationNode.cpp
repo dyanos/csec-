@@ -43,6 +43,12 @@ llvm::Value* VariableDeclarationNode::codegen() {
             std::string structName = initValue->getType()->getStructName().str();
             this->type = std::make_unique<ClassType>(structName);
         }
+        else if (auto* classCreation = dynamic_cast<ClassInstanceCreationNode*>(initializer.get())) {
+            this->type = classCreation->getType();
+        }
+        else if (auto* arrayCreation = dynamic_cast<ArrayCreationExpressionNode*>(initializer.get())) {
+            this->type = arrayCreation->getType();
+        }
         // string type (opaque pointer)
         else if (initValue->getType()->isPointerTy()) {
             this->type = std::make_unique<BasicType>("String");

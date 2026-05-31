@@ -1,0 +1,19 @@
+template<typename T>
+class Box(value: T) {
+    def get(): T = value
+}
+
+template<typename T>
+class Counter(initial: T) {
+    var current: T = initial;
+
+    def get(): T = current
+}
+
+def main(): Int {
+    val box = new Box<Int>(42);
+    val counter = new Counter<Int>(7);
+    println(box.get());
+    println(counter.get());
+    return box.get() + counter.get();
+}

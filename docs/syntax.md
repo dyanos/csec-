@@ -178,6 +178,46 @@ class Counter() {
 }
 ```
 
+## Templates
+
+Function and class templates use C++-style `template<...>` declarations with
+type parameters and integer-like non-type parameters:
+
+```ts
+template<typename T>
+def identity(value: T): T = value
+
+template<typename T, Int N>
+def capacity(): Int = N
+
+template<typename T>
+class Box(value: T) {
+    def get(): T = value
+}
+
+def main(): Int {
+    val x = identity<Int>(42);
+    val n = capacity<Int, 8>();
+    val box = new Box<Int>(x);
+    return box.get() + n;
+}
+```
+
+Template class constructor parameters are stored as fields, and class fields can
+use those constructor parameters in their initializers:
+
+```ts
+template<typename T>
+class Holder(initial: T) {
+    var current: T = initial;
+    def get(): T = current
+}
+```
+
+Generic library-shaped types such as `Vector[Int]` and `Matrix[Double]` can be
+used in signatures as opaque reference types until a concrete runtime
+implementation is provided.
+
 ## Control Flow
 
 Conditional statements:

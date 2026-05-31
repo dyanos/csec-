@@ -59,6 +59,7 @@ public:
     llvm::Value* codegen() override;
 
     void declareMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol);
+    llvm::Function* defineMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol, ClassBodyNode* classBody);
 
     std::unique_ptr<Type> getType() override {
         return std::make_unique<UnknownType>();

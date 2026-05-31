@@ -1,0 +1,6 @@
+def main(): Int {
+    val label = "score=";
+    val message = label + 4 + ", ok=" + true + ", value=" + 3.5 + ", mark=" + 'A';
+    println(message);
+    return 0;
+}

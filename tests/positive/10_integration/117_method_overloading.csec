@@ -1,0 +1,16 @@
+class Formatter() {
+    def show(value: Int): Int {
+        return value + 1;
+    }
+
+    def show(value: String): String {
+        return value + "!";
+    }
+}
+
+def main(): Int {
+    val formatter = new Formatter();
+    println(formatter.show(4));
+    println(formatter.show("ok"));
+    return 0;
+}

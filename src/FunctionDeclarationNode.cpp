@@ -17,7 +17,11 @@ void FunctionDeclarationNode::accept(ASTVisitor& visitor) {
 llvm::Value* FunctionDeclarationNode::codegen() {
     auto updateOrRegisterFunctionSymbol = [&](std::unique_ptr<Type> functionType, llvm::Function* function, bool isExternalSymbol) -> FunctionSymbol* {
         auto& symbolTable = CodeGenerator::getInstance().symbolTable;
-        auto* existingSymbol = symbolTable.lookup(this->name);
+        FunctionSymbol* existingFunction = nullptr;
+        if (auto* concreteFunctionType = dynamic_cast<FunctionType*>(functionType.get())) {
+            existingFunction = symbolTable.lookupFunction(this->name, concreteFunctionType->parameterTypes);
+        }
+        auto* existingSymbol = existingFunction ? static_cast<Symbol*>(existingFunction) : nullptr;
         if (existingSymbol && existingSymbol->symbolType == SymbolType::FUNCTION) {
             existingSymbol->type = functionType ? functionType->clone() : std::make_unique<UnknownType>();
             existingSymbol->value = function;

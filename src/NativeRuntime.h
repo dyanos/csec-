@@ -21,6 +21,12 @@ CSEC_NATIVE_API void csec_print_bool(int value);
 CSEC_NATIVE_API void csec_print_char(char value);
 CSEC_NATIVE_API void csec_print_newline(void);
 
+CSEC_NATIVE_API char* csec_string_concat(const char* left, const char* right);
+CSEC_NATIVE_API char* csec_to_string_i64(long long value);
+CSEC_NATIVE_API char* csec_to_string_double(double value);
+CSEC_NATIVE_API char* csec_to_string_bool(int value);
+CSEC_NATIVE_API char* csec_to_string_char(char value);
+
 CSEC_NATIVE_API char* csec_read_line(void);
 CSEC_NATIVE_API char csec_read_char(void);
 CSEC_NATIVE_API int csec_read_int(void);

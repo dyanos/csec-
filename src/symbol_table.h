@@ -34,7 +34,9 @@ public:
     StructSymbol* lookupStruct(const std::string& name);
     NamespaceSymbol* lookupNamespace(const std::string& name);
     FunctionSymbol* lookupFunction(const std::string& name, const std::vector<std::unique_ptr<Type>>& argTypes);
+    FunctionSymbol* lookupFunctionInNamespace(const std::string& namespaceName, const std::string& functionName, const std::vector<std::unique_ptr<Type>>& argTypes);
     Symbol* lookupMethod(const ClassSymbol& symbol, const std::string& methodName);
+    Symbol* lookupMethod(const ClassSymbol& symbol, const std::string& methodName, const std::vector<std::unique_ptr<Type>>& argTypes);
     void merge(const SymbolTable& other);
     void print(std::ostream& os, int indent = 0) const;
 

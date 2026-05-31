@@ -126,8 +126,15 @@ std::unique_ptr<VariableDeclarationNode> Parser::parseVariableDeclaration(bool i
 }
 
 std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration(bool isExternal) {
-	expect(TokenType::IDENTIFIER);
-	std::string functionName = previous().value;
+    std::string functionName;
+    if (match(TokenType::KEYWORD, "operator")) {
+        expect(TokenType::OPERATOR);
+        functionName = "operator" + previous().value;
+    }
+    else {
+	    expect(TokenType::IDENTIFIER);
+	    functionName = previous().value;
+    }
 
 	expect(TokenType::OPERATOR, "(");
 	auto parameters = parseParameterList();

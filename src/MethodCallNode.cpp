@@ -5,6 +5,7 @@
 #include "IdentifierNode.h"
 
 #include <iostream>
+#include <sstream>
 #include <llvm/IR/Constants.h>
 
 #include "FunctionDeclarationNode.h"
@@ -85,6 +86,79 @@ llvm::Value* createMethodCallOrDefault(llvm::Function* function, std::vector<llv
 
     return cg.builder.CreateCall(function, adjustedArgs, function->getReturnType()->isVoidTy() ? "" : "calltmp");
 }
+
+bool canPassValueToParameter(llvm::Value* value, llvm::Type* parameterType) {
+    if (!value || !parameterType) {
+        return false;
+    }
+    llvm::Type* valueType = value->getType();
+    if (valueType == parameterType) {
+        return true;
+    }
+    if (valueType->isIntegerTy() && parameterType->isIntegerTy()) {
+        return true;
+    }
+    if (valueType->isFloatingPointTy() && parameterType->isFloatingPointTy()) {
+        return true;
+    }
+    if (valueType->isIntegerTy() && parameterType->isFloatingPointTy()) {
+        return true;
+    }
+    if (valueType->isFloatingPointTy() && parameterType->isIntegerTy()) {
+        return true;
+    }
+    if (valueType->isPointerTy() && parameterType->isPointerTy()) {
+        return true;
+    }
+    return false;
+}
+
+llvm::Function* findNamespacedFunctionByArgs(CodeGenerator& cg, const std::string& namespaceName, const std::string& methodName, const std::vector<llvm::Value*>& argValues) {
+    const std::string baseName = namespaceName + "#" + methodName;
+    llvm::Function* coercibleMatch = nullptr;
+    for (auto& function : cg.module->functions()) {
+        std::string functionName = function.getName().str();
+        if (functionName != baseName && functionName.rfind(baseName + ".", 0) != 0) {
+            continue;
+        }
+        if (function.arg_size() != argValues.size()) {
+            continue;
+        }
+
+        bool exact = true;
+        bool matches = true;
+        for (size_t i = 0; i < argValues.size(); ++i) {
+            auto* parameterType = function.getFunctionType()->getParamType(static_cast<unsigned>(i));
+            if (argValues[i]->getType() != parameterType) {
+                exact = false;
+            }
+            if (!canPassValueToParameter(argValues[i], parameterType)) {
+                matches = false;
+                break;
+            }
+        }
+        if (matches && exact) {
+            return &function;
+        }
+        if (matches && !coercibleMatch) {
+            coercibleMatch = &function;
+        }
+    }
+    return coercibleMatch;
+}
+
+std::string methodStorageKey(const std::string& methodName, const std::vector<std::unique_ptr<Type>>& argTypes) {
+    if (argTypes.empty()) {
+        return methodName;
+    }
+
+    std::ostringstream key;
+    key << methodName;
+    for (const auto& argType : argTypes) {
+        key << "@" << (argType ? argType->getName() : "Unknown");
+    }
+    return key.str();
+}
 }
 
 void MethodCallNode::accept(ASTVisitor& visitor) {
@@ -96,7 +170,15 @@ llvm::Value* MethodCallNode::codegen() {
 
     if (auto* objectId = dynamic_cast<IdentifierNode*>(object.get())) {
         std::string qualifiedName = objectId->value + "." + methodName;
-        auto* memberSymbol = cg.symbolTable.lookup(qualifiedName);
+        std::vector<std::unique_ptr<Type>> argTypes;
+        argTypes.reserve(arguments.size());
+        for (auto& argument : arguments) {
+            auto argType = argument->getType();
+            argTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
+        }
+
+        auto* functionSymbol = cg.symbolTable.lookupFunctionInNamespace(objectId->value, methodName, argTypes);
+        Symbol* memberSymbol = functionSymbol ? static_cast<Symbol*>(functionSymbol) : cg.symbolTable.lookup(qualifiedName);
         if (memberSymbol && memberSymbol->symbolType == SymbolType::FUNCTION) {
             auto* funcType = dynamic_cast<FunctionType*>(memberSymbol->type.get());
             llvm::Function* function = static_cast<llvm::Function*>(memberSymbol->value);
@@ -117,15 +199,20 @@ llvm::Value* MethodCallNode::codegen() {
                 if (!argValue) {
                     return nullptr;
                 }
-                if (i < funcType->parameterTypes.size()) {
-                    auto argType = arguments[i]->getType();
-                    if (argType && !argType->equals(funcType->parameterTypes[i]) &&
-                        !argType->isSubtypeOf(funcType->parameterTypes[i])) {
+                if (functionSymbol && i < funcType->parameterTypes.size()) {
+                    if (argTypes[i] && !argTypes[i]->equals(funcType->parameterTypes[i]) &&
+                        !argTypes[i]->isSubtypeOf(funcType->parameterTypes[i])) {
                         std::cerr << "Type error: Argument type mismatch in method call '" << methodName << "'" << std::endl;
                         return nullptr;
                     }
                 }
                 argValues.push_back(argValue);
+            }
+
+            if (!functionSymbol) {
+                if (auto* overloadedFunction = findNamespacedFunctionByArgs(cg, objectId->value, methodName, argValues)) {
+                    function = overloadedFunction;
+                }
             }
 
             return createMethodCallOrDefault(function, std::move(argValues));
@@ -152,7 +239,14 @@ llvm::Value* MethodCallNode::codegen() {
 
     ClassSymbol* classSymbol = symbol;
 
-    auto methodSymbolOpt = cg.symbolTable.lookupMethod(*classSymbol, methodName);
+    std::vector<std::unique_ptr<Type>> callArgTypes;
+    callArgTypes.reserve(arguments.size());
+    for (auto& argument : arguments) {
+        auto argType = argument->getType();
+        callArgTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
+    }
+
+    auto methodSymbolOpt = cg.symbolTable.lookupMethod(*classSymbol, methodName, callArgTypes);
     if (!methodSymbolOpt) {
         std::cerr << "Error: Method '" << methodName << "' not found in class '" << objectType->getName() << "'" << std::endl;
         return nullptr;
@@ -170,13 +264,14 @@ llvm::Value* MethodCallNode::codegen() {
         }
 
         ClassSymbol* classSymbol = symbol;
-        if (classSymbol->methodBodies.find(methodName) == classSymbol->methodBodies.end()) {
+        std::string storageKey = methodStorageKey(methodName, callArgTypes);
+        if (classSymbol->methodBodies.find(storageKey) == classSymbol->methodBodies.end()) {
             std::cerr << "Error: Method '" << methodName << "' not found in class '" << objectType->getName() << "'" << std::endl;
             return nullptr;
         }
 
         llvm::BasicBlock* savedBB = cg.builder.GetInsertBlock();
-        classSymbol->methodBodies[methodName]->codegen();
+        classSymbol->methodBodies[storageKey]->codegen();
         cg.builder.SetInsertPoint(savedBB);
         function = cg.module->getFunction(objectType->getName() + "_" + methodName);
         methodSymbol->value = function;
@@ -202,7 +297,7 @@ llvm::Value* MethodCallNode::codegen() {
         }
 
         auto argType = arguments[i]->getType();
-        if (!argType || !argType->equals(funcType->parameterTypes[i + 1])) {
+        if (!argType || (!argType->equals(funcType->parameterTypes[i + 1]) && !argType->isSubtypeOf(funcType->parameterTypes[i + 1]))) {
             std::cerr << "Type error: Argument type mismatch in method call '" << methodName << "'" << std::endl;
             return nullptr;
         }
@@ -218,7 +313,16 @@ std::unique_ptr<Type> MethodCallNode::getType() {
     if (type) return type->clone();
 
     if (auto* objectId = dynamic_cast<IdentifierNode*>(object.get())) {
-        auto* memberSymbol = CodeGenerator::getInstance().symbolTable.lookup(objectId->value + "." + methodName);
+        std::vector<std::unique_ptr<Type>> argTypes;
+        argTypes.reserve(arguments.size());
+        for (auto& argument : arguments) {
+            auto argType = argument->getType();
+            argTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
+        }
+
+        auto* functionSymbol = CodeGenerator::getInstance().symbolTable.lookupFunctionInNamespace(objectId->value, methodName, argTypes);
+        Symbol* memberSymbol = functionSymbol ? static_cast<Symbol*>(functionSymbol) :
+            CodeGenerator::getInstance().symbolTable.lookup(objectId->value + "." + methodName);
         if (memberSymbol && memberSymbol->symbolType == SymbolType::FUNCTION) {
             auto* funcType = dynamic_cast<FunctionType*>(memberSymbol->type.get());
             if (funcType && funcType->returnType) {
@@ -240,7 +344,14 @@ std::unique_ptr<Type> MethodCallNode::getType() {
 
     auto* classSymbol = classSymbolOpt;
 
-    auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName);
+    std::vector<std::unique_ptr<Type>> callArgTypes;
+    callArgTypes.reserve(arguments.size());
+    for (auto& argument : arguments) {
+        auto argType = argument->getType();
+        callArgTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
+    }
+
+    auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName, callArgTypes);
     if (!methodSymbolOpt) {
         return std::make_unique<BasicType>("Real");
     }

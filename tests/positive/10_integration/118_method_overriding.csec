@@ -1,0 +1,31 @@
+class BasePrinter() {
+    def value(): Int {
+        return 1;
+    }
+
+    def label(value: Int): String {
+        return "base=" + value;
+    }
+}
+
+class ChildPrinter extends BasePrinter {
+    override def value(): Int {
+        return 2;
+    }
+
+    override def label(value: Int): String {
+        return "child=" + value;
+    }
+
+    def label(value: String): String {
+        return "child=" + value;
+    }
+}
+
+def main(): Int {
+    val printer = new ChildPrinter();
+    println(printer.value());
+    println(printer.label(7));
+    println(printer.label("ready"));
+    return 0;
+}

@@ -1,0 +1,11 @@
+class Counter() {
+    def operator +(right: Int): Int {
+        return right + 1;
+    }
+}
+
+def main(): Int {
+    val counter = new Counter();
+    println(counter + 4);
+    return 0;
+}

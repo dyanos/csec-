@@ -92,6 +92,54 @@ void csec_print_newline(void) {
     std::printf("\n");
 }
 
+char* csec_string_concat(const char* left, const char* right) {
+    const char* lhs = left ? left : "";
+    const char* rhs = right ? right : "";
+    size_t lhsLen = std::strlen(lhs);
+    size_t rhsLen = std::strlen(rhs);
+    char* result = static_cast<char*>(std::malloc(lhsLen + rhsLen + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, lhs, lhsLen);
+    std::memcpy(result + lhsLen, rhs, rhsLen);
+    result[lhsLen + rhsLen] = '\0';
+    return result;
+}
+
+char* csec_to_string_i64(long long value) {
+    int needed = std::snprintf(nullptr, 0, "%lld", value);
+    if (needed < 0) return nullptr;
+    char* result = static_cast<char*>(std::malloc(static_cast<size_t>(needed) + 1));
+    if (!result) return nullptr;
+    std::snprintf(result, static_cast<size_t>(needed) + 1, "%lld", value);
+    return result;
+}
+
+char* csec_to_string_double(double value) {
+    int needed = std::snprintf(nullptr, 0, "%f", value);
+    if (needed < 0) return nullptr;
+    char* result = static_cast<char*>(std::malloc(static_cast<size_t>(needed) + 1));
+    if (!result) return nullptr;
+    std::snprintf(result, static_cast<size_t>(needed) + 1, "%f", value);
+    return result;
+}
+
+char* csec_to_string_bool(int value) {
+    const char* text = value ? "true" : "false";
+    size_t len = std::strlen(text);
+    char* result = static_cast<char*>(std::malloc(len + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, text, len + 1);
+    return result;
+}
+
+char* csec_to_string_char(char value) {
+    char* result = static_cast<char*>(std::malloc(2));
+    if (!result) return nullptr;
+    result[0] = value;
+    result[1] = '\0';
+    return result;
+}
+
 char* csec_read_line(void) {
     char* buffer = static_cast<char*>(std::malloc(4096));
     if (!buffer) return nullptr;

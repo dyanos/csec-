@@ -1,0 +1,73 @@
+object Out {
+    def print(value: String): Unit {
+        print(value);
+    }
+
+    def print(value: Int): Unit {
+        print(value);
+    }
+
+    def print(value: Long): Unit {
+        print(value);
+    }
+
+    def print(value: Float): Unit {
+        print(value);
+    }
+
+    def print(value: Double): Unit {
+        print(value);
+    }
+
+    def print(value: Boolean): Unit {
+        print(value);
+    }
+
+    def print(value: Char): Unit {
+        print(value);
+    }
+
+    def println(): Unit {
+        println();
+    }
+
+    def println(value: String): Unit {
+        println(value);
+    }
+
+    def println(value: Int): Unit {
+        println(value);
+    }
+
+    def println(value: Long): Unit {
+        println(value);
+    }
+
+    def println(value: Float): Unit {
+        println(value);
+    }
+
+    def println(value: Double): Unit {
+        println(value);
+    }
+
+    def println(value: Boolean): Unit {
+        println(value);
+    }
+
+    def println(value: Char): Unit {
+        println(value);
+    }
+}
+
+def main(): Int {
+    Out.print("value=");
+    Out.print(42);
+    Out.print(" ");
+    Out.print(3.5);
+    Out.print(" ");
+    Out.print(true);
+    Out.println();
+    Out.println("done");
+    return 0;
+}

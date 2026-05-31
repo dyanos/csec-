@@ -1,0 +1,30 @@
+class Accumulator() {
+    def operator +(right: Int): Int {
+        return right + 1;
+    }
+
+    def operator +(right: String): String {
+        return "base+" + right;
+    }
+}
+
+class ScaledAccumulator extends Accumulator {
+    override def operator +(right: Int): Int {
+        return right + 10;
+    }
+
+    override def operator +(right: String): String {
+        return "scaled+" + right;
+    }
+}
+
+def main(): Int {
+    val base = new Accumulator();
+    val scaled = new ScaledAccumulator();
+
+    println(base + 4);
+    println(base + "ok");
+    println(scaled + 4);
+    println(scaled + "ok");
+    return 0;
+}

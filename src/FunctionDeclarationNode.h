@@ -36,6 +36,7 @@ public:
         isExternal = other.isExternal;
         isConstexpr = other.isConstexpr;
         isUnsafe = other.isUnsafe;
+        isOverride = other.isOverride;
         dllImportLibrary = other.dllImportLibrary;
         externalSymbolName = other.externalSymbolName;
     }
@@ -53,6 +54,7 @@ public:
             isExternal = other.isExternal;
             isConstexpr = other.isConstexpr;
             isUnsafe = other.isUnsafe;
+            isOverride = other.isOverride;
             dllImportLibrary = other.dllImportLibrary;
             externalSymbolName = other.externalSymbolName;
         }
@@ -62,6 +64,7 @@ public:
     bool isExternal = false;
     bool isConstexpr = false;
     bool isUnsafe = false;
+    bool isOverride = false;
     std::string dllImportLibrary;
     std::string externalSymbolName;
 

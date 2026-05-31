@@ -1,0 +1,92 @@
+class InOut() {
+    def writeString(value: String): Unit {
+        print(value);
+    }
+
+    def writeInt(value: Int): Unit {
+        print(value);
+    }
+
+    def writeLong(value: Long): Unit {
+        print(value);
+    }
+
+    def writeFloat(value: Float): Unit {
+        print(value);
+    }
+
+    def writeDouble(value: Double): Unit {
+        print(value);
+    }
+
+    def writeBool(value: Boolean): Unit {
+        print(value);
+    }
+
+    def writeChar(value: Char): Unit {
+        print(value);
+    }
+
+    def newLine(): Unit {
+        println();
+    }
+
+    def writeLineString(value: String): Unit {
+        println(value);
+    }
+
+    def writeLineInt(value: Int): Unit {
+        println(value);
+    }
+
+    def writeLineLong(value: Long): Unit {
+        println(value);
+    }
+
+    def writeLineFloat(value: Float): Unit {
+        println(value);
+    }
+
+    def writeLineDouble(value: Double): Unit {
+        println(value);
+    }
+
+    def writeLineBool(value: Boolean): Unit {
+        println(value);
+    }
+
+    def writeLineChar(value: Char): Unit {
+        println(value);
+    }
+
+    def readText(): String {
+        return readLine();
+    }
+
+    def readCharacter(): Char {
+        return readChar();
+    }
+
+    def readInteger(): Int {
+        return readInt();
+    }
+
+    def readReal(): Double {
+        return readDouble();
+    }
+}
+
+def main(): Int {
+    val io = new InOut();
+
+    io.writeString("value=");
+    io.writeInt(42);
+    io.writeString(" ");
+    io.writeFloat(3.5);
+    io.writeString(" ");
+    io.writeBool(true);
+    io.newLine();
+    io.writeLineString("done");
+
+    return 0;
+}

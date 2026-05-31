@@ -1,0 +1,131 @@
+class BasicMath() {
+    def abs(x: Float): Float {
+        if (x < 0.0) {
+            return 0.0 - x;
+        }
+        return x;
+    }
+
+    def sign(x: Float): Float {
+        if (x < 0.0) {
+            return 0.0 - 1.0;
+        }
+        if (x > 0.0) {
+            return 1.0;
+        }
+        return 0.0;
+    }
+
+    def floor(x: Float): Float {
+        var whole: Float = 0.0;
+
+        if (x >= 0.0) {
+            while (whole + 1.0 <= x) {
+                whole = whole + 1.0;
+            }
+            return whole;
+        }
+
+        while (whole > x) {
+            whole = whole - 1.0;
+        }
+        return whole;
+    }
+
+    def ceil(x: Float): Float {
+        var whole: Float = 0.0;
+
+        if (x >= 0.0) {
+            while (whole < x) {
+                whole = whole + 1.0;
+            }
+            return whole;
+        }
+
+        while (whole - 1.0 >= x) {
+            whole = whole - 1.0;
+        }
+        return whole;
+    }
+
+    def round(x: Float): Float {
+        var whole: Float = 0.0;
+
+        if (x >= 0.0) {
+            val target: Float = x + 0.5;
+            while (whole + 1.0 <= target) {
+                whole = whole + 1.0;
+            }
+            return whole;
+        }
+
+        val target: Float = x - 0.5;
+        while (whole - 1.0 >= target) {
+            whole = whole - 1.0;
+        }
+        return whole;
+    }
+
+    def min(left: Float, right: Float): Float {
+        if (left < right) {
+            return left;
+        }
+        return right;
+    }
+
+    def max(left: Float, right: Float): Float {
+        if (left > right) {
+            return left;
+        }
+        return right;
+    }
+
+    def clamp(value: Float, low: Float, high: Float): Float {
+        if (value < low) {
+            return low;
+        }
+        if (value > high) {
+            return high;
+        }
+        return value;
+    }
+
+    def between(value: Float, low: Float, high: Float): Boolean {
+        return value >= low and value <= high;
+    }
+
+    def approxEq(left: Float, right: Float, epsilon: Float): Boolean {
+        var diff: Float = left - right;
+        if (diff < 0.0) {
+            diff = 0.0 - diff;
+        }
+        return diff <= epsilon;
+    }
+}
+
+def main(): Int {
+    val math = new BasicMath();
+
+    val a: Float = math.abs(0.0 - 7.5);
+    val s1: Float = math.sign(0.0 - 9.0);
+    val s2: Float = math.sign(0.0);
+    val s3: Float = math.sign(12.0);
+    val f1: Float = math.floor(3.9);
+    val f2: Float = math.floor(0.0 - 3.1);
+    val c1: Float = math.ceil(3.1);
+    val c2: Float = math.ceil(0.0 - 3.9);
+    val r1: Float = math.round(3.6);
+    val r2: Float = math.round(0.0 - 3.6);
+    val clamped: Float = math.clamp(12.0, 0.0, 10.0);
+    val inRange: Boolean = math.between(5.0, 1.0, 9.0);
+    val close: Boolean = math.approxEq(0.1 + 0.2, 0.3, 0.000001);
+
+    if (a == 7.5 and s1 == (0.0 - 1.0) and s2 == 0.0 and s3 == 1.0 and
+        f1 == 3.0 and f2 == (0.0 - 4.0) and c1 == 4.0 and c2 == (0.0 - 3.0) and
+        r1 == 4.0 and r2 == (0.0 - 4.0) and
+        math.min(2.0, 5.0) == 2.0 and math.max(2.0, 5.0) == 5.0 and
+        clamped == 10.0 and inRange and close) {
+        return 0;
+    }
+    return 1;
+}

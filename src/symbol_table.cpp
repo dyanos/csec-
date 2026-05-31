@@ -43,7 +43,8 @@ bool matchesFunctionArguments(const Symbol* symbol, const std::string& name, con
         if (!argTypes[i] || !funcType->parameterTypes[i]) {
             return false;
         }
-        if (!argTypes[i]->equals(funcType->parameterTypes[i])) {
+        if (!argTypes[i]->equals(funcType->parameterTypes[i]) &&
+            !argTypes[i]->isSubtypeOf(funcType->parameterTypes[i])) {
             return false;
         }
     }
@@ -471,6 +472,29 @@ FunctionSymbol* SymbolTable::lookupFunction(const std::string& name, const std::
     return nullptr;
 }
 
+FunctionSymbol* SymbolTable::lookupFunctionInNamespace(
+    const std::string& namespaceName,
+    const std::string& functionName,
+    const std::vector<std::unique_ptr<Type>>& argTypes) {
+    auto* namespaceSymbol = lookupNamespace(namespaceName);
+    if (!namespaceSymbol) {
+        return nullptr;
+    }
+
+    for (const auto& pair : namespaceSymbol->functions) {
+        Symbol* candidate = pair.second.get();
+        if (!matchesFunctionArguments(candidate, functionName, argTypes)) {
+            continue;
+        }
+
+        if (auto* functionSymbol = dynamic_cast<FunctionSymbol*>(candidate)) {
+            return functionSymbol;
+        }
+    }
+
+    return nullptr;
+}
+
 Symbol* SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& methodName)
 {
     const ClassSymbol* current = &symbol;
@@ -478,6 +502,37 @@ Symbol* SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& 
         auto methodIt = current->methods.find(methodName);
         if (methodIt != current->methods.end()) {
             return methodIt->second.get();
+        }
+        current = current->superClassSymbol;
+    }
+    return nullptr;
+}
+
+Symbol* SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& methodName, const std::vector<std::unique_ptr<Type>>& argTypes)
+{
+    const ClassSymbol* current = &symbol;
+    while (current) {
+        for (const auto& pair : current->methods) {
+            Symbol* candidate = pair.second.get();
+            if (!candidate || candidate->name != methodName || candidate->symbolType != SymbolType::METHOD) {
+                continue;
+            }
+            auto* funcType = dynamic_cast<FunctionType*>(candidate->type.get());
+            if (!funcType || funcType->parameterTypes.size() != argTypes.size() + 1) {
+                continue;
+            }
+            bool matches = true;
+            for (size_t i = 0; i < argTypes.size(); ++i) {
+                const auto& argType = argTypes[i];
+                const auto& paramType = funcType->parameterTypes[i + 1];
+                if (!argType || !paramType || (!argType->equals(paramType) && !argType->isSubtypeOf(paramType))) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                return candidate;
+            }
         }
         current = current->superClassSymbol;
     }

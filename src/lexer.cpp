@@ -58,7 +58,7 @@ void Lexer::initializeKeywords() {
         "abstract", "case", "catch", "class", "def", "do", "else", "extends",
         "false", "final", "finally", "for", "forSome", "if", "implicit",
         "import", "lazy", "match", "new", "null", "object", "override",
-        "package", "private", "protected", "return", "sealed", "super",
+        "operator", "package", "private", "protected", "return", "sealed", "super",
         "this", "throw", "trait", "try", "true", "type", "val", "var",
 		"while", "with", "yield", "to", "until", "and", "or", "xor", "map", "pmap", "reduce", "preduce", "filter", "external", "inline", "constexpr",
 		"template", "typename", "mut", "box", "unsafe", "unatomic",

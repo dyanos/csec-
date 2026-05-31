@@ -90,6 +90,125 @@ llvm::Function* getOrCreateRuntimeDoubleBinary(const std::string& name) {
     auto* functionTy = llvm::FunctionType::get(doubleTy, { doubleTy, doubleTy }, false);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
 }
+
+llvm::Function* getOrCreateRuntimeFunction(const std::string& name, llvm::Type* returnType, const std::vector<llvm::Type*>& paramTypes) {
+    auto& cg = CodeGenerator::getInstance();
+    if (auto* function = cg.module->getFunction(name)) return function;
+    auto* functionTy = llvm::FunctionType::get(returnType, paramTypes, false);
+    return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
+}
+
+llvm::Value* coerceValueForString(CodeGenerator& cg, llvm::Value* value, const Type* type) {
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+
+    if (!value || !type) {
+        return llvm::ConstantPointerNull::get(i8PtrTy);
+    }
+    if (type->isStringTy()) {
+        return value->getType()->isPointerTy()
+            ? value
+            : llvm::ConstantPointerNull::get(i8PtrTy);
+    }
+    if (type->isCharTy()) {
+        llvm::Value* charValue = value->getType()->isIntegerTy(8)
+            ? value
+            : cg.builder.CreateTrunc(value, i8Ty, "str.char");
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction("csec_to_string_char", i8PtrTy, {i8Ty}),
+            {charValue},
+            "str.char.call");
+    }
+    if (type->getName() == "Boolean" || type->getName() == "Bool") {
+        llvm::Value* boolValue = value->getType()->isIntegerTy(32)
+            ? value
+            : cg.builder.CreateZExt(value, i32Ty, "str.bool");
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction("csec_to_string_bool", i8PtrTy, {i32Ty}),
+            {boolValue},
+            "str.bool.call");
+    }
+    if (type->isFloatTy() || type->isDoubleTy()) {
+        llvm::Value* doubleValue = value->getType()->isDoubleTy()
+            ? value
+            : (value->getType()->isFloatTy()
+                ? cg.builder.CreateFPExt(value, f64Ty, "str.fpext")
+                : cg.builder.CreateSIToFP(value, f64Ty, "str.sitofp"));
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction("csec_to_string_double", i8PtrTy, {f64Ty}),
+            {doubleValue},
+            "str.double.call");
+    }
+    if (type->isIntegerTy()) {
+        llvm::Value* intValue = value;
+        if (!value->getType()->isIntegerTy(64)) {
+            unsigned bits = value->getType()->getIntegerBitWidth();
+            intValue = bits < 64
+                ? cg.builder.CreateSExt(value, i64Ty, "str.sext")
+                : cg.builder.CreateTrunc(value, i64Ty, "str.trunc");
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction("csec_to_string_i64", i8PtrTy, {i64Ty}),
+            {intValue},
+            "str.int.call");
+    }
+
+    return llvm::ConstantPointerNull::get(i8PtrTy);
+}
+
+llvm::Value* codegenStringConcat(CodeGenerator& cg, llvm::Value* leftValue, const Type* leftType, llvm::Value* rightValue, const Type* rightType) {
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    llvm::Value* leftString = coerceValueForString(cg, leftValue, leftType);
+    llvm::Value* rightString = coerceValueForString(cg, rightValue, rightType);
+    return cg.builder.CreateCall(
+        getOrCreateRuntimeFunction("csec_string_concat", i8PtrTy, {i8PtrTy, i8PtrTy}),
+        {leftString, rightString},
+        "str.concat");
+}
+
+llvm::Value* codegenClassOperator(const std::string& op, llvm::Value* leftValue, ASTNode* leftNode, ASTNode* rightNode) {
+    auto& cg = CodeGenerator::getInstance();
+    auto leftType = leftNode ? leftNode->getType() : nullptr;
+    if (!leftType || leftType->getKind() != Type::Kind::CLASS) {
+        return nullptr;
+    }
+
+    auto* classSymbol = cg.symbolTable.lookupClass(leftType->getName());
+    if (!classSymbol) {
+        return nullptr;
+    }
+
+    llvm::Value* rightValue = rightNode ? rightNode->codegen() : nullptr;
+    if (!rightValue) {
+        return nullptr;
+    }
+
+    auto rightType = rightNode->getType();
+    std::vector<std::unique_ptr<Type>> argTypes;
+    argTypes.push_back(rightType ? rightType->clone() : std::make_unique<UnknownType>());
+
+    std::string methodName = "operator" + op;
+    auto* methodSymbol = cg.symbolTable.lookupMethod(*classSymbol, methodName, argTypes);
+    if (!methodSymbol) {
+        return nullptr;
+    }
+
+    auto* funcType = dynamic_cast<FunctionType*>(methodSymbol->type.get());
+    auto* function = llvm::dyn_cast_or_null<llvm::Function>(methodSymbol->value);
+    if (!funcType || !function || funcType->parameterTypes.size() != 2) {
+        return nullptr;
+    }
+
+    if (!rightType || (!rightType->equals(funcType->parameterTypes[1]) && !rightType->isSubtypeOf(funcType->parameterTypes[1]))) {
+        return nullptr;
+    }
+
+    return cg.builder.CreateCall(function, {leftValue, rightValue}, function->getReturnType()->isVoidTy() ? "" : "op.call");
+}
 }
 
 
@@ -319,6 +438,10 @@ llvm::Value* BinaryExpressionNode::codegen() {
     llvm::Value* leftValue = left->codegen();
     if (!leftValue) return nullptr;
 
+    if (auto* overloaded = codegenClassOperator(op, leftValue, left.get(), right.get())) {
+        return overloaded;
+    }
+
     if (leftValue->getType()->isPointerTy()) {
         auto& cg = CodeGenerator::getInstance();
         auto leftType = left->getType();
@@ -326,7 +449,9 @@ llvm::Value* BinaryExpressionNode::codegen() {
             std::cerr << "Type error: Cannot determine type of left operand" << std::endl;
             return nullptr;
         }
-        if (!TensorRuntime::isTensorTypeName(leftType->getName())) {
+        if (!TensorRuntime::isTensorTypeName(leftType->getName()) &&
+            !leftType->isStringTy() &&
+            leftType->getKind() != Type::Kind::CLASS) {
             leftValue = cg.builder.CreateLoad(cg.getLLVMType(leftType.get()), leftValue, "loadtmp");
         }
     }
@@ -451,7 +576,9 @@ llvm::Value* BinaryExpressionNode::codegen() {
             std::cerr << "Type error: Cannot determine type of right operand" << std::endl;
             return nullptr;
         }
-        if (!TensorRuntime::isTensorTypeName(rightType->getName())) {
+        if (!TensorRuntime::isTensorTypeName(rightType->getName()) &&
+            !rightType->isStringTy() &&
+            rightType->getKind() != Type::Kind::CLASS) {
             rightValue = cg.builder.CreateLoad(cg.getLLVMType(rightType.get()), rightValue, "loadtmp");
         }
     }
@@ -476,6 +603,12 @@ llvm::Value* BinaryExpressionNode::codegen() {
     }
 
     auto& cg = CodeGenerator::getInstance();
+
+    if (op == "+" && (leftTypeName == "String" || rightTypeName == "String")) {
+        auto leftStaticType = left->getType();
+        auto rightStaticType = right->getType();
+        return codegenStringConcat(cg, leftValue, leftStaticType.get(), rightValue, rightStaticType.get());
+    }
 
     if (isLogicalOperator(op)) {
         llvm::Value* leftBool = coerceToBool(leftValue);
@@ -795,6 +928,21 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
 
     if (!leftType || !rightType) {
         return std::make_unique<UnknownType>();
+    }
+
+    if (op == "+" && (leftType->getName() == "String" || rightType->getName() == "String")) {
+        return std::make_unique<BasicType>("String");
+    }
+
+    if (leftType->getKind() == Type::Kind::CLASS) {
+        auto* classSymbol = CodeGenerator::getInstance().symbolTable.lookupClass(leftType->getName());
+        auto* methodSymbol = classSymbol ? CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, "operator" + op) : nullptr;
+        if (methodSymbol) {
+            auto* funcType = dynamic_cast<FunctionType*>(methodSymbol->type.get());
+            if (funcType && funcType->returnType) {
+                return funcType->returnType->clone();
+            }
+        }
     }
 
     if (!leftType->equals(rightType)) {

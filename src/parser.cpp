@@ -325,7 +325,16 @@ std::unique_ptr<ClassBodyNode> Parser::parseClassBody() {
 			return nullptr;
 		}
 
-		if (match(TokenType::KEYWORD, "def")) {
+		if (match(TokenType::KEYWORD, "override")) {
+			expect(TokenType::KEYWORD, "def");
+			auto method = parseFunctionDeclaration();
+			if (method) {
+				method->isOverride = true;
+			}
+			classBody->methods.push_back(std::move(method));
+            match(TokenType::OPERATOR, ";");
+		}
+		else if (match(TokenType::KEYWORD, "def")) {
 			classBody->methods.push_back(parseFunctionDeclaration());
             match(TokenType::OPERATOR, ";");
 		}

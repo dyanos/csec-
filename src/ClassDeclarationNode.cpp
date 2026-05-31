@@ -5,7 +5,25 @@
 #include "symbol.h"
 
 #include <iostream>
+#include <sstream>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+
+namespace {
+std::string methodStorageKey(const std::string& methodName, const std::vector<std::unique_ptr<ASTNode>>& parameters) {
+    if (parameters.empty()) {
+        return methodName;
+    }
+
+    std::ostringstream key;
+    key << methodName;
+    for (const auto& param : parameters) {
+        auto type = param ? param->getType() : nullptr;
+        key << "@" << (type ? type->getName() : "Unknown");
+    }
+    return key.str();
+}
+}
 
 void ClassDeclarationNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -159,6 +177,14 @@ llvm::Value* ClassDeclarationNode::codegen() {
         declareMethod(md, classSymbol);
     }
 
+    for (auto& method : classBody->methods) {
+        auto md = dynamic_cast<FunctionDeclarationNode*>(method.get());
+        if (!md) {
+            continue;
+        }
+        defineMethod(md, classSymbol, classBody);
+    }
+
     // 심볼 테이블에 클래스 심볼 추가
     return nullptr;
 }
@@ -200,10 +226,160 @@ void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassS
     }
 
     // 메서드 심볼 업데이트
+    std::string storageKey = methodStorageKey(method->name, method->parameters);
+    if (method->isOverride && !classSymbol->superClassSymbol) {
+        std::cerr << "Error: Method '" << method->name << "' is marked override but class '" << name << "' has no superclass" << std::endl;
+        return;
+    }
+    if (method->isOverride && classSymbol->superClassSymbol) {
+        std::vector<std::unique_ptr<Type>> argTypes;
+        for (auto& param : method->parameters) {
+            argTypes.push_back(param->getType() ? param->getType()->clone() : std::make_unique<UnknownType>());
+        }
+        if (!cg.symbolTable.lookupMethod(*classSymbol->superClassSymbol, method->name, argTypes)) {
+            std::cerr << "Error: Method '" << method->name << "' is marked override but no matching superclass method exists" << std::endl;
+            return;
+        }
+    }
+
     auto methodSymbol = std::make_unique<Symbol>(method->name, std::make_unique<FunctionType>(types, method->returnType), function, false, SymbolType::METHOD);
-    classSymbol->methods[method->name] = std::move(methodSymbol);
+    classSymbol->methods[storageKey] = std::move(methodSymbol);
 
     // 메서드 본문 생성을 지연시키기 위해 FunctionDeclarationNode를 저장
-        classSymbol->methodBodies[method->name] = std::make_unique<FunctionDeclarationNode>(*method);
+        classSymbol->methodBodies[storageKey] = std::make_unique<FunctionDeclarationNode>(*method);
     //classSymbol->methodBodies[method->name] = method;
+}
+
+llvm::Function* ClassDeclarationNode::defineMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol, ClassBodyNode* classBody) {
+    if (!method || !classSymbol || !classBody || !method->body) {
+        return nullptr;
+    }
+
+    auto& cg = CodeGenerator::getInstance();
+    std::string storageKey = methodStorageKey(method->name, method->parameters);
+    auto methodIt = classSymbol->methods.find(storageKey);
+    if (methodIt == classSymbol->methods.end() || !methodIt->second) {
+        return nullptr;
+    }
+
+    auto* function = llvm::dyn_cast_or_null<llvm::Function>(methodIt->second->value);
+    if (!function) {
+        return nullptr;
+    }
+    if (!function->empty()) {
+        return function;
+    }
+
+    auto* classType = llvm::dyn_cast_or_null<llvm::StructType>(classSymbol->classType);
+    if (!classType) {
+        std::cerr << "Error: Invalid class type for method '" << method->name << "'" << std::endl;
+        return nullptr;
+    }
+
+    llvm::BasicBlock* savedBlock = cg.builder.GetInsertBlock();
+    auto savedPoint = cg.builder.GetInsertPoint();
+    auto* savedCurrentSymbol = cg.symbolTable.getCurrentSymbol();
+
+    cg.symbolTable.saveCurrentSymbol();
+    cg.symbolTable.setCurrentSymbol(nullptr);
+    cg.symbolTable.enterScope();
+
+    auto* entry = llvm::BasicBlock::Create(cg.context, "entry", function);
+    cg.builder.SetInsertPoint(entry);
+
+    auto argIt = function->arg_begin();
+    if (argIt == function->arg_end()) {
+        std::cerr << "Error: Method '" << method->name << "' is missing this parameter" << std::endl;
+        cg.symbolTable.exitScope();
+        cg.symbolTable.popCurrentSymbol();
+        cg.symbolTable.setCurrentSymbol(savedCurrentSymbol);
+        if (savedBlock) {
+            cg.builder.SetInsertPoint(savedBlock, savedPoint);
+        }
+        return nullptr;
+    }
+
+    llvm::Value* thisValue = &*argIt++;
+    thisValue->setName("this");
+    auto* classPtrType = llvm::PointerType::getUnqual(classType);
+    if (thisValue->getType() != classPtrType) {
+        thisValue = cg.builder.CreateBitCast(thisValue, classPtrType, "this.class");
+    }
+
+    cg.symbolTable.addSymbol(
+        "this",
+        std::make_unique<Symbol>("this", std::make_unique<ClassType>(name), thisValue, false, SymbolType::VARIABLE));
+
+    int fieldIndex = 0;
+    auto bindField = [&](const std::string& fieldName, const std::unique_ptr<Type>& fieldType, bool isMutable) {
+        if (!fieldType) {
+            return;
+        }
+        llvm::Value* fieldPtr = cg.builder.CreateStructGEP(
+            classType,
+            thisValue,
+            static_cast<unsigned>(fieldIndex),
+            fieldName + ".field");
+        cg.symbolTable.addSymbol(
+            fieldName,
+            std::make_unique<Symbol>(fieldName, fieldType->clone(), fieldPtr, isMutable, SymbolType::FIELD));
+        fieldIndex += 1;
+    };
+
+    for (auto& field : constructorParams) {
+        auto* param = dynamic_cast<ParameterNode*>(field.get());
+        if (!param) {
+            continue;
+        }
+        bindField(param->name, param->type, false);
+    }
+
+    for (auto& field : classBody->fields) {
+        auto* fieldNode = dynamic_cast<VariableDeclarationNode*>(field.get());
+        if (!fieldNode) {
+            continue;
+        }
+        bindField(fieldNode->name, fieldNode->type, fieldNode->isMutable);
+    }
+
+    for (auto& param : method->parameters) {
+        auto* paramNode = dynamic_cast<ParameterNode*>(param.get());
+        if (!paramNode || !paramNode->type || argIt == function->arg_end()) {
+            continue;
+        }
+
+        llvm::Value* argValue = &*argIt++;
+        argValue->setName(paramNode->name);
+        cg.symbolTable.addSymbol(
+            paramNode->name,
+            std::make_unique<Symbol>(paramNode->name, paramNode->type->clone(), argValue, false, SymbolType::VARIABLE));
+    }
+
+    method->body->codegen();
+
+    llvm::BasicBlock* currentBlock = cg.builder.GetInsertBlock();
+    if (currentBlock && !currentBlock->getTerminator()) {
+        llvm::Type* returnType = function->getReturnType();
+        if (returnType->isVoidTy()) {
+            cg.builder.CreateRetVoid();
+        }
+        else if (returnType->isIntegerTy()) {
+            cg.builder.CreateRet(llvm::ConstantInt::get(returnType, 0));
+        }
+        else if (returnType->isFloatingPointTy()) {
+            cg.builder.CreateRet(llvm::ConstantFP::get(returnType, 0.0));
+        }
+        else {
+            cg.builder.CreateRet(llvm::Constant::getNullValue(returnType));
+        }
+    }
+
+    cg.symbolTable.exitScope();
+    cg.symbolTable.popCurrentSymbol();
+    cg.symbolTable.setCurrentSymbol(savedCurrentSymbol);
+    if (savedBlock) {
+        cg.builder.SetInsertPoint(savedBlock, savedPoint);
+    }
+
+    return function;
 }

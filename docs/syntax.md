@@ -77,6 +77,51 @@ val c: Int = (a << 1) | 1;
 
 Supported boolean operators include `and`, `or`, and `xor`.
 
+String literals are inferred as `String`. If either side of `+` is `String`,
+the other primitive value is converted with the runtime `toString` path:
+
+```ts
+val message = "score=" + 4 + ", ok=" + true;
+```
+
+## Classes, Overloading, And Overriding
+
+Classes can declare fields and methods. Methods can be overloaded by parameter
+types:
+
+```ts
+class Formatter() {
+    def show(value: Int): Int {
+        return value + 1;
+    }
+
+    def show(value: String): String {
+        return value + "!";
+    }
+}
+```
+
+Subclasses can override a superclass method with the same parameter signature:
+
+```ts
+class Child extends Formatter {
+    override def show(value: String): String {
+        return "child=" + value;
+    }
+}
+```
+
+Operator overloads are declared as `def operator <op>(...)` inside a class.
+For example, `counter + 4` calls `counter.operator+(4)`:
+
+```ts
+class Counter() {
+    def operator +(right: Int): Int {
+        return right + 1;
+    }
+}
+```
+
 ## Control Flow
 
 Conditional statements:

@@ -115,6 +115,7 @@ llvm::Function* getOrCreateRuntimeFunction(
     const std::string& name,
     llvm::Type* returnType,
     const std::vector<llvm::Type*>& paramTypes) {
+    cg.requireSystemNative();
     if (auto* function = cg.module->getFunction(name)) {
         return function;
     }

@@ -30,6 +30,10 @@ public:
 
     llvm::LLVMContext& getContext() { return context; }
 
+    void addExternalLinkLibrary(const std::string& library);
+    void addExternalLinkPath(const std::string& path);
+    void requireSystemNative();
+
     void dumpIR();
     llvm::Type* getLLVMType(const Type* type);
 

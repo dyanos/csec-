@@ -325,6 +325,124 @@ bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool
     return true;
 }
 
+bool startsWithSystemLibraryPrefix(const std::string& library) {
+    return library.rfind("System.", 0) == 0;
+}
+
+bool hasLibraryFileExtension(const std::filesystem::path& path) {
+    std::string extension = path.extension().string();
+    return extension == ".lib" || extension == ".dll" || extension == ".so" ||
+           extension == ".a" || extension == ".dylib" || extension == ".o" ||
+           extension == ".obj";
+}
+
+std::string systemSharedLibraryFileName(const std::string& library) {
+    std::filesystem::path path(library);
+    if (hasLibraryFileExtension(path)) {
+        return path.filename().string();
+    }
+#ifdef _WIN32
+    return library + ".dll";
+#elif defined(__APPLE__)
+    return "lib" + library + ".dylib";
+#else
+    return library + ".so";
+#endif
+}
+
+std::string systemLinkLibraryFileName(const std::string& library) {
+    std::filesystem::path path(library);
+    if (hasLibraryFileExtension(path)) {
+        return path.filename().string();
+    }
+#ifdef _WIN32
+    return library + ".lib";
+#elif defined(__APPLE__)
+    return "lib" + library + ".dylib";
+#else
+    return library + ".so";
+#endif
+}
+
+std::vector<std::filesystem::path> systemLibrarySearchDirectories(
+    const std::vector<std::string>& linkPaths,
+    const std::string& outputPath) {
+    std::vector<std::filesystem::path> directories;
+    auto addDirectory = [&](std::filesystem::path path) {
+        if (path.empty()) return;
+        std::error_code ec;
+        path = std::filesystem::absolute(path, ec);
+        if (ec) return;
+        for (const auto& existing : directories) {
+            if (existing == path) return;
+        }
+        directories.push_back(path);
+    };
+
+    for (const auto& linkPath : linkPaths) {
+        addDirectory(linkPath);
+    }
+    addDirectory(std::filesystem::path(outputPath).parent_path());
+    addDirectory(std::filesystem::current_path());
+    addDirectory(std::filesystem::current_path() / "Debug");
+    addDirectory(std::filesystem::current_path() / "Release");
+    addDirectory(std::filesystem::current_path() / "build");
+    addDirectory(std::filesystem::current_path() / "build-cmake-check");
+
+    return directories;
+}
+
+std::filesystem::path findLibraryFile(
+    const std::string& library,
+    const std::string& fileName,
+    const std::vector<std::filesystem::path>& directories) {
+    std::filesystem::path libraryPath(library);
+    std::error_code ec;
+    if ((libraryPath.has_parent_path() || hasLibraryFileExtension(libraryPath)) &&
+        std::filesystem::exists(libraryPath, ec)) {
+        auto canonicalPath = std::filesystem::weakly_canonical(libraryPath, ec);
+        return ec ? libraryPath : canonicalPath;
+    }
+
+    for (const auto& directory : directories) {
+        std::filesystem::path candidate = directory / fileName;
+        if (std::filesystem::exists(candidate, ec)) {
+            auto canonicalPath = std::filesystem::weakly_canonical(candidate, ec);
+            return ec ? candidate : canonicalPath;
+        }
+    }
+
+    return {};
+}
+
+void copyRuntimeLibraryNextToOutput(
+    const std::filesystem::path& runtimeLibrary,
+    const std::string& outputPath) {
+    if (runtimeLibrary.empty()) {
+        return;
+    }
+
+    std::filesystem::path outputDirectory = std::filesystem::path(outputPath).parent_path();
+    if (outputDirectory.empty()) {
+        outputDirectory = std::filesystem::current_path();
+    }
+    std::error_code ec;
+    std::filesystem::create_directories(outputDirectory, ec);
+    std::filesystem::copy_file(
+        runtimeLibrary,
+        outputDirectory / runtimeLibrary.filename(),
+        std::filesystem::copy_options::overwrite_existing,
+        ec);
+}
+
+void copyRuntimeLibrariesNextToOutput(
+    const std::vector<std::filesystem::path>& runtimeLibraries,
+    const std::string& outputPath) {
+    for (const auto& library : runtimeLibraries) {
+        copyRuntimeLibraryNextToOutput(library, outputPath);
+    }
+}
+
 std::string nativeLinkLibraryArg(const std::string& library) {
     if (library.empty()) {
         return "";
@@ -365,6 +483,53 @@ std::string nativeLinkLibraryArg(const std::string& library) {
         return "-l" + stem.substr(3);
     }
     return "-l" + library;
+}
+
+std::string resolvedNativeLinkLibraryArg(
+    const std::string& library,
+    const std::vector<std::string>& linkPaths,
+    const std::string& outputPath,
+    std::vector<std::filesystem::path>& runtimeLibraries) {
+    if (!startsWithSystemLibraryPrefix(library)) {
+        return nativeLinkLibraryArg(library);
+    }
+
+    auto directories = systemLibrarySearchDirectories(linkPaths, outputPath);
+    std::filesystem::path linkLibrary = findLibraryFile(library, systemLinkLibraryFileName(library), directories);
+    std::filesystem::path sharedLibrary = findLibraryFile(library, systemSharedLibraryFileName(library), directories);
+    if (!sharedLibrary.empty()) {
+        runtimeLibraries.push_back(sharedLibrary);
+    }
+    if (!linkLibrary.empty()) {
+        return quoteCommandArg(linkLibrary.string());
+    }
+
+#ifdef __APPLE__
+    return "-l:" + systemLinkLibraryFileName(library);
+#else
+    return "-l:" + systemLinkLibraryFileName(library);
+#endif
+}
+
+std::string resolvedWindowsLinkLibraryArg(
+    const std::string& library,
+    const std::vector<std::string>& linkPaths,
+    const std::string& outputPath,
+    std::vector<std::filesystem::path>& runtimeLibraries) {
+    if (!startsWithSystemLibraryPrefix(library)) {
+        return quoteCommandArg(library);
+    }
+
+    auto directories = systemLibrarySearchDirectories(linkPaths, outputPath);
+    std::filesystem::path importLibrary = findLibraryFile(library, systemLinkLibraryFileName(library), directories);
+    std::filesystem::path sharedLibrary = findLibraryFile(library, systemSharedLibraryFileName(library), directories);
+    if (!sharedLibrary.empty()) {
+        runtimeLibraries.push_back(sharedLibrary);
+    }
+    if (!importLibrary.empty()) {
+        return quoteCommandArg(importLibrary.string());
+    }
+    return quoteCommandArg(systemLinkLibraryFileName(library));
 }
 
 std::filesystem::path findWindowsLinker() {
@@ -498,39 +663,30 @@ bool writeExecutableToFile(
         return false;
     }
 
-    std::filesystem::path tempRuntimeObject = std::filesystem::path(outputPath).replace_extension(".native.tmp.o");
     std::filesystem::path cxxPath = findToolPath("CXX", "c++");
     std::string cxx = cxxPath.string();
-    std::string compileCommand =
-        quoteCommandArg(cxx) +
-        " -std=c++17 -O2 -pthread -DCSEC_NATIVE_RUNTIME_BUILD -c " +
-        quoteCommandArg(findNativeRuntimeSource().string()) +
-        " -o " + quoteCommandArg(tempRuntimeObject.string());
-    int compileResult = std::system(compileCommand.c_str());
-    if (compileResult != 0) {
-        std::error_code removeError;
-        std::filesystem::remove(tempObject, removeError);
-        std::cerr << "Failed to compile NativeRuntime.cpp. Command exited with code " << compileResult << std::endl;
-        return false;
-    }
-
+    std::vector<std::filesystem::path> runtimeLibrariesToCopy;
     std::string linkCommand =
         quoteCommandArg(cxx) +
         " -o " + quoteCommandArg(outputPath) + " " +
-        quoteCommandArg(tempObject.string()) + " " +
-        quoteCommandArg(tempRuntimeObject.string());
+        quoteCommandArg(tempObject.string());
     for (const auto& linkPathArg : linkPaths) {
         if (!linkPathArg.empty()) {
             linkCommand += " -L" + quoteCommandArg(linkPathArg);
         }
     }
     for (const auto& library : linkLibraries) {
-        std::string linkArg = nativeLinkLibraryArg(library);
+        std::string linkArg = resolvedNativeLinkLibraryArg(library, linkPaths, outputPath, runtimeLibrariesToCopy);
         if (!linkArg.empty()) {
             linkCommand += " " + linkArg;
         }
     }
     linkCommand += " -pthread";
+#ifndef __APPLE__
+    if (!runtimeLibrariesToCopy.empty()) {
+        linkCommand += " -Wl,-rpath,\\$ORIGIN";
+    }
+#endif
 #ifndef __APPLE__
     linkCommand += " -ldl";
 #endif
@@ -538,12 +694,12 @@ bool writeExecutableToFile(
     int linkResult = std::system(linkCommand.c_str());
     std::error_code removeError;
     std::filesystem::remove(tempObject, removeError);
-    std::filesystem::remove(tempRuntimeObject, removeError);
     if (linkResult != 0) {
         std::cerr << "Failed to emit executable via native linker. Command exited with code " << linkResult << std::endl;
         return false;
     }
 
+    copyRuntimeLibrariesNextToOutput(runtimeLibrariesToCopy, outputPath);
     std::cout << "Wrote executable: " << outputPath << std::endl;
     return true;
 #else
@@ -553,12 +709,7 @@ bool writeExecutableToFile(
     }
 
     std::filesystem::path linkPath = findWindowsLinker();
-    std::filesystem::path tempRuntimeObject = std::filesystem::path(outputPath).replace_extension(".native.tmp.obj");
-    if (!compileNativeRuntimeObject(linkPath, tempRuntimeObject)) {
-        std::error_code removeError;
-        std::filesystem::remove(tempObject, removeError);
-        return false;
-    }
+    std::vector<std::filesystem::path> runtimeLibrariesToCopy;
     std::vector<std::string> linkArgs = {
         quoteCommandArg(linkPath.string()),
         "/NOLOGO",
@@ -566,7 +717,6 @@ bool writeExecutableToFile(
         "/OUT:" + quoteCommandArg(outputPath),
         quoteCommandArg(tempObject.string())
     };
-    linkArgs.push_back(quoteCommandArg(tempRuntimeObject.string()));
 
     auto msvcLibPath = findMsvcX64LibPath(linkPath);
     if (!msvcLibPath.empty()) {
@@ -590,7 +740,7 @@ bool writeExecutableToFile(
     linkArgs.push_back("legacy_stdio_definitions.lib");
     for (const auto& library : linkLibraries) {
         if (!library.empty()) {
-            linkArgs.push_back(quoteCommandArg(library));
+            linkArgs.push_back(resolvedWindowsLinkLibraryArg(library, linkPaths, outputPath, runtimeLibrariesToCopy));
         }
     }
 
@@ -605,12 +755,12 @@ bool writeExecutableToFile(
     int result = std::system(command.c_str());
     std::error_code removeError;
     std::filesystem::remove(tempObject, removeError);
-    std::filesystem::remove(tempRuntimeObject, removeError);
     if (result != 0) {
         std::cerr << "Failed to emit executable via link.exe. Command exited with code " << result << std::endl;
         return false;
     }
 
+    copyRuntimeLibrariesNextToOutput(runtimeLibrariesToCopy, outputPath);
     std::cout << "Wrote executable: " << outputPath << std::endl;
     return true;
 #endif

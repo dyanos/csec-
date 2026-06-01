@@ -313,7 +313,7 @@ if(WIN32)
     endif()
 endif()
 set_target_properties(csec_native_runtime PROPERTIES
-    OUTPUT_NAME "csec_native_runtime"
+    OUTPUT_NAME "System.Native"
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN YES
 )
@@ -328,6 +328,11 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:csec_native_runtime>
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:csec_native_runtime>
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/csec_native_runtime${CMAKE_SHARED_LIBRARY_SUFFIX}"
 )
 if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_definitions(${PROJECT_NAME} PRIVATE _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH)

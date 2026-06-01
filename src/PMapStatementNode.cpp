@@ -56,6 +56,7 @@ void attachParallelLoopMetadata(llvm::LLVMContext& context, llvm::BranchInst* la
 }
 
 llvm::Function* getOrCreateParallelForI32(CodeGenerator& cg) {
+    cg.requireSystemNative();
     if (auto* function = cg.module->getFunction("csec_parallel_for_i32")) {
         return function;
     }

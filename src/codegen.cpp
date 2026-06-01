@@ -10,6 +10,16 @@
 #include "ProgramNode.h"
 
 
+namespace {
+void addUnique(std::vector<std::string>& values, const std::string& value) {
+    if (value.empty()) return;
+    for (const auto& existing : values) {
+        if (existing == value) return;
+    }
+    values.push_back(value);
+}
+}
+
 CodeGenerator::CodeGenerator() : builder(context) {
     this->module = std::make_unique<llvm::Module>("main", context);
 
@@ -82,6 +92,18 @@ CodeGenerator::CodeGenerator() : builder(context) {
 
 void CodeGenerator::dumpIR() {
     module->print(llvm::outs(), nullptr);
+}
+
+void CodeGenerator::addExternalLinkLibrary(const std::string& library) {
+    addUnique(externalLinkLibraries, library);
+}
+
+void CodeGenerator::addExternalLinkPath(const std::string& path) {
+    addUnique(externalLinkPaths, path);
+}
+
+void CodeGenerator::requireSystemNative() {
+    addExternalLinkLibrary("System.Native");
 }
 
 llvm::Type* CodeGenerator::getLLVMType(const Type* type) {

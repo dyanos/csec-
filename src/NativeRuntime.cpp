@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -65,6 +66,31 @@ void closeSocketHandle(NativeSocket socketHandle) {
     close(socketHandle);
 }
 #endif
+
+std::string resolveSystemLibraryPath(const char* path) {
+    if (!path) return "";
+    std::string library(path);
+    if (library.rfind("System.", 0) != 0) {
+        return library;
+    }
+
+    const bool hasExtension =
+        (library.size() >= 4 && library.compare(library.size() - 4, 4, ".dll") == 0) ||
+        (library.size() >= 3 && library.compare(library.size() - 3, 3, ".so") == 0) ||
+        (library.size() >= 4 && library.compare(library.size() - 4, 4, ".lib") == 0) ||
+        (library.size() >= 6 && library.compare(library.size() - 6, 6, ".dylib") == 0);
+    if (hasExtension) {
+        return library;
+    }
+
+#ifdef _WIN32
+    return library + ".dll";
+#elif defined(__APPLE__)
+    return "lib" + library + ".dylib";
+#else
+    return library + ".so";
+#endif
+}
 }
 
 extern "C" {
@@ -717,10 +743,11 @@ int csec_posix_access_execute(void) { return 1; }
 
 long long csec_load_library(const char* path) {
     if (!path) return 0;
+    std::string resolvedPath = resolveSystemLibraryPath(path);
 #ifdef _WIN32
-    return reinterpret_cast<long long>(LoadLibraryA(path));
+    return reinterpret_cast<long long>(LoadLibraryA(resolvedPath.c_str()));
 #else
-    return reinterpret_cast<long long>(dlopen(path, RTLD_LAZY));
+    return reinterpret_cast<long long>(dlopen(resolvedPath.c_str(), RTLD_LAZY));
 #endif
 }
 

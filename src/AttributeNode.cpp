@@ -22,14 +22,6 @@ std::string stringArgument(const FunctionCallNode* call, size_t index) {
     return valueNode->value;
 }
 
-void addUnique(std::vector<std::string>& values, const std::string& value) {
-    if (value.empty()) return;
-    for (const auto& existing : values) {
-        if (existing == value) return;
-    }
-    values.push_back(value);
-}
-
 CppMangleStyle platformDefaultMangleStyle() {
 #ifdef _WIN32
     return CppMangleStyle::MSVC;
@@ -58,10 +50,11 @@ llvm::Value* AttributeNode::codegen() {
     auto applyToTarget = [&]() {
         return target ? target->codegen() : nullptr;
     };
+    auto& codeGen = CodeGenerator::getInstance();
 
     if (auto* callNode = dynamic_cast<FunctionCallNode*>(this->expr.get())) {
         if (callNode->functionName == "LinkLibrary" || callNode->functionName == "NativeLibrary") {
-            addUnique(CodeGenerator::getInstance().externalLinkLibraries, stringArgument(callNode, 0));
+            codeGen.addExternalLinkLibrary(stringArgument(callNode, 0));
             return applyToTarget();
         }
         if (callNode->functionName == "DllImport" || callNode->functionName == "StaticLibraryImport") {
@@ -72,7 +65,7 @@ llvm::Value* AttributeNode::codegen() {
                 function->externalSymbolName = symbol;
                 function->isExternal = true;
             }
-            addUnique(CodeGenerator::getInstance().externalLinkLibraries, library);
+            codeGen.addExternalLinkLibrary(library);
             return applyToTarget();
         }
         if (callNode->functionName == "CppImport" || callNode->functionName == "CxxImport") {
@@ -84,11 +77,11 @@ llvm::Value* AttributeNode::codegen() {
                 function->externalSymbolName = symbol;
                 function->isExternal = true;
             }
-            addUnique(CodeGenerator::getInstance().externalLinkLibraries, library);
+            codeGen.addExternalLinkLibrary(library);
             return applyToTarget();
         }
         if (callNode->functionName == "LinkPath") {
-            addUnique(CodeGenerator::getInstance().externalLinkPaths, stringArgument(callNode, 0));
+            codeGen.addExternalLinkPath(stringArgument(callNode, 0));
             return applyToTarget();
         }
     }

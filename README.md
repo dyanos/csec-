@@ -144,8 +144,14 @@ export LLVM_BIN="$(brew --prefix llvm)/bin"
 export PATH="$LLVM_BIN:$PATH"
 ```
 
-`--emit-exe` compiles `NativeRuntime.cpp` with a native C++ compiler. Override the
-compiler with `CXX` when needed:
+Standard runtime APIs are provided through a C#-style native system assembly.
+The build emits `System.Native.dll` on Windows, `libSystem.Native.dylib` on
+macOS, or `System.Native.so` on Linux. Programs that use built-in runtime APIs
+automatically link `System.Native`; `[@DllImport("System.Native", "...")]` also
+resolves to the platform library extension.
+
+`--emit-exe` compiles the program and links any required `System.*` libraries.
+Override the native linker driver with `CXX` when needed:
 
 ```sh
 export CXX=clang++

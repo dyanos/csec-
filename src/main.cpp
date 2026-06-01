@@ -65,6 +65,40 @@ void printUsage(const char* programName) {
         << "                               Print a C++ ABI mangled name and exit\n";
 }
 
+std::string trimInputPath(std::string path) {
+    const auto first = path.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) {
+        return "";
+    }
+    const auto last = path.find_last_not_of(" \t\r\n");
+    path = path.substr(first, last - first + 1);
+
+    if (path.size() >= 2 && path.front() == '"' && path.back() == '"') {
+        path = path.substr(1, path.size() - 2);
+    }
+
+    return path;
+}
+
+std::string promptForInputFile(const char* programName) {
+    std::cout << "Input file path: ";
+
+    std::string inputFile;
+    if (!std::getline(std::cin, inputFile)) {
+        std::cerr << "No input file provided." << std::endl;
+        printUsage(programName);
+        return "";
+    }
+
+    inputFile = trimInputPath(inputFile);
+    if (inputFile.empty()) {
+        std::cerr << "No input file provided." << std::endl;
+        printUsage(programName);
+    }
+
+    return inputFile;
+}
+
 int printMangledName(const char* programName, const std::string& style, const std::string& signature) {
     try {
         if (style == "itanium") {
@@ -625,7 +659,7 @@ int main(int argc, char** argv) {
         std::cout << "get current directory: <unavailable>" << std::endl;
     }
     OutputMode outputMode = OutputMode::Run;
-    std::string inputFile = "sample2.csec";
+    std::string inputFile;
     bool inputFileSet = false;
     std::string outputFile;
     std::vector<std::string> linkLibraries;
@@ -700,6 +734,14 @@ int main(int argc, char** argv) {
         std::cerr << "Unexpected argument: " << arg << std::endl;
         printUsage(argv[0]);
         return 1;
+    }
+
+    if (!inputFileSet) {
+        inputFile = promptForInputFile(argv[0]);
+        if (inputFile.empty()) {
+            return 1;
+        }
+        inputFileSet = true;
     }
 
     std::string code = read_utf8_file(inputFile);

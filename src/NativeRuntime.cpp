@@ -300,6 +300,73 @@ double csec_read_double(void) {
     return value;
 }
 
+char* csec_file_read_all_text(const char* path) {
+    if (!path) return nullptr;
+    FILE* file = std::fopen(path, "rb");
+    if (!file) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+
+    if (std::fseek(file, 0, SEEK_END) != 0) {
+        std::fclose(file);
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+
+    long size = std::ftell(file);
+    if (size < 0) size = 0;
+    std::rewind(file);
+
+    char* buffer = static_cast<char*>(std::malloc(static_cast<size_t>(size) + 1));
+    if (!buffer) {
+        std::fclose(file);
+        return nullptr;
+    }
+
+    size_t read = std::fread(buffer, 1, static_cast<size_t>(size), file);
+    buffer[read] = '\0';
+    std::fclose(file);
+    return buffer;
+}
+
+int csec_file_write_all_text(const char* path, const char* text) {
+    if (!path) return -1;
+    FILE* file = std::fopen(path, "wb");
+    if (!file) return -1;
+    const char* value = text ? text : "";
+    size_t len = std::strlen(value);
+    size_t written = std::fwrite(value, 1, len, file);
+    int closeResult = std::fclose(file);
+    return written == len && closeResult == 0 ? 0 : -1;
+}
+
+int csec_file_append_all_text(const char* path, const char* text) {
+    if (!path) return -1;
+    FILE* file = std::fopen(path, "ab");
+    if (!file) return -1;
+    const char* value = text ? text : "";
+    size_t len = std::strlen(value);
+    size_t written = std::fwrite(value, 1, len, file);
+    int closeResult = std::fclose(file);
+    return written == len && closeResult == 0 ? 0 : -1;
+}
+
+int csec_file_exists(const char* path) {
+    if (!path) return 0;
+    FILE* file = std::fopen(path, "rb");
+    if (!file) return 0;
+    std::fclose(file);
+    return 1;
+}
+
+int csec_file_delete(const char* path) {
+    if (!path) return -1;
+    return std::remove(path);
+}
+
 double csec_math_sin(double value) { return std::sin(value); }
 double csec_math_cos(double value) { return std::cos(value); }
 double csec_math_tan(double value) { return std::tan(value); }

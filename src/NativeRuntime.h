@@ -43,6 +43,12 @@ CSEC_NATIVE_API char csec_read_char(void);
 CSEC_NATIVE_API int csec_read_int(void);
 CSEC_NATIVE_API double csec_read_double(void);
 
+CSEC_NATIVE_API char* csec_file_read_all_text(const char* path);
+CSEC_NATIVE_API int csec_file_write_all_text(const char* path, const char* text);
+CSEC_NATIVE_API int csec_file_append_all_text(const char* path, const char* text);
+CSEC_NATIVE_API int csec_file_exists(const char* path);
+CSEC_NATIVE_API int csec_file_delete(const char* path);
+
 CSEC_NATIVE_API double csec_math_sin(double value);
 CSEC_NATIVE_API double csec_math_cos(double value);
 CSEC_NATIVE_API double csec_math_tan(double value);

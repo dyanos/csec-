@@ -3,6 +3,91 @@
 #include "all_ast.h"
 #include "utils.h"
 
+#include <algorithm>
+#include <cctype>
+
+namespace {
+std::string lowerAscii(std::string value) {
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+    return value;
+}
+
+std::string mapSystemPathToBuiltin(const std::vector<std::string>& pathComponents) {
+    if (pathComponents.empty()) {
+        return "";
+    }
+
+    auto equalsPath = [&](std::initializer_list<const char*> parts) {
+        if (pathComponents.size() != parts.size()) return false;
+        size_t index = 0;
+        for (const char* part : parts) {
+            if (pathComponents[index++] != part) return false;
+        }
+        return true;
+    };
+
+    auto mapMathName = [](const std::string& rawName) -> std::string {
+        std::string name = lowerAscii(rawName);
+        if (name == "ceiling") return "ceil";
+        if (name == "log10") return "lg";
+        if (name == "asin") return "arcsin";
+        if (name == "acos") return "arccos";
+        if (name == "atan") return "arctan";
+        static const char* supported[] = {
+            "sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan",
+            "sinh", "cosh", "tanh", "coth", "sqrt", "ln", "log", "lg", "exp",
+            "frac", "binom", "min", "max", "gcd", "pow", "abs", "sign", "floor",
+            "ceil", "round", "lcm", "approxeq", "clamp", "between"
+        };
+        for (const char* candidate : supported) {
+            if (name == candidate) {
+                return name == "approxeq" ? "approxEq" : name;
+            }
+        }
+        return "";
+    };
+
+    const std::string& method = pathComponents.back();
+    if (pathComponents.size() == 3 &&
+        pathComponents[0] == "System" &&
+        pathComponents[1] == "Console") {
+        if (method == "Write" || method == "write" || method == "print") return "print";
+        if (method == "WriteLine" || method == "writeln" || method == "println") return "println";
+        if (method == "ReadLine" || method == "readLine") return "readLine";
+        if (method == "Read" || method == "ReadKey" || method == "read" || method == "readChar") return "readChar";
+        if (method == "ReadInt" || method == "readInt") return "readInt";
+        if (method == "ReadDouble" || method == "readDouble") return "readDouble";
+    }
+
+    if (pathComponents.size() == 3 &&
+        pathComponents[0] == "System" &&
+        pathComponents[1] == "Math") {
+        return mapMathName(method);
+    }
+
+    if (pathComponents.size() == 4 &&
+        pathComponents[0] == "System" &&
+        pathComponents[1] == "IO" &&
+        pathComponents[2] == "File") {
+        if (method == "ReadAllText" || method == "readAllText") return "systemFileReadAllText";
+        if (method == "WriteAllText" || method == "writeAllText") return "systemFileWriteAllText";
+        if (method == "AppendAllText" || method == "appendAllText") return "systemFileAppendAllText";
+        if (method == "Exists" || method == "exists") return "systemFileExists";
+        if (method == "Delete" || method == "delete") return "systemFileDelete";
+    }
+
+    if (pathComponents.size() == 3 &&
+        pathComponents[0] == "System" &&
+        pathComponents[1] == "Environment") {
+        if (method == "GetEnvironmentVariable") return "posixGetenv";
+    }
+
+    return "";
+}
+}
+
 std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 	std::unique_ptr<ASTNode> expr;
 
@@ -124,6 +209,12 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
         }
 
 		if (match(TokenType::OPERATOR, "(")) {
+            if (auto builtinName = mapSystemPathToBuiltin(pathComponents); !builtinName.empty()) {
+                auto callNode = std::make_unique<FunctionCallNode>();
+                callNode->functionName = builtinName;
+                callNode->arguments = parseCallParameterList();
+                return callNode;
+            }
 			if (pathComponents.size() == 1) {
 				auto callNode = std::make_unique<FunctionCallNode>();
 				callNode->functionName = pathComponents[0];

@@ -65,6 +65,14 @@ bool isNativePosixFunction(const std::string& name) {
     return false;
 }
 
+bool isNativeSystemFileFunction(const std::string& name) {
+    return name == "systemFileReadAllText" ||
+           name == "systemFileWriteAllText" ||
+           name == "systemFileAppendAllText" ||
+           name == "systemFileExists" ||
+           name == "systemFileDelete";
+}
+
 bool isNativeParallelFunction(const std::string& name) {
     return name == "parallelThreads" ||
            name == "setParallelThreads" ||
@@ -828,6 +836,64 @@ llvm::Value* codegenNativeParallelCall(
             getOrCreateRuntimeFunction(cg, "csec_parallel_backend_implemented", i32Ty, {i8PtrTy}),
             {asCStringPointer(cg, argValues[0])},
             "parallel.backend.implemented");
+    }
+
+    return nullptr;
+}
+
+llvm::Value* codegenNativeSystemFileCall(
+    const std::string& functionName,
+    const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+
+    auto requireArgCount = [&](size_t expected) -> bool {
+        if (argValues.size() == expected) return true;
+        std::cerr << "Error: " << functionName << " requires " << expected << " argument(s)" << std::endl;
+        return false;
+    };
+
+    if (functionName == "systemFileReadAllText") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_file_read_all_text", i8PtrTy, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "file.read_all_text");
+    }
+
+    if (functionName == "systemFileWriteAllText") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_file_write_all_text", i32Ty, {i8PtrTy, i8PtrTy}),
+            {asCStringPointer(cg, argValues[0]), asCStringPointer(cg, argValues[1])},
+            "file.write_all_text");
+    }
+
+    if (functionName == "systemFileAppendAllText") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_file_append_all_text", i32Ty, {i8PtrTy, i8PtrTy}),
+            {asCStringPointer(cg, argValues[0]), asCStringPointer(cg, argValues[1])},
+            "file.append_all_text");
+    }
+
+    if (functionName == "systemFileExists") {
+        if (!requireArgCount(1)) return nullptr;
+        auto* raw = cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_file_exists", i32Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "file.exists.i32");
+        return cg.builder.CreateICmpNE(raw, llvm::ConstantInt::get(i32Ty, 0), "file.exists");
+    }
+
+    if (functionName == "systemFileDelete") {
+        if (!requireArgCount(1)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_file_delete", i32Ty, {i8PtrTy}),
+            {asCStringPointer(cg, argValues[0])},
+            "file.delete");
     }
 
     return nullptr;
@@ -1753,6 +1819,9 @@ llvm::Value* FunctionCallNode::codegen() {
     if (isNativePosixFunction(functionName)) {
         return codegenNativePosixCall(functionName, argValues);
     }
+    if (isNativeSystemFileFunction(functionName)) {
+        return codegenNativeSystemFileCall(functionName, argValues);
+    }
     if (isNativeParallelFunction(functionName)) {
         return codegenNativeParallelCall(functionName, argValues);
     }
@@ -2092,6 +2161,15 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
         }
         if (functionName == "posixLseek" || functionName == "posixTime") {
             return std::make_unique<BasicType>("Long");
+        }
+        return std::make_unique<BasicType>("Int");
+    }
+    if (isNativeSystemFileFunction(functionName)) {
+        if (functionName == "systemFileReadAllText") {
+            return std::make_unique<BasicType>("String");
+        }
+        if (functionName == "systemFileExists") {
+            return std::make_unique<BasicType>("Boolean");
         }
         return std::make_unique<BasicType>("Int");
     }

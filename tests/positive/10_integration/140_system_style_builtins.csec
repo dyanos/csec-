@@ -1,0 +1,21 @@
+def main(): Int {
+    System.Console.Write("value=");
+    System.Console.WriteLine(42);
+
+    val root: Double = System.Math.Sqrt(81.0);
+    val clamped: Double = System.Math.Max(root, 10.0);
+    val ok = System.Math.Abs(clamped - 10.0) < 0.001;
+
+    System.IO.File.WriteAllText("tmp_system_style_builtins.txt", "hello");
+    System.IO.File.AppendAllText("tmp_system_style_builtins.txt", " world");
+    val exists = System.IO.File.Exists("tmp_system_style_builtins.txt");
+    val text: String = System.IO.File.ReadAllText("tmp_system_style_builtins.txt");
+
+    System.Console.WriteLine(text);
+    System.IO.File.Delete("tmp_system_style_builtins.txt");
+
+    if (ok and exists and text.length == 11) {
+        return 0;
+    }
+    return 1;
+}

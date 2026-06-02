@@ -90,11 +90,13 @@ ClassSymbol* ensureClassSymbol(ClassDeclarationNode& node) {
     auto& cg = CodeGenerator::getInstance();
     auto* existing = cg.symbolTable.lookupClass(node.name);
     if (existing) {
+        existing->isStruct = node.isStruct;
         return existing;
     }
 
     auto* classType = llvm::StructType::create(cg.context, node.name);
     auto symbol = std::make_unique<ClassSymbol>(node.name, classType, node.superClassName);
+    symbol->isStruct = node.isStruct;
     auto* raw = symbol.get();
     cg.symbolTable.addSymbol(node.name, std::move(symbol));
     return raw;

@@ -323,7 +323,17 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         return nullptr;
     }
 
-    llvm::AllocaInst* instance = cg.builder.CreateAlloca(classType, nullptr, "newobj");
+    llvm::Value* instance = nullptr;
+    if (classSymbol->isStruct) {
+        instance = cg.builder.CreateAlloca(classType, nullptr, "newstruct");
+    }
+    else {
+        const llvm::DataLayout& dl = cg.module->getDataLayout();
+        uint64_t typeSize = dl.getTypeAllocSize(classType);
+        llvm::Value* allocSize = llvm::ConstantInt::get(llvm::Type::getInt64Ty(cg.context), typeSize);
+        llvm::Value* rawPtr = cg.builder.CreateCall(cg.mallocFunction, allocSize, "newobj.malloc");
+        instance = cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(classType), "newobj");
+    }
 
     unsigned fieldIndex = 0;
     auto initializeField = [&](const std::string& fieldName, const std::unique_ptr<Type>& fieldType, llvm::Value* value) -> bool {

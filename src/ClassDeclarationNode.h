@@ -31,6 +31,7 @@ public:
         superClassName = other.superClassName;
         body = other.body ? other.body->clone() : nullptr;
         isExternal = other.isExternal;
+        isStruct = other.isStruct;
     }
     ClassDeclarationNode& operator=(const ClassDeclarationNode& other) {
         if (this != &other) {
@@ -44,11 +45,13 @@ public:
             superClassName = other.superClassName;
             body = other.body ? other.body->clone() : nullptr;
             isExternal = other.isExternal;
+            isStruct = other.isStruct;
         }
         return *this;
     }
 
     bool isExternal = false;
+    bool isStruct = false;
 
     std::string name;
     std::vector<std::unique_ptr<ASTNode>> constructorParams;

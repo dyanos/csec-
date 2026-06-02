@@ -1,0 +1,10 @@
+class Image(id: Int) {
+    def get(): Int = id
+}
+
+def view(value: Image): Int = value.get()
+
+def main(): Int {
+    val image: Image = new Image(7);
+    return view(image) + image.get();
+}

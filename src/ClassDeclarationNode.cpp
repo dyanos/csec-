@@ -50,11 +50,13 @@ llvm::Value* ClassDeclarationNode::codegen() {
     ClassSymbol* classSymbol = cg.symbolTable.lookupClass(name);
     if (!classSymbol) {
         auto symbol = std::make_unique<ClassSymbol>(name, nullptr, superClassName);
+        symbol->isStruct = isStruct;
         symbol->superClassSymbol = superClassSymbol;
         classSymbol = symbol.get();
         cg.symbolTable.addSymbol(name, std::move(symbol));
     }
     else {
+        classSymbol->isStruct = isStruct;
         classSymbol->superClassName = superClassName;
         classSymbol->superClassSymbol = superClassSymbol;
         classSymbol->constructorParams.clear();

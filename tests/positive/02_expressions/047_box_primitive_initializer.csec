@@ -1,0 +1,6 @@
+def consume(value: box Int): Int = 1
+
+def main(): Int {
+    var value: box Int = 7;
+    return consume(<-value);
+}

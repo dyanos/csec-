@@ -183,15 +183,24 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 		// Set active template type params for parseType()
 		templateTypeParams = templateNode->typeParameters;
 
-		// Parse the inner declaration (def or class)
+		// Parse the inner declaration (def, class, or struct)
 		if (match(TokenType::KEYWORD, "def")) {
 			templateNode->declaration = parseFunctionDeclaration();
 		}
 		else if (match(TokenType::KEYWORD, "class")) {
 			templateNode->declaration = parseClassDeclaration();
 		}
+		else if (match(TokenType::KEYWORD, "struct")) {
+			auto structNode = parseClassDeclaration();
+			if (structNode) {
+				if (auto* classNode = dynamic_cast<ClassDeclarationNode*>(structNode.get())) {
+					classNode->isStruct = true;
+				}
+			}
+			templateNode->declaration = std::move(structNode);
+		}
 		else {
-			error("Expected 'def' or 'class' after template parameters");
+			error("Expected 'def', 'class', or 'struct' after template parameters");
 		}
 
 		// Clear active template type params
@@ -242,6 +251,17 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 			return nullptr;
 		}
 		classNode->isExternal = isExternal;
+	}
+	else if (match(TokenType::KEYWORD, "struct")) {
+		node = parseClassDeclaration(isExternal);
+
+		ClassDeclarationNode* classNode = dynamic_cast<ClassDeclarationNode*>(node.get());
+		if (!classNode) {
+			error("Expected struct declaration node");
+			return nullptr;
+		}
+		classNode->isExternal = isExternal;
+		classNode->isStruct = true;
 	}
 	else if (match(TokenType::KEYWORD, "object")) {
 		node = parseObjectDeclaration(isExternal);

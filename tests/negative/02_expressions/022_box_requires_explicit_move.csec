@@ -1,0 +1,10 @@
+class Image() {
+    def id(): Int = 0
+}
+
+def consume(value: box Image): Int = 1
+
+def main(): Int {
+    var image: box Image = new Image();
+    return consume(image);
+}

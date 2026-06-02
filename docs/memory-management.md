@@ -6,14 +6,17 @@ safe, deterministic, and easy for the compiler to check.
 
 ## Core Direction
 
-TensorScript should use unique ownership by default.
+TensorScript separates value types, reference types, static modules, and
+explicit owned heap values.
 
-- Values are owned by the binding that holds them.
-- Heap-owned values use a language-level owning handle, lowered to
-  `std::unique_ptr<T>` or an equivalent runtime representation.
-- Copy is allowed only for explicitly copyable types.
-- Non-copyable owned values can be transferred only by an explicit move
-  operator.
+- `struct` is a value type. `new Struct(...)` creates stack/local storage and
+  should use value/copy semantics.
+- `class` is a reference type. `new Class(...)` creates heap storage, but plain
+  `Class` references are not themselves move-checked ownership handles.
+- `object` is a static namespace/module declaration, not a heap or stack
+  instance in the ownership model.
+- `box T` is the explicit uniquely owned heap handle. It is the type that
+  participates in move checking and future drop/destructor handling.
 - Raw pointers are available only through `unsafe *T`.
 - Raw pointer creation and dereference require an unsafe context.
 
@@ -25,15 +28,20 @@ becoming the normal ownership mechanism.
 Recommended surface types:
 
 ```ts
-T             // owned value
+T             // value or reference, depending on the declaration kind
+struct T      // value type declaration
+class T       // reference type declaration
+object T      // static namespace/module declaration
 box T         // uniquely owned heap value
 &T            // immutable borrow
 &mut T        // mutable borrow
 unsafe *T     // raw pointer, non-owning
 ```
 
-`box T` is the language-facing concept. The compiler can lower it to
-`std::unique_ptr<T>` in generated C++.
+`box T` is the language-facing owned heap concept. The compiler can lower it to
+`std::unique_ptr<T>` in generated C++ or an equivalent runtime representation.
+Plain `class` references can be passed around without `<-`; wrapping a class in
+`box` opts into explicit ownership transfer.
 
 `unsafe *T` deliberately remains close to C++ pointer syntax. The `unsafe`
 marker belongs to the pointer type so that risk stays visible in function
@@ -54,7 +62,8 @@ let v = *p;      // raw pointer dereference, unsafe only
 
 ### Move Assignment: `target <- source`
 
-`target <- source` transfers ownership from `source` into `target`.
+`target <- source` transfers ownership from `source` into `target` when
+`source` has an ownership-checked type such as `box T`.
 
 ```ts
 fn consume(value: box Image): Unit {
@@ -69,14 +78,14 @@ img.width(); // compile error: img was moved
 
 Rules:
 
-- `source` must be an owned value.
+- `source` must be an ownership-checked value.
 - `target` must be an assignable storage location.
 - After `target <- source`, `source` enters the moved state.
 - Reading, borrowing, assigning through, or dropping `source` after the move is a
   compile-time error unless it is reinitialized first.
 - Moving from a borrowed value is not allowed.
-- Moving a copyable primitive can either be accepted as a copy-equivalent
-  operation or warned as unnecessary. The simpler first version is to allow it.
+- Plain `class` references are not ownership-checked; they use ordinary
+  assignment and argument passing.
 - Function calls that transfer ownership should use an explicit move assignment
   into a temporary or a call-site move form chosen later. The first design should
   avoid overloading ordinary argument passing with hidden ownership transfer.
@@ -103,7 +112,7 @@ img.width(); // compile error: img was moved
 
 Rules:
 
-- `source` must be an owned value.
+- `source` must be an ownership-checked value.
 - The receiving parameter must be an owning parameter, not `&T` or `&mut T`.
 - After `fn(<- source)`, `source` enters the moved state.
 - `target <- source` remains the preferred spelling when an explicit
@@ -169,23 +178,24 @@ Rules:
 Function calls should make ownership transfer explicit.
 
 ```ts
+fn view(img: Image): Unit;         // plain reference
 fn draw(img: &Image): Unit;        // borrow
 fn update(img: &mut Image): Unit;  // mutable borrow
 fn store(img: box Image): Unit;    // takes ownership
 
-let img: box Image = box Image("a.png");
+let refImg: Image = new Image("a.png");
+let ownedImg: box Image = new Image("a.png");
 
-draw(&img);
-update(&mut img);
-store(<- img);
+view(refImg);
+draw(&ownedImg);
+update(&mut ownedImg);
+store(<- ownedImg);
 ```
 
-Passing an owned non-copyable value to an owning parameter should be defined
-conservatively. The recommended first implementation is to reject implicit
-ownership transfer at call sites:
+Passing `box T` to an owning parameter rejects implicit ownership transfer:
 
 ```ts
-store(img); // compile error: ownership transfer must be explicit
+store(ownedImg); // compile error: ownership transfer must be explicit
 ```
 
 This keeps ownership transfer visible at call sites.

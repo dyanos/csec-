@@ -22,23 +22,12 @@ llvm::Value* ArrayCreationNode::codegen() {
     llvm::Value* arraySize = CodeGenerator::getInstance().builder.getInt32(elements.size());
 
     // 메모리 할당 (malloc 등 사용)
-    llvm::Function* mallocFunc = llvm::Function::Create(
-        llvm::FunctionType::get(
-            llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(CodeGenerator::getInstance().context)),
-            { llvm::Type::getInt64Ty(CodeGenerator::getInstance().context) },
-            false
-        ),
-        llvm::Function::ExternalLinkage,
-        "malloc",
-        CodeGenerator::getInstance().module.get()
-    );
-
     llvm::Value* totalSize = CodeGenerator::getInstance().builder.CreateMul(
         CodeGenerator::getInstance().builder.CreateZExt(arraySize, llvm::Type::getInt64Ty(CodeGenerator::getInstance().context)),
         llvm::ConstantInt::get(llvm::Type::getInt64Ty(CodeGenerator::getInstance().context), CodeGenerator::getInstance().module->getDataLayout().getTypeAllocSize(elementType))
     );
 
-    llvm::Value* rawPtr = CodeGenerator::getInstance().builder.CreateCall(mallocFunc, { totalSize }, "malloccall");
+    llvm::Value* rawPtr = CodeGenerator::getInstance().builder.CreateCall(CodeGenerator::getInstance().mallocFunction, { totalSize }, "malloccall");
     llvm::Value* arrayPtr = CodeGenerator::getInstance().builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(elementType));
 
     // 배열 요소 초기화

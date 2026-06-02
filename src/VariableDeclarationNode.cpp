@@ -8,8 +8,42 @@
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/DataLayout.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/GlobalVariable.h>
+
+namespace {
+llvm::Value* coerceBoxValue(llvm::Value* value, llvm::Type* targetType) {
+    if (!value || !targetType || value->getType() == targetType) {
+        return value;
+    }
+
+    auto& cg = CodeGenerator::getInstance();
+    llvm::Type* sourceType = value->getType();
+    if (sourceType->isIntegerTy() && targetType->isIntegerTy()) {
+        unsigned sourceBits = sourceType->getIntegerBitWidth();
+        unsigned targetBits = targetType->getIntegerBitWidth();
+        if (sourceBits < targetBits) {
+            return cg.builder.CreateSExt(value, targetType, "box.sext");
+        }
+        return cg.builder.CreateTrunc(value, targetType, "box.trunc");
+    }
+
+    if (sourceType->isFloatingPointTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateFPCast(value, targetType, "box.fpcast");
+    }
+
+    if (sourceType->isIntegerTy() && targetType->isFloatingPointTy()) {
+        return cg.builder.CreateSIToFP(value, targetType, "box.sitofp");
+    }
+
+    if (sourceType->isFloatingPointTy() && targetType->isIntegerTy()) {
+        return cg.builder.CreateFPToSI(value, targetType, "box.fptosi");
+    }
+
+    return value;
+}
+}
 
 void VariableDeclarationNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -57,6 +91,29 @@ llvm::Value* VariableDeclarationNode::codegen() {
             std::cerr << "Error: Unable to infer variable type for '" << name << "'" << std::endl;
             return nullptr;
         }
+    }
+
+    if (type && type->getKind() == Type::Kind::BOX && initValue && !initValue->getType()->isPointerTy()) {
+        auto* boxType = dynamic_cast<BoxType*>(type.get());
+        llvm::Type* baseType = boxType && boxType->baseType ? cg.getLLVMType(boxType->baseType.get()) : nullptr;
+        if (!baseType) {
+            std::cerr << "Error: Unsupported box base type for '" << name << "'" << std::endl;
+            return nullptr;
+        }
+
+        initValue = coerceBoxValue(initValue, baseType);
+        if (!initValue || initValue->getType() != baseType) {
+            std::cerr << "Error: Box initializer for '" << name << "' has incompatible type" << std::endl;
+            return nullptr;
+        }
+
+        const llvm::DataLayout& dl = cg.module->getDataLayout();
+        uint64_t typeSize = dl.getTypeAllocSize(baseType);
+        llvm::Value* allocSize = llvm::ConstantInt::get(llvm::Type::getInt64Ty(cg.context), typeSize);
+        llvm::Value* rawPtr = cg.builder.CreateCall(cg.mallocFunction, allocSize, "box.malloc");
+        llvm::Value* boxPtr = cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(baseType), "box.ptr");
+        cg.builder.CreateStore(initValue, boxPtr);
+        initValue = boxPtr;
     }
 
     const bool bindPointerBackedValueDirectly =

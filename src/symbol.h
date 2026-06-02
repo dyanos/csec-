@@ -184,6 +184,7 @@ struct ClassSymbol : public Symbol {
     std::string superClassName;
     const ClassSymbol* superClassSymbol;
     std::unordered_map<std::string, std::unique_ptr<ASTNode>> methodBodies;
+    bool isStruct = false;
 
     ClassSymbol() : superClassName(""), superClassSymbol(nullptr), classType(nullptr) {
         this->symbolType = SymbolType::CLASS;
@@ -243,6 +244,7 @@ protected:
         this->symbolType = SymbolType::CLASS;
         this->superClassName = classOther.superClassName;
         this->superClassSymbol = classOther.superClassSymbol;
+        this->isStruct = classOther.isStruct;
         this->constructorParams.clear();
         for (const auto& pair : classOther.constructorParams) {
             this->constructorParams[pair.first] = pair.second ? pair.second->clone() : nullptr;

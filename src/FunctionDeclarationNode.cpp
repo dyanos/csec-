@@ -5,10 +5,30 @@
 #include "utils.h"
 
 #include <iostream>
+#include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
 
 #include "ParameterNode.h"
 #include "BlockNode.h"
+
+namespace {
+llvm::Type* functionStorageType(const Type* type) {
+    auto& cg = CodeGenerator::getInstance();
+    llvm::Type* llvmType = cg.getLLVMType(type);
+    if (!llvmType) {
+        return nullptr;
+    }
+
+    if (type && type->getKind() == Type::Kind::CLASS) {
+        auto* classSymbol = cg.symbolTable.lookupClass(type->getName());
+        if (!classSymbol || !classSymbol->isStruct) {
+            return llvm::PointerType::getUnqual(llvmType);
+        }
+    }
+
+    return llvmType;
+}
+}
 
 void FunctionDeclarationNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -42,7 +62,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
     if (this->isExternal) {
         std::vector<llvm::Type*> paramTypes;
         for (auto& param : this->parameters) {
-            auto* paramType = CodeGenerator::getInstance().getLLVMType(param->getType().get());
+            auto* paramType = functionStorageType(param->getType().get());
             if (!paramType) {
                 std::cerr << "Error: Not supported parameter type in external function '" << this->name << "'" << std::endl;
                 return nullptr;
@@ -51,7 +71,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         }
 
         llvm::FunctionType* funcType = llvm::FunctionType::get(
-            CodeGenerator::getInstance().getLLVMType(this->returnType.get()),
+            functionStorageType(this->returnType.get()),
             paramTypes,
             false);
         const std::string llvmName = this->externalSymbolName.empty() ? this->name : this->externalSymbolName;
@@ -79,7 +99,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
     std::vector<llvm::Type*> paramTypes;
 
     for (auto& param : this->parameters) {
-        auto* paramType = cg.getLLVMType(param->getType().get());
+        auto* paramType = functionStorageType(param->getType().get());
         if (!paramType) {
             std::cerr << "Error: Not supported parameter type in function '" << this->name << "'" << std::endl;
             return nullptr;
@@ -87,7 +107,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         paramTypes.push_back(paramType);
     }
 
-    llvm::Type* returnType = cg.getLLVMType(this->returnType.get());
+    llvm::Type* returnType = functionStorageType(this->returnType.get());
     if (!returnType) {
         std::cerr << "Error: Not supported the return type of '" << this->name << "'" << std::endl;
         return nullptr;

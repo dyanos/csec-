@@ -2,6 +2,7 @@
 
 #include "ReturnStatementNode.h"
 #include "ASTVisitor.h"
+#include "type_utils.h"
 
 #include <iostream>
 
@@ -28,7 +29,8 @@ llvm::Value* ReturnStatementNode::codegen() {
             return nullptr;
         }
 
-        if (returnValue->getType() != returnType) {
+        returnValue = coerceValueToLLVMType(returnValue, returnType);
+        if (!returnValue || returnValue->getType() != returnType) {
             std::cerr << "Error: Return value type does not match function return type" << std::endl;
             return nullptr;
         }

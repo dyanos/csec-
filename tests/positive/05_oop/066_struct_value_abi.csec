@@ -1,0 +1,16 @@
+struct Pair(x: Int, y: Int) {
+    def sum(): Int = x + y
+}
+
+def pass(value: Pair): Int = value.sum()
+
+def makePair(): Pair {
+    return new Pair(4, 5);
+}
+
+def main(): Int {
+    val first = new Pair(1, 2);
+    val second: Pair = first;
+    val third = makePair();
+    return pass(first) + pass(second) + third.sum();
+}

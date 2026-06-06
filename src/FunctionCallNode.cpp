@@ -12,6 +12,7 @@
 #include "ReturnStatementNode.h"
 #include "VariableDeclarationNode.h"
 #include "TensorRuntime.h"
+#include "type_utils.h"
 
 #include <iostream>
 #include <llvm/IR/Function.h>
@@ -1681,44 +1682,7 @@ static std::unique_ptr<Type> inferTypeFromLLVM(llvm::Value* val) {
 }
 
 static llvm::Value* coerceArgumentToParameterType(llvm::Value* value, llvm::Type* targetType) {
-    if (!value || !targetType) {
-        return value;
-    }
-
-    auto& cg = CodeGenerator::getInstance();
-    llvm::Type* sourceType = value->getType();
-    if (sourceType == targetType) {
-        return value;
-    }
-
-    if (sourceType->isIntegerTy() && targetType->isIntegerTy()) {
-        unsigned srcBits = sourceType->getIntegerBitWidth();
-        unsigned dstBits = targetType->getIntegerBitWidth();
-        if (srcBits < dstBits) {
-            return cg.builder.CreateSExt(value, targetType, "arg.sext");
-        }
-        if (srcBits > dstBits) {
-            return cg.builder.CreateTrunc(value, targetType, "arg.trunc");
-        }
-    }
-
-    if (sourceType->isFloatingPointTy() && targetType->isFloatingPointTy()) {
-        return cg.builder.CreateFPCast(value, targetType, "arg.fpcast");
-    }
-
-    if (sourceType->isIntegerTy() && targetType->isFloatingPointTy()) {
-        return cg.builder.CreateSIToFP(value, targetType, "arg.sitofp");
-    }
-
-    if (sourceType->isFloatingPointTy() && targetType->isIntegerTy()) {
-        return cg.builder.CreateFPToSI(value, targetType, "arg.fptosi");
-    }
-
-    if (sourceType->isPointerTy() && targetType->isPointerTy()) {
-        return cg.builder.CreateBitCast(value, targetType, "arg.bitcast");
-    }
-
-    return value;
+    return coerceValueToLLVMType(value, targetType);
 }
 
 static llvm::Value* defaultValueForReturnType(llvm::Type* returnType) {

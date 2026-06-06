@@ -3,6 +3,7 @@
 #include "ASTVisitor.h"
 #include "ast.h"
 #include "symbol.h"
+#include "type_utils.h"
 
 #include <iostream>
 #include <sstream>
@@ -115,29 +116,12 @@ llvm::Value* ClassDeclarationNode::codegen() {
     }
 
     // 클래스 타입 생성
-    auto resolveStorageType = [&](const Type* declaredType) -> llvm::Type* {
-        if (!declaredType) {
-            return nullptr;
-        }
-
-        llvm::Type* llvmType = cg.getLLVMType(declaredType);
-        if (!llvmType) {
-            return nullptr;
-        }
-
-        if (declaredType->getKind() == Type::Kind::CLASS) {
-            return llvm::PointerType::getUnqual(llvmType);
-        }
-
-        return llvmType;
-    };
-
     std::vector<llvm::Type*> fieldTypes;
     // 생성자 파라메터 추가 (use source-ordered constructorParams to ensure deterministic layout)
     for (auto& field : constructorParams) {
         auto f = dynamic_cast<ParameterNode*>(field.get());
         if (!f) continue;
-        llvm::Type* fieldType = resolveStorageType(f->type.get());
+        llvm::Type* fieldType = getABIStorageType(f->type.get());
         if (!fieldType) {
             std::cerr << "Error: Unsupported field type '" << f->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
@@ -152,7 +136,7 @@ llvm::Value* ClassDeclarationNode::codegen() {
             std::cerr << "Error: Expected typed field declaration in class '" << name << "'" << std::endl;
             return nullptr;
         }
-        llvm::Type* fieldType = resolveStorageType(fieldNode->type.get());
+        llvm::Type* fieldType = getABIStorageType(fieldNode->type.get());
         if (!fieldType) {
             std::cerr << "Error: Unsupported field type '" << fieldNode->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
@@ -203,7 +187,7 @@ void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassS
             std::cerr << "Error: Expected typed parameter in method '" << method->name << "'" << std::endl;
             return;
         }
-        llvm::Type* paramType = cg.getLLVMType(paramNode->type.get());
+        llvm::Type* paramType = getABIStorageType(paramNode->type.get());
         if (!paramType) {
             std::cerr << "Error: Not supported the parameter's type of '" << method->name << "'" << std::endl;
             return;
@@ -211,7 +195,7 @@ void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassS
         paramTypes.push_back(paramType);
     }
 
-    llvm::Type* returnType = cg.getLLVMType(method->returnType.get());
+    llvm::Type* returnType = getABIStorageType(method->returnType.get());
     if (!returnType) {
         std::cerr << "Error: Not supported the return type of '" << method->name << "'" << std::endl;
         return;
@@ -352,6 +336,12 @@ llvm::Function* ClassDeclarationNode::defineMethod(FunctionDeclarationNode* meth
 
         llvm::Value* argValue = &*argIt++;
         argValue->setName(paramNode->name);
+        if (isStructClassType(paramNode->type.get())) {
+            llvm::Type* storageType = cg.getLLVMType(paramNode->type.get());
+            auto* paramSlot = cg.builder.CreateAlloca(storageType, nullptr, (paramNode->name + ".addr").c_str());
+            cg.builder.CreateStore(argValue, paramSlot);
+            argValue = paramSlot;
+        }
         cg.symbolTable.addSymbol(
             paramNode->name,
             std::make_unique<Symbol>(paramNode->name, paramNode->type->clone(), argValue, false, SymbolType::VARIABLE));

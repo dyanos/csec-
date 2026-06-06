@@ -1,0 +1,13 @@
+struct Pair(x: Int, y: Int) {
+    def sum(): Int = x + y
+}
+
+struct Holder(value: Pair) {
+    def total(): Int = value.sum()
+}
+
+def main(): Int {
+    val pair = new Pair(2, 3);
+    val holder = new Holder(pair);
+    return holder.total();
+}

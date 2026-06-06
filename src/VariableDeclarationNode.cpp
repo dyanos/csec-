@@ -4,6 +4,7 @@
 #include "ASTVisitor.h"
 #include "ClassInstanceCreationNode.h"
 #include "ArrayCreationExpressionNode.h"
+#include "type_utils.h"
 
 #include <iostream>
 #include <llvm/IR/Value.h>
@@ -116,13 +117,20 @@ llvm::Value* VariableDeclarationNode::codegen() {
         initValue = boxPtr;
     }
 
+    const bool declaredStructClass = isStructClassType(type.get());
+    if (declaredStructClass && initValue && initValue->getType()->isPointerTy() &&
+        dynamic_cast<ClassInstanceCreationNode*>(initializer.get()) == nullptr) {
+        llvm::Type* valueType = cg.getLLVMType(type.get());
+        initValue = coerceValueToLLVMType(initValue, valueType);
+    }
+
     const bool bindPointerBackedValueDirectly =
         initValue &&
         initValue->getType()->isPointerTy() &&
         !(isMutable && type && type->getName() == "Tensor") &&
         (dynamic_cast<ClassInstanceCreationNode*>(initializer.get()) != nullptr ||
          dynamic_cast<ArrayCreationExpressionNode*>(initializer.get()) != nullptr ||
-         type->getKind() == Type::Kind::CLASS ||
+         (type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
          type->getKind() == Type::Kind::BOX);
 
     if (bindPointerBackedValueDirectly) {

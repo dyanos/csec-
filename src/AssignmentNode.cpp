@@ -1,6 +1,7 @@
 #include "codegen.h"
 #include "AssignmentNode.h"
 #include "ASTVisitor.h"
+#include "type_utils.h"
 
 #include <iostream>
 
@@ -28,6 +29,15 @@ llvm::Value* AssignmentNode::codegen() {
     llvm::Value* exprValue = expression->codegen();
     if (!exprValue) {
         return nullptr;
+    }
+
+    if (isStructClassType(symbol->type.get())) {
+        llvm::Type* targetType = CodeGenerator::getInstance().getLLVMType(symbol->type.get());
+        exprValue = coerceValueToLLVMType(exprValue, targetType);
+        if (!exprValue || exprValue->getType() != targetType) {
+            std::cerr << "Type error: Assignment value does not match struct variable '" << name << "'" << std::endl;
+            return nullptr;
+        }
     }
 
     CodeGenerator::getInstance().builder.CreateStore(exprValue, symbol->value);

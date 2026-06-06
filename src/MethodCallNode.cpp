@@ -3,6 +3,7 @@
 #include "MethodCallNode.h"
 #include "ASTVisitor.h"
 #include "IdentifierNode.h"
+#include "type_utils.h"
 
 #include <iostream>
 #include <sstream>
@@ -29,42 +30,7 @@ llvm::Value* defaultValueForType(llvm::Type* type) {
 }
 
 llvm::Value* coerceArgumentValue(llvm::Value* value, llvm::Type* targetType) {
-    if (!value || !targetType) {
-        return value;
-    }
-
-    auto& cg = CodeGenerator::getInstance();
-    llvm::Type* sourceType = value->getType();
-    if (sourceType == targetType) {
-        return value;
-    }
-
-    if (sourceType->isIntegerTy() && targetType->isIntegerTy()) {
-        unsigned srcBits = sourceType->getIntegerBitWidth();
-        unsigned dstBits = targetType->getIntegerBitWidth();
-        if (srcBits < dstBits) {
-            return cg.builder.CreateSExt(value, targetType, "method.arg.sext");
-        }
-        return cg.builder.CreateTrunc(value, targetType, "method.arg.trunc");
-    }
-
-    if (sourceType->isFloatingPointTy() && targetType->isFloatingPointTy()) {
-        return cg.builder.CreateFPCast(value, targetType, "method.arg.fpcast");
-    }
-
-    if (sourceType->isIntegerTy() && targetType->isFloatingPointTy()) {
-        return cg.builder.CreateSIToFP(value, targetType, "method.arg.sitofp");
-    }
-
-    if (sourceType->isFloatingPointTy() && targetType->isIntegerTy()) {
-        return cg.builder.CreateFPToSI(value, targetType, "method.arg.fptosi");
-    }
-
-    if (sourceType->isPointerTy() && targetType->isPointerTy()) {
-        return cg.builder.CreateBitCast(value, targetType, "method.arg.bitcast");
-    }
-
-    return value;
+    return coerceValueToLLVMType(value, targetType);
 }
 
 llvm::Value* createMethodCallOrDefault(llvm::Function* function, std::vector<llvm::Value*> argValues) {
@@ -215,6 +181,9 @@ bool canPassValueToParameter(llvm::Value* value, llvm::Type* parameterType) {
         return true;
     }
     if (valueType->isPointerTy() && parameterType->isPointerTy()) {
+        return true;
+    }
+    if (valueType->isPointerTy() && !parameterType->isPointerTy()) {
         return true;
     }
     return false;

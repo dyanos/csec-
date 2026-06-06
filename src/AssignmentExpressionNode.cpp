@@ -2,6 +2,7 @@
 #include "AssignmentExpressionNode.h"
 #include "ASTVisitor.h"
 #include "IdentifierNode.h"
+#include "type_utils.h"
 
 #include <iostream>
 
@@ -25,6 +26,14 @@ llvm::Value* AssignmentExpressionNode::codegen() {
             return nullptr;
         }
         targetPtr = symbolOpt->value;
+        if (isStructClassType(symbolOpt->type.get())) {
+            llvm::Type* targetType = CodeGenerator::getInstance().getLLVMType(symbolOpt->type.get());
+            rightValue = coerceValueToLLVMType(rightValue, targetType);
+            if (!rightValue || rightValue->getType() != targetType) {
+                std::cerr << "Type error: Assignment value does not match struct variable '" << id->value << "'" << std::endl;
+                return nullptr;
+            }
+        }
     }
 
     if (!targetPtr->getType()->isPointerTy()) {

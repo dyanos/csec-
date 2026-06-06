@@ -15,6 +15,7 @@
 #include "ValueNode.h"
 #include "VariableDeclarationNode.h"
 #include "TensorRuntime.h"
+#include "type_utils.h"
 
 #include <iostream>
 #include <llvm/IR/DataLayout.h>
@@ -32,57 +33,8 @@ std::string mangleTemplateClassName(const std::string& className,
     return mangledName;
 }
 
-llvm::Type* storageTypeFor(const std::unique_ptr<Type>& declaredType) {
-    if (!declaredType) {
-        return nullptr;
-    }
-
-    auto& cg = CodeGenerator::getInstance();
-    llvm::Type* llvmType = cg.getLLVMType(declaredType.get());
-    if (!llvmType) {
-        return nullptr;
-    }
-
-    if (declaredType->getKind() == Type::Kind::CLASS) {
-        return llvm::PointerType::getUnqual(llvmType);
-    }
-
-    return llvmType;
-}
-
 llvm::Value* coerceForStore(llvm::Value* value, llvm::Type* targetType) {
-    if (!value || !targetType || value->getType() == targetType) {
-        return value;
-    }
-
-    auto& cg = CodeGenerator::getInstance();
-    llvm::Type* sourceType = value->getType();
-    if (sourceType->isIntegerTy() && targetType->isIntegerTy()) {
-        unsigned sourceBits = sourceType->getIntegerBitWidth();
-        unsigned targetBits = targetType->getIntegerBitWidth();
-        if (sourceBits < targetBits) {
-            return cg.builder.CreateSExt(value, targetType, "ctor.sext");
-        }
-        return cg.builder.CreateTrunc(value, targetType, "ctor.trunc");
-    }
-
-    if (sourceType->isFloatingPointTy() && targetType->isFloatingPointTy()) {
-        return cg.builder.CreateFPCast(value, targetType, "ctor.fpcast");
-    }
-
-    if (sourceType->isIntegerTy() && targetType->isFloatingPointTy()) {
-        return cg.builder.CreateSIToFP(value, targetType, "ctor.sitofp");
-    }
-
-    if (sourceType->isFloatingPointTy() && targetType->isIntegerTy()) {
-        return cg.builder.CreateFPToSI(value, targetType, "ctor.fptosi");
-    }
-
-    if (sourceType->isPointerTy() && targetType->isPointerTy()) {
-        return cg.builder.CreateBitCast(value, targetType, "ctor.ptrcast");
-    }
-
-    return value;
+    return coerceValueToLLVMType(value, targetType);
 }
 
 void substituteTypeVariables(std::unique_ptr<Type>& type,
@@ -337,7 +289,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
 
     unsigned fieldIndex = 0;
     auto initializeField = [&](const std::string& fieldName, const std::unique_ptr<Type>& fieldType, llvm::Value* value) -> bool {
-        llvm::Type* targetType = storageTypeFor(fieldType);
+        llvm::Type* targetType = getABIStorageType(fieldType.get());
         if (!targetType) {
             std::cerr << "Error: Unsupported field type in class '" << resolvedClassName << "'" << std::endl;
             return false;
@@ -403,7 +355,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
                 if (!initializeField(param->name, param->type, argValue)) {
                     return failTemplateInitialization();
                 }
-                llvm::Type* targetType = storageTypeFor(param->type);
+                llvm::Type* targetType = getABIStorageType(param->type.get());
                 if (!argValue && targetType) {
                     argValue = llvm::Constant::getNullValue(targetType);
                 }

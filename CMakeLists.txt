@@ -373,18 +373,10 @@ if(NOT LLVM_FOUND)
     find_package(LLVM CONFIG REQUIRED)
 endif()
 
-if(WIN32)
-    target_include_directories(${PROJECT_NAME} PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/build/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../llvm-project/llvm/include"
-    )
-else()
-    target_include_directories(${PROJECT_NAME} PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        ${LLVM_INCLUDE_DIRS}
-    )
-endif()
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    ${LLVM_INCLUDE_DIRS}
+)
 
 ################################################################################
 # Compile definitions
@@ -495,8 +487,8 @@ if(WIN32)
     )
 endif()
 
-if(WIN32)
+if(WIN32 AND LLVM_LIBRARY_DIRS)
     target_link_directories(${PROJECT_NAME} PRIVATE
-        "C:/Users/USER/Projects/llvm-project/build/lib"
+        ${LLVM_LIBRARY_DIRS}
     )
 endif()

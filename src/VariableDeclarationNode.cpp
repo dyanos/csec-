@@ -137,6 +137,9 @@ llvm::Value* VariableDeclarationNode::codegen() {
         cg.symbolTable.addSymbol(
             name,
             std::make_unique<Symbol>(name, type->clone(), initValue, isMutable, SymbolType::VARIABLE));
+        if (type->getKind() == Type::Kind::BOX) {
+            cg.registerCleanup(initValue);
+        }
         return initValue;
     }
 

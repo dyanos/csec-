@@ -12,16 +12,18 @@ void ReturnStatementNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* ReturnStatementNode::codegen() {
+    auto& cg = CodeGenerator::getInstance();
     llvm::Value* returnValue = nullptr;
     if (expression) {
         returnValue = expression->codegen();
     }
 
-    llvm::Function* currentFunction = CodeGenerator::getInstance().builder.GetInsertBlock()->getParent();
+    llvm::Function* currentFunction = cg.builder.GetInsertBlock()->getParent();
     llvm::Type* returnType = currentFunction->getReturnType();
 
     if (returnType->isVoidTy()) {
-        CodeGenerator::getInstance().builder.CreateRetVoid();
+        cg.emitAllCleanups();
+        cg.builder.CreateRetVoid();
     }
     else {
         if (!returnValue) {
@@ -35,7 +37,8 @@ llvm::Value* ReturnStatementNode::codegen() {
             return nullptr;
         }
 
-        CodeGenerator::getInstance().builder.CreateRet(returnValue);
+        cg.emitAllCleanupsExcept(returnValue);
+        cg.builder.CreateRet(returnValue);
     }
 
     return nullptr;

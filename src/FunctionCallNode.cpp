@@ -1992,14 +1992,14 @@ llvm::Value* FunctionCallNode::codegen() {
         if (funcType && callableSymbol->value) {
             std::vector<llvm::Type*> paramLLVMTypes;
             for (const auto& parameterType : funcType->parameterTypes) {
-                auto* llvmParamType = cg.getLLVMType(parameterType.get());
+                auto* llvmParamType = getABIStorageType(parameterType.get());
                 if (!llvmParamType) {
                     std::cerr << "Error: Invalid parameter type in callable symbol '" << functionName << "'" << std::endl;
                     return nullptr;
                 }
                 paramLLVMTypes.push_back(llvmParamType);
             }
-            auto* llvmReturnType = cg.getLLVMType(funcType->returnType.get());
+            auto* llvmReturnType = getABIStorageType(funcType->returnType.get());
             auto* llvmFuncType = llvmReturnType ? llvm::FunctionType::get(llvmReturnType, paramLLVMTypes, false) : nullptr;
             if (!llvmFuncType) {
                 std::cerr << "Error: Invalid callable symbol '" << functionName << "'" << std::endl;

@@ -6,6 +6,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <vector>
 
 class CodeGenerator {
 public:
@@ -36,10 +37,17 @@ public:
 
     void dumpIR();
     llvm::Type* getLLVMType(const Type* type);
+    void enterCleanupScope();
+    void exitCleanupScope();
+    void registerCleanup(llvm::Value* pointer);
+    void emitCurrentScopeCleanups();
+    void emitAllCleanups();
+    void emitAllCleanupsExcept(llvm::Value* retainedPointer);
 
     llvm::Function* mallocFunction; // non-owning, owned by module
     llvm::Function* freeFunction;  // non-owning, owned by module
 
 private:
     CodeGenerator();
+    std::vector<std::vector<llvm::Value*>> cleanupScopes;
 };

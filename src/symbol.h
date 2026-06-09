@@ -180,6 +180,9 @@ struct ClassSymbol : public Symbol {
     llvm::Type* classType;
     std::unordered_map<std::string, std::unique_ptr<Symbol>> constructorParams;
     std::unordered_map<std::string, std::unique_ptr<Symbol>> fields;
+    std::vector<std::string> constructorParamOrder;
+    std::vector<std::string> fieldOrder;
+    std::unordered_map<std::string, std::unique_ptr<ASTNode>> fieldInitializers;
     std::unordered_map<std::string, std::unique_ptr<Symbol>> methods;
     std::string superClassName;
     const ClassSymbol* superClassSymbol;
@@ -249,9 +252,15 @@ protected:
         for (const auto& pair : classOther.constructorParams) {
             this->constructorParams[pair.first] = pair.second ? pair.second->clone() : nullptr;
         }
+        this->constructorParamOrder = classOther.constructorParamOrder;
         this->fields.clear();
         for (const auto& pair : classOther.fields) {
             this->fields[pair.first] = pair.second ? pair.second->clone() : nullptr;
+        }
+        this->fieldOrder = classOther.fieldOrder;
+        this->fieldInitializers.clear();
+        for (const auto& pair : classOther.fieldInitializers) {
+            this->fieldInitializers[pair.first] = pair.second ? pair.second->clone() : nullptr;
         }
         this->methods.clear();
         for (const auto& pair : classOther.methods) {

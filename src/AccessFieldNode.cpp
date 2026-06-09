@@ -119,15 +119,15 @@ llvm::Value* AccessFieldNode::codegen() {
 int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string& fieldName) {
     int idx = 0;
 
-    for (auto& field : classSymbol->constructorParams) {
-        if (field.first == fieldName) {
+    for (const auto& field : classSymbol->constructorParamOrder) {
+        if (field == fieldName) {
             return idx;
         }
         idx++;
     }
 
-    for (auto& field : classSymbol->fields) {
-        if (field.first == fieldName) {
+    for (const auto& field : classSymbol->fieldOrder) {
+        if (field == fieldName) {
             return idx;
         }
         idx++;

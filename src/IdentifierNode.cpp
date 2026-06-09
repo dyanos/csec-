@@ -2,6 +2,7 @@
 
 #include "IdentifierNode.h"
 #include "ASTVisitor.h"
+#include "type_utils.h"
 
 #include <iostream>
 #include <cctype>
@@ -74,7 +75,14 @@ llvm::Value* IdentifierNode::codegen() {
         symbol->value->getType()->isPointerTy() &&
         isAddressLike) {
         if (symbol->type && symbol->type->getKind() == Type::Kind::CLASS) {
-            return symbol->value;
+            if (isStructClassType(symbol->type.get())) {
+                return symbol->value;
+            }
+            auto valueType = getABIStorageType(symbol->type.get());
+            if (!valueType) {
+                return nullptr;
+            }
+            return CodeGenerator::getInstance().builder.CreateLoad(valueType, symbol->value, value + ".load");
         }
         auto valueType = CodeGenerator::getInstance().getLLVMType(symbol->type.get());
         if (!valueType) {

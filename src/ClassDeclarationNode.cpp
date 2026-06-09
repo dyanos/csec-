@@ -61,7 +61,10 @@ llvm::Value* ClassDeclarationNode::codegen() {
         classSymbol->superClassName = superClassName;
         classSymbol->superClassSymbol = superClassSymbol;
         classSymbol->constructorParams.clear();
+        classSymbol->constructorParamOrder.clear();
         classSymbol->fields.clear();
+        classSymbol->fieldOrder.clear();
+        classSymbol->fieldInitializers.clear();
         classSymbol->methods.clear();
         classSymbol->methodBodies.clear();
     }
@@ -70,6 +73,10 @@ llvm::Value* ClassDeclarationNode::codegen() {
     if (superClassSymbol) {
         for (auto& field : superClassSymbol->fields) {
             classSymbol->fields[field.first] = field.second ? field.second->clone() : nullptr;
+        }
+        classSymbol->fieldOrder = superClassSymbol->fieldOrder;
+        for (const auto& init : superClassSymbol->fieldInitializers) {
+            classSymbol->fieldInitializers[init.first] = init.second ? init.second->clone() : nullptr;
         }
         for (auto& method : superClassSymbol->methods) {
             classSymbol->methods[method.first] = method.second ? method.second->clone() : nullptr;
@@ -91,6 +98,7 @@ llvm::Value* ClassDeclarationNode::codegen() {
         }
 
         classSymbol->constructorParams[f->name] = std::make_unique<Symbol>(f->name, f->type->clone(), nullptr, false, SymbolType::FIELD);
+        classSymbol->constructorParamOrder.push_back(f->name);
     }
 
     auto* classBody = dynamic_cast<ClassBodyNode*>(body.get());
@@ -113,6 +121,8 @@ llvm::Value* ClassDeclarationNode::codegen() {
             return nullptr;
         }
         classSymbol->fields[f->name] = std::make_unique<Symbol>(f->name, f->type->clone(), nullptr, f->isMutable, SymbolType::FIELD);
+        classSymbol->fieldOrder.push_back(f->name);
+        classSymbol->fieldInitializers[f->name] = f->initializer ? f->initializer->clone() : nullptr;
     }
 
     // 클래스 타입 생성

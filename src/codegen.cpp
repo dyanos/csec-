@@ -3,6 +3,7 @@
 #include "TensorRuntime.h"
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
@@ -92,6 +93,65 @@ CodeGenerator::CodeGenerator() : builder(context) {
 
 void CodeGenerator::dumpIR() {
     module->print(llvm::outs(), nullptr);
+}
+
+void CodeGenerator::enterCleanupScope() {
+    cleanupScopes.emplace_back();
+}
+
+void CodeGenerator::exitCleanupScope() {
+    if (!cleanupScopes.empty()) {
+        cleanupScopes.pop_back();
+    }
+}
+
+void CodeGenerator::registerCleanup(llvm::Value* pointer) {
+    if (!pointer || cleanupScopes.empty()) {
+        return;
+    }
+    cleanupScopes.back().push_back(pointer);
+}
+
+void CodeGenerator::emitCurrentScopeCleanups() {
+    if (cleanupScopes.empty()) {
+        return;
+    }
+
+    auto& cleanups = cleanupScopes.back();
+    for (auto it = cleanups.rbegin(); it != cleanups.rend(); ++it) {
+        llvm::Value* pointer = *it;
+        if (!pointer) {
+            continue;
+        }
+        auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+        llvm::Value* freePointer = pointer->getType() == i8PtrTy
+            ? pointer
+            : builder.CreateBitCast(pointer, i8PtrTy, "cleanup.free.ptr");
+        builder.CreateCall(freeFunction, { freePointer });
+    }
+    cleanups.clear();
+}
+
+void CodeGenerator::emitAllCleanups() {
+    emitAllCleanupsExcept(nullptr);
+}
+
+void CodeGenerator::emitAllCleanupsExcept(llvm::Value* retainedPointer) {
+    for (auto scopeIt = cleanupScopes.rbegin(); scopeIt != cleanupScopes.rend(); ++scopeIt) {
+        auto& cleanups = *scopeIt;
+        for (auto it = cleanups.rbegin(); it != cleanups.rend(); ++it) {
+            llvm::Value* pointer = *it;
+            if (!pointer || pointer == retainedPointer) {
+                continue;
+            }
+            auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+            llvm::Value* freePointer = pointer->getType() == i8PtrTy
+                ? pointer
+                : builder.CreateBitCast(pointer, i8PtrTy, "cleanup.free.ptr");
+            builder.CreateCall(freeFunction, { freePointer });
+        }
+        cleanups.clear();
+    }
 }
 
 void CodeGenerator::addExternalLinkLibrary(const std::string& library) {

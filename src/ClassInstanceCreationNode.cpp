@@ -302,6 +302,10 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
             std::cerr << "Error: Constructor value for field '" << fieldName << "' has incompatible type" << std::endl;
             return false;
         }
+        if (fieldIndex >= classType->getNumElements()) {
+            std::cerr << "Error: Field layout for '" << resolvedClassName << "' does not match initializer '" << fieldName << "'" << std::endl;
+            return false;
+        }
         llvm::Value* fieldPtr = cg.builder.CreateStructGEP(classType, instance, fieldIndex, fieldName + ".init");
         cg.builder.CreateStore(value, fieldPtr);
         fieldIndex += 1;
@@ -386,10 +390,66 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         }
     }
 
-    if (!arguments.empty()) {
-        std::cerr << "Warning: class constructor arguments are not fully supported yet for '" << resolvedClassName
-                  << "'. Object is allocated without constructor invocation." << std::endl;
+    if (arguments.size() != classSymbol->constructorParamOrder.size()) {
+        std::cerr << "Error: Constructor for class '" << resolvedClassName << "' expects "
+                  << classSymbol->constructorParamOrder.size() << " argument(s), got "
+                  << arguments.size() << std::endl;
+        return nullptr;
     }
+
+    cg.symbolTable.enterScope();
+    auto failInitialization = [&]() -> llvm::Value* {
+        cg.symbolTable.exitScope();
+        return nullptr;
+    };
+
+    for (size_t i = 0; i < classSymbol->constructorParamOrder.size(); ++i) {
+        const std::string& paramName = classSymbol->constructorParamOrder[i];
+        auto paramIt = classSymbol->constructorParams.find(paramName);
+        if (paramIt == classSymbol->constructorParams.end() || !paramIt->second || !paramIt->second->type) {
+            std::cerr << "Error: Missing constructor parameter metadata for '" << paramName << "'" << std::endl;
+            return failInitialization();
+        }
+
+        llvm::Value* argValue = arguments[i]->codegen();
+        if (!initializeField(paramName, paramIt->second->type, argValue)) {
+            return failInitialization();
+        }
+
+        llvm::Type* targetType = getABIStorageType(paramIt->second->type.get());
+        argValue = coerceForStore(argValue, targetType);
+        cg.symbolTable.addSymbol(
+            paramName,
+            std::make_unique<Symbol>(paramName, paramIt->second->type->clone(), argValue, false, SymbolType::VARIABLE));
+    }
+
+    for (const auto& fieldName : classSymbol->fieldOrder) {
+        auto fieldIt = classSymbol->fields.find(fieldName);
+        if (fieldIt == classSymbol->fields.end() || !fieldIt->second || !fieldIt->second->type) {
+            std::cerr << "Error: Missing field metadata for '" << fieldName << "'" << std::endl;
+            return failInitialization();
+        }
+
+        auto initIt = classSymbol->fieldInitializers.find(fieldName);
+        ASTNode* initializer = initIt != classSymbol->fieldInitializers.end() ? initIt->second.get() : nullptr;
+        if (!initializer) {
+            std::cerr << "Error: Field '" << fieldName << "' in class '" << resolvedClassName
+                      << "' is not initialized" << std::endl;
+            return failInitialization();
+        }
+
+        llvm::Value* initValue = initializer->codegen();
+        if (!initializeField(fieldName, fieldIt->second->type, initValue)) {
+            return failInitialization();
+        }
+        llvm::Type* targetType = getABIStorageType(fieldIt->second->type.get());
+        initValue = coerceForStore(initValue, targetType);
+        cg.symbolTable.addSymbol(
+            fieldName,
+            std::make_unique<Symbol>(fieldName, fieldIt->second->type->clone(), initValue, fieldIt->second->isMutable, SymbolType::VARIABLE));
+    }
+
+    cg.symbolTable.exitScope();
 
     return instance;
 }

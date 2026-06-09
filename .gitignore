@@ -37,6 +37,8 @@
 /csec++.vcxproj.filters
 /csec++.vcxproj.user
 /build/
+/build-*/
+/vcpkg_installed/
 *.pdb
 .claude/
 .cr/

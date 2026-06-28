@@ -100,6 +100,8 @@ std::string Parser::tokenTypeToString(TokenType type) const {
 	switch (type) {
 	case TokenType::KEYWORD: return "keyword";
 	case TokenType::IDENTIFIER: return "identifier";
+    case TokenType::STRING_LITERAL: return "string literal";
+    case TokenType::REGEX_LITERAL: return "regex literal";
 	case TokenType::OPERATOR: return "operator";
 	default: return "token";
 	}

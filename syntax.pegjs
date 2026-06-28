@@ -229,6 +229,7 @@ FunctionType
 Literal
   = BooleanLiteral
   / CharLiteral
+  / RegexLiteral
   / StringLiteral
   / HexLiteral
   / BinaryLiteral
@@ -266,7 +267,10 @@ BooleanLiteral
   = "true" / "false"
 
 StringLiteral
-  = "\"" ("\\" . / !"\"" .)* "\""
+  = [uU]? "\"" ("\\" . / !"\"" .)* "\""
+
+RegexLiteral
+  = [rR] "\"" (!"\"" .)* "\""
 
 CharLiteral
   = "'" ("\\" . / !"'" .) "'"

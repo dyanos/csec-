@@ -24,7 +24,9 @@ void addUnique(std::vector<std::string>& values, const std::string& value) {
 CodeGenerator::CodeGenerator() : builder(context) {
     this->module = std::make_unique<llvm::Module>("main", context);
 
-    llvm::FunctionType* funcType = llvm::FunctionType::get(this->builder.getInt32Ty(), false);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+    auto* argvTy = llvm::PointerType::getUnqual(i8PtrTy);
+    llvm::FunctionType* funcType = llvm::FunctionType::get(this->builder.getInt32Ty(), {this->builder.getInt32Ty(), argvTy}, false);
     this->mainFunction = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module.get());
 
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", mainFunction);

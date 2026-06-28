@@ -1,0 +1,57 @@
+def adjust(value: Int): Int {
+    var local: Int = value;
+    local = local + 2;
+    return local;
+}
+
+def positive(value: Int): Boolean {
+    return value > 0;
+}
+
+def label(): String {
+    var text: String = "ready";
+    text = "done";
+    return text;
+}
+
+def marker(): Char {
+    var ch: Char = 'I';
+    ch = 'x';
+    return ch;
+}
+
+def ratio(): Double {
+    var value: Double = 1.5;
+    value = value + 2.0;
+    return value;
+}
+
+def wide(): Long {
+    var total: Long = 1000;
+    total = total + 24;
+    return total;
+}
+
+def touch(): Unit {
+    return;
+}
+
+def main(): Int {
+    var current: Int = 3;
+    var enabled: Boolean = true;
+    val scale: Double = 2.5;
+    enabled = false;
+    enabled = true;
+    scale = 3.5;
+    if (enabled and current > 0) {
+        current = current + 1;
+    }
+    else {
+        current = current - 1;
+    }
+    while (current > 1) {
+        current = current - 1;
+    }
+    current = adjust(current + 1);
+    return current;
+}

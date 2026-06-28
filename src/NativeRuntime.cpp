@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <regex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -33,6 +34,9 @@
 #endif
 
 namespace {
+int g_argc = 0;
+char** g_argv = nullptr;
+
 int& configuredParallelThreads() {
     static int value = []() {
         unsigned int hardware = std::thread::hardware_concurrency();
@@ -144,6 +148,23 @@ int csec_string_contains(const char* value, const char* needle) {
     const char* haystack = value ? value : "";
     const char* target = needle ? needle : "";
     return std::strstr(haystack, target) != nullptr ? 1 : 0;
+}
+
+int csec_string_equals(const char* left, const char* right) {
+    const char* lhs = left ? left : "";
+    const char* rhs = right ? right : "";
+    return std::strcmp(lhs, rhs) == 0 ? 1 : 0;
+}
+
+int csec_string_regex_match(const char* value, const char* pattern) {
+    try {
+        const char* text = value ? value : "";
+        const char* expr = pattern ? pattern : "";
+        return std::regex_search(text, std::regex(expr)) ? 1 : 0;
+    }
+    catch (const std::regex_error&) {
+        return 0;
+    }
 }
 
 int csec_string_starts_with(const char* value, const char* prefix) {
@@ -298,6 +319,27 @@ double csec_read_double(void) {
     double value = 0.0;
     std::scanf("%lf", &value);
     return value;
+}
+
+void csec_set_command_line_args(int argc, char** argv) {
+    g_argc = argc;
+    g_argv = argv;
+}
+
+int csec_command_line_arg_count(void) {
+    return g_argc;
+}
+
+char* csec_command_line_arg(int index) {
+    const char* value = "";
+    if (index >= 0 && index < g_argc && g_argv && g_argv[index]) {
+        value = g_argv[index];
+    }
+    size_t length = std::strlen(value);
+    char* copy = static_cast<char*>(std::malloc(length + 1));
+    if (!copy) return nullptr;
+    std::memcpy(copy, value, length + 1);
+    return copy;
 }
 
 char* csec_file_read_all_text(const char* path) {
@@ -598,6 +640,68 @@ long long csec_tcp_connect(const char* host, int port) {
 
     freeaddrinfo(results);
     return connected == INVALID_SOCKET ? -1 : static_cast<long long>(connected);
+}
+
+long long csec_tcp_listen(const char* host, int port, int backlog) {
+    if (port < 0 || port > 65535) return -1;
+    if (backlog < 1) backlog = 1;
+#ifdef _WIN32
+    if (!ensureSocketRuntime()) return -1;
+#else
+    using SOCKET = NativeSocket;
+    constexpr SOCKET INVALID_SOCKET = INVALID_SOCKET_HANDLE;
+#endif
+
+    addrinfo hints{};
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = AI_PASSIVE;
+
+    char portText[16];
+    std::snprintf(portText, sizeof(portText), "%d", port);
+
+    addrinfo* results = nullptr;
+    const char* bindHost = (host && host[0] != '\0') ? host : nullptr;
+    if (getaddrinfo(bindHost, portText, &hints, &results) != 0) {
+        return -1;
+    }
+
+    SOCKET listener = INVALID_SOCKET;
+    for (addrinfo* item = results; item; item = item->ai_next) {
+        SOCKET candidate = socket(item->ai_family, item->ai_socktype, item->ai_protocol);
+        if (candidate == INVALID_SOCKET) {
+            continue;
+        }
+
+        int enabled = 1;
+#ifdef _WIN32
+        setsockopt(candidate, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&enabled), sizeof(enabled));
+#else
+        setsockopt(candidate, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
+#endif
+
+        if (bind(candidate, item->ai_addr, static_cast<int>(item->ai_addrlen)) == 0 &&
+            listen(candidate, backlog) == 0) {
+            listener = candidate;
+            break;
+        }
+        closeSocketHandle(candidate);
+    }
+
+    freeaddrinfo(results);
+    return listener == INVALID_SOCKET ? -1 : static_cast<long long>(listener);
+}
+
+long long csec_tcp_accept(long long socket_handle) {
+    if (socket_handle < 0) return -1;
+#ifdef _WIN32
+    SOCKET accepted = accept(static_cast<SOCKET>(socket_handle), nullptr, nullptr);
+    return accepted == INVALID_SOCKET ? -1 : static_cast<long long>(accepted);
+#else
+    int accepted = accept(static_cast<int>(socket_handle), nullptr, nullptr);
+    return accepted < 0 ? -1 : static_cast<long long>(accepted);
+#endif
 }
 
 int csec_tcp_send(long long socket_handle, const char* data) {

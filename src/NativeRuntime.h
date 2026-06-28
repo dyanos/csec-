@@ -25,6 +25,8 @@ CSEC_NATIVE_API char* csec_string_concat(const char* left, const char* right);
 CSEC_NATIVE_API long long csec_string_length(const char* value);
 CSEC_NATIVE_API int csec_string_is_empty(const char* value);
 CSEC_NATIVE_API int csec_string_contains(const char* value, const char* needle);
+CSEC_NATIVE_API int csec_string_equals(const char* left, const char* right);
+CSEC_NATIVE_API int csec_string_regex_match(const char* value, const char* pattern);
 CSEC_NATIVE_API int csec_string_starts_with(const char* value, const char* prefix);
 CSEC_NATIVE_API int csec_string_ends_with(const char* value, const char* suffix);
 CSEC_NATIVE_API long long csec_string_index_of(const char* value, const char* needle);
@@ -42,6 +44,9 @@ CSEC_NATIVE_API char* csec_read_line(void);
 CSEC_NATIVE_API char csec_read_char(void);
 CSEC_NATIVE_API int csec_read_int(void);
 CSEC_NATIVE_API double csec_read_double(void);
+CSEC_NATIVE_API void csec_set_command_line_args(int argc, char** argv);
+CSEC_NATIVE_API int csec_command_line_arg_count(void);
+CSEC_NATIVE_API char* csec_command_line_arg(int index);
 
 CSEC_NATIVE_API char* csec_file_read_all_text(const char* path);
 CSEC_NATIVE_API int csec_file_write_all_text(const char* path, const char* text);
@@ -94,6 +99,8 @@ typedef void (*csec_parallel_for_i32_fn)(void* context, int index);
 CSEC_NATIVE_API void csec_parallel_for_i32(int start, int end, void* context, csec_parallel_for_i32_fn callback);
 
 CSEC_NATIVE_API long long csec_tcp_connect(const char* host, int port);
+CSEC_NATIVE_API long long csec_tcp_listen(const char* host, int port, int backlog);
+CSEC_NATIVE_API long long csec_tcp_accept(long long socket_handle);
 CSEC_NATIVE_API int csec_tcp_send(long long socket_handle, const char* data);
 CSEC_NATIVE_API char* csec_tcp_recv(long long socket_handle, int max_bytes);
 CSEC_NATIVE_API int csec_tcp_close(long long socket_handle);

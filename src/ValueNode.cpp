@@ -38,6 +38,9 @@ llvm::Value* ValueNode::codegen() {
 		else if (valueType == TokenType::STRING_LITERAL) {
 			return cg.builder.CreateGlobalString(value);
 		}
+        else if (valueType == TokenType::REGEX_LITERAL) {
+            return cg.builder.CreateGlobalString(value);
+        }
         else if (valueType == TokenType::CHAR_LITERAL) {
             char ch = '\0';
             if (value.size() >= 3) {
@@ -98,6 +101,7 @@ std::unique_ptr<Type> ValueNode::getType() {
         type = std::make_unique<BasicType>(std::string("Char"));
         break;
 	case TokenType::STRING_LITERAL:
+    case TokenType::REGEX_LITERAL:
 		type = std::make_unique<BasicType>(std::string("String"));
 		break;
 	default:

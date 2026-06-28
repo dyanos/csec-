@@ -121,6 +121,19 @@ the other primitive value is converted with the runtime `toString` path:
 val message = "score=" + 4 + ", ok=" + true;
 ```
 
+Plain string literals are Unicode by default. `u"..."` is accepted as an
+explicit Unicode string prefix, and `r"..."` creates a raw regular-expression
+literal for `match` patterns:
+
+```ts
+val route = request match {
+    case "GET / HTTP/1.1" => "home";
+    case r"^GET /users/[0-9]+ HTTP/1\.[01]" => "user";
+    case u"GET /안녕 HTTP/1.1" => "hello";
+    case _ => "not_found";
+};
+```
+
 Implemented `String` members include:
 
 ```ts
@@ -341,6 +354,18 @@ def main(): Int {
 Integer-like calls use `callNative0`, `callNative1`, `callNative2`, and
 `callNative3`. Floating-point calls use `callNativeDouble0`,
 `callNativeDouble1`, and `callNativeDouble2`.
+
+## Process Arguments
+
+Compiled programs can read their command-line arguments:
+
+```ts
+val argc: Int = commandLineArgCount();
+val input: String = commandLineArg(1);
+```
+
+`commandLineArg(0)` is the executable path when the platform provides it.
+Out-of-range indexes return an empty string.
 
 The local name `nativeCos` is intentionally different from the imported C symbol
 `"cos"`. A TensorScript call named `cos(...)` is already a built-in scalar math

@@ -44,8 +44,12 @@ bool isNativeIOFunction(const std::string& name) {
            name == "readInt" || name == "readDouble";
 }
 
+bool isNativeProcessFunction(const std::string& name) {
+    return name == "commandLineArgCount" || name == "commandLineArg";
+}
+
 bool isNativeNetworkFunction(const std::string& name) {
-    return name == "tcpConnect" || name == "tcpSend" ||
+    return name == "tcpConnect" || name == "tcpListen" || name == "tcpAccept" || name == "tcpSend" ||
            name == "tcpRecv" || name == "tcpClose";
 }
 
@@ -476,6 +480,32 @@ llvm::Value* codegenNativeNetworkCall(
             getOrCreateRuntimeFunction(cg, "csec_tcp_connect", i64Ty, {i8PtrTy, i32Ty}),
             {asCStringPointer(cg, argValues[0]), cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[1]), i32Ty, "net.port")},
             "net.connect");
+    }
+
+    if (functionName == "tcpListen") {
+        if (argValues.size() != 3) {
+            std::cerr << "Error: tcpListen(host, port, backlog) requires three arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_tcp_listen", i64Ty, {i8PtrTy, i32Ty, i32Ty}),
+            {
+                asCStringPointer(cg, argValues[0]),
+                cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[1]), i32Ty, "net.port"),
+                cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[2]), i32Ty, "net.backlog")
+            },
+            "net.listen");
+    }
+
+    if (functionName == "tcpAccept") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: tcpAccept(socket) requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_tcp_accept", i64Ty, {i64Ty}),
+            {coerceMathValueToI64(cg, argValues[0])},
+            "net.accept");
     }
 
     if (functionName == "tcpSend") {
@@ -1685,6 +1715,39 @@ static llvm::Value* coerceArgumentToParameterType(llvm::Value* value, llvm::Type
     return coerceValueToLLVMType(value, targetType);
 }
 
+llvm::Value* codegenNativeProcessCall(
+    const std::string& functionName,
+    const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+
+    if (functionName == "commandLineArgCount") {
+        if (!argValues.empty()) {
+            std::cerr << "Error: commandLineArgCount() does not take arguments" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_command_line_arg_count", i32Ty, {}),
+            {},
+            "argv.count");
+    }
+
+    if (functionName == "commandLineArg") {
+        if (argValues.size() != 1) {
+            std::cerr << "Error: commandLineArg(index) requires one argument" << std::endl;
+            return nullptr;
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_command_line_arg", i8PtrTy, {i32Ty}),
+            {cg.builder.CreateTrunc(coerceMathValueToI64(cg, argValues[0]), i32Ty, "argv.index")},
+            "argv.value");
+    }
+
+    return nullptr;
+}
+
 static llvm::Value* defaultValueForReturnType(llvm::Type* returnType) {
     auto& cg = CodeGenerator::getInstance();
     if (!returnType || returnType->isVoidTy()) {
@@ -1776,6 +1839,9 @@ llvm::Value* FunctionCallNode::codegen() {
 
     if (isNativeIOFunction(functionName)) {
         return codegenNativeIOCall(functionName, argValues, argTypes);
+    }
+    if (isNativeProcessFunction(functionName)) {
+        return codegenNativeProcessCall(functionName, argValues);
     }
     if (isNativeNetworkFunction(functionName)) {
         return codegenNativeNetworkCall(functionName, argValues, argTypes);
@@ -2110,8 +2176,14 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
             return std::make_unique<BasicType>("Double");
         }
     }
+    if (isNativeProcessFunction(functionName)) {
+        if (functionName == "commandLineArgCount") {
+            return std::make_unique<BasicType>("Int");
+        }
+        return std::make_unique<BasicType>("String");
+    }
     if (isNativeNetworkFunction(functionName)) {
-        if (functionName == "tcpConnect") {
+        if (functionName == "tcpConnect" || functionName == "tcpListen" || functionName == "tcpAccept") {
             return std::make_unique<BasicType>("Long");
         }
         if (functionName == "tcpRecv") {

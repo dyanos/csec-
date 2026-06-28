@@ -172,15 +172,28 @@ llvm::Value* coerceReturnToInt32(llvm::IRBuilder<>& builder, llvm::Value* value)
     return builder.getInt32(0);
 }
 
-void rebuildRuntimeMain(CodeGenerator& codeGen) {
+llvm::Function* rebuildRuntimeMain(CodeGenerator& codeGen) {
     llvm::Function* userMain = codeGen.module->getFunction("_main");
     if (!userMain || userMain->arg_size() != 0) {
-        return;
+        return codeGen.mainFunction;
     }
 
     codeGen.mainFunction->deleteBody();
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(codeGen.context, "entry", codeGen.mainFunction);
     llvm::IRBuilder<> builder(entry);
+
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(codeGen.context));
+    auto* argvTy = llvm::PointerType::getUnqual(i8PtrTy);
+    auto* setArgs = codeGen.module->getFunction("csec_set_command_line_args");
+    if (!setArgs) {
+        setArgs = llvm::Function::Create(
+            llvm::FunctionType::get(builder.getVoidTy(), {builder.getInt32Ty(), argvTy}, false),
+            llvm::Function::ExternalLinkage,
+            "csec_set_command_line_args",
+            codeGen.module.get());
+    }
+    codeGen.requireSystemNative();
+    builder.CreateCall(setArgs, {codeGen.mainFunction->getArg(0), codeGen.mainFunction->getArg(1)});
 
     llvm::Value* result = nullptr;
     if (userMain->getReturnType()->isVoidTy()) {
@@ -191,6 +204,23 @@ void rebuildRuntimeMain(CodeGenerator& codeGen) {
     }
 
     builder.CreateRet(coerceReturnToInt32(builder, result));
+
+    auto* jitFunction = llvm::Function::Create(
+        llvm::FunctionType::get(builder.getInt32Ty(), false),
+        llvm::Function::InternalLinkage,
+        "__csec_jit_entry",
+        codeGen.module.get());
+    llvm::BasicBlock* jitEntry = llvm::BasicBlock::Create(codeGen.context, "entry", jitFunction);
+    llvm::IRBuilder<> jitBuilder(jitEntry);
+    llvm::Value* jitResult = nullptr;
+    if (userMain->getReturnType()->isVoidTy()) {
+        jitBuilder.CreateCall(userMain);
+    }
+    else {
+        jitResult = jitBuilder.CreateCall(userMain, {}, "user.main");
+    }
+    jitBuilder.CreateRet(coerceReturnToInt32(jitBuilder, jitResult));
+    return jitFunction;
 }
 
 bool writeIRToFile(llvm::Module& module, const std::string& outputPath, bool announce = true) {
@@ -952,7 +982,7 @@ int main(int argc, char** argv) {
     llvm::InitializeNativeTargetAsmParser();
 
     auto& codeGen = CodeGenerator::getInstance();
-    rebuildRuntimeMain(codeGen);
+    llvm::Function* runtimeEntry = rebuildRuntimeMain(codeGen);
     if (codeGen.mainFunction && !codeGen.mainFunction->empty()) {
         llvm::BasicBlock& rootEntry = codeGen.mainFunction->getEntryBlock();
         if (!rootEntry.getTerminator()) {
@@ -1037,7 +1067,7 @@ int main(int argc, char** argv) {
     }
 
     // main ?⑥닔 ?ㅽ뻾
-    auto result = engine->runFunction(codeGen.mainFunction, {});
+    auto result = engine->runFunction(runtimeEntry, {});
 
     return 0;
 }

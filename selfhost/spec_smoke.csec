@@ -1,0 +1,90 @@
+[@NativeSymbol("puts")]
+external def nativePuts(message: String): Int;
+
+external class NativeHandle;
+
+import runtime.core;
+
+class Accumulator() {
+    var current: Int = 0;
+    val enabled: Boolean = true;
+
+    def add(value: Int): Int {
+        current = current + value;
+        return current;
+    }
+
+    def operator +(right: Int): Int {
+        return current + right;
+    }
+}
+
+object Defaults {
+    val answer: Int = 42;
+}
+
+template<typename T>
+class Box(value: T) {
+    var current: T = value;
+    def get(): T {
+        return current;
+    }
+}
+
+template<typename T, Int N>
+def capacity(): Int {
+    return N;
+}
+
+def routeKind(request: String): String {
+    val route: String = request match {
+        case "GET /" => "home";
+        case r"^GET /users/[0-9]+" => "user";
+        case _ => "other";
+    };
+    return route;
+}
+
+def expressionShapes(): Int {
+    val values: Array<Int> = [1, 2, 3];
+    val first: Int = values[0];
+    val box = new Box<Int>(first);
+    val current = box.get();
+    val n = capacity<Int, 4>();
+    val callback: (Int) => Int = [](value: Int) -> {
+        return value + 1;
+    };
+    val inc = [](value: Int) -> {
+        return value + 1;
+    };
+    return current + n;
+}
+
+def exercise(xs: Array<Int>): Int {
+    var total: Int = 0;
+    for (x <- xs) {
+        total = total + x;
+    }
+    map (x <- xs) {
+        total = total + x;
+    }
+    pmap (cpu, x <- xs) {
+        total = total + x;
+    }
+    filter (x <- xs) {
+        total = total + x;
+    }
+    reduce (x <- xs, 0) {
+        total = total + x;
+    }
+    preduce (cpu, acc, x <- xs, 0) {
+        total = total + x + acc;
+    }
+    if (total > 10) {
+        total = total - 1;
+    }
+    else {
+        total = total + 1;
+    }
+    return total;
+}

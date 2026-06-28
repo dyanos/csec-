@@ -1,0 +1,10 @@
+def main(): Int {
+    val count: Int = commandLineArgCount();
+    if (count >= 1) {
+        val name: String = commandLineArg(0);
+        if (name.length >= 0) {
+            return 0;
+        }
+    }
+    return 1;
+}

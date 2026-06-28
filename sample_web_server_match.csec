@@ -1,0 +1,35 @@
+def responseFor(request: String): String {
+    return request match {
+        case "GET / HTTP/1.1" => "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 11\r\n\r\nhello csec\n";
+        case r"^GET /users/[0-9]+ HTTP/1\.[01]" => "HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\n\r\n{\"route\":\"user\"}\n";
+        case r"^POST /echo HTTP/1\.[01]" => "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\n\r\necho route\n";
+        case u"GET /안녕 HTTP/1.1" => "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n안녕하세요\n";
+        case _ => "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nnot found\n";
+    };
+}
+
+def main(): Int {
+    val server: Long = System.Net.Tcp.Listen("0.0.0.0", 8080, 16);
+    if (server < 0) {
+        println("listen failed");
+        return 1;
+    }
+
+    println("listening on http://127.0.0.1:8080");
+
+    val client: Long = System.Net.Tcp.Accept(server);
+    if (client < 0) {
+        println("accept failed");
+        System.Net.Tcp.Close(server);
+        return 1;
+    }
+
+    val request: String = System.Net.Tcp.Recv(client, 4096);
+    val lineEnd: Long = request.indexOf("\r\n");
+    val requestLine: String = request.substring(0, lineEnd);
+    val response: String = responseFor(requestLine);
+    System.Net.Tcp.Send(client, response);
+    System.Net.Tcp.Close(client);
+    System.Net.Tcp.Close(server);
+    return 0;
+}

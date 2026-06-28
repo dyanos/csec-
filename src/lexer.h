@@ -29,6 +29,7 @@ private:
     bool matchWhitespace(std::vector<Token>& tokens);
     bool matchNewline(std::vector<Token>& tokens);
     bool matchStringLiteral(std::vector<Token>& tokens);
+    bool matchPrefixedStringLiteral(std::vector<Token>& tokens);
     bool matchCharLiteral(std::vector<Token>& tokens);
     bool matchNumberLiteral(std::vector<Token>& tokens);
     bool matchIdentifierOrKeyword(std::vector<Token>& tokens);

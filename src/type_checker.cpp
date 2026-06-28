@@ -665,7 +665,12 @@ void TypeChecker::visit(MatchExpressionNode& node) {
             casePair.first->accept(*this);
             auto patternType = casePair.first->getType();
             const bool isWildcard = dynamic_cast<UnitNode*>(casePair.first.get()) != nullptr;
+            const bool isRegexPattern = [&]() {
+                auto* value = dynamic_cast<ValueNode*>(casePair.first.get());
+                return value && value->valueType == TokenType::REGEX_LITERAL;
+            }();
             if (!isWildcard && matchType && patternType &&
+                !(isRegexPattern && matchType->isStringTy()) &&
                 !patternType->equals(matchType) &&
                 !patternType->isSubtypeOf(matchType) &&
                 !matchType->isSubtypeOf(patternType)) {

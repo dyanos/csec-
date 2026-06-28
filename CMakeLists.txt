@@ -476,13 +476,37 @@ llvm_map_components_to_libnames(LLVM_COMPONENT_LIBS
     X86
 )
 
+find_library(LLVM_C_LIBRARY
+    NAMES LLVM-C
+    PATHS ${LLVM_LIBRARY_DIRS}
+    NO_DEFAULT_PATH
+)
+if(NOT LLVM_C_LIBRARY)
+    set(LLVM_C_LIBRARY "")
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    LLVM-C
+    ${LLVM_C_LIBRARY}
     ${LLVM_COMPONENT_LIBS}
 )
 if(WIN32)
+    find_library(CSEC_ZLIB_DEBUG_LIBRARY
+        NAMES zlibd z
+        PATHS
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows/debug/lib"
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/vcpkg/blds/zlib/x64-windows-dbg"
+        NO_DEFAULT_PATH
+    )
+    find_library(CSEC_ZLIB_RELEASE_LIBRARY
+        NAMES zlib z
+        PATHS
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows/lib"
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/vcpkg/blds/zlib/x64-windows-rel"
+        NO_DEFAULT_PATH
+    )
     target_link_libraries(${PROJECT_NAME} PRIVATE
-        "$<$<CONFIG:Debug>:z>"
+        "$<$<CONFIG:Debug>:${CSEC_ZLIB_DEBUG_LIBRARY}>"
+        "$<$<CONFIG:Release>:${CSEC_ZLIB_RELEASE_LIBRARY}>"
         ntdll
     )
 endif()

@@ -45,6 +45,31 @@ bool consumeUtf8CodePoint(const std::string& text, size_t pos, int* outLen) {
     *outLen = len;
     return true;
 }
+
+std::string decodeStringEscapes(const std::string& text) {
+    std::string decoded;
+    decoded.reserve(text.size());
+    for (size_t i = 0; i < text.size(); ++i) {
+        if (text[i] != '\\' || i + 1 >= text.size()) {
+            decoded.push_back(text[i]);
+            continue;
+        }
+
+        char escaped = text[++i];
+        switch (escaped) {
+        case 'n': decoded.push_back('\n'); break;
+        case 'r': decoded.push_back('\r'); break;
+        case 't': decoded.push_back('\t'); break;
+        case '\\': decoded.push_back('\\'); break;
+        case '"': decoded.push_back('"'); break;
+        case '0': decoded.push_back('\0'); break;
+        default:
+            decoded.push_back(escaped);
+            break;
+        }
+    }
+    return decoded;
+}
 }
 
 Lexer::Lexer(const std::string& source)
@@ -86,6 +111,7 @@ std::vector<Token> Lexer::tokenize() {
         if (matchComment(tokens)) continue;
         if (matchWhitespace(tokens)) continue;
         if (matchNewline(tokens)) continue;
+        if (matchPrefixedStringLiteral(tokens)) continue;
         if (matchStringLiteral(tokens)) continue;
         if (matchCharLiteral(tokens)) continue;
         if (matchNumberLiteral(tokens)) continue;
@@ -189,11 +215,41 @@ bool Lexer::matchStringLiteral(std::vector<Token>& tokens) {
             }
         }
         advance();  // ?좎뙠?먯삕 ?좎룞?쇿뜝?숈삕???좎룞?숉궢
-        std::string strLiteral = source.substr(start + 1, position - start - 2);
+        std::string strLiteral = decodeStringEscapes(source.substr(start + 1, position - start - 2));
         tokens.push_back(Token{ TokenType::STRING_LITERAL, strLiteral, line, column });
         return true;
     }
     return false;
+}
+
+bool Lexer::matchPrefixedStringLiteral(std::vector<Token>& tokens) {
+    char prefix = peek();
+    if ((prefix != 'r' && prefix != 'R' && prefix != 'u' && prefix != 'U') || peek(1) != '"') {
+        return false;
+    }
+
+    const bool raw = prefix == 'r' || prefix == 'R';
+    size_t start = position;
+    advance(2);
+    while (peek() != '"' && peek() != '\0') {
+        if (!raw && peek() == '\\') {
+            advance(2);
+        }
+        else {
+            advance();
+        }
+    }
+
+    if (peek() == '"') {
+        advance();
+    }
+
+    std::string literal = source.substr(start + 2, position - start - 3);
+    if (!raw) {
+        literal = decodeStringEscapes(literal);
+    }
+    tokens.push_back(Token{ raw ? TokenType::REGEX_LITERAL : TokenType::STRING_LITERAL, literal, line, column });
+    return true;
 }
 
 bool Lexer::matchCharLiteral(std::vector<Token>& tokens) {

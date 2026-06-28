@@ -1,0 +1,3471 @@
+def kindIdentifier(): Char = 'I'
+def kindKeyword(): Char = 'K'
+def kindInteger(): Char = 'N'
+def kindFloat(): Char = 'F'
+def kindString(): Char = 'S'
+def kindRegex(): Char = 'R'
+def kindChar(): Char = 'C'
+def kindBool(): Char = 'B'
+def kindOperator(): Char = 'O'
+def kindComment(): Char = 'M'
+def kindEof(): Char = 'E'
+
+def isWhitespace(ch: Char): Boolean {
+    return ch == ' ' or ch == '\n' or ch == '\r' or ch == '\t';
+}
+
+def isDigit(ch: Char): Boolean {
+    return ch >= '0' and ch <= '9';
+}
+
+def digitValue(ch: Char): Int {
+    if (ch == '0') { return 0; }
+    if (ch == '1') { return 1; }
+    if (ch == '2') { return 2; }
+    if (ch == '3') { return 3; }
+    if (ch == '4') { return 4; }
+    if (ch == '5') { return 5; }
+    if (ch == '6') { return 6; }
+    if (ch == '7') { return 7; }
+    if (ch == '8') { return 8; }
+    if (ch == '9') { return 9; }
+    return 0;
+}
+
+def toInt(text: String): Int {
+    var cursor: Int = 0;
+    var value: Int = 0;
+    while (cursor < text.length and isDigit(text.charAt(cursor))) {
+        value = value * 10 + digitValue(text.charAt(cursor));
+        cursor = cursor + 1;
+    }
+    return value;
+}
+
+def isAlpha(ch: Char): Boolean {
+    return (ch >= 'a' and ch <= 'z') or (ch >= 'A' and ch <= 'Z');
+}
+
+def isIdentifierStart(ch: Char): Boolean {
+    return isAlpha(ch) or ch == '_';
+}
+
+def isIdentifierPart(ch: Char): Boolean {
+    return isIdentifierStart(ch) or isDigit(ch);
+}
+
+def strEq(left: String, right: String): Boolean {
+    return left.length == right.length and left.startsWith(right);
+}
+
+def isKeyword(text: String): Boolean {
+    return strEq(text, "import") or strEq(text, "class") or strEq(text, "extends") or
+        strEq(text, "object") or strEq(text, "external") or strEq(text, "def") or
+        strEq(text, "operator") or strEq(text, "override") or strEq(text, "return") or
+        strEq(text, "val") or strEq(text, "var") or strEq(text, "if") or strEq(text, "else") or
+        strEq(text, "for") or strEq(text, "while") or strEq(text, "match") or strEq(text, "case") or
+        strEq(text, "map") or strEq(text, "pmap") or strEq(text, "filter") or strEq(text, "reduce") or
+        strEq(text, "preduce") or strEq(text, "template") or strEq(text, "typename") or
+        strEq(text, "new") or strEq(text, "this") or strEq(text, "super") or strEq(text, "unsafe") or
+        strEq(text, "unatomic") or strEq(text, "constexpr") or strEq(text, "box") or
+        strEq(text, "mut") or strEq(text, "null") or strEq(text, "inner") or
+        strEq(text, "outer") or strEq(text, "tensor") or
+        strEq(text, "to") or strEq(text, "until") or strEq(text, "and") or strEq(text, "or") or
+        strEq(text, "xor") or strEq(text, "ode") or strEq(text, "molecule") or strEq(text, "cfd") or
+        strEq(text, "protein") or strEq(text, "cpu") or strEq(text, "openmp") or
+        strEq(text, "gpu") or strEq(text, "simd");
+}
+
+def appendToken(tokens: String, kind: Char, text: String): String {
+    return tokens + kind + ":" + text + "\n";
+}
+
+def twoChars(source: String, index: Int, text: String): Boolean {
+    if (index + 1 >= source.length) {
+        return false;
+    }
+    return source.charAt(index) == text.charAt(0) and source.charAt(index + 1) == text.charAt(1);
+}
+
+def threeChars(source: String, index: Int, text: String): Boolean {
+    if (index + 2 >= source.length) {
+        return false;
+    }
+    return source.charAt(index) == text.charAt(0) and
+        source.charAt(index + 1) == text.charAt(1) and
+        source.charAt(index + 2) == text.charAt(2);
+}
+
+def lexIdentifier(source: String, index: Int): Int {
+    var cursor: Int = index + 1;
+    while (cursor < source.length and isIdentifierPart(source.charAt(cursor))) {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def lexNumber(source: String, index: Int): Int {
+    var cursor: Int = index;
+    if (twoChars(source, cursor, "0x") or twoChars(source, cursor, "0X") or
+        twoChars(source, cursor, "0b") or twoChars(source, cursor, "0B") or
+        twoChars(source, cursor, "0o") or twoChars(source, cursor, "0O")) {
+        cursor = cursor + 2;
+    }
+    while (cursor < source.length and
+        (isDigit(source.charAt(cursor)) or isAlpha(source.charAt(cursor)) or
+         source.charAt(cursor) == '_' or source.charAt(cursor) == '.')) {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def lexQuoted(source: String, index: Int): Int {
+    val quote: Char = source.charAt(index);
+    var cursor: Int = index + 1;
+    while (cursor < source.length and source.charAt(cursor) != quote) {
+        if (source.charAt(cursor) == '\\' and cursor + 1 < source.length) {
+            cursor = cursor + 2;
+        }
+        else {
+            cursor = cursor + 1;
+        }
+    }
+    if (cursor < source.length) {
+        return cursor + 1;
+    }
+    return cursor;
+}
+
+def lexLineComment(source: String, index: Int): Int {
+    var cursor: Int = index + 2;
+    while (cursor < source.length and source.charAt(cursor) != '\n') {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def lexBlockComment(source: String, index: Int): Int {
+    var cursor: Int = index + 2;
+    var depth: Int = 1;
+    while (cursor + 1 < source.length and depth > 0) {
+        if (twoChars(source, cursor, "/*")) {
+            depth = depth + 1;
+            cursor = cursor + 2;
+        }
+        else if (twoChars(source, cursor, "*/")) {
+            depth = depth - 1;
+            cursor = cursor + 2;
+        }
+        else {
+            cursor = cursor + 1;
+        }
+    }
+    return cursor;
+}
+
+def operatorLength(source: String, index: Int): Int {
+    if (twoChars(source, index, "[@")) {
+        return 2;
+    }
+    if (twoChars(source, index, "=>") or twoChars(source, index, "<-") or
+        twoChars(source, index, "->") or twoChars(source, index, "<=") or
+        twoChars(source, index, ">=") or twoChars(source, index, "==") or
+        twoChars(source, index, "&&") or twoChars(source, index, "||") or
+        twoChars(source, index, "++") or twoChars(source, index, "--") or
+        twoChars(source, index, "!=") or twoChars(source, index, "+=") or
+        twoChars(source, index, "-=") or twoChars(source, index, "*=") or
+        twoChars(source, index, "/=") or twoChars(source, index, "%=") or
+        twoChars(source, index, "<<") or twoChars(source, index, ">>") or
+        twoChars(source, index, "..") or twoChars(source, index, "$$") or
+        twoChars(source, index, "**")) {
+        return 2;
+    }
+    return 1;
+}
+
+def slice(source: String, start: Int, end: Int): String {
+    if (end <= start) {
+        return "";
+    }
+    return source.substring(start, end - start);
+}
+
+def tokenize(source: String): String {
+    var tokens: String = "";
+    var cursor: Int = 0;
+    while (cursor < source.length) {
+        val ch: Char = source.charAt(cursor);
+        if (isWhitespace(ch)) {
+            cursor = cursor + 1;
+        }
+        else if (twoChars(source, cursor, "//")) {
+            val end: Int = lexLineComment(source, cursor);
+            tokens = appendToken(tokens, kindComment(), "<line>");
+            cursor = end;
+        }
+        else if (twoChars(source, cursor, "/*")) {
+            val end: Int = lexBlockComment(source, cursor);
+            tokens = appendToken(tokens, kindComment(), "<block>");
+            cursor = end;
+        }
+        else if ((ch == 'r' or ch == 'R') and cursor + 1 < source.length and source.charAt(cursor + 1) == '"') {
+            val end: Int = lexQuoted(source, cursor + 1);
+            tokens = appendToken(tokens, kindRegex(), slice(source, cursor + 2, end - 1));
+            cursor = end;
+        }
+        else if ((ch == 'u' or ch == 'U') and cursor + 1 < source.length and source.charAt(cursor + 1) == '"') {
+            val end: Int = lexQuoted(source, cursor + 1);
+            tokens = appendToken(tokens, kindString(), slice(source, cursor + 2, end - 1));
+            cursor = end;
+        }
+        else if (ch == '"') {
+            val end: Int = lexQuoted(source, cursor);
+            tokens = appendToken(tokens, kindString(), slice(source, cursor + 1, end - 1));
+            cursor = end;
+        }
+        else if (ch == '\'') {
+            val end: Int = lexQuoted(source, cursor);
+            tokens = appendToken(tokens, kindChar(), slice(source, cursor + 1, end - 1));
+            cursor = end;
+        }
+        else if (isDigit(ch)) {
+            val end: Int = lexNumber(source, cursor);
+            val text: String = slice(source, cursor, end);
+            if (text.contains(".") or text.contains("e") or text.contains("E")) {
+                tokens = appendToken(tokens, kindFloat(), text);
+            }
+            else {
+                tokens = appendToken(tokens, kindInteger(), text);
+            }
+            cursor = end;
+        }
+        else if (isIdentifierStart(ch)) {
+            val end: Int = lexIdentifier(source, cursor);
+            val text: String = slice(source, cursor, end);
+            if (strEq(text, "true") or strEq(text, "false")) {
+                tokens = appendToken(tokens, kindBool(), text);
+            }
+            else if (isKeyword(text)) {
+                tokens = appendToken(tokens, kindKeyword(), text);
+            }
+            else {
+                tokens = appendToken(tokens, kindIdentifier(), text);
+            }
+            cursor = end;
+        }
+        else {
+            val width: Int = operatorLength(source, cursor);
+            tokens = appendToken(tokens, kindOperator(), slice(source, cursor, cursor + width));
+            cursor = cursor + width;
+        }
+    }
+    return appendToken(tokens, kindEof(), "<eof>");
+}
+
+def lineStart(tokens: String, ordinal: Int): Int {
+    var cursor: Int = 0;
+    var line: Int = 0;
+    while (cursor < tokens.length and line < ordinal) {
+        if (tokens.charAt(cursor) == '\n') {
+            line = line + 1;
+        }
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def lineEnd(tokens: String, start: Int): Int {
+    var cursor: Int = start;
+    while (cursor < tokens.length and tokens.charAt(cursor) != '\n') {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def tokenKindAt(tokens: String, ordinal: Int): Char {
+    val start: Int = lineStart(tokens, ordinal);
+    if (start >= tokens.length) {
+        return kindEof();
+    }
+    return tokens.charAt(start);
+}
+
+def tokenTextAt(tokens: String, ordinal: Int): String {
+    val start: Int = lineStart(tokens, ordinal);
+    val end: Int = lineEnd(tokens, start);
+    if (start + 2 >= end) {
+        return "";
+    }
+    return tokens.substring(start + 2, end - start - 2);
+}
+
+def tokenIs(tokens: String, ordinal: Int, kind: Char, text: String): Boolean {
+    return tokenKindAt(tokens, ordinal) == kind and strEq(tokenTextAt(tokens, ordinal), text);
+}
+
+def skipTrivia(tokens: String, ordinal: Int): Int {
+    var cursor: Int = ordinal;
+    while (tokenKindAt(tokens, cursor) == kindComment()) {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def validateBalanced(tokens: String): Boolean {
+    var cursor: Int = 0;
+    var paren: Int = 0;
+    var brace: Int = 0;
+    var bracket: Int = 0;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        val kind: Char = tokenKindAt(tokens, cursor);
+        val text: String = tokenTextAt(tokens, cursor);
+        if (kind == kindOperator()) {
+            if (strEq(text, "(")) {
+                paren = paren + 1;
+            }
+            else if (strEq(text, ")")) {
+                paren = paren - 1;
+            }
+            else if (strEq(text, "{")) {
+                brace = brace + 1;
+            }
+            else if (strEq(text, "}")) {
+                brace = brace - 1;
+            }
+            else if (strEq(text, "[")) {
+                bracket = bracket + 1;
+            }
+            else if (strEq(text, "]")) {
+                bracket = bracket - 1;
+            }
+            if (paren < 0 or brace < 0 or bracket < 0) {
+                return false;
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return paren == 0 and brace == 0 and bracket == 0;
+}
+
+def startsTopLevelDeclaration(tokens: String, ordinal: Int): Boolean {
+    val kind: Char = tokenKindAt(tokens, ordinal);
+    val text: String = tokenTextAt(tokens, ordinal);
+    if (kind == kindEof()) {
+        return true;
+    }
+    if (kind == kindOperator() and strEq(text, "[@")) {
+        return true;
+    }
+    return kind == kindKeyword() and
+        (strEq(text, "import") or strEq(text, "class") or strEq(text, "object") or
+         strEq(text, "external") or strEq(text, "def") or strEq(text, "template") or
+         strEq(text, "val") or strEq(text, "var") or strEq(text, "unsafe") or
+         strEq(text, "unatomic") or strEq(text, "constexpr"));
+}
+
+def validateTopLevel(tokens: String): Boolean {
+    var cursor: Int = skipTrivia(tokens, 0);
+    var paren: Int = 0;
+    var brace: Int = 0;
+    var bracket: Int = 0;
+    var expectingDecl: Boolean = true;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        val kind: Char = tokenKindAt(tokens, cursor);
+        val text: String = tokenTextAt(tokens, cursor);
+        if (expectingDecl and paren == 0 and brace == 0 and bracket == 0) {
+            if (!startsTopLevelDeclaration(tokens, cursor)) {
+                return false;
+            }
+            expectingDecl = false;
+        }
+        if (kind == kindOperator()) {
+            if (strEq(text, "(")) {
+                paren = paren + 1;
+            }
+            else if (strEq(text, ")")) {
+                paren = paren - 1;
+            }
+            else if (strEq(text, "{")) {
+                brace = brace + 1;
+            }
+            else if (strEq(text, "}")) {
+                brace = brace - 1;
+                if (brace == 0 and paren == 0 and bracket == 0) {
+                    expectingDecl = true;
+                }
+            }
+            else if (strEq(text, "[")) {
+                bracket = bracket + 1;
+            }
+            else if (strEq(text, "]")) {
+                bracket = bracket - 1;
+            }
+            else if (strEq(text, ";") and brace == 0 and paren == 0 and bracket == 0) {
+                expectingDecl = true;
+            }
+        }
+        cursor = skipTrivia(tokens, cursor + 1);
+    }
+    return true;
+}
+
+def parseProgram(tokens: String): Boolean {
+    return validateBalanced(tokens) and validateTopLevel(tokens);
+}
+
+def topLevelDeclKind(tokens: String, ordinal: Int): String {
+    val text: String = tokenTextAt(tokens, ordinal);
+    if (tokenKindAt(tokens, ordinal) == kindOperator() and strEq(text, "[@")) {
+        return "attribute";
+    }
+    if (tokenKindAt(tokens, ordinal) != kindKeyword()) {
+        return "unknown";
+    }
+    if (strEq(text, "external")) {
+        val next: String = tokenTextAt(tokens, ordinal + 1);
+        if (strEq(next, "class")) { return "external-class"; }
+        if (strEq(next, "object")) { return "external-object"; }
+        if (strEq(next, "def")) { return "external-function"; }
+        return "external";
+    }
+    if (strEq(text, "unsafe") or strEq(text, "unatomic") or strEq(text, "constexpr")) {
+        return topLevelDeclKind(tokens, ordinal + 1);
+    }
+    if (strEq(text, "template")) { return "template"; }
+    if (strEq(text, "import")) { return "import"; }
+    if (strEq(text, "class")) { return "class"; }
+    if (strEq(text, "object")) { return "object"; }
+    if (strEq(text, "def")) { return "function"; }
+    if (strEq(text, "val")) { return "value"; }
+    if (strEq(text, "var")) { return "variable"; }
+    return "unknown";
+}
+
+def topLevelDeclName(tokens: String, ordinal: Int): String {
+    val kind: String = topLevelDeclKind(tokens, ordinal);
+    if (strEq(kind, "external-class") or strEq(kind, "external-object") or strEq(kind, "external-function")) {
+        return topLevelDeclName(tokens, ordinal + 1);
+    }
+    if (strEq(kind, "template")) {
+        var cursor: Int = ordinal + 1;
+        var depth: Int = 0;
+        while (tokenKindAt(tokens, cursor) != kindEof()) {
+            val text: String = tokenTextAt(tokens, cursor);
+            if (strEq(text, "<")) {
+                depth = depth + 1;
+            }
+            if (strEq(text, ">")) {
+                depth = depth - 1;
+                if (depth == 0) {
+                    return topLevelDeclName(tokens, cursor + 1);
+                }
+            }
+            cursor = cursor + 1;
+        }
+        return "<template>";
+    }
+    if (strEq(kind, "import")) {
+        return tokenTextAt(tokens, ordinal + 1);
+    }
+    if (strEq(kind, "function")) {
+        if (strEq(tokenTextAt(tokens, ordinal + 1), "operator")) {
+            return "operator" + tokenTextAt(tokens, ordinal + 2);
+        }
+        return tokenTextAt(tokens, ordinal + 1);
+    }
+    if (strEq(kind, "class") or strEq(kind, "object") or strEq(kind, "value") or strEq(kind, "variable")) {
+        return tokenTextAt(tokens, ordinal + 1);
+    }
+    return "<anonymous>";
+}
+
+def advanceTopLevelDecl(tokens: String, ordinal: Int): Int {
+    var cursor: Int = ordinal;
+    var paren: Int = 0;
+    var brace: Int = 0;
+    var bracket: Int = 0;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (tokenKindAt(tokens, cursor) == kindOperator()) {
+            if (strEq(text, "(")) {
+                paren = paren + 1;
+            }
+            else if (strEq(text, ")")) {
+                paren = paren - 1;
+            }
+            else if (strEq(text, "{")) {
+                brace = brace + 1;
+            }
+            else if (strEq(text, "}")) {
+                brace = brace - 1;
+                if (brace <= 0 and paren == 0 and bracket == 0) {
+                    return cursor + 1;
+                }
+            }
+            else if (strEq(text, "[")) {
+                bracket = bracket + 1;
+            }
+            else if (strEq(text, "]")) {
+                bracket = bracket - 1;
+            }
+            else if (strEq(text, ";") and brace == 0 and paren == 0 and bracket == 0) {
+                return cursor + 1;
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def findDeclBodyStart(tokens: String, ordinal: Int): Int {
+    var cursor: Int = ordinal;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindOperator(), "{")) {
+            return cursor + 1;
+        }
+        if (tokenIs(tokens, cursor, kindOperator(), ";")) {
+            return -1;
+        }
+        cursor = cursor + 1;
+    }
+    return -1;
+}
+
+def findDeclBodyEnd(tokens: String, bodyStart: Int): Int {
+    if (bodyStart < 0) {
+        return -1;
+    }
+    var cursor: Int = bodyStart;
+    var brace: Int = 1;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (tokenKindAt(tokens, cursor) == kindOperator()) {
+            if (strEq(text, "{")) {
+                brace = brace + 1;
+            }
+            else if (strEq(text, "}")) {
+                brace = brace - 1;
+                if (brace == 0) {
+                    return cursor;
+                }
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return -1;
+}
+
+def statementKind(tokens: String, ordinal: Int): String {
+    val kind: Char = tokenKindAt(tokens, ordinal);
+    val text: String = tokenTextAt(tokens, ordinal);
+    if (kind == kindKeyword()) {
+        if (strEq(text, "return")) { return "return"; }
+        if (strEq(text, "val")) { return "value"; }
+        if (strEq(text, "var")) { return "variable"; }
+        if (strEq(text, "if")) { return "if"; }
+        if (strEq(text, "for")) { return "for"; }
+        if (strEq(text, "while")) { return "while"; }
+        if (strEq(text, "map")) { return "map"; }
+        if (strEq(text, "pmap")) { return "pmap"; }
+        if (strEq(text, "reduce")) { return "reduce"; }
+        if (strEq(text, "preduce")) { return "preduce"; }
+        if (strEq(text, "filter")) { return "filter"; }
+        if (strEq(text, "def")) { return "function"; }
+        if (strEq(text, "object")) { return "object"; }
+        if (strEq(text, "unsafe")) { return "unsafe"; }
+        if (strEq(text, "unatomic")) { return "unatomic"; }
+        if (strEq(text, "constexpr")) { return "constexpr"; }
+    }
+    if (kind == kindEof()) {
+        return "eof";
+    }
+    return "expression";
+}
+
+def appendExpressionUntil(tokens: String, start: Int, end: Int): String {
+    var cursor: Int = start;
+    var output: String = "";
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        output = output + tokenTextAt(tokens, cursor);
+        if (cursor + 1 < end) {
+            output = output + " ";
+        }
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def tokenIsTopLevelOperator(tokens: String, ordinal: Int, group: Int): Boolean {
+    val kind: Char = tokenKindAt(tokens, ordinal);
+    val text: String = tokenTextAt(tokens, ordinal);
+    if (group == 1 and kind == kindOperator()) {
+        return strEq(text, "=") or strEq(text, "<-") or strEq(text, "+=") or strEq(text, "-=") or
+            strEq(text, "*=") or strEq(text, "/=") or strEq(text, "%=");
+    }
+    if (group == 2) {
+        return (kind == kindKeyword() and strEq(text, "or")) or
+            (kind == kindOperator() and (strEq(text, "||") or strEq(text, "|")));
+    }
+    if (group == 3) {
+        return (kind == kindKeyword() and strEq(text, "and")) or
+            (kind == kindOperator() and strEq(text, "&&"));
+    }
+    if (group == 8) {
+        return (kind == kindKeyword() and strEq(text, "xor")) or
+            (kind == kindOperator() and strEq(text, "^"));
+    }
+    if (group == 9 and kind == kindOperator()) {
+        return strEq(text, "&");
+    }
+    if (group == 4 and kind == kindOperator()) {
+        return strEq(text, "==") or strEq(text, "!=") or strEq(text, "<") or
+            strEq(text, ">") or strEq(text, "<=") or strEq(text, ">=");
+    }
+    if (group == 10 and kind == kindOperator()) {
+        return strEq(text, "<<") or strEq(text, ">>");
+    }
+    if (group == 5) {
+        return (kind == kindOperator() and strEq(text, "..")) or
+            (kind == kindKeyword() and (strEq(text, "to") or strEq(text, "until")));
+    }
+    if (group == 6 and kind == kindOperator()) {
+        return strEq(text, "+") or strEq(text, "-");
+    }
+    if (group == 7 and kind == kindOperator()) {
+        return strEq(text, "*") or strEq(text, "/") or strEq(text, "%") or strEq(text, "@");
+    }
+    if (group == 11 and kind == kindKeyword()) {
+        return strEq(text, "inner") or strEq(text, "outer") or strEq(text, "tensor");
+    }
+    return false;
+}
+
+def findTopLevelOperator(tokens: String, start: Int, end: Int, group: Int): Int {
+    var cursor: Int = end - 1;
+    var paren: Int = 0;
+    var brace: Int = 0;
+    var bracket: Int = 0;
+    while (cursor >= start) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (tokenKindAt(tokens, cursor) == kindOperator()) {
+            if (strEq(text, ")")) {
+                paren = paren + 1;
+            }
+            else if (strEq(text, "(")) {
+                paren = paren - 1;
+            }
+            else if (strEq(text, "}")) {
+                brace = brace + 1;
+            }
+            else if (strEq(text, "{")) {
+                brace = brace - 1;
+            }
+            else if (strEq(text, "]")) {
+                bracket = bracket + 1;
+            }
+            else if (strEq(text, "[")) {
+                bracket = bracket - 1;
+            }
+        }
+        if (paren == 0 and brace == 0 and bracket == 0 and
+            tokenIsTopLevelOperator(tokens, cursor, group)) {
+            return cursor;
+        }
+        cursor = cursor - 1;
+    }
+    return -1;
+}
+
+def findTopLevelMatch(tokens: String, start: Int, end: Int): Int {
+    var cursor: Int = start;
+    var paren: Int = 0;
+    var brace: Int = 0;
+    var bracket: Int = 0;
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (tokenKindAt(tokens, cursor) == kindOperator()) {
+            if (strEq(text, "(")) { paren = paren + 1; }
+            else if (strEq(text, ")")) { paren = paren - 1; }
+            else if (strEq(text, "{")) { brace = brace + 1; }
+            else if (strEq(text, "}")) { brace = brace - 1; }
+            else if (strEq(text, "[")) { bracket = bracket + 1; }
+            else if (strEq(text, "]")) { bracket = bracket - 1; }
+        }
+        if (paren == 0 and brace == 0 and bracket == 0 and
+            tokenIs(tokens, cursor, kindKeyword(), "match")) {
+            return cursor;
+        }
+        cursor = cursor + 1;
+    }
+    return -1;
+}
+
+def findClosingToken(tokens: String, openOrdinal: Int, end: Int, openText: String, closeText: String): Int {
+    var cursor: Int = openOrdinal;
+    var depth: Int = 0;
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenKindAt(tokens, cursor) == kindOperator()) {
+            val text: String = tokenTextAt(tokens, cursor);
+            if (strEq(text, openText)) {
+                depth = depth + 1;
+            }
+            else if (strEq(text, closeText)) {
+                depth = depth - 1;
+                if (depth == 0) {
+                    return cursor;
+                }
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return -1;
+}
+
+def trimExpressionEnd(tokens: String, start: Int, end: Int): Int {
+    var last: Int = end;
+    while (last > start and tokenKindAt(tokens, last - 1) == kindComment()) {
+        last = last - 1;
+    }
+    if (last > start and tokenIs(tokens, last - 1, kindOperator(), ";")) {
+        return last - 1;
+    }
+    return last;
+}
+
+def expressionLeafKind(tokens: String, start: Int, end: Int): String {
+    if (end <= start) {
+        return "empty";
+    }
+    val kind: Char = tokenKindAt(tokens, start);
+    if (kind == kindInteger()) { return "integer"; }
+    if (kind == kindFloat()) { return "float"; }
+    if (kind == kindString()) { return "string"; }
+    if (kind == kindRegex()) { return "regex"; }
+    if (kind == kindChar()) { return "char"; }
+    if (kind == kindBool()) { return "bool"; }
+    if (kind == kindIdentifier()) { return "identifier"; }
+    if (kind == kindKeyword()) {
+        val text: String = tokenTextAt(tokens, start);
+        if (strEq(text, "this")) { return "this"; }
+        if (strEq(text, "super")) { return "super"; }
+        if (strEq(text, "new")) { return "new"; }
+        if (strEq(text, "match")) { return "match"; }
+    }
+    return "unknown";
+}
+
+def findTokenTextInRange(tokens: String, start: Int, end: Int, text: String): Int {
+    var cursor: Int = start;
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (strEq(tokenTextAt(tokens, cursor), text)) {
+            return cursor;
+        }
+        cursor = cursor + 1;
+    }
+    return -1;
+}
+
+def countMatchCases(tokens: String, matchOrdinal: Int, end: Int): Int {
+    val openBrace: Int = findTokenTextInRange(tokens, matchOrdinal, end, "{");
+    if (openBrace < 0) {
+        return 0;
+    }
+    val closeBrace: Int = findClosingToken(tokens, openBrace, end, "{", "}");
+    var cursor: Int = openBrace + 1;
+    var count: Int = 0;
+    while (cursor < closeBrace and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindKeyword(), "case")) {
+            count = count + 1;
+        }
+        cursor = cursor + 1;
+    }
+    return count;
+}
+
+def findStatementParenStart(tokens: String, start: Int, end: Int): Int {
+    return findTokenTextInRange(tokens, start, end, "(");
+}
+
+def findStatementParenEnd(tokens: String, start: Int, end: Int): Int {
+    val openParen: Int = findStatementParenStart(tokens, start, end);
+    if (openParen < 0) {
+        return -1;
+    }
+    return findClosingToken(tokens, openParen, end, "(", ")");
+}
+
+def findStatementBlockStart(tokens: String, start: Int, end: Int): Int {
+    val closeParen: Int = findStatementParenEnd(tokens, start, end);
+    if (closeParen >= 0) {
+        return findTokenTextInRange(tokens, closeParen + 1, end, "{");
+    }
+    return findTokenTextInRange(tokens, start, end, "{");
+}
+
+def findStatementBlockEnd(tokens: String, start: Int, end: Int): Int {
+    val openBrace: Int = findStatementBlockStart(tokens, start, end);
+    if (openBrace < 0) {
+        return -1;
+    }
+    return findClosingToken(tokens, openBrace, end, "{", "}");
+}
+
+def statementHeaderExpression(tokens: String, start: Int, end: Int): String {
+    val openParen: Int = findStatementParenStart(tokens, start, end);
+    val closeParen: Int = findStatementParenEnd(tokens, start, end);
+    if (openParen >= 0 and closeParen > openParen) {
+        return appendExpressionUntil(tokens, openParen + 1, closeParen);
+    }
+    return "";
+}
+
+def countCommaSeparated(tokens: String, start: Int, end: Int): Int {
+    if (end <= start) {
+        return 0;
+    }
+    var cursor: Int = start;
+    var count: Int = 1;
+    var paren: Int = 0;
+    var bracket: Int = 0;
+    var brace: Int = 0;
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (tokenKindAt(tokens, cursor) == kindOperator()) {
+            if (strEq(text, "(")) { paren = paren + 1; }
+            else if (strEq(text, ")")) { paren = paren - 1; }
+            else if (strEq(text, "[")) { bracket = bracket + 1; }
+            else if (strEq(text, "]")) { bracket = bracket - 1; }
+            else if (strEq(text, "{")) { brace = brace + 1; }
+            else if (strEq(text, "}")) { brace = brace - 1; }
+            else if (strEq(text, ",") and paren == 0 and bracket == 0 and brace == 0) {
+                count = count + 1;
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return count;
+}
+
+def findLastTopLevelToken(tokens: String, start: Int, end: Int, text: String): Int {
+    var cursor: Int = end - 1;
+    var paren: Int = 0;
+    var bracket: Int = 0;
+    var brace: Int = 0;
+    while (cursor >= start) {
+        val current: String = tokenTextAt(tokens, cursor);
+        if (tokenKindAt(tokens, cursor) == kindOperator()) {
+            if (strEq(current, ")")) { paren = paren + 1; }
+            else if (strEq(current, "(")) { paren = paren - 1; }
+            else if (strEq(current, "]")) { bracket = bracket + 1; }
+            else if (strEq(current, "[")) { bracket = bracket - 1; }
+            else if (strEq(current, "}")) { brace = brace + 1; }
+            else if (strEq(current, "{")) { brace = brace - 1; }
+        }
+        if (paren == 0 and bracket == 0 and brace == 0 and strEq(current, text)) {
+            return cursor;
+        }
+        cursor = cursor - 1;
+    }
+    return -1;
+}
+
+def summarizePostfixExpression(tokens: String, start: Int, end: Int): String {
+    if (end <= start) {
+        return "";
+    }
+    if (tokenIs(tokens, end - 1, kindOperator(), ")")) {
+        val open: Int = findLastTopLevelToken(tokens, start, end, "(");
+        if (open > start) {
+            return "Expr call target=" + appendExpressionUntil(tokens, start, open) +
+                " argc=" + countCommaSeparated(tokens, open + 1, end - 1);
+        }
+    }
+    if (tokenIs(tokens, end - 1, kindOperator(), "]")) {
+        val openBracket: Int = findLastTopLevelToken(tokens, start, end, "[");
+        if (openBracket > start) {
+            return "Expr index target=" + appendExpressionUntil(tokens, start, openBracket) +
+                " argc=" + countCommaSeparated(tokens, openBracket + 1, end - 1);
+        }
+    }
+    val dot: Int = findLastTopLevelToken(tokens, start, end, ".");
+    if (dot > start) {
+        return "Expr member " + appendExpressionUntil(tokens, start, dot) + "." +
+            appendExpressionUntil(tokens, dot + 1, end);
+    }
+    return "";
+}
+
+def findLambdaArrow(tokens: String, start: Int, end: Int): Int {
+    val closeCapture: Int = findClosingToken(tokens, start, end, "[", "]");
+    if (closeCapture < 0) {
+        return -1;
+    }
+    val openParams: Int = skipTrivia(tokens, closeCapture + 1);
+    if (!tokenIs(tokens, openParams, kindOperator(), "(")) {
+        return -1;
+    }
+    val closeParams: Int = findClosingToken(tokens, openParams, end, "(", ")");
+    if (closeParams < 0) {
+        return -1;
+    }
+    val arrow: Int = skipTrivia(tokens, closeParams + 1);
+    if (tokenIs(tokens, arrow, kindOperator(), "->")) {
+        return arrow;
+    }
+    return -1;
+}
+
+def lambdaCaptureSummary(tokens: String, start: Int, end: Int): String {
+    val closeCapture: Int = findClosingToken(tokens, start, end, "[", "]");
+    if (closeCapture <= start + 1) {
+        return "none";
+    }
+    return appendExpressionUntil(tokens, start + 1, closeCapture);
+}
+
+def lambdaParameterCount(tokens: String, start: Int, end: Int): Int {
+    val closeCapture: Int = findClosingToken(tokens, start, end, "[", "]");
+    if (closeCapture < 0) {
+        return 0;
+    }
+    val openParams: Int = skipTrivia(tokens, closeCapture + 1);
+    if (!tokenIs(tokens, openParams, kindOperator(), "(")) {
+        return 0;
+    }
+    val closeParams: Int = findClosingToken(tokens, openParams, end, "(", ")");
+    return countCommaSeparated(tokens, openParams + 1, closeParams);
+}
+
+def summarizeLambdaExpression(tokens: String, start: Int, end: Int): String {
+    if (!tokenIs(tokens, start, kindOperator(), "[")) {
+        return "";
+    }
+    val arrow: Int = findLambdaArrow(tokens, start, end);
+    if (arrow < 0) {
+        return "";
+    }
+    return "Expr lambda capture=" + lambdaCaptureSummary(tokens, start, end) +
+        " params=" + lambdaParameterCount(tokens, start, end);
+}
+
+def generateExpressionAST(tokens: String, rawStart: Int, rawEnd: Int): String {
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "Expr empty";
+    }
+    val lambda: String = summarizeLambdaExpression(tokens, start, end);
+    if (lambda.length > 0) {
+        return lambda;
+    }
+    val matchAt: Int = findTopLevelMatch(tokens, start, end);
+    if (matchAt > start) {
+        return "Expr match cases=" + countMatchCases(tokens, matchAt, end) + " [" +
+            generateExpressionAST(tokens, start, matchAt) + "]";
+    }
+    if (tokenIs(tokens, start, kindOperator(), "(")) {
+        val close: Int = findClosingToken(tokens, start, end, "(", ")");
+        if (close == end - 1) {
+            return "Expr group (" + generateExpressionAST(tokens, start + 1, end - 1) + ")";
+        }
+    }
+
+    var op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op >= start) {
+        return "Expr assign " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 2);
+    if (op >= start) {
+        return "Expr binary " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 3);
+    if (op >= start) {
+        return "Expr binary " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 8);
+    if (op >= start) {
+        return "Expr binary " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 9);
+    if (op >= start) {
+        return "Expr binary " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 4);
+    if (op >= start) {
+        return "Expr compare " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 10);
+    if (op >= start) {
+        return "Expr shift " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 5);
+    if (op >= start) {
+        return "Expr range " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 6);
+    if (op > start) {
+        return "Expr binary " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 7);
+    if (op > start) {
+        return "Expr binary " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+    op = findTopLevelOperator(tokens, start, end, 11);
+    if (op > start) {
+        return "Expr tensor " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
+
+    if (tokenKindAt(tokens, start) == kindOperator() and
+        (strEq(tokenTextAt(tokens, start), "!") or strEq(tokenTextAt(tokens, start), "-") or
+         strEq(tokenTextAt(tokens, start), "+") or strEq(tokenTextAt(tokens, start), "~") or
+         strEq(tokenTextAt(tokens, start), "*") or strEq(tokenTextAt(tokens, start), "&") or
+         strEq(tokenTextAt(tokens, start), "<-") or strEq(tokenTextAt(tokens, start), "++") or
+         strEq(tokenTextAt(tokens, start), "--"))) {
+        return "Expr unary " + tokenTextAt(tokens, start) + " [" +
+            generateExpressionAST(tokens, start + 1, end) + "]";
+    }
+    if (end > start + 1 and tokenKindAt(tokens, end - 1) == kindOperator() and
+        (strEq(tokenTextAt(tokens, end - 1), "++") or strEq(tokenTextAt(tokens, end - 1), "--"))) {
+        return "Expr postfix " + tokenTextAt(tokens, end - 1) + " [" +
+            generateExpressionAST(tokens, start, end - 1) + "]";
+    }
+    val postfix: String = summarizePostfixExpression(tokens, start, end);
+    if (postfix.length > 0) {
+        return postfix;
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and
+        start + 1 < end and tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        return "Expr call " + tokenTextAt(tokens, start) + "(" +
+            appendExpressionUntil(tokens, start + 2, end - 1) + ")";
+    }
+    if (tokenIs(tokens, start, kindOperator(), "[")) {
+        return "Expr array count=" + countCommaSeparated(tokens, start + 1, end - 1) +
+            " [" + appendExpressionUntil(tokens, start + 1, end - 1) + "]";
+    }
+    if (tokenKindAt(tokens, start) == kindKeyword() and strEq(tokenTextAt(tokens, start), "new")) {
+        return "Expr new " + appendExpressionUntil(tokens, start + 1, end);
+    }
+    if (tokenKindAt(tokens, start) == kindKeyword() and strEq(tokenTextAt(tokens, start), "match")) {
+        return "Expr match";
+    }
+    return "Expr " + expressionLeafKind(tokens, start, end) + " " +
+        appendExpressionUntil(tokens, start, end);
+}
+
+def advanceStatement(tokens: String, ordinal: Int, bodyEnd: Int): Int {
+    var cursor: Int = ordinal;
+    var paren: Int = 0;
+    var brace: Int = 0;
+    var bracket: Int = 0;
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (tokenKindAt(tokens, cursor) == kindOperator()) {
+            if (strEq(text, "(")) {
+                paren = paren + 1;
+            }
+            else if (strEq(text, ")")) {
+                paren = paren - 1;
+            }
+            else if (strEq(text, "{")) {
+                brace = brace + 1;
+            }
+            else if (strEq(text, "}")) {
+                if (brace == 0 and paren == 0 and bracket == 0) {
+                    return cursor;
+                }
+                brace = brace - 1;
+                if (brace == 0 and paren == 0 and bracket == 0) {
+                    val possibleElse: Int = skipTrivia(tokens, cursor + 1);
+                    if (tokenIs(tokens, ordinal, kindKeyword(), "if") and
+                        tokenIs(tokens, possibleElse, kindKeyword(), "else")) {
+                        val afterElse: Int = skipTrivia(tokens, possibleElse + 1);
+                        if (tokenIs(tokens, afterElse, kindKeyword(), "if")) {
+                            return advanceStatement(tokens, afterElse, bodyEnd);
+                        }
+                        if (tokenIs(tokens, afterElse, kindOperator(), "{")) {
+                            val elseEnd: Int = findClosingToken(tokens, afterElse, bodyEnd, "{", "}");
+                            if (elseEnd > afterElse) {
+                                return elseEnd + 1;
+                            }
+                        }
+                    }
+                    return cursor + 1;
+                }
+            }
+            else if (strEq(text, "[")) {
+                bracket = bracket + 1;
+            }
+            else if (strEq(text, "]")) {
+                bracket = bracket - 1;
+            }
+            else if (strEq(text, ";") and brace == 0 and paren == 0 and bracket == 0) {
+                return cursor + 1;
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def generateStatementAST(tokens: String, start: Int, end: Int): String {
+    val kind: String = statementKind(tokens, start);
+    if (strEq(kind, "return")) {
+        return "  Stmt return " + generateExpressionAST(tokens, start + 1, end) + "\n";
+    }
+    if (strEq(kind, "value") or strEq(kind, "variable")) {
+        val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+        if (initializer >= start) {
+            return "  Stmt " + kind + " " + tokenTextAt(tokens, start + 1) + " = " +
+                generateExpressionAST(tokens, initializer + 1, end) + "\n";
+        }
+        return "  Stmt " + kind + " " + tokenTextAt(tokens, start + 1) + "\n";
+    }
+    if (strEq(kind, "if") or strEq(kind, "for") or strEq(kind, "while") or
+        strEq(kind, "map") or strEq(kind, "pmap") or strEq(kind, "reduce") or
+        strEq(kind, "preduce") or strEq(kind, "filter")) {
+        return "  Stmt " + kind + " (" + statementHeaderExpression(tokens, start, end) + ")\n";
+    }
+    if (strEq(kind, "unsafe") or strEq(kind, "unatomic") or strEq(kind, "constexpr")) {
+        return "  Stmt " + kind + "\n";
+    }
+    if (strEq(kind, "function") or strEq(kind, "object")) {
+        return "  Stmt " + kind + " " + tokenTextAt(tokens, start + 1) + "\n";
+    }
+    return "  Stmt expression " + generateExpressionAST(tokens, start, end) + "\n";
+}
+
+def generateBodyAST(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor >= 0 and cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        if (next <= cursor) {
+            return output + "  Stmt error\n";
+        }
+        output = output + generateStatementAST(tokens, cursor, next);
+        cursor = skipTrivia(tokens, next);
+    }
+    return output;
+}
+
+def findFunctionParamStart(tokens: String, declStart: Int): Int {
+    var cursor: Int = declStart;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindOperator(), "(")) {
+            return cursor;
+        }
+        if (tokenIs(tokens, cursor, kindOperator(), "{") or tokenIs(tokens, cursor, kindOperator(), ";")) {
+            return -1;
+        }
+        cursor = cursor + 1;
+    }
+    return -1;
+}
+
+def findFunctionReturnTypeStart(tokens: String, declStart: Int): Int {
+    val paramStart: Int = findFunctionParamStart(tokens, declStart);
+    if (paramStart < 0) {
+        return -1;
+    }
+    val paramEnd: Int = findClosingToken(tokens, paramStart, advanceTopLevelDecl(tokens, declStart), "(", ")");
+    if (paramEnd < 0) {
+        return -1;
+    }
+    if (tokenIs(tokens, paramEnd + 1, kindOperator(), ":")) {
+        return paramEnd + 2;
+    }
+    return -1;
+}
+
+def collectTypeName(tokens: String, start: Int, end: Int): String {
+    var cursor: Int = start;
+    var output: String = "";
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (strEq(text, "{") or strEq(text, "=") or strEq(text, ";") or strEq(text, ",")) {
+            return output;
+        }
+        output = output + text;
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def functionReturnType(tokens: String, declStart: Int): String {
+    val typeStart: Int = findFunctionReturnTypeStart(tokens, declStart);
+    if (typeStart < 0) {
+        return "Unit";
+    }
+    val declEnd: Int = advanceTopLevelDecl(tokens, declStart);
+    val typeName: String = collectTypeName(tokens, typeStart, declEnd);
+    if (typeName.length == 0) {
+        return "Unit";
+    }
+    return typeName;
+}
+
+def countFunctionParams(tokens: String, declStart: Int): Int {
+    val paramStart: Int = findFunctionParamStart(tokens, declStart);
+    if (paramStart < 0) {
+        return 0;
+    }
+    val paramEnd: Int = findClosingToken(tokens, paramStart, advanceTopLevelDecl(tokens, declStart), "(", ")");
+    if (paramEnd <= paramStart + 1) {
+        return 0;
+    }
+    var cursor: Int = paramStart + 1;
+    var count: Int = 1;
+    while (cursor < paramEnd) {
+        if (tokenIs(tokens, cursor, kindOperator(), ",")) {
+            count = count + 1;
+        }
+        cursor = cursor + 1;
+    }
+    return count;
+}
+
+def typeSummary(tokens: String, start: Int, end: Int): String {
+    if (tokenIs(tokens, start, kindOperator(), "(")) {
+        val close: Int = findClosingToken(tokens, start, end, "(", ")");
+        if (close > start and tokenIs(tokens, close + 1, kindOperator(), "=>")) {
+            return "FunctionType params=" + countCommaSeparated(tokens, start + 1, close) +
+                " returns=" + collectTypeName(tokens, close + 2, end);
+        }
+    }
+    return collectTypeName(tokens, start, end);
+}
+
+def declaredValueType(tokens: String, declStart: Int, declEnd: Int): String {
+    var cursor: Int = declStart;
+    while (cursor < declEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindOperator(), ":")) {
+            return typeSummary(tokens, cursor + 1, declEnd);
+        }
+        if (tokenIs(tokens, cursor, kindOperator(), "=") or tokenIs(tokens, cursor, kindOperator(), ";")) {
+            return "infer";
+        }
+        cursor = cursor + 1;
+    }
+    return "infer";
+}
+
+def inferExpressionType(tokens: String, rawStart: Int, rawEnd: Int): String {
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "Unit";
+    }
+    val kind: Char = tokenKindAt(tokens, start);
+    if (kind == kindInteger()) { return "Int"; }
+    if (kind == kindFloat()) { return "Double"; }
+    if (kind == kindString()) { return "String"; }
+    if (kind == kindRegex()) { return "Regex"; }
+    if (kind == kindChar()) { return "Char"; }
+    if (kind == kindBool()) { return "Boolean"; }
+    val lambda: String = summarizeLambdaExpression(tokens, start, end);
+    if (lambda.length > 0) { return "Function"; }
+    val matchAt: Int = findTopLevelMatch(tokens, start, end);
+    if (matchAt > start) { return "unknown"; }
+    var op: Int = findTopLevelOperator(tokens, start, end, 4);
+    if (op >= start) { return "Boolean"; }
+    op = findTopLevelOperator(tokens, start, end, 2);
+    if (op >= start) { return "Boolean"; }
+    op = findTopLevelOperator(tokens, start, end, 3);
+    if (op >= start) { return "Boolean"; }
+    op = findTopLevelOperator(tokens, start, end, 8);
+    if (op >= start) { return inferExpressionType(tokens, start, op); }
+    op = findTopLevelOperator(tokens, start, end, 9);
+    if (op >= start) { return inferExpressionType(tokens, start, op); }
+    op = findTopLevelOperator(tokens, start, end, 10);
+    if (op >= start) { return inferExpressionType(tokens, start, op); }
+    op = findTopLevelOperator(tokens, start, end, 5);
+    if (op >= start) { return "Range"; }
+    op = findTopLevelOperator(tokens, start, end, 6);
+    if (op >= start) { return inferExpressionType(tokens, start, op); }
+    op = findTopLevelOperator(tokens, start, end, 7);
+    if (op >= start) { return inferExpressionType(tokens, start, op); }
+    op = findTopLevelOperator(tokens, start, end, 11);
+    if (op >= start) { return inferExpressionType(tokens, start, op); }
+    if (tokenKindAt(tokens, start) == kindKeyword() and strEq(tokenTextAt(tokens, start), "new")) {
+        return collectTypeName(tokens, start + 1, end);
+    }
+    if (tokenIs(tokens, start, kindOperator(), "[")) {
+        return "Array";
+    }
+    val postfix: String = summarizePostfixExpression(tokens, start, end);
+    if (postfix.startsWith("Expr call")) {
+        return "unknown";
+    }
+    if (postfix.startsWith("Expr index")) {
+        return "unknown";
+    }
+    if (postfix.startsWith("Expr member")) {
+        return "unknown";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier()) {
+        return "unknown";
+    }
+    return "unknown";
+}
+
+def declaredLocalType(tokens: String, start: Int, end: Int): String {
+    var cursor: Int = start;
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindOperator(), ":")) {
+            return typeSummary(tokens, cursor + 1, end);
+        }
+        if (tokenIs(tokens, cursor, kindOperator(), "=") or tokenIs(tokens, cursor, kindOperator(), ";")) {
+            return "";
+        }
+        cursor = cursor + 1;
+    }
+    return "";
+}
+
+def localDeclarationType(tokens: String, start: Int, end: Int): String {
+    val explicitType: String = declaredLocalType(tokens, start, end);
+    if (explicitType.length > 0) {
+        return explicitType;
+    }
+    val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (initializer >= start) {
+        return inferExpressionType(tokens, initializer + 1, end);
+    }
+    return "unknown";
+}
+
+def generateFunctionScopeSymbols(tokens: String, functionName: String, bodyStart: Int, bodyEnd: Int): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor >= 0 and cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        val kind: String = statementKind(tokens, cursor);
+        if (strEq(kind, "value") or strEq(kind, "variable")) {
+            output = output + "  Local " + functionName + "." + tokenTextAt(tokens, cursor + 1) +
+                " mut=" + kind + " type=" + localDeclarationType(tokens, cursor, next) + "\n";
+        }
+        else if (strEq(kind, "if") or strEq(kind, "while") or strEq(kind, "for") or
+            strEq(kind, "map") or strEq(kind, "pmap") or strEq(kind, "reduce") or
+            strEq(kind, "preduce") or strEq(kind, "filter")) {
+            output = output + "  Block " + functionName + "." + kind +
+                " header=" + statementHeaderExpression(tokens, cursor, next) + "\n";
+        }
+        else {
+            val assignment: Int = findTopLevelOperator(tokens, cursor, next, 1);
+            if (assignment > cursor and tokenKindAt(tokens, cursor) == kindIdentifier()) {
+                output = output + "  Assign " + functionName + "." + tokenTextAt(tokens, cursor) +
+                    " op=" + tokenTextAt(tokens, assignment) + " type=" +
+                    inferExpressionType(tokens, assignment + 1, next) + "\n";
+            }
+        }
+        cursor = skipTrivia(tokens, next);
+    }
+    return output;
+}
+
+def generateFunctionParamSymbols(tokens: String, functionName: String, declStart: Int): String {
+    val paramStart: Int = findFunctionParamStart(tokens, declStart);
+    if (paramStart < 0) {
+        return "";
+    }
+    val paramEnd: Int = findClosingToken(tokens, paramStart, advanceTopLevelDecl(tokens, declStart), "(", ")");
+    var cursor: Int = paramStart + 1;
+    var output: String = "";
+    while (cursor < paramEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
+            var typeName: String = "unknown";
+            if (tokenIs(tokens, cursor + 1, kindOperator(), ":")) {
+                typeName = collectTypeName(tokens, cursor + 2, paramEnd);
+            }
+            output = output + "  Param " + functionName + "." + tokenTextAt(tokens, cursor) +
+                " type=" + typeName + "\n";
+        }
+        while (cursor < paramEnd and !tokenIs(tokens, cursor, kindOperator(), ",")) {
+            cursor = cursor + 1;
+        }
+        if (tokenIs(tokens, cursor, kindOperator(), ",")) {
+            cursor = cursor + 1;
+        }
+    }
+    return output;
+}
+
+def classMemberStart(tokens: String, ordinal: Int): Int {
+    if (tokenIs(tokens, ordinal, kindKeyword(), "override") or
+        tokenIs(tokens, ordinal, kindKeyword(), "unsafe") or
+        tokenIs(tokens, ordinal, kindKeyword(), "constexpr")) {
+        return ordinal + 1;
+    }
+    return ordinal;
+}
+
+def classMemberKind(tokens: String, ordinal: Int): String {
+    val start: Int = classMemberStart(tokens, ordinal);
+    if (tokenIs(tokens, start, kindKeyword(), "def")) {
+        return "method";
+    }
+    if (tokenIs(tokens, start, kindKeyword(), "val")) {
+        return "field";
+    }
+    if (tokenIs(tokens, start, kindKeyword(), "var")) {
+        return "mutable-field";
+    }
+    return "member";
+}
+
+def classMemberName(tokens: String, ordinal: Int): String {
+    val start: Int = classMemberStart(tokens, ordinal);
+    if (tokenIs(tokens, start, kindKeyword(), "def")) {
+        if (tokenIs(tokens, start + 1, kindKeyword(), "operator")) {
+            return "operator" + tokenTextAt(tokens, start + 2);
+        }
+        return tokenTextAt(tokens, start + 1);
+    }
+    if (tokenIs(tokens, start, kindKeyword(), "val") or tokenIs(tokens, start, kindKeyword(), "var")) {
+        return tokenTextAt(tokens, start + 1);
+    }
+    return "<member>";
+}
+
+def generateClassMemberSymbols(tokens: String, className: String, bodyStart: Int, bodyEnd: Int): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor >= 0 and cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        val memberStart: Int = classMemberStart(tokens, cursor);
+        val kind: String = classMemberKind(tokens, cursor);
+        val name: String = classMemberName(tokens, cursor);
+        if (strEq(kind, "method")) {
+            output = output + "  Method " + className + "." + name +
+                " params=" + countFunctionParams(tokens, memberStart) +
+                " returns=" + functionReturnType(tokens, memberStart) + "\n";
+        }
+        else if (strEq(kind, "field") or strEq(kind, "mutable-field")) {
+            output = output + "  Field " + className + "." + name +
+                " mut=" + kind + " type=" + declaredValueType(tokens, memberStart, next) + "\n";
+        }
+        cursor = skipTrivia(tokens, next);
+    }
+    return output;
+}
+
+def generateClassMemberAST(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor >= 0 and cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        output = output + "  Member " + classMemberKind(tokens, cursor) + " " +
+            classMemberName(tokens, cursor) + "\n";
+        cursor = skipTrivia(tokens, next);
+    }
+    return output;
+}
+
+def templateParameterSummary(tokens: String, ordinal: Int): String {
+    if (!tokenIs(tokens, ordinal, kindKeyword(), "template")) {
+        return "";
+    }
+    val open: Int = findTokenTextInRange(tokens, ordinal, advanceTopLevelDecl(tokens, ordinal), "<");
+    if (open < 0) {
+        return "";
+    }
+    var cursor: Int = open + 1;
+    var output: String = "";
+    while (tokenKindAt(tokens, cursor) != kindEof() and !tokenIs(tokens, cursor, kindOperator(), ">")) {
+        if (tokenIs(tokens, cursor, kindKeyword(), "typename") or tokenIs(tokens, cursor, kindKeyword(), "class")) {
+            output = output + " type " + tokenTextAt(tokens, cursor + 1);
+            cursor = cursor + 2;
+        }
+        else if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
+            output = output + " value " + tokenTextAt(tokens, cursor);
+            cursor = cursor + 1;
+        }
+        else {
+            cursor = cursor + 1;
+        }
+    }
+    return output;
+}
+
+def templateTargetKind(tokens: String, ordinal: Int): String {
+    if (!tokenIs(tokens, ordinal, kindKeyword(), "template")) {
+        return "";
+    }
+    var cursor: Int = ordinal + 1;
+    var depth: Int = 0;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (strEq(text, "<")) {
+            depth = depth + 1;
+        }
+        else if (strEq(text, ">")) {
+            depth = depth - 1;
+            if (depth == 0) {
+                val target: String = tokenTextAt(tokens, cursor + 1);
+                if (strEq(target, "def")) { return "function"; }
+                if (strEq(target, "class")) { return "class"; }
+                return target;
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return "";
+}
+
+def attributeSummary(tokens: String, ordinal: Int): String {
+    if (!tokenIs(tokens, ordinal, kindOperator(), "[@")) {
+        return "";
+    }
+    var cursor: Int = ordinal + 1;
+    var output: String = "";
+    while (tokenKindAt(tokens, cursor) != kindEof() and !tokenIs(tokens, cursor, kindOperator(), "]")) {
+        if (output.length > 0) {
+            output = output + " ";
+        }
+        output = output + tokenTextAt(tokens, cursor);
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def externalSymbolKind(tokens: String, ordinal: Int): String {
+    val kind: String = topLevelDeclKind(tokens, ordinal);
+    if (strEq(kind, "external-function")) { return "function"; }
+    if (strEq(kind, "external-class")) { return "class"; }
+    if (strEq(kind, "external-object")) { return "object"; }
+    return kind;
+}
+
+def generateSymbolTable(tokens: String): String {
+    if (!parseProgram(tokens)) {
+        return "error: parse failed\n";
+    }
+    var output: String = "Symbols\n";
+    var cursor: Int = skipTrivia(tokens, 0);
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        val kind: String = topLevelDeclKind(tokens, cursor);
+        val name: String = topLevelDeclName(tokens, cursor);
+        val declEnd: Int = advanceTopLevelDecl(tokens, cursor);
+        if (strEq(kind, "function") or strEq(kind, "external-function")) {
+            output = output + "Symbol function " + name + " params=" +
+                countFunctionParams(tokens, cursor) + " returns=" +
+                functionReturnType(tokens, cursor) + "\n";
+            if (strEq(kind, "external-function")) {
+                output = output + "  External function " + name + "\n";
+            }
+            output = output + generateFunctionParamSymbols(tokens, name, cursor);
+            val bodyStart: Int = findDeclBodyStart(tokens, cursor);
+            val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+            if (bodyStart >= 0 and bodyEnd >= bodyStart) {
+                output = output + generateFunctionScopeSymbols(tokens, name, bodyStart, bodyEnd);
+            }
+        }
+        else if (strEq(kind, "value") or strEq(kind, "variable")) {
+            output = output + "Symbol " + kind + " " + name + " type=" +
+                declaredValueType(tokens, cursor, declEnd) + "\n";
+        }
+        else if (strEq(kind, "template")) {
+            output = output + "Symbol template " + name + " target=" +
+                templateTargetKind(tokens, cursor) + " params=" +
+                templateParameterSummary(tokens, cursor) + "\n";
+        }
+        else if (strEq(kind, "attribute")) {
+            output = output + "Symbol attribute " + attributeSummary(tokens, cursor) + "\n";
+        }
+        else if (strEq(kind, "external") or strEq(kind, "external-function") or
+            strEq(kind, "external-class") or strEq(kind, "external-object")) {
+            output = output + "Symbol external " + externalSymbolKind(tokens, cursor) +
+                " " + name + "\n";
+        }
+        else if (strEq(kind, "class") or strEq(kind, "object") or strEq(kind, "external-class") or
+            strEq(kind, "external-object")) {
+            output = output + "Symbol type " + name + " kind=" + kind + "\n";
+            if (strEq(kind, "external-class") or strEq(kind, "external-object")) {
+                output = output + "  External " + externalSymbolKind(tokens, cursor) + " " + name + "\n";
+            }
+            val bodyStart: Int = findDeclBodyStart(tokens, cursor);
+            val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+            if (bodyStart >= 0 and bodyEnd >= bodyStart) {
+                output = output + generateClassMemberSymbols(tokens, name, bodyStart, bodyEnd);
+            }
+        }
+        else if (strEq(kind, "import")) {
+            output = output + "Symbol import " + name + "\n";
+        }
+        cursor = skipTrivia(tokens, declEnd);
+    }
+    return output;
+}
+
+def generateAST(tokens: String): String {
+    if (!parseProgram(tokens)) {
+        return "error: parse failed\n";
+    }
+    var output: String = "Program\n";
+    var cursor: Int = skipTrivia(tokens, 0);
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        val kind: String = topLevelDeclKind(tokens, cursor);
+        val name: String = topLevelDeclName(tokens, cursor);
+        output = output + "Decl " + kind + " " + name + "\n";
+        if (strEq(kind, "attribute")) {
+            output = output + "Attribute " + attributeSummary(tokens, cursor) + "\n";
+        }
+        if (strEq(kind, "template")) {
+            output = output + "Template target " + templateTargetKind(tokens, cursor) +
+                " params" + templateParameterSummary(tokens, cursor) + "\n";
+        }
+        if (strEq(kind, "function") or strEq(kind, "external-function") or strEq(kind, "template")) {
+            val bodyStart: Int = findDeclBodyStart(tokens, cursor);
+            val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+            if (bodyStart >= 0 and bodyEnd >= bodyStart) {
+                output = output + generateBodyAST(tokens, bodyStart, bodyEnd);
+            }
+        }
+        else if (strEq(kind, "class") or strEq(kind, "object") or strEq(kind, "external-class") or
+            strEq(kind, "external-object")) {
+            val bodyStart: Int = findDeclBodyStart(tokens, cursor);
+            val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+            if (bodyStart >= 0 and bodyEnd >= bodyStart) {
+                output = output + generateClassMemberAST(tokens, bodyStart, bodyEnd);
+            }
+        }
+        cursor = skipTrivia(tokens, advanceTopLevelDecl(tokens, cursor));
+    }
+    return output;
+}
+
+def parseReturnIntegerInRange(tokens: String, start: Int, end: Int): Int {
+    var cursor: Int = start;
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindKeyword(), "return") and
+            tokenKindAt(tokens, cursor + 1) == kindInteger()) {
+            return toInt(tokenTextAt(tokens, cursor + 1));
+        }
+        cursor = cursor + 1;
+    }
+    return 0;
+}
+
+def appendCExpression(tokens: String, start: Int, rawEnd: Int): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    var cursor: Int = start;
+    var output: String = "";
+    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
+        val text: String = tokenTextAt(tokens, cursor);
+        if (tokenKindAt(tokens, cursor) == kindKeyword() and strEq(text, "and")) {
+            output = output + "&&";
+        }
+        else if (tokenKindAt(tokens, cursor) == kindKeyword() and strEq(text, "or")) {
+            output = output + "||";
+        }
+        else if (tokenKindAt(tokens, cursor) == kindKeyword() and strEq(text, "xor")) {
+            output = output + "^";
+        }
+        else {
+            output = output + text;
+        }
+        if (cursor + 1 < end) {
+            output = output + " ";
+        }
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def cTypeName(typeName: String): String {
+    if (strEq(typeName, "Boolean")) { return "int"; }
+    if (strEq(typeName, "Char")) { return "char"; }
+    if (strEq(typeName, "Int")) { return "int"; }
+    if (strEq(typeName, "Long")) { return "long long"; }
+    if (strEq(typeName, "Float")) { return "float"; }
+    if (strEq(typeName, "Double")) { return "double"; }
+    if (strEq(typeName, "String")) { return "const char*"; }
+    if (strEq(typeName, "Regex")) { return "const char*"; }
+    if (typeName.startsWith("Array")) { return "void*"; }
+    if (strEq(typeName, "Unit")) { return "void"; }
+    return "void*";
+}
+
+def generateCBody(tokens: String, bodyStart: Int, bodyEnd: Int, indent: String): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor >= 0 and cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        val kind: String = statementKind(tokens, cursor);
+        if (strEq(kind, "return")) {
+            output = output + indent + "return " + appendCExpression(tokens, cursor + 1, next) + ";\n";
+        }
+        else if (strEq(kind, "value") or strEq(kind, "variable")) {
+            val initializer: Int = findTopLevelOperator(tokens, cursor, next, 1);
+            var typeName: String = declaredLocalType(tokens, cursor, next);
+            if (initializer >= cursor) {
+                if (typeName.length == 0) {
+                    typeName = inferExpressionType(tokens, initializer + 1, next);
+                }
+                output = output + indent + cTypeName(typeName) + " " + tokenTextAt(tokens, cursor + 1) + " = " +
+                    appendCExpression(tokens, initializer + 1, next) + ";\n";
+            }
+            else {
+                if (typeName.length == 0) {
+                    typeName = "Int";
+                }
+                output = output + indent + cTypeName(typeName) + " " + tokenTextAt(tokens, cursor + 1) + " = 0;\n";
+            }
+        }
+        else if (strEq(kind, "if") or strEq(kind, "while")) {
+            val openParen: Int = findTokenTextInRange(tokens, cursor, next, "(");
+            val closeParen: Int = findClosingToken(tokens, openParen, next, "(", ")");
+            val openBrace: Int = findTokenTextInRange(tokens, closeParen + 1, next, "{");
+            val closeBrace: Int = findClosingToken(tokens, openBrace, next, "{", "}");
+            if (openParen >= cursor and closeParen > openParen and openBrace > closeParen and closeBrace > openBrace) {
+                output = output + indent + kind + " (" + appendCExpression(tokens, openParen + 1, closeParen) + ") {\n" +
+                    generateCBody(tokens, openBrace + 1, closeBrace, indent + "    ") +
+                    indent + "}\n";
+                if (strEq(kind, "if")) {
+                    val possibleElse: Int = skipTrivia(tokens, closeBrace + 1);
+                    if (possibleElse < next and tokenIs(tokens, possibleElse, kindKeyword(), "else")) {
+                        val elseStart: Int = skipTrivia(tokens, possibleElse + 1);
+                        if (tokenIs(tokens, elseStart, kindOperator(), "{")) {
+                            val elseEnd: Int = findClosingToken(tokens, elseStart, next, "{", "}");
+                            if (elseEnd > elseStart) {
+                                output = output + indent + "else {\n" +
+                                    generateCBody(tokens, elseStart + 1, elseEnd, indent + "    ") +
+                                    indent + "}\n";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if (strEq(kind, "for") or strEq(kind, "map") or strEq(kind, "pmap") or
+            strEq(kind, "reduce") or strEq(kind, "preduce") or strEq(kind, "filter")) {
+            val blockStart: Int = findStatementBlockStart(tokens, cursor, next);
+            val blockEnd: Int = findStatementBlockEnd(tokens, cursor, next);
+            output = output + indent + "/* " + kind + " (" + statementHeaderExpression(tokens, cursor, next) + ") */\n";
+            if (blockStart >= 0 and blockEnd > blockStart) {
+                output = output + generateCBody(tokens, blockStart + 1, blockEnd, indent);
+            }
+        }
+        else {
+            output = output + indent + appendCExpression(tokens, cursor, next) + ";\n";
+        }
+        cursor = skipTrivia(tokens, next);
+    }
+    return output;
+}
+
+def generateCStatement(tokens: String, start: Int, end: Int, indent: String): String {
+    val kind: String = statementKind(tokens, start);
+    if (strEq(kind, "return")) {
+        return indent + "return " + appendCExpression(tokens, start + 1, end) + ";\n";
+    }
+    if (strEq(kind, "value") or strEq(kind, "variable")) {
+        val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+        var typeName: String = declaredLocalType(tokens, start, end);
+        if (initializer >= start) {
+            if (typeName.length == 0) {
+                typeName = inferExpressionType(tokens, initializer + 1, end);
+            }
+            return indent + cTypeName(typeName) + " " + tokenTextAt(tokens, start + 1) + " = " +
+                appendCExpression(tokens, initializer + 1, end) + ";\n";
+        }
+        if (typeName.length == 0) {
+            typeName = "Int";
+        }
+        return indent + cTypeName(typeName) + " " + tokenTextAt(tokens, start + 1) + " = 0;\n";
+    }
+    if (strEq(kind, "if") or strEq(kind, "while") or strEq(kind, "for") or
+        strEq(kind, "map") or strEq(kind, "pmap") or strEq(kind, "reduce") or
+        strEq(kind, "preduce") or strEq(kind, "filter")) {
+        return indent + "/* unsupported nested block */\n";
+    }
+    return indent + appendCExpression(tokens, start, end) + ";\n";
+}
+
+def parseMainReturnInt(tokens: String): Int {
+    var cursor: Int = 0;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindKeyword(), "def") and
+            tokenIs(tokens, cursor + 1, kindIdentifier(), "main") and
+            tokenIs(tokens, cursor + 2, kindOperator(), "(") and
+            tokenIs(tokens, cursor + 3, kindOperator(), ")") and
+            tokenIs(tokens, cursor + 4, kindOperator(), ":") and
+            strEq(tokenTextAt(tokens, cursor + 5), "Int") and
+            tokenIs(tokens, cursor + 6, kindOperator(), "{") and
+            tokenKindAt(tokens, cursor + 7) != kindEof()) {
+            val bodyStart: Int = findDeclBodyStart(tokens, cursor);
+            val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+            if (bodyStart >= 0 and bodyEnd >= bodyStart) {
+                return parseReturnIntegerInRange(tokens, bodyStart, bodyEnd);
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return 0;
+}
+
+def generateMainExecutionC(tokens: String): String {
+    var cursor: Int = 0;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindKeyword(), "def") and
+            tokenIs(tokens, cursor + 1, kindIdentifier(), "main") and
+            tokenIs(tokens, cursor + 2, kindOperator(), "(") and
+            tokenIs(tokens, cursor + 3, kindOperator(), ")") and
+            tokenIs(tokens, cursor + 4, kindOperator(), ":") and
+            strEq(tokenTextAt(tokens, cursor + 5), "Int")) {
+            val bodyStart: Int = findDeclBodyStart(tokens, cursor);
+            val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+            if (bodyStart >= 0 and bodyEnd >= bodyStart) {
+                return "int main(int argc, char** argv) {\n" +
+                    "    (void)argc;\n" +
+                    "    (void)argv;\n" +
+                    generateCBody(tokens, bodyStart, bodyEnd, "    ") +
+                    "    return 0;\n" +
+                    "}\n";
+            }
+        }
+        cursor = cursor + 1;
+    }
+    return "";
+}
+
+def irTypeName(typeName: String): String {
+    if (strEq(typeName, "Boolean")) { return "i1"; }
+    if (strEq(typeName, "Char")) { return "i8"; }
+    if (strEq(typeName, "Int")) { return "i32"; }
+    if (strEq(typeName, "Long")) { return "i64"; }
+    if (strEq(typeName, "Float")) { return "float"; }
+    if (strEq(typeName, "Double")) { return "double"; }
+    if (strEq(typeName, "Unit")) { return "void"; }
+    if (strEq(typeName, "String")) { return "ptr"; }
+    if (strEq(typeName, "Regex")) { return "ptr"; }
+    if (strEq(typeName, "Range")) { return "ptr"; }
+    if (typeName.startsWith("Array")) { return "ptr"; }
+    if (typeName.length == 0) { return "ptr"; }
+    return "ptr";
+}
+
+def irOperatorName(text: String): String {
+    if (strEq(text, "+")) { return "add"; }
+    if (strEq(text, "-")) { return "sub"; }
+    if (strEq(text, "*")) { return "mul"; }
+    if (strEq(text, "/")) { return "sdiv"; }
+    if (strEq(text, "%")) { return "srem"; }
+    if (strEq(text, "<<")) { return "shl"; }
+    if (strEq(text, ">>")) { return "ashr"; }
+    if (strEq(text, "&")) { return "and"; }
+    if (strEq(text, "|")) { return "or"; }
+    if (strEq(text, "^") or strEq(text, "xor")) { return "xor"; }
+    if (strEq(text, "and") or strEq(text, "&&")) { return "and"; }
+    if (strEq(text, "or") or strEq(text, "||")) { return "or"; }
+    if (strEq(text, "==")) { return "icmp_eq"; }
+    if (strEq(text, "!=")) { return "icmp_ne"; }
+    if (strEq(text, "<")) { return "icmp_slt"; }
+    if (strEq(text, "<=")) { return "icmp_sle"; }
+    if (strEq(text, ">")) { return "icmp_sgt"; }
+    if (strEq(text, ">=")) { return "icmp_sge"; }
+    if (strEq(text, "..")) { return "range"; }
+    if (strEq(text, "to")) { return "range_to"; }
+    if (strEq(text, "until")) { return "range_until"; }
+    if (strEq(text, "@")) { return "matmul"; }
+    if (strEq(text, "inner")) { return "inner"; }
+    if (strEq(text, "outer")) { return "outer"; }
+    if (strEq(text, "tensor")) { return "tensor"; }
+    return text;
+}
+
+def expressionTopLevelOperator(tokens: String, start: Int, end: Int): Int {
+    var op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 2);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 3);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 8);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 9);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 4);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 10);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 5);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 6);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 7);
+    if (op >= start) { return op; }
+    op = findTopLevelOperator(tokens, start, end, 11);
+    if (op >= start) { return op; }
+    return -1;
+}
+
+def generateIRExpression(tokens: String, rawStart: Int, rawEnd: Int): String {
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "void";
+    }
+    val typeName: String = inferExpressionType(tokens, start, end);
+    val irType: String = irTypeName(typeName);
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start) {
+        return irOperatorName(tokenTextAt(tokens, op)) + " " + irType + " (" +
+            appendExpressionUntil(tokens, start, op) + "), (" +
+            appendExpressionUntil(tokens, op + 1, end) + ")";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and
+        start + 1 < end and tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        return "call " + irType + " @" + tokenTextAt(tokens, start) + "(" +
+            appendExpressionUntil(tokens, start + 2, end - 1) + ")";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "load " + irType + ", ptr %" + tokenTextAt(tokens, start);
+    }
+    return irType + " " + appendExpressionUntil(tokens, start, end);
+}
+
+def generateIRAssignment(tokens: String, start: Int, end: Int): String {
+    val op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op <= start or tokenKindAt(tokens, start) != kindIdentifier()) {
+        return "";
+    }
+    val name: String = tokenTextAt(tokens, start);
+    val opText: String = tokenTextAt(tokens, op);
+    val rhs: String = generateIRExpression(tokens, op + 1, end);
+    if (strEq(opText, "=") or strEq(opText, "<-")) {
+        return "    store " + rhs + ", ptr %" + name + "\n";
+    }
+    val typeName: String = inferExpressionType(tokens, op + 1, end);
+    val irType: String = irTypeName(typeName);
+    var binaryOp: String = opText.substring(0, 1);
+    if (strEq(opText, "%=")) {
+        binaryOp = "%";
+    }
+    return "    %old." + name + " = load " + irType + ", ptr %" + name + "\n" +
+        "    %new." + name + " = " + irOperatorName(binaryOp) + " " + irType +
+        " %old." + name + ", (" + appendExpressionUntil(tokens, op + 1, trimExpressionEnd(tokens, op + 1, end)) + ")\n" +
+        "    store " + irType + " %new." + name + ", ptr %" + name + "\n";
+}
+
+def generateIRParamList(tokens: String, declStart: Int): String {
+    val paramStart: Int = findFunctionParamStart(tokens, declStart);
+    if (paramStart < 0) {
+        return "";
+    }
+    val paramEnd: Int = findClosingToken(tokens, paramStart, advanceTopLevelDecl(tokens, declStart), "(", ")");
+    var cursor: Int = paramStart + 1;
+    var output: String = "";
+    var first: Boolean = true;
+    while (cursor < paramEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
+            var typeName: String = "unknown";
+            if (tokenIs(tokens, cursor + 1, kindOperator(), ":")) {
+                typeName = collectTypeName(tokens, cursor + 2, paramEnd);
+            }
+            if (!first) {
+                output = output + ", ";
+            }
+            output = output + irTypeName(typeName) + " %" + tokenTextAt(tokens, cursor);
+            first = false;
+        }
+        while (cursor < paramEnd and !tokenIs(tokens, cursor, kindOperator(), ",")) {
+            cursor = cursor + 1;
+        }
+        if (tokenIs(tokens, cursor, kindOperator(), ",")) {
+            cursor = cursor + 1;
+        }
+    }
+    return output;
+}
+
+def generateIRFlatBody(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor >= 0 and cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        val kind: String = statementKind(tokens, cursor);
+        if (strEq(kind, "return")) {
+            output = output + "    ret " + generateIRExpression(tokens, cursor + 1, next) + "\n";
+        }
+        else if (strEq(kind, "value") or strEq(kind, "variable")) {
+            val initializer: Int = findTopLevelOperator(tokens, cursor, next, 1);
+            if (initializer >= cursor) {
+                val localType: String = inferExpressionType(tokens, initializer + 1, next);
+                output = output + "    %" + tokenTextAt(tokens, cursor + 1) + " = alloca " +
+                    irTypeName(localType) + "\n" +
+                    "    store " + generateIRExpression(tokens, initializer + 1, next) +
+                    ", ptr %" + tokenTextAt(tokens, cursor + 1) + "\n";
+            }
+            else {
+                output = output + "    %" + tokenTextAt(tokens, cursor + 1) + " = alloca ptr\n";
+            }
+        }
+        else if (strEq(kind, "if") or strEq(kind, "while") or strEq(kind, "for") or
+            strEq(kind, "map") or strEq(kind, "pmap") or strEq(kind, "reduce") or
+            strEq(kind, "preduce") or strEq(kind, "filter")) {
+            output = output + "    ; nested block " + kind + " (" +
+                statementHeaderExpression(tokens, cursor, next) + ")\n";
+        }
+        else {
+            val assignmentIR: String = generateIRAssignment(tokens, cursor, next);
+            if (assignmentIR.length > 0) {
+                output = output + assignmentIR;
+            }
+            else {
+                output = output + "    " + generateIRExpression(tokens, cursor, next) + "\n";
+            }
+        }
+        cursor = skipTrivia(tokens, next);
+    }
+    return output;
+}
+
+def generateIRElseFlatBody(tokens: String, possibleElse: Int, end: Int, hasElse: Boolean): String {
+    if (!hasElse) {
+        return "    ; no else body\n";
+    }
+    val elseStart: Int = skipTrivia(tokens, possibleElse + 1);
+    if (tokenIs(tokens, elseStart, kindOperator(), "{")) {
+        val elseEnd: Int = findClosingToken(tokens, elseStart, end, "{", "}");
+        if (elseEnd > elseStart) {
+            return generateIRFlatBody(tokens, elseStart + 1, elseEnd);
+        }
+    }
+    if (tokenIs(tokens, elseStart, kindKeyword(), "if")) {
+        return "    ; else-if body\n";
+    }
+    return "    ; malformed else body\n";
+}
+
+def generateIRIf(tokens: String, start: Int, end: Int): String {
+    val openParen: Int = findStatementParenStart(tokens, start, end);
+    val closeParen: Int = findStatementParenEnd(tokens, start, end);
+    val thenStart: Int = findStatementBlockStart(tokens, start, end);
+    val thenEnd: Int = findClosingToken(tokens, thenStart, end, "{", "}");
+    if (openParen < 0 or closeParen <= openParen or thenStart < 0 or thenEnd <= thenStart) {
+        return "    ; malformed if\n";
+    }
+    val labelSeed: String = "" + start;
+    val possibleElse: Int = skipTrivia(tokens, thenEnd + 1);
+    var hasElse: Boolean = false;
+    if (possibleElse < end and tokenIs(tokens, possibleElse, kindKeyword(), "else")) {
+        hasElse = true;
+    }
+    return "    %cond." + labelSeed + " = " +
+        generateIRExpression(tokens, openParen + 1, closeParen) + "\n" +
+        "    br i1 %cond." + labelSeed + ", label %if.then." + labelSeed +
+        ", label %if.else." + labelSeed + "\n" +
+        "if.then." + labelSeed + ":\n" +
+        generateIRFlatBody(tokens, thenStart + 1, thenEnd) +
+        "    br label %if.end." + labelSeed + "\n" +
+        "if.else." + labelSeed + ":\n" +
+        generateIRElseFlatBody(tokens, possibleElse, end, hasElse) +
+        "    br label %if.end." + labelSeed + "\n" +
+        "if.end." + labelSeed + ":\n";
+}
+
+def generateIRWhile(tokens: String, start: Int, end: Int): String {
+    val openParen: Int = findStatementParenStart(tokens, start, end);
+    val closeParen: Int = findStatementParenEnd(tokens, start, end);
+    val bodyStart: Int = findStatementBlockStart(tokens, start, end);
+    val bodyEnd: Int = findClosingToken(tokens, bodyStart, end, "{", "}");
+    if (openParen < 0 or closeParen <= openParen or bodyStart < 0 or bodyEnd <= bodyStart) {
+        return "    ; malformed while\n";
+    }
+    val labelSeed: String = "" + start;
+    return "    br label %while.cond." + labelSeed + "\n" +
+        "while.cond." + labelSeed + ":\n" +
+        "    %whilecond." + labelSeed + " = " +
+        generateIRExpression(tokens, openParen + 1, closeParen) + "\n" +
+        "    br i1 %whilecond." + labelSeed + ", label %while.body." + labelSeed +
+        ", label %while.end." + labelSeed + "\n" +
+        "while.body." + labelSeed + ":\n" +
+        generateIRFlatBody(tokens, bodyStart + 1, bodyEnd) +
+        "    br label %while.cond." + labelSeed + "\n" +
+        "while.end." + labelSeed + ":\n";
+}
+
+def generateIRFor(tokens: String, start: Int, end: Int): String {
+    val openParen: Int = findStatementParenStart(tokens, start, end);
+    val closeParen: Int = findStatementParenEnd(tokens, start, end);
+    val bodyStart: Int = findStatementBlockStart(tokens, start, end);
+    val bodyEnd: Int = findClosingToken(tokens, bodyStart, end, "{", "}");
+    if (openParen < 0 or closeParen <= openParen or bodyStart < 0 or bodyEnd <= bodyStart) {
+        return "    ; malformed for\n";
+    }
+    val iteratorName: String = tokenTextAt(tokens, openParen + 1);
+    val arrow: Int = findTokenTextInRange(tokens, openParen + 1, closeParen, "<-");
+    if (arrow < 0) {
+        return "    ; malformed for source\n";
+    }
+    val labelSeed: String = "" + start;
+    return "    ; for source " + generateIRExpression(tokens, arrow + 1, closeParen) + "\n" +
+        "    %" + iteratorName + " = alloca ptr\n" +
+        "    br label %for.cond." + labelSeed + "\n" +
+        "for.cond." + labelSeed + ":\n" +
+        "    ; iterator next " + iteratorName + "\n" +
+        "    br i1 %for.hasnext." + labelSeed + ", label %for.body." + labelSeed +
+        ", label %for.end." + labelSeed + "\n" +
+        "for.body." + labelSeed + ":\n" +
+        generateIRFlatBody(tokens, bodyStart + 1, bodyEnd) +
+        "    br label %for.cond." + labelSeed + "\n" +
+        "for.end." + labelSeed + ":\n";
+}
+
+def generateIRBody(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor >= 0 and cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        val kind: String = statementKind(tokens, cursor);
+        if (strEq(kind, "return")) {
+            output = output + "    ret " + generateIRExpression(tokens, cursor + 1, next) + "\n";
+        }
+        else if (strEq(kind, "value") or strEq(kind, "variable")) {
+            val initializer: Int = findTopLevelOperator(tokens, cursor, next, 1);
+            if (initializer >= cursor) {
+                val localType: String = inferExpressionType(tokens, initializer + 1, next);
+                output = output + "    %" + tokenTextAt(tokens, cursor + 1) + " = alloca " +
+                    irTypeName(localType) + "\n" +
+                    "    store " + generateIRExpression(tokens, initializer + 1, next) +
+                    ", ptr %" + tokenTextAt(tokens, cursor + 1) + "\n";
+            }
+            else {
+                output = output + "    %" + tokenTextAt(tokens, cursor + 1) + " = alloca ptr\n";
+            }
+        }
+        else if (strEq(kind, "if")) {
+            output = output + generateIRIf(tokens, cursor, next);
+        }
+        else if (strEq(kind, "while")) {
+            output = output + generateIRWhile(tokens, cursor, next);
+        }
+        else if (strEq(kind, "for")) {
+            output = output + generateIRFor(tokens, cursor, next);
+        }
+        else if (strEq(kind, "map") or strEq(kind, "pmap") or strEq(kind, "reduce") or
+            strEq(kind, "preduce") or strEq(kind, "filter")) {
+            output = output + "    ; block " + kind + " (" + statementHeaderExpression(tokens, cursor, next) + ")\n";
+        }
+        else {
+            val assignmentIR: String = generateIRAssignment(tokens, cursor, next);
+            if (assignmentIR.length > 0) {
+                output = output + assignmentIR;
+            }
+            else {
+                output = output + "    " + generateIRExpression(tokens, cursor, next) + "\n";
+            }
+        }
+        cursor = skipTrivia(tokens, next);
+    }
+    return output;
+}
+
+def generateIRDeclarations(tokens: String): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, 0);
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        val kind: String = topLevelDeclKind(tokens, cursor);
+        val name: String = topLevelDeclName(tokens, cursor);
+        if (strEq(kind, "function") or strEq(kind, "external-function")) {
+            output = output + "define " + irTypeName(functionReturnType(tokens, cursor)) +
+                " @" + name + "(" + generateIRParamList(tokens, cursor) + ")\n";
+            val bodyStart: Int = findDeclBodyStart(tokens, cursor);
+            val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+            if (bodyStart >= 0 and bodyEnd >= bodyStart) {
+                output = output + generateIRBody(tokens, bodyStart, bodyEnd);
+            }
+            output = output + "end define\n";
+        }
+        else if (strEq(kind, "class") or strEq(kind, "object") or strEq(kind, "external-class") or
+            strEq(kind, "external-object")) {
+            output = output + "%type." + name + " = type opaque ; " + kind + "\n";
+        }
+        else if (strEq(kind, "value") or strEq(kind, "variable")) {
+            output = output + "@" + name + " = global ptr null ; " + kind + "\n";
+        }
+        cursor = skipTrivia(tokens, advanceTopLevelDecl(tokens, cursor));
+    }
+    return output;
+}
+
+def generateIR(tokens: String): String {
+    if (!parseProgram(tokens)) {
+        return "error: parse failed\n";
+    }
+    val returnValue: Int = parseMainReturnInt(tokens);
+    return "module csec.selfhost\n" +
+        generateSymbolTable(tokens) +
+        "entry main\n" +
+        "lowering llvm-text\n" +
+        generateIRDeclarations(tokens) +
+        "main.return " + returnValue + "\n";
+}
+
+def generateLLVMMainBody(tokens: String): String {
+    val returnValue: Int = parseMainReturnInt(tokens);
+    return "entry:\n" +
+        "  ret i32 " + returnValue + "\n";
+}
+
+def llvmI32Value(tokens: String, start: Int, rawEnd: Int): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "0";
+    }
+    if (tokenKindAt(tokens, start) == kindInteger() and end == start + 1) {
+        return tokenTextAt(tokens, start);
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "%" + tokenTextAt(tokens, start) + ".val";
+    }
+    return "%tmp";
+}
+
+def lookupFunctionParamType(tokens: String, limit: Int, name: String): String {
+    var decl: Int = 0;
+    while (tokenKindAt(tokens, decl) != kindEof()) {
+        if (tokenIs(tokens, decl, kindKeyword(), "def")) {
+            val bodyStart: Int = findDeclBodyStart(tokens, decl);
+            val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+            if (bodyStart >= 0 and bodyEnd > bodyStart and limit > bodyStart and limit < bodyEnd) {
+                val paramStart: Int = findFunctionParamStart(tokens, decl);
+                if (paramStart < 0) {
+                    return "unknown";
+                }
+                val paramEnd: Int = findClosingToken(tokens, paramStart, advanceTopLevelDecl(tokens, decl), "(", ")");
+                if (paramEnd <= paramStart) {
+                    return "unknown";
+                }
+                var cursor: Int = paramStart + 1;
+                while (cursor < paramEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+                    if (tokenKindAt(tokens, cursor) == kindIdentifier() and strEq(tokenTextAt(tokens, cursor), name)) {
+                        if (tokenIs(tokens, cursor + 1, kindOperator(), ":")) {
+                            return typeSummary(tokens, cursor + 2, paramEnd);
+                        }
+                        return "unknown";
+                    }
+                    while (cursor < paramEnd and !tokenIs(tokens, cursor, kindOperator(), ",")) {
+                        cursor = cursor + 1;
+                    }
+                    cursor = cursor + 1;
+                }
+            }
+        }
+        decl = skipTrivia(tokens, advanceTopLevelDecl(tokens, decl));
+        if (decl < 0) {
+            return "unknown";
+        }
+    }
+    return "unknown";
+}
+
+def lookupVisibleValueType(tokens: String, limit: Int, name: String): String {
+    val paramType: String = lookupFunctionParamType(tokens, limit, name);
+    if (!strEq(paramType, "unknown")) {
+        return paramType;
+    }
+    var cursor: Int = 0;
+    var found: String = "";
+    while (cursor < limit and tokenKindAt(tokens, cursor) != kindEof()) {
+        if ((tokenIs(tokens, cursor, kindKeyword(), "val") or
+            tokenIs(tokens, cursor, kindKeyword(), "var")) and
+            tokenKindAt(tokens, cursor + 1) == kindIdentifier() and
+            strEq(tokenTextAt(tokens, cursor + 1), name)) {
+            val next: Int = advanceStatement(tokens, cursor, limit);
+            if (next > cursor) {
+                found = localDeclarationType(tokens, cursor, next);
+                cursor = next;
+            }
+            else {
+                cursor = cursor + 1;
+            }
+        }
+        else {
+            cursor = cursor + 1;
+        }
+    }
+    if (found.length == 0) {
+        return "unknown";
+    }
+    return found;
+}
+
+def llvmLoadForValueType(tokens: String, name: String, valueType: String, resultName: String): String {
+    if (strEq(valueType, "Boolean")) {
+        return "  " + resultName + " = load i1, ptr %" + name + "\n";
+    }
+    if (strEq(valueType, "Double")) {
+        return "  " + resultName + " = load double, ptr %" + name + "\n";
+    }
+    return "  " + resultName + " = load i32, ptr %" + name + "\n";
+}
+
+def generateLLVMLoadIfIdentifier(tokens: String, start: Int, rawEnd: Int): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        val name: String = tokenTextAt(tokens, start);
+        return "  %" + name + ".val = load i32, ptr %" + name + "\n";
+    }
+    return "";
+}
+
+def llvmI1Value(tokens: String, start: Int, rawEnd: Int): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "false";
+    }
+    if (tokenKindAt(tokens, start) == kindBool() and end == start + 1) {
+        return tokenTextAt(tokens, start);
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "%" + tokenTextAt(tokens, start) + ".bval";
+    }
+    return "%btmp";
+}
+
+def generateLLVMLoadBoolIfIdentifier(tokens: String, start: Int, rawEnd: Int): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        val name: String = tokenTextAt(tokens, start);
+        return "  %" + name + ".bval = load i1, ptr %" + name + "\n";
+    }
+    return "";
+}
+
+def llvmI32CallArgumentValue(tokens: String, start: Int, rawEnd: Int, resultName: String, index: Int): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "0";
+    }
+    if (tokenKindAt(tokens, start) == kindInteger() and end == start + 1) {
+        return tokenTextAt(tokens, start);
+    }
+    return resultName + ".arg" + index;
+}
+
+def generateLLVMCallArgumentLoadsI32(tokens: String, argsStart: Int, argsEnd: Int, resultName: String): String {
+    var cursor: Int = argsStart;
+    var argStart: Int = argsStart;
+    var index: Int = 0;
+    var paren: Int = 0;
+    var bracket: Int = 0;
+    var brace: Int = 0;
+    var output: String = "";
+    while (cursor <= argsEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        var boundary: Boolean = cursor == argsEnd;
+        if (!boundary and tokenKindAt(tokens, cursor) == kindOperator()) {
+            val text: String = tokenTextAt(tokens, cursor);
+            if (strEq(text, "(")) { paren = paren + 1; }
+            else if (strEq(text, ")")) { paren = paren - 1; }
+            else if (strEq(text, "[")) { bracket = bracket + 1; }
+            else if (strEq(text, "]")) { bracket = bracket - 1; }
+            else if (strEq(text, "{")) { brace = brace + 1; }
+            else if (strEq(text, "}")) { brace = brace - 1; }
+            else if (strEq(text, ",") and paren == 0 and bracket == 0 and brace == 0) {
+                boundary = true;
+            }
+        }
+        if (boundary) {
+            val argEnd: Int = trimExpressionEnd(tokens, argStart, cursor);
+            if (argEnd > argStart) {
+                if (tokenKindAt(tokens, argStart) == kindInteger() and argEnd == argStart + 1) {
+                    output = output;
+                }
+                else if (tokenKindAt(tokens, argStart) == kindIdentifier() and argEnd == argStart + 1) {
+                    output = output + "  " + resultName + ".arg" + index +
+                        " = load i32, ptr %" + tokenTextAt(tokens, argStart) + "\n";
+                }
+                else {
+                    val op: Int = expressionTopLevelOperator(tokens, argStart, argEnd);
+                    if (op > argStart and strEq(tokenTextAt(tokens, op), "+")) {
+                        output = output +
+                            generateLLVMLoadIfIdentifier(tokens, argStart, op) +
+                            generateLLVMLoadIfIdentifier(tokens, op + 1, argEnd) +
+                            "  " + resultName + ".arg" + index + " = add i32 " +
+                            llvmI32Value(tokens, argStart, op) + ", " +
+                            llvmI32Value(tokens, op + 1, argEnd) + "\n";
+                    }
+                    else if (op > argStart and strEq(tokenTextAt(tokens, op), "-")) {
+                        output = output +
+                            generateLLVMLoadIfIdentifier(tokens, argStart, op) +
+                            generateLLVMLoadIfIdentifier(tokens, op + 1, argEnd) +
+                            "  " + resultName + ".arg" + index + " = sub i32 " +
+                            llvmI32Value(tokens, argStart, op) + ", " +
+                            llvmI32Value(tokens, op + 1, argEnd) + "\n";
+                    }
+                    else {
+                        output = output + "  " + resultName + ".arg" + index + " = add i32 0, 0\n";
+                    }
+                }
+                index = index + 1;
+            }
+            argStart = cursor + 1;
+        }
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def generateLLVMCallArgumentListI32(tokens: String, argsStart: Int, argsEnd: Int, resultName: String): String {
+    var cursor: Int = argsStart;
+    var argStart: Int = argsStart;
+    var index: Int = 0;
+    var paren: Int = 0;
+    var bracket: Int = 0;
+    var brace: Int = 0;
+    var output: String = "";
+    var first: Boolean = true;
+    while (cursor <= argsEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        var boundary: Boolean = cursor == argsEnd;
+        if (!boundary and tokenKindAt(tokens, cursor) == kindOperator()) {
+            val text: String = tokenTextAt(tokens, cursor);
+            if (strEq(text, "(")) { paren = paren + 1; }
+            else if (strEq(text, ")")) { paren = paren - 1; }
+            else if (strEq(text, "[")) { bracket = bracket + 1; }
+            else if (strEq(text, "]")) { bracket = bracket - 1; }
+            else if (strEq(text, "{")) { brace = brace + 1; }
+            else if (strEq(text, "}")) { brace = brace - 1; }
+            else if (strEq(text, ",") and paren == 0 and bracket == 0 and brace == 0) {
+                boundary = true;
+            }
+        }
+        if (boundary) {
+            val argEnd: Int = trimExpressionEnd(tokens, argStart, cursor);
+            if (argEnd > argStart) {
+                if (!first) {
+                    output = output + ", ";
+                }
+                output = output + "i32 " + llvmI32CallArgumentValue(tokens, argStart, argEnd, resultName, index);
+                first = false;
+                index = index + 1;
+            }
+            argStart = cursor + 1;
+        }
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def generateLLVMExpressionI32(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "  " + resultName + " = add i32 0, 0\n";
+    }
+    if (tokenKindAt(tokens, start) == kindInteger() and end == start + 1) {
+        return "  " + resultName + " = add i32 0, " + tokenTextAt(tokens, start) + "\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "  " + resultName + " = load i32, ptr %" + tokenTextAt(tokens, start) + "\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        return generateLLVMCallArgumentLoadsI32(tokens, start + 2, end - 1, resultName) +
+            "  " + resultName + " = call i32 @" + tokenTextAt(tokens, start) + "(" +
+            generateLLVMCallArgumentListI32(tokens, start + 2, end - 1, resultName) + ")\n";
+    }
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
+        val mnemonic: String = irOperatorName(tokenTextAt(tokens, op));
+        if (strEq(mnemonic, "add") or strEq(mnemonic, "sub") or strEq(mnemonic, "mul") or
+            strEq(mnemonic, "sdiv") or strEq(mnemonic, "srem") or strEq(mnemonic, "shl") or
+            strEq(mnemonic, "ashr") or strEq(mnemonic, "and") or strEq(mnemonic, "or") or
+            strEq(mnemonic, "xor")) {
+            return generateLLVMLoadIfIdentifier(tokens, start, op) +
+                generateLLVMLoadIfIdentifier(tokens, op + 1, end) +
+                "  " + resultName + " = " + mnemonic + " i32 " +
+                llvmI32Value(tokens, start, op) + ", " + llvmI32Value(tokens, op + 1, end) + "\n";
+        }
+    }
+    return "  " + resultName + " = add i32 0, 0\n";
+}
+
+def generateLLVMLocalI32(tokens: String, start: Int, end: Int): String {
+    val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+    val name: String = tokenTextAt(tokens, start + 1);
+    if (initializer >= start) {
+        return "  %" + name + " = alloca i32\n" +
+            generateLLVMExpressionI32(tokens, initializer + 1, end, "%" + name + ".init") +
+            "  store i32 %" + name + ".init, ptr %" + name + "\n";
+    }
+    return "  %" + name + " = alloca i32\n" +
+        "  store i32 0, ptr %" + name + "\n";
+}
+
+def llvmI64Value(tokens: String, start: Int, rawEnd: Int): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "0";
+    }
+    if (tokenKindAt(tokens, start) == kindInteger() and end == start + 1) {
+        return tokenTextAt(tokens, start);
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "%" + tokenTextAt(tokens, start) + ".lval";
+    }
+    return "%ltmp";
+}
+
+def generateLLVMLoadI64IfIdentifier(tokens: String, start: Int, rawEnd: Int): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        val name: String = tokenTextAt(tokens, start);
+        return "  %" + name + ".lval = load i64, ptr %" + name + "\n";
+    }
+    return "";
+}
+
+def generateLLVMExpressionI64(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "  " + resultName + " = add i64 0, 0\n";
+    }
+    if (tokenKindAt(tokens, start) == kindInteger() and end == start + 1) {
+        return "  " + resultName + " = add i64 0, " + tokenTextAt(tokens, start) + "\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "  " + resultName + " = load i64, ptr %" + tokenTextAt(tokens, start) + "\n";
+    }
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
+        val mnemonic: String = irOperatorName(tokenTextAt(tokens, op));
+        if (strEq(mnemonic, "add") or strEq(mnemonic, "sub") or strEq(mnemonic, "mul") or
+            strEq(mnemonic, "sdiv") or strEq(mnemonic, "srem") or strEq(mnemonic, "shl") or
+            strEq(mnemonic, "ashr") or strEq(mnemonic, "and") or strEq(mnemonic, "or") or
+            strEq(mnemonic, "xor")) {
+            return generateLLVMLoadI64IfIdentifier(tokens, start, op) +
+                generateLLVMLoadI64IfIdentifier(tokens, op + 1, end) +
+                "  " + resultName + " = " + mnemonic + " i64 " +
+                llvmI64Value(tokens, start, op) + ", " + llvmI64Value(tokens, op + 1, end) + "\n";
+        }
+    }
+    return "  " + resultName + " = add i64 0, 0\n";
+}
+
+def generateLLVMLocalI64(tokens: String, start: Int, end: Int): String {
+    val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+    val name: String = tokenTextAt(tokens, start + 1);
+    if (initializer >= start) {
+        return "  %" + name + " = alloca i64\n" +
+            generateLLVMExpressionI64(tokens, initializer + 1, end, "%" + name + ".linit") +
+            "  store i64 %" + name + ".linit, ptr %" + name + "\n";
+    }
+    return "  %" + name + " = alloca i64\n" +
+        "  store i64 0, ptr %" + name + "\n";
+}
+
+def generateLLVMExpressionF64(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "  " + resultName + " = fadd double 0.000000e+00, 0.000000e+00\n";
+    }
+    if ((tokenKindAt(tokens, start) == kindFloat() or tokenKindAt(tokens, start) == kindInteger()) and end == start + 1) {
+        return "  " + resultName + " = fadd double 0.000000e+00, " + tokenTextAt(tokens, start) + "\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "  " + resultName + " = load double, ptr %" + tokenTextAt(tokens, start) + "\n";
+    }
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
+        val opText: String = tokenTextAt(tokens, op);
+        var mnemonic: String = "";
+        if (strEq(opText, "+")) { mnemonic = "fadd"; }
+        if (strEq(opText, "-")) { mnemonic = "fsub"; }
+        if (strEq(opText, "*")) { mnemonic = "fmul"; }
+        if (strEq(opText, "/")) { mnemonic = "fdiv"; }
+        if (mnemonic.length > 0) {
+            return "  " + resultName + " = " + mnemonic + " double " +
+                appendExpressionUntil(tokens, start, op) + ", " +
+                appendExpressionUntil(tokens, op + 1, end) + "\n";
+        }
+    }
+    return "  " + resultName + " = fadd double 0.000000e+00, 0.000000e+00\n";
+}
+
+def generateLLVMLocalF64(tokens: String, start: Int, end: Int): String {
+    val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+    val name: String = tokenTextAt(tokens, start + 1);
+    if (initializer >= start) {
+        return "  %" + name + " = alloca double\n" +
+            generateLLVMExpressionF64(tokens, initializer + 1, end, "%" + name + ".finit") +
+            "  store double %" + name + ".finit, ptr %" + name + "\n";
+    }
+    return "  %" + name + " = alloca double\n" +
+        "  store double 0.000000e+00, ptr %" + name + "\n";
+}
+
+def generateLLVMLocalPtr(tokens: String, start: Int, end: Int): String {
+    val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+    val name: String = tokenTextAt(tokens, start + 1);
+    if (initializer >= start) {
+        val exprStart: Int = skipTrivia(tokens, initializer + 1);
+        val exprEnd: Int = trimExpressionEnd(tokens, exprStart, end);
+        if (tokenKindAt(tokens, exprStart) == kindString() and exprEnd == exprStart + 1) {
+            val text: String = tokenTextAt(tokens, exprStart);
+            val byteLength: Int = text.length + 1;
+            return "  %" + name + " = alloca ptr\n" +
+                "  %" + name + ".pinit = getelementptr inbounds [" + byteLength +
+                " x i8], ptr @.str." + exprStart + ", i32 0, i32 0\n" +
+                "  store ptr %" + name + ".pinit, ptr %" + name + "\n";
+        }
+        if (tokenKindAt(tokens, exprStart) == kindIdentifier() and exprEnd == exprStart + 1) {
+            return "  %" + name + " = alloca ptr\n" +
+                "  %" + name + ".pinit = load ptr, ptr %" + tokenTextAt(tokens, exprStart) + "\n" +
+                "  store ptr %" + name + ".pinit, ptr %" + name + "\n";
+        }
+    }
+    return "  %" + name + " = alloca ptr\n" +
+        "  store ptr null, ptr %" + name + "\n";
+}
+
+def llvmCharI8Value(text: String): String {
+    if (text.length == 0) { return "0"; }
+    val ch: Char = text.charAt(0);
+    if (ch == 'I') { return "73"; }
+    if (ch == 'K') { return "75"; }
+    if (ch == 'N') { return "78"; }
+    if (ch == 'F') { return "70"; }
+    if (ch == 'S') { return "83"; }
+    if (ch == 'R') { return "82"; }
+    if (ch == 'C') { return "67"; }
+    if (ch == 'B') { return "66"; }
+    if (ch == 'O') { return "79"; }
+    if (ch == 'M') { return "77"; }
+    if (ch == 'E') { return "69"; }
+    if (ch == 'x') { return "120"; }
+    if (ch == 'y') { return "121"; }
+    if (ch == 'z') { return "122"; }
+    if (ch == '0') { return "48"; }
+    if (ch == '1') { return "49"; }
+    if (ch == ' ') { return "32"; }
+    if (ch == '\\' and text.length > 1 and text.charAt(1) == 'n') { return "10"; }
+    if (ch == '\\' and text.length > 1 and text.charAt(1) == 't') { return "9"; }
+    return "0";
+}
+
+def generateLLVMLocalI8(tokens: String, start: Int, end: Int): String {
+    val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+    val name: String = tokenTextAt(tokens, start + 1);
+    if (initializer >= start) {
+        val exprStart: Int = skipTrivia(tokens, initializer + 1);
+        val exprEnd: Int = trimExpressionEnd(tokens, exprStart, end);
+        if (tokenKindAt(tokens, exprStart) == kindChar() and exprEnd == exprStart + 1) {
+            return "  %" + name + " = alloca i8\n" +
+                "  store i8 " + llvmCharI8Value(tokenTextAt(tokens, exprStart)) + ", ptr %" + name + "\n";
+        }
+        if (tokenKindAt(tokens, exprStart) == kindIdentifier() and exprEnd == exprStart + 1) {
+            return "  %" + name + " = alloca i8\n" +
+                "  %" + name + ".cinit = load i8, ptr %" + tokenTextAt(tokens, exprStart) + "\n" +
+                "  store i8 %" + name + ".cinit, ptr %" + name + "\n";
+        }
+    }
+    return "  %" + name + " = alloca i8\n" +
+        "  store i8 0, ptr %" + name + "\n";
+}
+
+def generateLLVMAssignmentF64(tokens: String, start: Int, end: Int): String {
+    val op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op <= start or tokenKindAt(tokens, start) != kindIdentifier()) {
+        return "";
+    }
+    val name: String = tokenTextAt(tokens, start);
+    val opText: String = tokenTextAt(tokens, op);
+    if (strEq(opText, "=") or strEq(opText, "<-")) {
+        return generateLLVMExpressionF64(tokens, op + 1, end, "%" + name + ".fassign") +
+            "  store double %" + name + ".fassign, ptr %" + name + "\n";
+    }
+    return "";
+}
+
+def generateLLVMAssignmentPtr(tokens: String, start: Int, end: Int): String {
+    val op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op <= start or tokenKindAt(tokens, start) != kindIdentifier()) {
+        return "";
+    }
+    val name: String = tokenTextAt(tokens, start);
+    val exprStart: Int = skipTrivia(tokens, op + 1);
+    val exprEnd: Int = trimExpressionEnd(tokens, exprStart, end);
+    if (tokenKindAt(tokens, exprStart) == kindString() and exprEnd == exprStart + 1) {
+        val text: String = tokenTextAt(tokens, exprStart);
+        val byteLength: Int = text.length + 1;
+        return "  %" + name + ".passign = getelementptr inbounds [" + byteLength +
+            " x i8], ptr @.str." + exprStart + ", i32 0, i32 0\n" +
+            "  store ptr %" + name + ".passign, ptr %" + name + "\n";
+    }
+    if (tokenKindAt(tokens, exprStart) == kindIdentifier() and exprEnd == exprStart + 1) {
+        return "  %" + name + ".passign = load ptr, ptr %" + tokenTextAt(tokens, exprStart) + "\n" +
+            "  store ptr %" + name + ".passign, ptr %" + name + "\n";
+    }
+    return "";
+}
+
+def generateLLVMAssignmentI8(tokens: String, start: Int, end: Int): String {
+    val op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op <= start or tokenKindAt(tokens, start) != kindIdentifier()) {
+        return "";
+    }
+    val name: String = tokenTextAt(tokens, start);
+    val exprStart: Int = skipTrivia(tokens, op + 1);
+    val exprEnd: Int = trimExpressionEnd(tokens, exprStart, end);
+    if (tokenKindAt(tokens, exprStart) == kindChar() and exprEnd == exprStart + 1) {
+        return "  store i8 " + llvmCharI8Value(tokenTextAt(tokens, exprStart)) + ", ptr %" + name + "\n";
+    }
+    if (tokenKindAt(tokens, exprStart) == kindIdentifier() and exprEnd == exprStart + 1) {
+        return "  %" + name + ".cassign = load i8, ptr %" + tokenTextAt(tokens, exprStart) + "\n" +
+            "  store i8 %" + name + ".cassign, ptr %" + name + "\n";
+    }
+    return "";
+}
+
+def generateLLVMAssignmentI32(tokens: String, start: Int, end: Int): String {
+    val op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op <= start or tokenKindAt(tokens, start) != kindIdentifier()) {
+        return "";
+    }
+    val name: String = tokenTextAt(tokens, start);
+    val opText: String = tokenTextAt(tokens, op);
+    if (strEq(opText, "=") or strEq(opText, "<-")) {
+        return generateLLVMExpressionI32(tokens, op + 1, end, "%" + name + ".assign") +
+            "  store i32 %" + name + ".assign, ptr %" + name + "\n";
+    }
+    var binaryOp: String = opText.substring(0, 1);
+    if (strEq(opText, "%=")) {
+        binaryOp = "%";
+    }
+    return "  %" + name + ".old = load i32, ptr %" + name + "\n" +
+        generateLLVMExpressionI32(tokens, op + 1, end, "%" + name + ".rhs") +
+        "  %" + name + ".next = " + irOperatorName(binaryOp) + " i32 %" + name + ".old, %" + name + ".rhs\n" +
+        "  store i32 %" + name + ".next, ptr %" + name + "\n";
+}
+
+def generateLLVMAssignmentI64(tokens: String, start: Int, end: Int): String {
+    val op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op <= start or tokenKindAt(tokens, start) != kindIdentifier()) {
+        return "";
+    }
+    val name: String = tokenTextAt(tokens, start);
+    val opText: String = tokenTextAt(tokens, op);
+    if (strEq(opText, "=") or strEq(opText, "<-")) {
+        return generateLLVMExpressionI64(tokens, op + 1, end, "%" + name + ".lassign") +
+            "  store i64 %" + name + ".lassign, ptr %" + name + "\n";
+    }
+    var binaryOp: String = opText.substring(0, 1);
+    if (strEq(opText, "%=")) {
+        binaryOp = "%";
+    }
+    return "  %" + name + ".lold = load i64, ptr %" + name + "\n" +
+        generateLLVMExpressionI64(tokens, op + 1, end, "%" + name + ".lrhs") +
+        "  %" + name + ".lnext = " + irOperatorName(binaryOp) + " i64 %" + name + ".lold, %" + name + ".lrhs\n" +
+        "  store i64 %" + name + ".lnext, ptr %" + name + "\n";
+}
+
+def generateLLVMConditionI1(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    val op: Int = findTopLevelOperator(tokens, start, end, 4);
+    if (op > start) {
+        val mnemonic: String = irOperatorName(tokenTextAt(tokens, op));
+        if (mnemonic.startsWith("icmp_")) {
+            return generateLLVMLoadIfIdentifier(tokens, start, op) +
+                generateLLVMLoadIfIdentifier(tokens, op + 1, end) +
+                "  " + resultName + " = icmp " + mnemonic.substring(5, mnemonic.length - 5) +
+                " i32 " + llvmI32Value(tokens, start, op) + ", " +
+                llvmI32Value(tokens, op + 1, end) + "\n";
+        }
+    }
+    if (tokenKindAt(tokens, start) == kindBool() and end == start + 1) {
+        if (strEq(tokenTextAt(tokens, start), "true")) {
+            return "  " + resultName + " = icmp eq i1 true, true\n";
+        }
+        return "  " + resultName + " = icmp eq i1 false, true\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "  " + resultName + " = load i1, ptr %" + tokenTextAt(tokens, start) + "\n";
+    }
+    return "  " + resultName + " = icmp eq i32 0, 0\n";
+}
+
+def generateLLVMExpressionI1(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "  " + resultName + " = icmp eq i1 false, true\n";
+    }
+    if (tokenKindAt(tokens, start) == kindBool() and end == start + 1) {
+        if (strEq(tokenTextAt(tokens, start), "true")) {
+            return "  " + resultName + " = icmp eq i1 true, true\n";
+        }
+        return "  " + resultName + " = icmp eq i1 false, true\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "  " + resultName + " = load i1, ptr %" + tokenTextAt(tokens, start) + "\n";
+    }
+    var op: Int = findTopLevelOperator(tokens, start, end, 2);
+    if (op > start) {
+        return generateLLVMExpressionI1(tokens, start, op, resultName + ".left") +
+            generateLLVMExpressionI1(tokens, op + 1, end, resultName + ".right") +
+            "  " + resultName + " = or i1 " + resultName + ".left, " + resultName + ".right\n" +
+            "  ; bool operands " + llvmI1Value(tokens, start, op) + ", " +
+            llvmI1Value(tokens, op + 1, end) + "\n";
+    }
+    op = findTopLevelOperator(tokens, start, end, 3);
+    if (op > start) {
+        return generateLLVMExpressionI1(tokens, start, op, resultName + ".left") +
+            generateLLVMExpressionI1(tokens, op + 1, end, resultName + ".right") +
+            "  " + resultName + " = and i1 " + resultName + ".left, " + resultName + ".right\n" +
+            "  ; bool operands " + llvmI1Value(tokens, start, op) + ", " +
+            llvmI1Value(tokens, op + 1, end) + "\n";
+    }
+    return generateLLVMConditionI1(tokens, start, end, resultName);
+}
+
+def generateLLVMLocalI1(tokens: String, start: Int, end: Int): String {
+    val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+    val name: String = tokenTextAt(tokens, start + 1);
+    if (initializer >= start) {
+        return "  %" + name + " = alloca i1\n" +
+            generateLLVMExpressionI1(tokens, initializer + 1, end, "%" + name + ".binit") +
+            "  store i1 %" + name + ".binit, ptr %" + name + "\n";
+    }
+    return "  %" + name + " = alloca i1\n" +
+        "  store i1 false, ptr %" + name + "\n";
+}
+
+def generateLLVMAssignmentI1(tokens: String, start: Int, end: Int): String {
+    val op: Int = findTopLevelOperator(tokens, start, end, 1);
+    if (op <= start or tokenKindAt(tokens, start) != kindIdentifier()) {
+        return "";
+    }
+    val name: String = tokenTextAt(tokens, start);
+    val opText: String = tokenTextAt(tokens, op);
+    if (strEq(opText, "=") or strEq(opText, "<-")) {
+        return generateLLVMExpressionI1(tokens, op + 1, end, "%" + name + ".bassign") +
+            "  store i1 %" + name + ".bassign, ptr %" + name + "\n";
+    }
+    return "";
+}
+
+def generateLLVMFlatBodyI32(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var output: String = "";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        val kind: String = statementKind(tokens, cursor);
+        if (strEq(kind, "value") or strEq(kind, "variable")) {
+            if (strEq(localDeclarationType(tokens, cursor, next), "Int") or
+                strEq(localDeclarationType(tokens, cursor, next), "unknown")) {
+                output = output + generateLLVMLocalI32(tokens, cursor, next);
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Boolean")) {
+                output = output + generateLLVMLocalI1(tokens, cursor, next);
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Double")) {
+                output = output + generateLLVMLocalF64(tokens, cursor, next);
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Long")) {
+                output = output + generateLLVMLocalI64(tokens, cursor, next);
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Char")) {
+                output = output + generateLLVMLocalI8(tokens, cursor, next);
+            }
+            else if (strEq(irTypeName(localDeclarationType(tokens, cursor, next)), "ptr")) {
+                output = output + generateLLVMLocalPtr(tokens, cursor, next);
+            }
+        }
+        else if (strEq(kind, "return")) {
+            output = output + "  ; nested return ignored in flat LLVM body\n";
+        }
+        else if (strEq(kind, "if") or strEq(kind, "while") or strEq(kind, "for")) {
+            output = output + "  ; nested control " + kind + "\n";
+        }
+        else {
+            if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
+                val targetType: String = lookupVisibleValueType(tokens, cursor, tokenTextAt(tokens, cursor));
+                if (strEq(targetType, "Boolean")) {
+                    output = output + generateLLVMAssignmentI1(tokens, cursor, next);
+                }
+                else if (strEq(targetType, "Double")) {
+                    output = output + generateLLVMAssignmentF64(tokens, cursor, next);
+                }
+                else if (strEq(targetType, "Long")) {
+                    output = output + generateLLVMAssignmentI64(tokens, cursor, next);
+                }
+                else if (strEq(targetType, "Char")) {
+                    output = output + generateLLVMAssignmentI8(tokens, cursor, next);
+                }
+                else if (strEq(irTypeName(targetType), "ptr")) {
+                    output = output + generateLLVMAssignmentPtr(tokens, cursor, next);
+                }
+                else {
+                    output = output + generateLLVMAssignmentI32(tokens, cursor, next);
+                }
+            }
+            else {
+                output = output + generateLLVMAssignmentI32(tokens, cursor, next);
+            }
+        }
+        cursor = skipTrivia(tokens, next);
+    }
+    return output;
+}
+
+def generateLLVMIfI32(tokens: String, start: Int, end: Int): String {
+    val openParen: Int = findStatementParenStart(tokens, start, end);
+    val closeParen: Int = findStatementParenEnd(tokens, start, end);
+    val thenStart: Int = findStatementBlockStart(tokens, start, end);
+    val thenEnd: Int = findClosingToken(tokens, thenStart, end, "{", "}");
+    if (openParen < 0 or closeParen <= openParen or thenStart < 0 or thenEnd <= thenStart) {
+        return "  ; malformed if\n";
+    }
+    val labelSeed: String = "" + start;
+    val possibleElse: Int = skipTrivia(tokens, thenEnd + 1);
+    var elseBody: String = "";
+    if (possibleElse < end and tokenIs(tokens, possibleElse, kindKeyword(), "else")) {
+        val elseStart: Int = skipTrivia(tokens, possibleElse + 1);
+        if (tokenIs(tokens, elseStart, kindOperator(), "{")) {
+            val elseEnd: Int = findClosingToken(tokens, elseStart, end, "{", "}");
+            if (elseEnd > elseStart) {
+                elseBody = generateLLVMFlatBodyI32(tokens, elseStart + 1, elseEnd);
+            }
+        }
+    }
+    return generateLLVMExpressionI1(tokens, openParen + 1, closeParen, "%cond." + labelSeed) +
+        "  br i1 %cond." + labelSeed + ", label %if.then." + labelSeed +
+        ", label %if.else." + labelSeed + "\n" +
+        "if.then." + labelSeed + ":\n" +
+        generateLLVMFlatBodyI32(tokens, thenStart + 1, thenEnd) +
+        "  br label %if.end." + labelSeed + "\n" +
+        "if.else." + labelSeed + ":\n" +
+        elseBody +
+        "  br label %if.end." + labelSeed + "\n" +
+        "if.end." + labelSeed + ":\n";
+}
+
+def generateLLVMWhileI32(tokens: String, start: Int, end: Int): String {
+    val openParen: Int = findStatementParenStart(tokens, start, end);
+    val closeParen: Int = findStatementParenEnd(tokens, start, end);
+    val bodyStart: Int = findStatementBlockStart(tokens, start, end);
+    val bodyEnd: Int = findClosingToken(tokens, bodyStart, end, "{", "}");
+    if (openParen < 0 or closeParen <= openParen or bodyStart < 0 or bodyEnd <= bodyStart) {
+        return "  ; malformed while\n";
+    }
+    val labelSeed: String = "" + start;
+    return "  br label %while.cond." + labelSeed + "\n" +
+        "while.cond." + labelSeed + ":\n" +
+        generateLLVMExpressionI1(tokens, openParen + 1, closeParen, "%whilecond." + labelSeed) +
+        "  br i1 %whilecond." + labelSeed + ", label %while.body." + labelSeed +
+        ", label %while.end." + labelSeed + "\n" +
+        "while.body." + labelSeed + ":\n" +
+        generateLLVMFlatBodyI32(tokens, bodyStart + 1, bodyEnd) +
+        "  br label %while.cond." + labelSeed + "\n" +
+        "while.end." + labelSeed + ":\n";
+}
+
+def generateLLVMReturnI32(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var cursor: Int = bodyStart;
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindKeyword(), "return")) {
+            if (tokenKindAt(tokens, cursor + 1) == kindInteger() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return "  ret i32 " + tokenTextAt(tokens, cursor + 1) + "\n";
+            }
+            return generateLLVMExpressionI32(tokens, cursor + 1, advanceStatement(tokens, cursor, bodyEnd), "%ret") +
+                "  ret i32 %ret\n";
+        }
+        cursor = cursor + 1;
+    }
+    return "  ret i32 0\n";
+}
+
+def generateLLVMMainBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var output: String = "entry:\n";
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        val kind: String = statementKind(tokens, cursor);
+        if (strEq(kind, "value") or strEq(kind, "variable")) {
+            if (strEq(localDeclarationType(tokens, cursor, next), "Int") or
+                strEq(localDeclarationType(tokens, cursor, next), "unknown")) {
+                output = output + generateLLVMLocalI32(tokens, cursor, next);
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Boolean")) {
+                output = output + generateLLVMLocalI1(tokens, cursor, next);
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Double")) {
+                output = output + generateLLVMLocalF64(tokens, cursor, next);
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Long")) {
+                output = output + generateLLVMLocalI64(tokens, cursor, next);
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Char")) {
+                output = output + generateLLVMLocalI8(tokens, cursor, next);
+            }
+            else if (strEq(irTypeName(localDeclarationType(tokens, cursor, next)), "ptr")) {
+                output = output + generateLLVMLocalPtr(tokens, cursor, next);
+            }
+        }
+        else if (strEq(kind, "return")) {
+            if (tokenKindAt(tokens, cursor + 1) == kindInteger() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + "  ret i32 " + tokenTextAt(tokens, cursor + 1) + "\n";
+            }
+            if (tokenKindAt(tokens, cursor + 1) == kindIdentifier() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                val returnName: String = tokenTextAt(tokens, cursor + 1);
+                val returnType: String = lookupVisibleValueType(tokens, cursor, returnName);
+                if (strEq(returnType, "Boolean")) {
+                    return output +
+                        llvmLoadForValueType(tokens, returnName, returnType, "%" + returnName + ".ret") +
+                        "  %ret.bool = zext i1 %" + returnName + ".ret to i32\n" +
+                        "  ret i32 %ret.bool\n";
+                }
+                if (strEq(returnType, "Double")) {
+                    return output +
+                        llvmLoadForValueType(tokens, returnName, returnType, "%" + returnName + ".ret") +
+                        "  %ret.double = fptosi double %" + returnName + ".ret to i32\n" +
+                        "  ret i32 %ret.double\n";
+                }
+                return output +
+                    llvmLoadForValueType(tokens, returnName, returnType, "%" + returnName + ".ret") +
+                    "  ret i32 %" + returnName + ".ret\n";
+            }
+            output = output + generateLLVMExpressionI32(tokens, cursor + 1, next, "%ret");
+            return output + "  ret i32 %ret\n";
+        }
+        else if (strEq(kind, "if")) {
+            output = output + generateLLVMIfI32(tokens, cursor, next);
+        }
+        else if (strEq(kind, "while")) {
+            output = output + generateLLVMWhileI32(tokens, cursor, next);
+        }
+        else {
+            if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
+                val targetType: String = lookupVisibleValueType(tokens, cursor, tokenTextAt(tokens, cursor));
+                if (strEq(targetType, "Boolean")) {
+                    output = output + generateLLVMAssignmentI1(tokens, cursor, next);
+                }
+                else if (strEq(targetType, "Double")) {
+                    output = output + generateLLVMAssignmentF64(tokens, cursor, next);
+                }
+                else if (strEq(targetType, "Long")) {
+                    output = output + generateLLVMAssignmentI64(tokens, cursor, next);
+                }
+                else if (strEq(targetType, "Char")) {
+                    output = output + generateLLVMAssignmentI8(tokens, cursor, next);
+                }
+                else if (strEq(irTypeName(targetType), "ptr")) {
+                    output = output + generateLLVMAssignmentPtr(tokens, cursor, next);
+                }
+                else {
+                    output = output + generateLLVMAssignmentI32(tokens, cursor, next);
+                }
+            }
+            else {
+                output = output + generateLLVMAssignmentI32(tokens, cursor, next);
+            }
+        }
+        cursor = skipTrivia(tokens, next);
+    }
+    return output + "  ret i32 0\n";
+}
+
+def generateLLVMParamList(tokens: String, declStart: Int): String {
+    val paramStart: Int = findFunctionParamStart(tokens, declStart);
+    if (paramStart < 0) {
+        return "";
+    }
+    val paramEnd: Int = findClosingToken(tokens, paramStart, advanceTopLevelDecl(tokens, declStart), "(", ")");
+    if (paramEnd <= paramStart) {
+        return "";
+    }
+    var cursor: Int = paramStart + 1;
+    var output: String = "";
+    var first: Boolean = true;
+    while (cursor < paramEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
+            var typeName: String = "unknown";
+            if (tokenIs(tokens, cursor + 1, kindOperator(), ":")) {
+                typeName = typeSummary(tokens, cursor + 2, paramEnd);
+            }
+            if (!first) {
+                output = output + ", ";
+            }
+            output = output + irTypeName(typeName) + " %arg." + tokenTextAt(tokens, cursor);
+            first = false;
+        }
+        while (cursor < paramEnd and !tokenIs(tokens, cursor, kindOperator(), ",")) {
+            cursor = cursor + 1;
+        }
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def generateLLVMParamAllocas(tokens: String, declStart: Int): String {
+    val paramStart: Int = findFunctionParamStart(tokens, declStart);
+    if (paramStart < 0) {
+        return "";
+    }
+    val paramEnd: Int = findClosingToken(tokens, paramStart, advanceTopLevelDecl(tokens, declStart), "(", ")");
+    if (paramEnd <= paramStart) {
+        return "";
+    }
+    var cursor: Int = paramStart + 1;
+    var output: String = "";
+    while (cursor < paramEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
+            val name: String = tokenTextAt(tokens, cursor);
+            var typeName: String = "unknown";
+            if (tokenIs(tokens, cursor + 1, kindOperator(), ":")) {
+                typeName = typeSummary(tokens, cursor + 2, paramEnd);
+            }
+            val llvmType: String = irTypeName(typeName);
+            output = output +
+                "  %" + name + " = alloca " + llvmType + "\n" +
+                "  store " + llvmType + " %arg." + name + ", ptr %" + name + "\n";
+        }
+        while (cursor < paramEnd and !tokenIs(tokens, cursor, kindOperator(), ",")) {
+            cursor = cursor + 1;
+        }
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def generateLLVMBooleanBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    var output: String = "";
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        if (strEq(statementKind(tokens, cursor), "return")) {
+            if (tokenKindAt(tokens, cursor + 1) == kindBool() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + generateLLVMExpressionI1(tokens, cursor + 1, next, "%ret") +
+                    "  ret i1 %ret\n";
+            }
+            if (tokenKindAt(tokens, cursor + 1) == kindIdentifier() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + "  %ret = load i1, ptr %" + tokenTextAt(tokens, cursor + 1) + "\n" +
+                    "  ret i1 %ret\n";
+            }
+            return output + generateLLVMExpressionI1(tokens, cursor + 1, next, "%ret") +
+                "  ret i1 %ret\n";
+        }
+        output = output + generateLLVMFlatBodyI32(tokens, cursor, next);
+        cursor = skipTrivia(tokens, next);
+    }
+    return output + "  ret i1 false\n";
+}
+
+def generateLLVMCharBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    var output: String = "";
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        if (strEq(statementKind(tokens, cursor), "return")) {
+            if (tokenKindAt(tokens, cursor + 1) == kindChar() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + "  ret i8 " + llvmCharI8Value(tokenTextAt(tokens, cursor + 1)) + "\n";
+            }
+            if (tokenKindAt(tokens, cursor + 1) == kindIdentifier() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + "  %ret = load i8, ptr %" + tokenTextAt(tokens, cursor + 1) + "\n" +
+                    "  ret i8 %ret\n";
+            }
+        }
+        output = output + generateLLVMFlatBodyI32(tokens, cursor, next);
+        cursor = skipTrivia(tokens, next);
+    }
+    return output + "  ret i8 0\n";
+}
+
+def generateLLVMDoubleBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    var output: String = "";
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        if (strEq(statementKind(tokens, cursor), "return")) {
+            if ((tokenKindAt(tokens, cursor + 1) == kindFloat() or
+                tokenKindAt(tokens, cursor + 1) == kindInteger()) and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + generateLLVMExpressionF64(tokens, cursor + 1, next, "%ret") +
+                    "  ret double %ret\n";
+            }
+            if (tokenKindAt(tokens, cursor + 1) == kindIdentifier() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + "  %ret = load double, ptr %" + tokenTextAt(tokens, cursor + 1) + "\n" +
+                    "  ret double %ret\n";
+            }
+            return output + generateLLVMExpressionF64(tokens, cursor + 1, next, "%ret") +
+                "  ret double %ret\n";
+        }
+        output = output + generateLLVMFlatBodyI32(tokens, cursor, next);
+        cursor = skipTrivia(tokens, next);
+    }
+    return output + "  ret double 0.000000e+00\n";
+}
+
+def generateLLVMLongBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    var output: String = "";
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        if (strEq(statementKind(tokens, cursor), "return")) {
+            if (tokenKindAt(tokens, cursor + 1) == kindInteger() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + generateLLVMExpressionI64(tokens, cursor + 1, next, "%ret") +
+                    "  ret i64 %ret\n";
+            }
+            if (tokenKindAt(tokens, cursor + 1) == kindIdentifier() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + "  %ret = load i64, ptr %" + tokenTextAt(tokens, cursor + 1) + "\n" +
+                    "  ret i64 %ret\n";
+            }
+            return output + generateLLVMExpressionI64(tokens, cursor + 1, next, "%ret") +
+                "  ret i64 %ret\n";
+        }
+        output = output + generateLLVMFlatBodyI32(tokens, cursor, next);
+        cursor = skipTrivia(tokens, next);
+    }
+    return output + "  ret i64 0\n";
+}
+
+def generateLLVMPointerBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    var cursor: Int = skipTrivia(tokens, bodyStart);
+    var output: String = "";
+    while (cursor < bodyEnd and tokenKindAt(tokens, cursor) != kindEof()) {
+        val next: Int = advanceStatement(tokens, cursor, bodyEnd);
+        if (strEq(statementKind(tokens, cursor), "return")) {
+            if (tokenKindAt(tokens, cursor + 1) == kindString() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                val text: String = tokenTextAt(tokens, cursor + 1);
+                val byteLength: Int = text.length + 1;
+                return output + "  %ret = getelementptr inbounds [" + byteLength + " x i8], ptr @.str." + (cursor + 1) +
+                    ", i32 0, i32 0\n" +
+                    "  ret ptr %ret\n";
+            }
+            if (tokenKindAt(tokens, cursor + 1) == kindIdentifier() and
+                tokenIs(tokens, cursor + 2, kindOperator(), ";")) {
+                return output + "  %ret = load ptr, ptr %" + tokenTextAt(tokens, cursor + 1) + "\n" +
+                    "  ret ptr %ret\n";
+            }
+            return output + "  ret ptr null\n";
+        }
+        output = output + generateLLVMFlatBodyI32(tokens, cursor, next);
+        cursor = skipTrivia(tokens, next);
+    }
+    return output + "  ret ptr null\n";
+}
+
+def generateLLVMVoidBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int): String {
+    return generateLLVMFlatBodyI32(tokens, bodyStart, bodyEnd) + "  ret void\n";
+}
+
+def llvmStringLiteralBytes(text: String): String {
+    var cursor: Int = 0;
+    var output: String = "";
+    while (cursor < text.length) {
+        val ch: Char = text.charAt(cursor);
+        if (ch == '\\' and cursor + 1 < text.length) {
+            val escaped: Char = text.charAt(cursor + 1);
+            if (escaped == 'n') { output = output + "\\0A"; }
+            else if (escaped == 'r') { output = output + "\\0D"; }
+            else if (escaped == 't') { output = output + "\\09"; }
+            else if (escaped == '"') { output = output + "\\22"; }
+            else if (escaped == '\\') { output = output + "\\5C"; }
+            else { output = output + escaped; }
+            cursor = cursor + 2;
+        }
+        else {
+            if (ch == '"') { output = output + "\\22"; }
+            else if (ch == '\\') { output = output + "\\5C"; }
+            else { output = output + "" + ch; }
+            cursor = cursor + 1;
+        }
+    }
+    return output + "\\00";
+}
+
+def generateLLVMStringLiteralGlobals(tokens: String): String {
+    var cursor: Int = 0;
+    var output: String = "";
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenKindAt(tokens, cursor) == kindString()) {
+            val text: String = tokenTextAt(tokens, cursor);
+            val byteLength: Int = text.length + 1;
+            output = output + "@.str." + cursor +
+                " = private unnamed_addr constant [" + byteLength + " x i8] c\"" +
+                llvmStringLiteralBytes(text) + "\"\n";
+        }
+        cursor = cursor + 1;
+    }
+    if (output.length > 0) {
+        return output + "\n";
+    }
+    return "";
+}
+
+def generateLLVMFunctionDefinition(tokens: String, declStart: Int): String {
+    val name: String = topLevelDeclName(tokens, declStart);
+    val returnType: String = functionReturnType(tokens, declStart);
+    val bodyStart: Int = findDeclBodyStart(tokens, declStart);
+    val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
+    if (bodyStart < 0 or bodyEnd <= bodyStart) {
+        return "";
+    }
+    if (strEq(returnType, "Int")) {
+        val body: String = generateLLVMMainBodyFromRange(tokens, bodyStart, bodyEnd);
+        return "define i32 @" + name + "(" + generateLLVMParamList(tokens, declStart) + ") {\n" +
+            "entry:\n" +
+            generateLLVMParamAllocas(tokens, declStart) +
+            body.substring(7, body.length - 7) +
+            "}\n\n";
+    }
+    if (strEq(returnType, "Boolean")) {
+        return "define i1 @" + name + "(" + generateLLVMParamList(tokens, declStart) + ") {\n" +
+            "entry:\n" +
+            generateLLVMParamAllocas(tokens, declStart) +
+            generateLLVMBooleanBodyFromRange(tokens, bodyStart, bodyEnd) +
+            "}\n\n";
+    }
+    if (strEq(returnType, "Char")) {
+        return "define i8 @" + name + "(" + generateLLVMParamList(tokens, declStart) + ") {\n" +
+            "entry:\n" +
+            generateLLVMParamAllocas(tokens, declStart) +
+            generateLLVMCharBodyFromRange(tokens, bodyStart, bodyEnd) +
+            "}\n\n";
+    }
+    if (strEq(returnType, "Double")) {
+        return "define double @" + name + "(" + generateLLVMParamList(tokens, declStart) + ") {\n" +
+            "entry:\n" +
+            generateLLVMParamAllocas(tokens, declStart) +
+            generateLLVMDoubleBodyFromRange(tokens, bodyStart, bodyEnd) +
+            "}\n\n";
+    }
+    if (strEq(returnType, "Long")) {
+        return "define i64 @" + name + "(" + generateLLVMParamList(tokens, declStart) + ") {\n" +
+            "entry:\n" +
+            generateLLVMParamAllocas(tokens, declStart) +
+            generateLLVMLongBodyFromRange(tokens, bodyStart, bodyEnd) +
+            "}\n\n";
+    }
+    if (strEq(returnType, "Unit")) {
+        return "define void @" + name + "(" + generateLLVMParamList(tokens, declStart) + ") {\n" +
+            "entry:\n" +
+            generateLLVMParamAllocas(tokens, declStart) +
+            generateLLVMVoidBodyFromRange(tokens, bodyStart, bodyEnd) +
+            "}\n\n";
+    }
+    if (strEq(irTypeName(returnType), "ptr")) {
+        return "define ptr @" + name + "(" + generateLLVMParamList(tokens, declStart) + ") {\n" +
+            "entry:\n" +
+            generateLLVMParamAllocas(tokens, declStart) +
+            generateLLVMPointerBodyFromRange(tokens, bodyStart, bodyEnd) +
+            "}\n\n";
+    }
+    return "";
+}
+
+def generateLLVMModule(tokens: String): String {
+    if (!parseProgram(tokens)) {
+        return "";
+    }
+    var output: String = "; ModuleID = 'csec.selfhost'\n" +
+        "source_filename = \"csec.selfhost\"\n\n" +
+        generateLLVMStringLiteralGlobals(tokens);
+    var emitted: Boolean = false;
+    var cursor: Int = 0;
+    while (tokenKindAt(tokens, cursor) != kindEof()) {
+        if (tokenIs(tokens, cursor, kindKeyword(), "def")) {
+            val definition: String = generateLLVMFunctionDefinition(tokens, cursor);
+            if (definition.length > 0) {
+                output = output + definition;
+                emitted = true;
+            }
+        }
+        val next: Int = advanceTopLevelDecl(tokens, cursor);
+        if (next <= cursor) {
+            cursor = cursor + 1;
+        }
+        else {
+            cursor = skipTrivia(tokens, next);
+        }
+    }
+    if (emitted) {
+        return output;
+    }
+    return output +
+        "define i32 @main() {\n" +
+        generateLLVMMainBody(tokens) +
+        "}\n";
+}
+
+def generateExecutionC(tokens: String): String {
+    if (!parseProgram(tokens)) {
+        return "";
+    }
+    return generateMainExecutionC(tokens);
+}
+
+def compileSource(source: String, mode: String): String {
+    val tokens: String = tokenize(source);
+    if (mode.startsWith("tokens")) {
+        return tokens;
+    }
+    if (mode.startsWith("ast")) {
+        return generateAST(tokens);
+    }
+    if (mode.startsWith("symbols")) {
+        return generateSymbolTable(tokens);
+    }
+    if (mode.startsWith("ir")) {
+        return generateIR(tokens);
+    }
+    if (mode.startsWith("llvm")) {
+        return generateLLVMModule(tokens);
+    }
+    return generateExecutionC(tokens);
+}
+
+def compileFile(inputPath: String, outputPath: String, mode: String): Int {
+    val source: String = System.IO.File.ReadAllText(inputPath);
+    val output: String = compileSource(source, mode);
+    if (output.length == 0) {
+        System.Console.WriteLine("compile error");
+        return 1;
+    }
+    System.IO.File.WriteAllText(outputPath, output);
+    return 0;
+}
+
+def main(): Int {
+    val argc: Int = commandLineArgCount();
+    if (argc >= 4) {
+        return compileFile(commandLineArg(1), commandLineArg(2), commandLineArg(3));
+    }
+    return compileFile("selfhost/input.csec", "selfhost/out.c", "c");
+}

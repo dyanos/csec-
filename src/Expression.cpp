@@ -82,6 +82,20 @@ std::string mapSystemPathToBuiltin(const std::vector<std::string>& pathComponent
         pathComponents[0] == "System" &&
         pathComponents[1] == "Environment") {
         if (method == "GetEnvironmentVariable") return "posixGetenv";
+        if (method == "CommandLineArgCount" || method == "commandLineArgCount") return "commandLineArgCount";
+        if (method == "CommandLineArg" || method == "commandLineArg") return "commandLineArg";
+    }
+
+    if (pathComponents.size() == 4 &&
+        pathComponents[0] == "System" &&
+        pathComponents[1] == "Net" &&
+        pathComponents[2] == "Tcp") {
+        if (method == "Connect" || method == "connect") return "tcpConnect";
+        if (method == "Listen" || method == "listen") return "tcpListen";
+        if (method == "Accept" || method == "accept") return "tcpAccept";
+        if (method == "Send" || method == "send") return "tcpSend";
+        if (method == "Recv" || method == "recv") return "tcpRecv";
+        if (method == "Close" || method == "close") return "tcpClose";
     }
 
     return "";
@@ -274,6 +288,7 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 		match(TokenType::OCTAL_LITERAL) ||
         match(TokenType::CHAR_LITERAL) ||
 		match(TokenType::STRING_LITERAL) ||
+        match(TokenType::REGEX_LITERAL) ||
 		match(TokenType::BOOLEAN_LITERAL)) {
 		return std::make_unique<ValueNode>(previous().value, previous().type);
 	}

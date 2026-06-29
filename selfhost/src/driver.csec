@@ -1,0 +1,185 @@
+external def csec_expand_imports(path: String): String;
+
+def trimAscii(text: String): String {
+    var start: Int = 0;
+    var end: Int = text.length;
+    while (start < end and isWhitespace(text.charAt(start))) {
+        start = start + 1;
+    }
+    while (end > start and isWhitespace(text.charAt(end - 1))) {
+        end = end - 1;
+    }
+    return text.substring(start, end - start);
+}
+
+def stringEndsWith(text: String, suffix: String): Boolean {
+    if (suffix.length > text.length) {
+        return false;
+    }
+    val start: Int = text.length - suffix.length;
+    val tail: String = text.substring(start, suffix.length);
+    return tail.startsWith(suffix);
+}
+
+def parentDirectory(path: String): String {
+    var cursor: Int = path.length - 1;
+    while (cursor >= 0) {
+        val ch: Char = path.charAt(cursor);
+        if (ch == '/' or ch == '\\') {
+            return path.substring(0, cursor);
+        }
+        cursor = cursor - 1;
+    }
+    return ".";
+}
+
+def replaceDotsWithSlash(text: String): String {
+    var cursor: Int = 0;
+    var output: String = "";
+    while (cursor < text.length) {
+        val ch: Char = text.charAt(cursor);
+        if (ch == '.') {
+            output = output + "/";
+        }
+        else {
+            output = output + "" + ch;
+        }
+        cursor = cursor + 1;
+    }
+    return output;
+}
+
+def importTargetFromLine(line: String): String {
+    val trimmed: String = trimAscii(line);
+    if (trimmed.startsWith("//") or !trimmed.startsWith("import")) {
+        return "";
+    }
+    if (trimmed.length > 6) {
+        val next: Char = trimmed.charAt(6);
+        if (!(next == ' ' or next == '\t' or next == '"' or next == '\'')) {
+            return "";
+        }
+    }
+    var rest: String = trimAscii(trimmed.substring(6, trimmed.length - 6));
+    if (rest.length > 0 and rest.charAt(rest.length - 1) == ';') {
+        rest = trimAscii(rest.substring(0, rest.length - 1));
+    }
+    if (rest.length >= 2 and
+        ((rest.charAt(0) == '"' and rest.charAt(rest.length - 1) == '"') or
+         (rest.charAt(0) == '\'' and rest.charAt(rest.length - 1) == '\''))) {
+        return rest.substring(1, rest.length - 2);
+    }
+    return rest;
+}
+
+def importCandidate(target: String): String {
+    if (stringEndsWith(target, ".csec")) {
+        return target;
+    }
+    return target + ".csec";
+}
+
+def resolveImportPath(currentPath: String, target: String): String {
+    val base: String = parentDirectory(currentPath);
+    val direct: String = importCandidate(target);
+    val fromBase: String = base + "/" + direct;
+    if (System.IO.File.Exists(fromBase)) {
+        return fromBase;
+    }
+    if (System.IO.File.Exists(direct)) {
+        return direct;
+    }
+    val dotted: String = importCandidate(replaceDotsWithSlash(target));
+    val dottedFromBase: String = base + "/" + dotted;
+    if (System.IO.File.Exists(dottedFromBase)) {
+        return dottedFromBase;
+    }
+    return fromBase;
+}
+
+def expandImportsFromFile(path: String, seen: String): String {
+    val marker: String = "|" + path + "|";
+    if (seen.contains(marker)) {
+        return "";
+    }
+    val source: String = System.IO.File.ReadAllText(path);
+    if (!source.contains("import")) {
+        return source;
+    }
+    val nextSeen: String = seen + marker;
+    var cursor: Int = 0;
+    var output: String = "";
+    while (cursor <= source.length) {
+        var lineEnd: Int = cursor;
+        while (lineEnd < source.length and source.charAt(lineEnd) != '\n') {
+            lineEnd = lineEnd + 1;
+        }
+        val line: String = source.substring(cursor, lineEnd - cursor);
+        val target: String = importTargetFromLine(line);
+        if (target.length > 0) {
+            val importPath: String = resolveImportPath(path, target);
+            if (System.IO.File.Exists(importPath)) {
+                output = output + expandImportsFromFile(importPath, nextSeen) + "\n";
+            }
+            else {
+                output = output + line;
+                if (lineEnd < source.length) {
+                    output = output + "\n";
+                }
+            }
+        }
+        else {
+            output = output + line;
+            if (lineEnd < source.length) {
+                output = output + "\n";
+            }
+        }
+        if (lineEnd >= source.length) {
+            return output;
+        }
+        cursor = lineEnd + 1;
+    }
+    return output;
+}
+
+def compileSource(source: String, mode: String): String {
+    val tokens: String = tokenize(source);
+    if (mode.startsWith("tokenlen")) {
+        return "tokens=" + tokens.length + "\n";
+    }
+    if (mode.startsWith("tokens")) {
+        return tokens;
+    }
+    if (mode.startsWith("ast")) {
+        return generateAST(tokens);
+    }
+    if (mode.startsWith("symbols")) {
+        return generateSymbolTable(tokens);
+    }
+    if (mode.startsWith("ir")) {
+        return generateIR(tokens);
+    }
+    if (mode.startsWith("llvm")) {
+        return generateLLVMModule(tokens);
+    }
+    return generateExecutionC(tokens);
+}
+
+def compileFile(inputPath: String, outputPath: String, mode: String): Int {
+    val source: String = csec_expand_imports(inputPath);
+    val output: String = compileSource(source, mode);
+    if (output.length == 0) {
+        System.Console.WriteLine("compile error");
+        return 1;
+    }
+    System.IO.File.WriteAllText(outputPath, output);
+    return 0;
+}
+
+def main(): Int {
+    val argc: Int = commandLineArgCount();
+    if (argc >= 4) {
+        return compileFile(commandLineArg(1), commandLineArg(2), commandLineArg(3));
+    }
+    return compileFile("selfhost/input.csec", "selfhost/out.c", "c");
+}

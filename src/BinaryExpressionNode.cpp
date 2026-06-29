@@ -98,6 +98,11 @@ llvm::Function* getOrCreateRuntimeFunction(const std::string& name, llvm::Type* 
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
 }
 
+llvm::AllocaInst* createEntryAlloca(llvm::Function* function, llvm::Type* type, const llvm::Twine& name) {
+    llvm::IRBuilder<> entryBuilder(&function->getEntryBlock(), function->getEntryBlock().begin());
+    return entryBuilder.CreateAlloca(type, nullptr, name);
+}
+
 llvm::Value* coerceValueForString(CodeGenerator& cg, llvm::Value* value, const Type* type) {
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
@@ -475,7 +480,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
 
-        llvm::Value* resultPtr = cg.builder.CreateAlloca(llvm::Type::getInt1Ty(cg.context), nullptr, "and_result");
+        llvm::Value* resultPtr = createEntryAlloca(func, llvm::Type::getInt1Ty(cg.context), "and_result");
         cg.builder.CreateStore(llvm::ConstantInt::getFalse(cg.context), resultPtr);
 
         llvm::BasicBlock* rhsBB = llvm::BasicBlock::Create(cg.context, "and_rhs", func);
@@ -530,7 +535,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
 
-        llvm::Value* resultPtr = cg.builder.CreateAlloca(llvm::Type::getInt1Ty(cg.context), nullptr, "or_result");
+        llvm::Value* resultPtr = createEntryAlloca(func, llvm::Type::getInt1Ty(cg.context), "or_result");
         cg.builder.CreateStore(llvm::ConstantInt::getTrue(cg.context), resultPtr);
 
         llvm::BasicBlock* rhsBB = llvm::BasicBlock::Create(cg.context, "or_rhs", func);

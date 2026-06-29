@@ -78,9 +78,17 @@ define i32 @_main() {
 entry:
   %scale = alloca double, align 8
   store float 2.500000e+00, ptr %scale, align 4
+  %calltmp = call ptr @_label()
+  %calltmp1 = call i8 @_marker()
+  %calltmp2 = call i64 @_wide()
+  %calltmp4 = call i1 @_positive(i32 3)
   %scale.load = load double, ptr %scale, align 8
-  store float 3.500000e+00, ptr %scale, align 4
-  br i1 true, label %and_rhs, label %and_end
+  %calltmp5 = call double @_ratio()
+  store double %calltmp5, ptr %scale, align 8
+  %calltmp6 = call ptr @_label()
+  %calltmp7 = call i8 @_marker()
+  %calltmp8 = call i64 @_wide()
+  br i1 %calltmp4, label %and_rhs, label %and_end
 
 and_rhs:                                          ; preds = %entry
   %gttmp = icmp sgt i32 3, 0
@@ -105,18 +113,56 @@ ifcont:                                           ; preds = %else, %then
   br label %whilecond
 
 whilecond:                                        ; preds = %whilebody, %ifcont
-  %current.1 = phi i32 [ %current.0, %ifcont ], [ %subtmp11, %whilebody ]
-  %gttmp8 = icmp sgt i32 %current.1, 1
-  br i1 %gttmp8, label %whilebody, label %afterwhile
+  %current.1 = phi i32 [ %current.0, %ifcont ], [ %subtmp19, %whilebody ]
+  %gttmp16 = icmp sgt i32 %current.1, 1
+  br i1 %gttmp16, label %whilebody, label %afterwhile
 
 whilebody:                                        ; preds = %whilecond
-  %subtmp11 = sub i32 %current.1, 1
+  %subtmp19 = sub i32 %current.1, 1
   br label %whilecond
 
 afterwhile:                                       ; preds = %whilecond
-  %addtmp14 = add i32 %current.1, 1
-  %calltmp = call i32 @_adjust(i32 %addtmp14)
-  ret i32 %calltmp
+  %i_ptr = alloca i32, align 4
+  store i32 0, ptr %i_ptr, align 4
+  br label %forcond
+
+forcond:                                          ; preds = %loop, %afterwhile
+  %current.2 = phi i32 [ %current.1, %afterwhile ], [ %addtmp22, %loop ]
+  %i = load i32, ptr %i_ptr, align 4
+  %cond = icmp sle i32 %i, 2
+  br i1 %cond, label %loop, label %afterloop
+
+loop:                                             ; preds = %forcond
+  %i.load = load i32, ptr %i_ptr, align 4
+  %addtmp22 = add i32 %current.2, %i.load
+  %i23 = load i32, ptr %i_ptr, align 4
+  %next_i = add i32 %i23, 1
+  store i32 %next_i, ptr %i_ptr, align 4
+  br label %forcond
+
+afterloop:                                        ; preds = %forcond
+  %j_ptr = alloca i32, align 4
+  store i32 1, ptr %j_ptr, align 4
+  br label %forcond24
+
+forcond24:                                        ; preds = %loop25, %afterloop
+  %current.3 = phi i32 [ %current.2, %afterloop ], [ %addtmp30, %loop25 ]
+  %j = load i32, ptr %j_ptr, align 4
+  %cond27 = icmp sle i32 %j, 2
+  br i1 %cond27, label %loop25, label %afterloop26
+
+loop25:                                           ; preds = %forcond24
+  %j.load = load i32, ptr %j_ptr, align 4
+  %addtmp30 = add i32 %current.3, %j.load
+  %j31 = load i32, ptr %j_ptr, align 4
+  %next_i32 = add i32 %j31, 1
+  store i32 %next_i32, ptr %j_ptr, align 4
+  br label %forcond24
+
+afterloop26:                                      ; preds = %forcond24
+  %addtmp35 = add i32 %current.3, 1
+  %calltmp36 = call i32 @_adjust(i32 %addtmp35)
+  ret i32 %calltmp36
 }
 
 declare void @csec_set_command_line_args(i32, ptr)

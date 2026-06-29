@@ -11,9 +11,29 @@ $llvmSubsetSource = Join-Path $PSScriptRoot "llvm_subset.csec"
 $irOutput = Join-Path $PSScriptRoot "csec_compiler.ll"
 $inputIrOutput = Join-Path $PSScriptRoot "input.ll"
 $llvmSubsetIrOutput = Join-Path $PSScriptRoot "llvm_subset.ll"
+$selfhostSourceRoot = Join-Path $PSScriptRoot "src"
+$selfhostImportEntry = Join-Path $selfhostSourceRoot "compiler.csec"
+$selfhostImportEntryIrOutput = Join-Path $PSScriptRoot "tmp_import_entry.ll"
 
 if (-not (Test-Path $compilerPath)) {
     Write-Error "Compiler not found: $compilerPath"
+}
+
+& (Join-Path $PSScriptRoot "assemble_selfhost.ps1") | Out-Host
+
+$sourceParts = @(
+    "compiler.csec",
+    "lexer.csec",
+    "parser.csec",
+    "ir_generator.csec",
+    "driver.csec"
+)
+
+foreach ($part in $sourceParts) {
+    $partPath = Join-Path $selfhostSourceRoot $part
+    if (-not (Test-Path $partPath)) {
+        Write-Error "Missing split selfhost source: $partPath"
+    }
 }
 
 function Invoke-CompilerChecked {
@@ -48,18 +68,21 @@ function Invoke-CompilerChecked {
 }
 
 Invoke-CompilerChecked @("--syntax-only", $selfhostSource)
+Invoke-CompilerChecked @("--syntax-only", $selfhostImportEntry)
 Invoke-CompilerChecked @("--syntax-only", $specSmokeSource)
 Invoke-CompilerChecked @("--syntax-only", $llvmSubsetSource)
 Invoke-CompilerChecked @("--emit-ir", $selfhostSource, "-o", $irOutput)
+Invoke-CompilerChecked @("--emit-ir", $selfhostImportEntry, "-o", $selfhostImportEntryIrOutput)
 Invoke-CompilerChecked @("--emit-ir", (Join-Path $PSScriptRoot "input.csec"), "-o", $inputIrOutput)
 Invoke-CompilerChecked @("--emit-ir", $llvmSubsetSource, "-o", $llvmSubsetIrOutput)
 
 $source = Get-Content $selfhostSource -Raw
 $sourceContracts = @(
     "def tokenize(source: String): String",
-    "tokens = appendToken(tokens, kindString(), slice(source, cursor + 1, end - 1))",
-    "tokens = appendToken(tokens, kindChar(), slice(source, cursor + 1, end - 1))",
+    "appendTokenTo(builder, kindString(), slice(source, cursor + 1, end - 1))",
+    "appendTokenTo(builder, kindChar(), slice(source, cursor + 1, end - 1))",
     "def lookupFunctionParamType(tokens: String, limit: Int, name: String): String",
+    "def lookupFunctionReturnType(tokens: String, name: String): String",
     "val paramType: String = lookupFunctionParamType(tokens, limit, name)"
 )
 
@@ -70,6 +93,7 @@ foreach ($needle in $sourceContracts) {
 }
 
 $ir = Get-Content $irOutput -Raw
+$importEntryIr = Get-Content $selfhostImportEntryIrOutput -Raw
 $required = @(
     "define ptr @_tokenize",
     "define i1 @_parseProgram",
@@ -92,6 +116,7 @@ $required = @(
     "define ptr @_typeSummary",
     "define ptr @_statementHeaderExpression",
     "define ptr @_inferExpressionType",
+    "define ptr @_lookupFunctionReturnType",
     "define ptr @_localDeclarationType",
     "define ptr @_generateFunctionScopeSymbols",
     "define ptr @_generateFunctionParamSymbols",
@@ -161,6 +186,7 @@ $required = @(
     "define ptr @_generateLLVMFlatBodyI32",
     "define ptr @_generateLLVMIfI32",
     "define ptr @_generateLLVMWhileI32",
+    "define ptr @_generateLLVMForI32",
     "define ptr @_generateLLVMReturnI32",
     "define ptr @_generateLLVMMainBodyFromRange",
     "define ptr @_generateLLVMBooleanBodyFromRange",
@@ -183,6 +209,9 @@ foreach ($needle in $required) {
     if (-not $ir.Contains($needle)) {
         Write-Error "Missing selfhost phase in generated IR: $needle"
     }
+    if (-not $importEntryIr.Contains($needle)) {
+        Write-Error "Missing imported selfhost phase in generated IR: $needle"
+    }
 }
 
 $requiredOutputContracts = @(
@@ -200,6 +229,7 @@ $requiredOutputContracts = @(
     "Expr array count=",
     "Expr lambda capture=",
     "FunctionType params=",
+    "for (int ",
     "; ModuleID = 'csec.selfhost'",
     "define i32 @main()",
     "define i1 @",
@@ -224,8 +254,18 @@ $requiredOutputContracts = @(
     "store ptr %",
     "store i8 ",
     "call i32 @",
+    "call i1 @",
+    "call i8 @",
+    "call double @",
+    "call i64 @",
+    "call ptr @",
     "br i1",
     "while.cond.",
+    "for.cond.",
+    "for.body.",
+    "for.end.",
+    "icmp slt i32",
+    "icmp sle i32",
     "ret i32"
 )
 
@@ -236,3 +276,4 @@ foreach ($needle in $requiredOutputContracts) {
 }
 
 Write-Host "Selfhost compiler syntax and IR phase verification passed."
+Remove-Item $selfhostImportEntryIrOutput -ErrorAction SilentlyContinue

@@ -6,9 +6,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <filesystem>
 #include <regex>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #ifdef _WIN32
@@ -36,6 +38,36 @@
 namespace {
 int g_argc = 0;
 char** g_argv = nullptr;
+
+struct TokenBuilder {
+    char* data = nullptr;
+    size_t length = 0;
+    size_t capacity = 0;
+};
+
+std::unordered_map<const char*, std::vector<int>>& tokenLineCache() {
+    static std::unordered_map<const char*, std::vector<int>> cache;
+    return cache;
+}
+
+const std::vector<int>& tokenLineStarts(const char* tokens) {
+    const char* value = tokens ? tokens : "";
+    auto& cache = tokenLineCache();
+    auto found = cache.find(value);
+    if (found != cache.end()) {
+        return found->second;
+    }
+
+    std::vector<int> starts;
+    starts.push_back(0);
+    for (int i = 0; value[i] != '\0'; ++i) {
+        if (value[i] == '\n' && value[i + 1] != '\0') {
+            starts.push_back(i + 1);
+        }
+    }
+    auto inserted = cache.emplace(value, std::move(starts));
+    return inserted.first->second;
+}
 
 int& configuredParallelThreads() {
     static int value = []() {
@@ -133,6 +165,128 @@ char* csec_string_concat(const char* left, const char* right) {
     std::memcpy(result, lhs, lhsLen);
     std::memcpy(result + lhsLen, rhs, rhsLen);
     result[lhsLen + rhsLen] = '\0';
+    return result;
+}
+
+char* csec_token_append_owned(const char* tokens, char kind, const char* text) {
+    const char* lhs = tokens ? tokens : "";
+    const char* tokenText = text ? text : "";
+    size_t lhsLen = std::strlen(lhs);
+    size_t textLen = std::strlen(tokenText);
+    char* result = static_cast<char*>(std::malloc(lhsLen + textLen + 4));
+    if (!result) return nullptr;
+
+    std::memcpy(result, lhs, lhsLen);
+    result[lhsLen] = kind;
+    result[lhsLen + 1] = ':';
+    std::memcpy(result + lhsLen + 2, tokenText, textLen);
+    result[lhsLen + textLen + 2] = '\n';
+    result[lhsLen + textLen + 3] = '\0';
+
+    if (tokens && lhsLen > 0) {
+        std::free(const_cast<char*>(tokens));
+    }
+    return result;
+}
+
+long long csec_token_builder_new(void) {
+    auto* builder = new TokenBuilder();
+    builder->capacity = 4096;
+    builder->data = static_cast<char*>(std::malloc(builder->capacity));
+    if (!builder->data) {
+        delete builder;
+        return 0;
+    }
+    builder->data[0] = '\0';
+    return reinterpret_cast<long long>(builder);
+}
+
+int csec_token_builder_append(long long handle, char kind, const char* text) {
+    auto* builder = reinterpret_cast<TokenBuilder*>(handle);
+    if (!builder || !builder->data) return -1;
+
+    const char* tokenText = text ? text : "";
+    size_t textLen = std::strlen(tokenText);
+    size_t needed = builder->length + textLen + 4;
+    if (needed > builder->capacity) {
+        size_t nextCapacity = builder->capacity;
+        while (nextCapacity < needed) {
+            nextCapacity *= 2;
+        }
+        char* next = static_cast<char*>(std::realloc(builder->data, nextCapacity));
+        if (!next) return -1;
+        builder->data = next;
+        builder->capacity = nextCapacity;
+    }
+
+    builder->data[builder->length] = kind;
+    builder->data[builder->length + 1] = ':';
+    std::memcpy(builder->data + builder->length + 2, tokenText, textLen);
+    builder->length += textLen + 2;
+    builder->data[builder->length] = '\n';
+    builder->length += 1;
+    builder->data[builder->length] = '\0';
+    return 0;
+}
+
+char* csec_token_builder_finish(long long handle) {
+    auto* builder = reinterpret_cast<TokenBuilder*>(handle);
+    if (!builder) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+
+    char* result = builder->data;
+    builder->data = nullptr;
+    delete builder;
+    if (!result) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+    return result;
+}
+
+char csec_token_kind_at(const char* tokens, int ordinal) {
+    const char* value = tokens ? tokens : "";
+    if (ordinal < 0) return 'E';
+    const auto& starts = tokenLineStarts(value);
+    if (static_cast<size_t>(ordinal) >= starts.size()) {
+        return 'E';
+    }
+    int start = starts[static_cast<size_t>(ordinal)];
+    return value[start] == '\0' ? 'E' : value[start];
+}
+
+char* csec_token_text_at(const char* tokens, int ordinal) {
+    const char* value = tokens ? tokens : "";
+    if (ordinal < 0) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+
+    const auto& starts = tokenLineStarts(value);
+    if (static_cast<size_t>(ordinal) >= starts.size()) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+
+    int start = starts[static_cast<size_t>(ordinal)];
+    int textStart = start + 2;
+    int end = textStart;
+    while (value[end] != '\0' && value[end] != '\n') {
+        ++end;
+    }
+    if (textStart > end) textStart = end;
+
+    size_t length = static_cast<size_t>(end - textStart);
+    char* result = static_cast<char*>(std::malloc(length + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, value + textStart, length);
+    result[length] = '\0';
     return result;
 }
 
@@ -407,6 +561,167 @@ int csec_file_exists(const char* path) {
 int csec_file_delete(const char* path) {
     if (!path) return -1;
     return std::remove(path);
+}
+
+}
+
+namespace {
+std::string csecTrimAscii(std::string value) {
+    const auto first = value.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) return "";
+    const auto last = value.find_last_not_of(" \t\r\n");
+    return value.substr(first, last - first + 1);
+}
+
+bool csecImportLineStarts(const std::string& text) {
+    if (text.rfind("import", 0) != 0) return false;
+    if (text.size() == 6) return true;
+    char next = text[6];
+    return next == ' ' || next == '\t' || next == '"' || next == '\'';
+}
+
+std::string csecImportTarget(const std::string& line) {
+    std::string trimmed = csecTrimAscii(line);
+    if (trimmed.rfind("//", 0) == 0 || !csecImportLineStarts(trimmed)) {
+        return "";
+    }
+    std::string rest = csecTrimAscii(trimmed.substr(6));
+    if (!rest.empty() && rest.back() == ';') {
+        rest.pop_back();
+        rest = csecTrimAscii(rest);
+    }
+    if (rest.size() >= 2 &&
+        ((rest.front() == '"' && rest.back() == '"') ||
+         (rest.front() == '\'' && rest.back() == '\''))) {
+        return rest.substr(1, rest.size() - 2);
+    }
+    return rest;
+}
+
+std::filesystem::path csecResolveImportPath(
+    const std::filesystem::path& includingFile,
+    const std::string& target) {
+    auto withExtension = [](std::filesystem::path path) {
+        if (!path.has_extension()) {
+            path.replace_extension(".csec");
+        }
+        return path;
+    };
+
+    std::filesystem::path requested = withExtension(std::filesystem::path(target));
+    if (requested.is_absolute()) {
+        return requested;
+    }
+
+    std::vector<std::filesystem::path> candidates = {
+        includingFile.parent_path() / requested,
+        std::filesystem::current_path() / requested
+    };
+
+    if (target.find('.') != std::string::npos &&
+        target.find('/') == std::string::npos &&
+        target.find('\\') == std::string::npos) {
+        std::string dotted = target;
+        for (char& ch : dotted) {
+            if (ch == '.') ch = static_cast<char>(std::filesystem::path::preferred_separator);
+        }
+        std::filesystem::path dottedPath = withExtension(std::filesystem::path(dotted));
+        candidates.push_back(includingFile.parent_path() / dottedPath);
+        candidates.push_back(std::filesystem::current_path() / dottedPath);
+    }
+
+    std::error_code ec;
+    for (const auto& candidate : candidates) {
+        if (std::filesystem::exists(candidate, ec) && std::filesystem::is_regular_file(candidate, ec)) {
+            return candidate;
+        }
+    }
+    return candidates.front();
+}
+
+std::string csecReadFileString(const std::filesystem::path& path) {
+    FILE* file = std::fopen(path.string().c_str(), "rb");
+    if (!file) return "";
+    std::fseek(file, 0, SEEK_END);
+    long size = std::ftell(file);
+    if (size < 0) size = 0;
+    std::rewind(file);
+    std::string result(static_cast<size_t>(size), '\0');
+    size_t read = std::fread(result.data(), 1, result.size(), file);
+    result.resize(read);
+    std::fclose(file);
+    return result;
+}
+
+std::string csecExpandImports(
+    const std::filesystem::path& inputPath,
+    std::vector<std::filesystem::path>& includeStack,
+    std::vector<std::filesystem::path>& includedFiles) {
+    std::error_code ec;
+    auto canonical = std::filesystem::weakly_canonical(inputPath, ec);
+    if (ec) canonical = std::filesystem::absolute(inputPath, ec);
+    if (ec) canonical = inputPath;
+
+    for (const auto& active : includeStack) {
+        if (active == canonical) return "";
+    }
+    for (const auto& included : includedFiles) {
+        if (included == canonical) return "";
+    }
+
+    std::string source = csecReadFileString(canonical);
+    if (source.find("import") == std::string::npos) {
+        return source;
+    }
+
+    includeStack.push_back(canonical);
+    includedFiles.push_back(canonical);
+
+    std::string output;
+    size_t lineStart = 0;
+    while (lineStart <= source.size()) {
+        size_t lineEnd = source.find('\n', lineStart);
+        bool hasNewline = lineEnd != std::string::npos;
+        if (!hasNewline) lineEnd = source.size();
+
+        std::string line = source.substr(lineStart, lineEnd - lineStart);
+        std::string target = csecImportTarget(line);
+        if (!target.empty()) {
+            auto importPath = csecResolveImportPath(canonical, target);
+            if (std::filesystem::exists(importPath, ec) && std::filesystem::is_regular_file(importPath, ec)) {
+                output += csecExpandImports(importPath, includeStack, includedFiles);
+                output += "\n";
+            }
+            else {
+                output += line;
+                if (hasNewline) output += "\n";
+            }
+        }
+        else {
+            output += line;
+            if (hasNewline) output += "\n";
+        }
+
+        if (!hasNewline) break;
+        lineStart = lineEnd + 1;
+    }
+
+    includeStack.pop_back();
+    return output;
+}
+}
+
+extern "C" {
+
+char* csec_expand_imports(const char* path) {
+    std::vector<std::filesystem::path> includeStack;
+    std::vector<std::filesystem::path> includedFiles;
+    std::string expanded = csecExpandImports(std::filesystem::path(path ? path : ""), includeStack, includedFiles);
+    char* result = static_cast<char*>(std::malloc(expanded.size() + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, expanded.data(), expanded.size());
+    result[expanded.size()] = '\0';
+    return result;
 }
 
 double csec_math_sin(double value) { return std::sin(value); }

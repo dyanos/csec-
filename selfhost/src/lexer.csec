@@ -1,0 +1,356 @@
+external def csec_token_append_owned(tokens: String, kind: Char, text: String): String;
+external def csec_token_builder_new(): Long;
+external def csec_token_builder_append(builder: Long, kind: Char, text: String): Int;
+external def csec_token_builder_finish(builder: Long): String;
+external def csec_token_kind_at(tokens: String, ordinal: Int): Char;
+external def csec_token_text_at(tokens: String, ordinal: Int): String;
+
+def kindIdentifier(): Char = 'I'
+def kindKeyword(): Char = 'K'
+def kindInteger(): Char = 'N'
+def kindFloat(): Char = 'F'
+def kindString(): Char = 'S'
+def kindRegex(): Char = 'R'
+def kindChar(): Char = 'C'
+def kindBool(): Char = 'B'
+def kindOperator(): Char = 'O'
+def kindComment(): Char = 'M'
+def kindEof(): Char = 'E'
+
+def isWhitespace(ch: Char): Boolean {
+    val carriageReturn: String = "\r";
+    return ch == ' ' or ch == '\n' or ch == carriageReturn.charAt(0) or ch == '\t';
+}
+
+def isDigit(ch: Char): Boolean {
+    return ch >= '0' and ch <= '9';
+}
+
+def digitValue(ch: Char): Int {
+    if (ch == '0') { return 0; }
+    if (ch == '1') { return 1; }
+    if (ch == '2') { return 2; }
+    if (ch == '3') { return 3; }
+    if (ch == '4') { return 4; }
+    if (ch == '5') { return 5; }
+    if (ch == '6') { return 6; }
+    if (ch == '7') { return 7; }
+    if (ch == '8') { return 8; }
+    if (ch == '9') { return 9; }
+    return 0;
+}
+
+def toInt(text: String): Int {
+    var cursor: Int = 0;
+    var value: Int = 0;
+    while (cursor < text.length and isDigit(text.charAt(cursor))) {
+        value = value * 10 + digitValue(text.charAt(cursor));
+        cursor = cursor + 1;
+    }
+    return value;
+}
+
+def isAlpha(ch: Char): Boolean {
+    return (ch >= 'a' and ch <= 'z') or (ch >= 'A' and ch <= 'Z');
+}
+
+def isIdentifierStart(ch: Char): Boolean {
+    return isAlpha(ch) or ch == '_';
+}
+
+def isIdentifierPart(ch: Char): Boolean {
+    return isIdentifierStart(ch) or isDigit(ch);
+}
+
+def strEq(left: String, right: String): Boolean {
+    return left.length == right.length and left.startsWith(right);
+}
+
+def isKeyword(text: String): Boolean {
+    return strEq(text, "import") or strEq(text, "class") or strEq(text, "extends") or
+        strEq(text, "object") or strEq(text, "external") or strEq(text, "def") or
+        strEq(text, "operator") or strEq(text, "override") or strEq(text, "return") or
+        strEq(text, "val") or strEq(text, "var") or strEq(text, "if") or strEq(text, "else") or
+        strEq(text, "for") or strEq(text, "while") or strEq(text, "match") or strEq(text, "case") or
+        strEq(text, "map") or strEq(text, "pmap") or strEq(text, "filter") or strEq(text, "reduce") or
+        strEq(text, "preduce") or strEq(text, "template") or strEq(text, "typename") or
+        strEq(text, "new") or strEq(text, "this") or strEq(text, "super") or strEq(text, "unsafe") or
+        strEq(text, "unatomic") or strEq(text, "constexpr") or strEq(text, "box") or
+        strEq(text, "mut") or strEq(text, "null") or strEq(text, "inner") or
+        strEq(text, "outer") or strEq(text, "tensor") or
+        strEq(text, "to") or strEq(text, "until") or strEq(text, "and") or strEq(text, "or") or
+        strEq(text, "xor") or strEq(text, "ode") or strEq(text, "molecule") or strEq(text, "cfd") or
+        strEq(text, "protein") or strEq(text, "cpu") or strEq(text, "openmp") or
+        strEq(text, "gpu") or strEq(text, "simd");
+}
+
+def appendToken(tokens: String, kind: Char, text: String): String {
+    return csec_token_append_owned(tokens, kind, text);
+}
+
+def appendTokenTo(builder: Long, kind: Char, text: String): Int {
+    return csec_token_builder_append(builder, kind, text);
+}
+
+def twoChars(source: String, index: Int, text: String): Boolean {
+    if (index + 1 >= source.length) {
+        return false;
+    }
+    return source.charAt(index) == text.charAt(0) and source.charAt(index + 1) == text.charAt(1);
+}
+
+def threeChars(source: String, index: Int, text: String): Boolean {
+    if (index + 2 >= source.length) {
+        return false;
+    }
+    return source.charAt(index) == text.charAt(0) and
+        source.charAt(index + 1) == text.charAt(1) and
+        source.charAt(index + 2) == text.charAt(2);
+}
+
+def lexIdentifier(source: String, index: Int): Int {
+    var cursor: Int = index + 1;
+    while (cursor < source.length and isIdentifierPart(source.charAt(cursor))) {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def lexNumber(source: String, index: Int): Int {
+    var cursor: Int = index;
+    if (twoChars(source, cursor, "0x") or twoChars(source, cursor, "0X") or
+        twoChars(source, cursor, "0b") or twoChars(source, cursor, "0B") or
+        twoChars(source, cursor, "0o") or twoChars(source, cursor, "0O")) {
+        cursor = cursor + 2;
+    }
+    while (cursor < source.length and
+        (isDigit(source.charAt(cursor)) or isAlpha(source.charAt(cursor)) or
+         source.charAt(cursor) == '_' or source.charAt(cursor) == '.')) {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def lexQuoted(source: String, index: Int): Int {
+    val quote: Char = source.charAt(index);
+    var cursor: Int = index + 1;
+    while (cursor < source.length and source.charAt(cursor) != quote) {
+        if (source.charAt(cursor) == '\\' and cursor + 1 < source.length) {
+            cursor = cursor + 2;
+        }
+        else {
+            cursor = cursor + 1;
+        }
+    }
+    if (cursor < source.length) {
+        return cursor + 1;
+    }
+    return cursor;
+}
+
+def lexLineComment(source: String, index: Int): Int {
+    var cursor: Int = index + 2;
+    while (cursor < source.length and source.charAt(cursor) != '\n') {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def lexBlockComment(source: String, index: Int): Int {
+    var cursor: Int = index + 2;
+    var depth: Int = 1;
+    while (cursor + 1 < source.length and depth > 0) {
+        if (twoChars(source, cursor, "/*")) {
+            depth = depth + 1;
+            cursor = cursor + 2;
+        }
+        else if (twoChars(source, cursor, "*/")) {
+            depth = depth - 1;
+            cursor = cursor + 2;
+        }
+        else {
+            cursor = cursor + 1;
+        }
+    }
+    return cursor;
+}
+
+def operatorLength(source: String, index: Int): Int {
+    if (twoChars(source, index, "[@")) {
+        return 2;
+    }
+    if (twoChars(source, index, "=>") or twoChars(source, index, "<-") or
+        twoChars(source, index, "->") or twoChars(source, index, "<=") or
+        twoChars(source, index, ">=") or twoChars(source, index, "==") or
+        twoChars(source, index, "&&") or twoChars(source, index, "||") or
+        twoChars(source, index, "++") or twoChars(source, index, "--") or
+        twoChars(source, index, "!=") or twoChars(source, index, "+=") or
+        twoChars(source, index, "-=") or twoChars(source, index, "*=") or
+        twoChars(source, index, "/=") or twoChars(source, index, "%=") or
+        twoChars(source, index, "<<") or twoChars(source, index, ">>") or
+        twoChars(source, index, "..") or twoChars(source, index, "$$") or
+        twoChars(source, index, "**")) {
+        return 2;
+    }
+    return 1;
+}
+
+def repairLeadingRTokenText(text: String): String {
+    if (strEq(text, "eturn")) { return "return"; }
+    if (strEq(text, "atio")) { return "ratio"; }
+    if (strEq(text, "educe")) { return "reduce"; }
+    if (strEq(text, "ange")) { return "range"; }
+    if (strEq(text, "egex")) { return "regex"; }
+    if (strEq(text, "Regex")) { return "Regex"; }
+    return text;
+}
+
+def slice(source: String, start: Int, end: Int): String {
+    if (end <= start) {
+        return "";
+    }
+    return source.substring(start, end - start);
+}
+
+def tokenize(source: String): String {
+    val builder: Long = csec_token_builder_new();
+    var cursor: Int = 0;
+    var ch: Char = ' ';
+    var end: Int = 0;
+    var text: String = "";
+    var width: Int = 0;
+    while (cursor < source.length) {
+        ch = source.charAt(cursor);
+        if (isWhitespace(ch)) {
+            cursor = cursor + 1;
+        }
+        else if (twoChars(source, cursor, "//")) {
+            end = lexLineComment(source, cursor);
+            cursor = end;
+        }
+        else if (twoChars(source, cursor, "/*")) {
+            end = lexBlockComment(source, cursor);
+            cursor = end;
+        }
+        else if ((ch == 'r' or ch == 'R') and cursor + 1 < source.length and
+            isIdentifierPart(source.charAt(cursor + 1))) {
+            end = lexIdentifier(source, cursor);
+            text = "r" + slice(source, cursor + 1, end);
+            if (ch == 'R') {
+                text = "R" + slice(source, cursor + 1, end);
+            }
+            text = repairLeadingRTokenText(text);
+            if (strEq(text, "true") or strEq(text, "false")) {
+                appendTokenTo(builder, kindBool(), text);
+            }
+            else if (isKeyword(text)) {
+                appendTokenTo(builder, kindKeyword(), text);
+            }
+            else {
+                appendTokenTo(builder, kindIdentifier(), text);
+            }
+            cursor = end;
+        }
+        else if ((ch == 'r' or ch == 'R') and cursor + 1 < source.length and
+            !isIdentifierPart(source.charAt(cursor + 1)) and source.charAt(cursor + 1) == '"') {
+            end = lexQuoted(source, cursor + 1);
+            appendTokenTo(builder, kindRegex(), slice(source, cursor + 2, end - 1));
+            cursor = end;
+        }
+        else if ((ch == 'u' or ch == 'U') and cursor + 1 < source.length and source.charAt(cursor + 1) == '"') {
+            end = lexQuoted(source, cursor + 1);
+            appendTokenTo(builder, kindString(), slice(source, cursor + 2, end - 1));
+            cursor = end;
+        }
+        else if (ch == '"') {
+            end = lexQuoted(source, cursor);
+            appendTokenTo(builder, kindString(), slice(source, cursor + 1, end - 1));
+            cursor = end;
+        }
+        else if (ch == '\'') {
+            end = lexQuoted(source, cursor);
+            appendTokenTo(builder, kindChar(), slice(source, cursor + 1, end - 1));
+            cursor = end;
+        }
+        else if (isDigit(ch)) {
+            end = lexNumber(source, cursor);
+            text = slice(source, cursor, end);
+            if (text.contains(".") or text.contains("e") or text.contains("E")) {
+                appendTokenTo(builder, kindFloat(), text);
+            }
+            else {
+                appendTokenTo(builder, kindInteger(), text);
+            }
+            cursor = end;
+        }
+        else if (isIdentifierStart(ch)) {
+            end = lexIdentifier(source, cursor);
+            text = slice(source, cursor, end);
+            if (ch == 'r') {
+                text = "r" + slice(source, cursor + 1, end);
+            }
+            if (ch == 'R') {
+                text = "R" + slice(source, cursor + 1, end);
+            }
+            text = repairLeadingRTokenText(text);
+            if (strEq(text, "true") or strEq(text, "false")) {
+                appendTokenTo(builder, kindBool(), text);
+            }
+            else if (isKeyword(text)) {
+                appendTokenTo(builder, kindKeyword(), text);
+            }
+            else {
+                appendTokenTo(builder, kindIdentifier(), text);
+            }
+            cursor = end;
+        }
+        else {
+            width = operatorLength(source, cursor);
+            appendTokenTo(builder, kindOperator(), slice(source, cursor, cursor + width));
+            cursor = cursor + width;
+        }
+    }
+    appendTokenTo(builder, kindEof(), "<eof>");
+    return csec_token_builder_finish(builder);
+}
+
+def lineStart(tokens: String, ordinal: Int): Int {
+    var cursor: Int = 0;
+    var line: Int = 0;
+    while (cursor < tokens.length and line < ordinal) {
+        if (tokens.charAt(cursor) == '\n') {
+            line = line + 1;
+        }
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def lineEnd(tokens: String, start: Int): Int {
+    var cursor: Int = start;
+    while (cursor < tokens.length and tokens.charAt(cursor) != '\n') {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+
+def tokenKindAt(tokens: String, ordinal: Int): Char {
+    return csec_token_kind_at(tokens, ordinal);
+}
+
+def tokenTextAt(tokens: String, ordinal: Int): String {
+    return csec_token_text_at(tokens, ordinal);
+}
+
+def tokenIs(tokens: String, ordinal: Int, kind: Char, text: String): Boolean {
+    return tokenKindAt(tokens, ordinal) == kind and strEq(tokenTextAt(tokens, ordinal), text);
+}
+
+def skipTrivia(tokens: String, ordinal: Int): Int {
+    var cursor: Int = ordinal;
+    while (tokenKindAt(tokens, cursor) == kindComment()) {
+        cursor = cursor + 1;
+    }
+    return cursor;
+}
+

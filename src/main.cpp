@@ -38,6 +38,7 @@
 #include <exception>
 #include <filesystem>
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace {
@@ -223,6 +224,175 @@ llvm::Function* rebuildRuntimeMain(CodeGenerator& codeGen) {
     return jitFunction;
 }
 
+std::string trimAscii(std::string value) {
+    const auto first = value.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) {
+        return "";
+    }
+    const auto last = value.find_last_not_of(" \t\r\n");
+    return value.substr(first, last - first + 1);
+}
+
+bool startsWithImportKeyword(const std::string& text) {
+    if (text.rfind("import", 0) != 0) {
+        return false;
+    }
+    if (text.size() == 6) {
+        return true;
+    }
+    char next = text[6];
+    return next == ' ' || next == '\t' || next == '"' || next == '\'';
+}
+
+std::string parseImportTarget(const std::string& trimmedLine) {
+    if (!startsWithImportKeyword(trimmedLine)) {
+        return "";
+    }
+
+    std::string rest = trimAscii(trimmedLine.substr(6));
+    if (!rest.empty() && rest.back() == ';') {
+        rest.pop_back();
+        rest = trimAscii(rest);
+    }
+    if (rest.empty()) {
+        return "";
+    }
+
+    if ((rest.front() == '"' && rest.back() == '"') ||
+        (rest.front() == '\'' && rest.back() == '\'')) {
+        if (rest.size() <= 2) {
+            return "";
+        }
+        return rest.substr(1, rest.size() - 2);
+    }
+    return rest;
+}
+
+std::filesystem::path resolveImportPath(
+    const std::filesystem::path& includingFile,
+    const std::string& target) {
+    std::filesystem::path baseDir = includingFile.parent_path();
+    std::filesystem::path requested(target);
+    if (!requested.has_extension()) {
+        requested.replace_extension(".csec");
+    }
+    if (requested.is_absolute()) {
+        return requested;
+    }
+
+    std::vector<std::filesystem::path> candidates = {
+        baseDir / requested,
+        std::filesystem::current_path() / requested
+    };
+
+    if (target.find('.') != std::string::npos && target.find('/') == std::string::npos &&
+        target.find('\\') == std::string::npos) {
+        std::string dotted = target;
+        for (char& ch : dotted) {
+            if (ch == '.') {
+                ch = static_cast<char>(std::filesystem::path::preferred_separator);
+            }
+        }
+        std::filesystem::path dottedPath(dotted);
+        if (!dottedPath.has_extension()) {
+            dottedPath.replace_extension(".csec");
+        }
+        candidates.push_back(baseDir / dottedPath);
+        candidates.push_back(std::filesystem::current_path() / dottedPath);
+    }
+
+    std::error_code ec;
+    for (const auto& candidate : candidates) {
+        if (std::filesystem::exists(candidate, ec) && std::filesystem::is_regular_file(candidate, ec)) {
+            return candidate;
+        }
+    }
+    return candidates.front();
+}
+
+std::string expandImports(
+    const std::filesystem::path& inputPath,
+    std::vector<std::filesystem::path>& includeStack,
+    std::vector<std::filesystem::path>& includedFiles) {
+    std::error_code ec;
+    auto canonicalPath = std::filesystem::weakly_canonical(inputPath, ec);
+    if (ec) {
+        canonicalPath = std::filesystem::absolute(inputPath, ec);
+    }
+    if (ec) {
+        canonicalPath = inputPath;
+    }
+
+    for (const auto& active : includeStack) {
+        if (active == canonicalPath) {
+            std::cerr << "Import cycle detected at " << canonicalPath.string() << std::endl;
+            return "";
+        }
+    }
+    for (const auto& included : includedFiles) {
+        if (included == canonicalPath) {
+            return "";
+        }
+    }
+
+    std::string source = read_utf8_file(canonicalPath.string());
+    if (source.empty() && (!std::filesystem::exists(canonicalPath, ec) ||
+                           !std::filesystem::is_regular_file(canonicalPath, ec))) {
+        std::cerr << "Unable to read import: " << canonicalPath.string() << std::endl;
+        return "";
+    }
+
+    includeStack.push_back(canonicalPath);
+    includedFiles.push_back(canonicalPath);
+
+    std::string output;
+    size_t lineStart = 0;
+    while (lineStart <= source.size()) {
+        size_t lineEnd = source.find('\n', lineStart);
+        bool hasNewline = lineEnd != std::string::npos;
+        if (!hasNewline) {
+            lineEnd = source.size();
+        }
+
+        std::string line = source.substr(lineStart, lineEnd - lineStart);
+        std::string target = parseImportTarget(trimAscii(line));
+        if (!target.empty()) {
+            auto importPath = resolveImportPath(canonicalPath, target);
+            std::error_code importEc;
+            if (std::filesystem::exists(importPath, importEc) && std::filesystem::is_regular_file(importPath, importEc)) {
+                output += expandImports(importPath, includeStack, includedFiles);
+                output += "\n";
+            }
+            else {
+                output += line;
+                if (hasNewline) {
+                    output += "\n";
+                }
+            }
+        }
+        else {
+            output += line;
+            if (hasNewline) {
+                output += "\n";
+            }
+        }
+
+        if (!hasNewline) {
+            break;
+        }
+        lineStart = lineEnd + 1;
+    }
+
+    includeStack.pop_back();
+    return output;
+}
+
+std::string expandImports(const std::string& inputFile) {
+    std::vector<std::filesystem::path> includeStack;
+    std::vector<std::filesystem::path> includedFiles;
+    return expandImports(std::filesystem::path(inputFile), includeStack, includedFiles);
+}
+
 bool writeIRToFile(llvm::Module& module, const std::string& outputPath, bool announce = true) {
     std::error_code ec;
     llvm::raw_fd_ostream output(outputPath, ec, llvm::sys::fs::OF_Text);
@@ -306,6 +476,30 @@ std::filesystem::path findLlvmTool(const std::string& toolName) {
     return toolName;
 }
 
+std::filesystem::path findClangTool() {
+#ifdef _WIN32
+    std::filesystem::path fromLlvmBin = findLlvmTool("clang.exe");
+#else
+    std::filesystem::path fromLlvmBin = findLlvmTool("clang");
+#endif
+    std::error_code ec;
+    if (std::filesystem::exists(fromLlvmBin, ec)) {
+        auto canonicalPath = std::filesystem::weakly_canonical(fromLlvmBin, ec);
+        return ec ? fromLlvmBin : canonicalPath;
+    }
+
+#ifdef _WIN32
+    std::filesystem::path programFilesClang = R"(C:\Program Files\LLVM\bin\clang.exe)";
+    if (std::filesystem::exists(programFilesClang, ec)) {
+        auto canonicalPath = std::filesystem::weakly_canonical(programFilesClang, ec);
+        return ec ? programFilesClang : canonicalPath;
+    }
+    return findToolPath("CLANG", "clang.exe");
+#else
+    return findToolPath("CLANG", "clang");
+#endif
+}
+
 std::filesystem::path findNativeRuntimeSource() {
     std::vector<std::filesystem::path> candidates = {
         std::filesystem::path("src") / "NativeRuntime.cpp",
@@ -336,8 +530,18 @@ bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool
         return false;
     }
 
-    std::string command = quoteCommandArg(llcPath.string()) +
-        " -filetype=obj -o " + quoteCommandArg(outputPath) + " " + quoteCommandArg(tempIR.string());
+    std::error_code ec;
+    std::string command;
+    if (std::filesystem::exists(llcPath, ec)) {
+        command = quoteCommandArg(llcPath.string()) +
+            " -filetype=obj -o " + quoteCommandArg(outputPath) + " " + quoteCommandArg(tempIR.string());
+    }
+    else {
+        std::filesystem::path clangPath = findClangTool();
+        command = quoteCommandArg(clangPath.string()) +
+            " -Wno-override-module -c " + quoteCommandArg(tempIR.string()) +
+            " -o " + quoteCommandArg(outputPath);
+    }
 #ifdef _WIN32
     command = "\"" + command + "\"";
 #endif
@@ -345,7 +549,7 @@ bool writeObjectToFile(llvm::Module& module, const std::string& outputPath, bool
     std::error_code removeError;
     std::filesystem::remove(tempIR, removeError);
     if (result != 0) {
-        std::cerr << "Failed to emit object file via llc. Command exited with code " << result << std::endl;
+        std::cerr << "Failed to emit object file via LLVM toolchain. Command exited with code " << result << std::endl;
         return false;
     }
 
@@ -416,8 +620,25 @@ std::vector<std::filesystem::path> systemLibrarySearchDirectories(
     addDirectory(std::filesystem::current_path());
     addDirectory(std::filesystem::current_path() / "Debug");
     addDirectory(std::filesystem::current_path() / "Release");
+    addDirectory(std::filesystem::current_path() / "x64" / "Debug");
+    addDirectory(std::filesystem::current_path() / "x64" / "Release");
     addDirectory(std::filesystem::current_path() / "build");
     addDirectory(std::filesystem::current_path() / "build-cmake-check");
+
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path(), ec)) {
+        if (ec) {
+            break;
+        }
+        if (!entry.is_directory(ec)) {
+            continue;
+        }
+        const std::string name = entry.path().filename().string();
+        if (name.rfind("build", 0) == 0) {
+            addDirectory(entry.path() / "Debug");
+            addDirectory(entry.path() / "Release");
+        }
+    }
 
     return directories;
 }
@@ -569,22 +790,26 @@ std::filesystem::path findWindowsLinker() {
     }
 
 #ifdef _WIN32
-    std::filesystem::path msvcRoot =
-        R"(C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC)";
+    std::vector<std::filesystem::path> msvcRoots = {
+        R"(C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC)",
+        R"(C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC)"
+    };
     std::error_code ec;
-    if (std::filesystem::exists(msvcRoot, ec)) {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(
-                 msvcRoot, std::filesystem::directory_options::skip_permission_denied, ec)) {
-            if (ec) {
-                break;
-            }
+    for (const auto& msvcRoot : msvcRoots) {
+        if (std::filesystem::exists(msvcRoot, ec)) {
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(
+                     msvcRoot, std::filesystem::directory_options::skip_permission_denied, ec)) {
+                if (ec) {
+                    break;
+                }
 
-            auto path = entry.path();
-            std::string pathText = path.string();
-            if (entry.is_regular_file(ec) && path.filename() == "link.exe" &&
-                pathText.find("\\bin\\Hostx64\\x64\\") != std::string::npos) {
-                auto canonicalPath = std::filesystem::weakly_canonical(path, ec);
-                return ec ? path : canonicalPath;
+                auto path = entry.path();
+                std::string pathText = path.string();
+                if (entry.is_regular_file(ec) && path.filename() == "link.exe" &&
+                    pathText.find("\\bin\\Hostx64\\x64\\") != std::string::npos) {
+                    auto canonicalPath = std::filesystem::weakly_canonical(path, ec);
+                    return ec ? path : canonicalPath;
+                }
             }
         }
     }
@@ -744,6 +969,7 @@ bool writeExecutableToFile(
         quoteCommandArg(linkPath.string()),
         "/NOLOGO",
         "/SUBSYSTEM:CONSOLE",
+        "/STACK:16777216",
         "/OUT:" + quoteCommandArg(outputPath),
         quoteCommandArg(tempObject.string())
     };
@@ -924,7 +1150,7 @@ int main(int argc, char** argv) {
         inputFileSet = true;
     }
 
-    std::string code = read_utf8_file(inputFile);
+    std::string code = expandImports(inputFile);
     if (code.empty()) {
         std::error_code ec;
         if (!std::filesystem::exists(inputFile, ec) || !std::filesystem::is_regular_file(inputFile, ec)) {

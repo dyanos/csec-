@@ -1,0 +1,4 @@
+import "lexer.csec";
+import "parser.csec";
+import "ir_generator.csec";
+import "driver.csec";

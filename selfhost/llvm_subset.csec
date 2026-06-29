@@ -40,9 +40,15 @@ def main(): Int {
     var current: Int = 3;
     var enabled: Boolean = true;
     val scale: Double = 2.5;
+    val name: String = label();
+    val code: Char = marker();
+    val wideValue: Long = wide();
     enabled = false;
-    enabled = true;
-    scale = 3.5;
+    enabled = positive(current);
+    scale = ratio();
+    name = label();
+    code = marker();
+    wideValue = wide();
     if (enabled and current > 0) {
         current = current + 1;
     }
@@ -51,6 +57,12 @@ def main(): Int {
     }
     while (current > 1) {
         current = current - 1;
+    }
+    for (i <- 0 until 3) {
+        current = current + i;
+    }
+    for (j <- 1 to 2) {
+        current += j;
     }
     current = adjust(current + 1);
     return current;

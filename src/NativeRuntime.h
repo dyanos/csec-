@@ -22,6 +22,12 @@ CSEC_NATIVE_API void csec_print_char(char value);
 CSEC_NATIVE_API void csec_print_newline(void);
 
 CSEC_NATIVE_API char* csec_string_concat(const char* left, const char* right);
+CSEC_NATIVE_API char* csec_token_append_owned(const char* tokens, char kind, const char* text);
+CSEC_NATIVE_API long long csec_token_builder_new(void);
+CSEC_NATIVE_API int csec_token_builder_append(long long handle, char kind, const char* text);
+CSEC_NATIVE_API char* csec_token_builder_finish(long long handle);
+CSEC_NATIVE_API char csec_token_kind_at(const char* tokens, int ordinal);
+CSEC_NATIVE_API char* csec_token_text_at(const char* tokens, int ordinal);
 CSEC_NATIVE_API long long csec_string_length(const char* value);
 CSEC_NATIVE_API int csec_string_is_empty(const char* value);
 CSEC_NATIVE_API int csec_string_contains(const char* value, const char* needle);
@@ -53,6 +59,7 @@ CSEC_NATIVE_API int csec_file_write_all_text(const char* path, const char* text)
 CSEC_NATIVE_API int csec_file_append_all_text(const char* path, const char* text);
 CSEC_NATIVE_API int csec_file_exists(const char* path);
 CSEC_NATIVE_API int csec_file_delete(const char* path);
+CSEC_NATIVE_API char* csec_expand_imports(const char* path);
 
 CSEC_NATIVE_API double csec_math_sin(double value);
 CSEC_NATIVE_API double csec_math_cos(double value);

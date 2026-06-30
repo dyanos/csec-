@@ -172,6 +172,9 @@ def advanceTopLevelDecl(tokens: String, ordinal: Int): Int {
     var brace: Int = 0;
     var bracket: Int = 0;
     while (tokenKindAt(tokens, cursor) != kindEof()) {
+        if (cursor > ordinal and paren == 0 and brace == 0 and bracket == 0 and startsTopLevelDeclaration(tokens, cursor)) {
+            return cursor;
+        }
         val text: String = tokenTextAt(tokens, cursor);
         if (tokenKindAt(tokens, cursor) == kindOperator()) {
             if (strEq(text, "(")) {
@@ -207,6 +210,9 @@ def advanceTopLevelDecl(tokens: String, ordinal: Int): Int {
 def findDeclBodyStart(tokens: String, ordinal: Int): Int {
     var cursor: Int = ordinal;
     while (tokenKindAt(tokens, cursor) != kindEof()) {
+        if (cursor > ordinal and startsTopLevelDeclaration(tokens, cursor)) {
+            return -1;
+        }
         if (tokenIs(tokens, cursor, kindOperator(), "{")) {
             return cursor + 1;
         }
@@ -1356,4 +1362,3 @@ def generateAST(tokens: String): String {
     }
     return output;
 }
-

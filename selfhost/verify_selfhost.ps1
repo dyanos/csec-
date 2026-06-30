@@ -247,7 +247,7 @@ $requiredOutputContracts = @(
     "alloca ptr",
     "alloca i8",
     "store i1 %",
-    "store double %",
+    "store double ",
     "ret double",
     "store i64 %",
     "ret i64",

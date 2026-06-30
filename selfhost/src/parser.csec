@@ -647,6 +647,10 @@ def generateExpressionAST(tokens: String, rawStart: Int, rawEnd: Int): String {
     if (end <= start) {
         return "Expr empty";
     }
+    if (end - start > 32) {
+        return "Expr " + expressionLeafKind(tokens, start, end) + " " +
+            appendExpressionUntil(tokens, start, end);
+    }
     val lambda: String = summarizeLambdaExpression(tokens, start, end);
     if (lambda.length > 0) {
         return lambda;
@@ -1347,7 +1351,12 @@ def generateAST(tokens: String): String {
             val bodyStart: Int = findDeclBodyStart(tokens, cursor);
             val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
             if (bodyStart >= 0 and bodyEnd >= bodyStart) {
-                output = output + generateBodyAST(tokens, bodyStart, bodyEnd);
+                if (bodyEnd - bodyStart > 256) {
+                    output = output + "  Body tokens=" + (bodyEnd - bodyStart) + "\n";
+                }
+                else {
+                    output = output + generateBodyAST(tokens, bodyStart, bodyEnd);
+                }
             }
         }
         else if (strEq(kind, "class") or strEq(kind, "object") or strEq(kind, "external-class") or
@@ -1355,7 +1364,12 @@ def generateAST(tokens: String): String {
             val bodyStart: Int = findDeclBodyStart(tokens, cursor);
             val bodyEnd: Int = findDeclBodyEnd(tokens, bodyStart);
             if (bodyStart >= 0 and bodyEnd >= bodyStart) {
-                output = output + generateClassMemberAST(tokens, bodyStart, bodyEnd);
+                if (bodyEnd - bodyStart > 256) {
+                    output = output + "  Body tokens=" + (bodyEnd - bodyStart) + "\n";
+                }
+                else {
+                    output = output + generateClassMemberAST(tokens, bodyStart, bodyEnd);
+                }
             }
         }
         cursor = skipTrivia(tokens, advanceTopLevelDecl(tokens, cursor));

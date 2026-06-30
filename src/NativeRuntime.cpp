@@ -50,6 +50,17 @@ std::unordered_map<const char*, std::vector<int>>& tokenLineCache() {
     return cache;
 }
 
+std::unordered_map<const char*, std::vector<std::string>>& tokenTextCache() {
+    static std::unordered_map<const char*, std::vector<std::string>> cache;
+    return cache;
+}
+
+void clearTokenCachesFor(const char* tokens) {
+    if (!tokens) return;
+    tokenLineCache().erase(tokens);
+    tokenTextCache().erase(tokens);
+}
+
 const std::vector<int>& tokenLineStarts(const char* tokens) {
     const char* value = tokens ? tokens : "";
     auto& cache = tokenLineCache();
@@ -66,6 +77,31 @@ const std::vector<int>& tokenLineStarts(const char* tokens) {
         }
     }
     auto inserted = cache.emplace(value, std::move(starts));
+    return inserted.first->second;
+}
+
+const std::vector<std::string>& tokenTexts(const char* tokens) {
+    const char* value = tokens ? tokens : "";
+    auto& cache = tokenTextCache();
+    auto found = cache.find(value);
+    if (found != cache.end()) {
+        return found->second;
+    }
+
+    const auto& starts = tokenLineStarts(value);
+    std::vector<std::string> texts;
+    texts.reserve(starts.size());
+    for (int start : starts) {
+        int textStart = start + 2;
+        int end = textStart;
+        while (value[end] != '\0' && value[end] != '\n') {
+            ++end;
+        }
+        if (textStart > end) textStart = end;
+        texts.emplace_back(value + textStart, static_cast<size_t>(end - textStart));
+    }
+
+    auto inserted = cache.emplace(value, std::move(texts));
     return inserted.first->second;
 }
 
@@ -184,6 +220,7 @@ char* csec_token_append_owned(const char* tokens, char kind, const char* text) {
     result[lhsLen + textLen + 3] = '\0';
 
     if (tokens && lhsLen > 0) {
+        clearTokenCachesFor(tokens);
         std::free(const_cast<char*>(tokens));
     }
     return result;
@@ -262,32 +299,14 @@ char csec_token_kind_at(const char* tokens, int ordinal) {
 char* csec_token_text_at(const char* tokens, int ordinal) {
     const char* value = tokens ? tokens : "";
     if (ordinal < 0) {
-        char* empty = static_cast<char*>(std::malloc(1));
-        if (empty) empty[0] = '\0';
-        return empty;
+        return const_cast<char*>("");
     }
 
-    const auto& starts = tokenLineStarts(value);
-    if (static_cast<size_t>(ordinal) >= starts.size()) {
-        char* empty = static_cast<char*>(std::malloc(1));
-        if (empty) empty[0] = '\0';
-        return empty;
+    const auto& texts = tokenTexts(value);
+    if (static_cast<size_t>(ordinal) >= texts.size()) {
+        return const_cast<char*>("");
     }
-
-    int start = starts[static_cast<size_t>(ordinal)];
-    int textStart = start + 2;
-    int end = textStart;
-    while (value[end] != '\0' && value[end] != '\n') {
-        ++end;
-    }
-    if (textStart > end) textStart = end;
-
-    size_t length = static_cast<size_t>(end - textStart);
-    char* result = static_cast<char*>(std::malloc(length + 1));
-    if (!result) return nullptr;
-    std::memcpy(result, value + textStart, length);
-    result[length] = '\0';
-    return result;
+    return const_cast<char*>(texts[static_cast<size_t>(ordinal)].c_str());
 }
 
 long long csec_string_length(const char* value) {

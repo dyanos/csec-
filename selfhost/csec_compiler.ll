@@ -1243,435 +1243,435 @@ source_filename = "main"
 @1239 = private unnamed_addr constant [3 x i8] c"i1\00", align 1
 @1240 = private unnamed_addr constant [4 x i8] c"i64\00", align 1
 @1241 = private unnamed_addr constant [7 x i8] c"double\00", align 1
-@1242 = private unnamed_addr constant [2 x i8] c"+\00", align 1
-@1243 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1244 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1242 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1243 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1244 = private unnamed_addr constant [2 x i8] c")\00", align 1
 @1245 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1246 = private unnamed_addr constant [4 x i8] c"i32\00", align 1
-@1247 = private unnamed_addr constant [2 x i8] c"0\00", align 1
-@1248 = private unnamed_addr constant [5 x i8] c".arg\00", align 1
-@1249 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1250 = private unnamed_addr constant [17 x i8] c" = add i32 0, 0\0A\00", align 1
-@1251 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1252 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
-@1253 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
-@1254 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
-@1255 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1256 = private unnamed_addr constant [15 x i8] c" = add i32 0, \00", align 1
-@1257 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1258 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1259 = private unnamed_addr constant [15 x i8] c" = add i32 0, \00", align 1
-@1260 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1261 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1262 = private unnamed_addr constant [3 x i8] c"i8\00", align 1
-@1263 = private unnamed_addr constant [3 x i8] c"i1\00", align 1
-@1264 = private unnamed_addr constant [4 x i8] c"i64\00", align 1
-@1265 = private unnamed_addr constant [7 x i8] c"double\00", align 1
+@1246 = private unnamed_addr constant [3 x i8] c"i8\00", align 1
+@1247 = private unnamed_addr constant [3 x i8] c"i1\00", align 1
+@1248 = private unnamed_addr constant [4 x i8] c"i64\00", align 1
+@1249 = private unnamed_addr constant [7 x i8] c"double\00", align 1
+@1250 = private unnamed_addr constant [2 x i8] c"+\00", align 1
+@1251 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1252 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1253 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1254 = private unnamed_addr constant [4 x i8] c"i32\00", align 1
+@1255 = private unnamed_addr constant [2 x i8] c"0\00", align 1
+@1256 = private unnamed_addr constant [5 x i8] c".arg\00", align 1
+@1257 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1258 = private unnamed_addr constant [17 x i8] c" = add i32 0, 0\0A\00", align 1
+@1259 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1260 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
+@1261 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
+@1262 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
+@1263 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1264 = private unnamed_addr constant [15 x i8] c" = add i32 0, \00", align 1
+@1265 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1266 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1267 = private unnamed_addr constant [9 x i8] c" = load \00", align 1
-@1268 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1269 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1270 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1271 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
-@1272 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1273 = private unnamed_addr constant [2 x i8] c".\00", align 1
-@1274 = private unnamed_addr constant [7 x i8] c"charAt\00", align 1
-@1275 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1276 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1277 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1267 = private unnamed_addr constant [15 x i8] c" = add i32 0, \00", align 1
+@1268 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1269 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1270 = private unnamed_addr constant [3 x i8] c"i8\00", align 1
+@1271 = private unnamed_addr constant [3 x i8] c"i1\00", align 1
+@1272 = private unnamed_addr constant [4 x i8] c"i64\00", align 1
+@1273 = private unnamed_addr constant [7 x i8] c"double\00", align 1
+@1274 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1275 = private unnamed_addr constant [9 x i8] c" = load \00", align 1
+@1276 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1277 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1278 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1279 = private unnamed_addr constant [23 x i8] c".obj = load ptr, ptr %\00", align 1
+@1279 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
 @1280 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1281 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1282 = private unnamed_addr constant [21 x i8] c".index = add i32 0, \00", align 1
-@1283 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1284 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1285 = private unnamed_addr constant [25 x i8] c".index = load i32, ptr %\00", align 1
-@1286 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1281 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1282 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1283 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1284 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1285 = private unnamed_addr constant [15 x i8] c"commandLineArg\00", align 1
+@1286 = private unnamed_addr constant [6 x i8] c".arg0\00", align 1
 @1287 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1288 = private unnamed_addr constant [23 x i8] c".index = add i32 0, 0\0A\00", align 1
-@1289 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1290 = private unnamed_addr constant [40 x i8] c".i8 = call i8 @csec_string_char_at(ptr \00", align 1
-@1291 = private unnamed_addr constant [11 x i8] c".obj, i32 \00", align 1
-@1292 = private unnamed_addr constant [9 x i8] c".index)\0A\00", align 1
-@1293 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1294 = private unnamed_addr constant [12 x i8] c" = zext i8 \00", align 1
-@1295 = private unnamed_addr constant [12 x i8] c".i8 to i32\0A\00", align 1
-@1296 = private unnamed_addr constant [2 x i8] c"+\00", align 1
-@1297 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1298 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1299 = private unnamed_addr constant [6 x i8] c".left\00", align 1
-@1300 = private unnamed_addr constant [7 x i8] c".right\00", align 1
-@1301 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1302 = private unnamed_addr constant [37 x i8] c" = call ptr @csec_string_concat(ptr \00", align 1
-@1303 = private unnamed_addr constant [12 x i8] c".left, ptr \00", align 1
-@1304 = private unnamed_addr constant [9 x i8] c".right)\0A\00", align 1
-@1305 = private unnamed_addr constant [4 x i8] c"add\00", align 1
-@1306 = private unnamed_addr constant [4 x i8] c"sub\00", align 1
-@1307 = private unnamed_addr constant [4 x i8] c"mul\00", align 1
-@1308 = private unnamed_addr constant [5 x i8] c"sdiv\00", align 1
-@1309 = private unnamed_addr constant [5 x i8] c"srem\00", align 1
-@1310 = private unnamed_addr constant [4 x i8] c"shl\00", align 1
-@1311 = private unnamed_addr constant [5 x i8] c"ashr\00", align 1
-@1312 = private unnamed_addr constant [4 x i8] c"and\00", align 1
-@1313 = private unnamed_addr constant [3 x i8] c"or\00", align 1
-@1314 = private unnamed_addr constant [4 x i8] c"xor\00", align 1
-@1315 = private unnamed_addr constant [6 x i8] c".left\00", align 1
-@1316 = private unnamed_addr constant [7 x i8] c".right\00", align 1
+@1288 = private unnamed_addr constant [40 x i8] c" = call ptr @csec_command_line_arg(i32 \00", align 1
+@1289 = private unnamed_addr constant [8 x i8] c".arg0)\0A\00", align 1
+@1290 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1291 = private unnamed_addr constant [12 x i8] c"tokenTextAt\00", align 1
+@1292 = private unnamed_addr constant [2 x i8] c",\00", align 1
+@1293 = private unnamed_addr constant [6 x i8] c".arg0\00", align 1
+@1294 = private unnamed_addr constant [6 x i8] c".arg1\00", align 1
+@1295 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1296 = private unnamed_addr constant [37 x i8] c" = call ptr @csec_token_text_at(ptr \00", align 1
+@1297 = private unnamed_addr constant [12 x i8] c".arg0, i32 \00", align 1
+@1298 = private unnamed_addr constant [8 x i8] c".arg1)\0A\00", align 1
+@1299 = private unnamed_addr constant [3 x i8] c"i8\00", align 1
+@1300 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1301 = private unnamed_addr constant [13 x i8] c" = call i8 @\00", align 1
+@1302 = private unnamed_addr constant [4 x i8] c"()\0A\00", align 1
+@1303 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@1304 = private unnamed_addr constant [7 x i8] c"charAt\00", align 1
+@1305 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1306 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1307 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1308 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1309 = private unnamed_addr constant [23 x i8] c".obj = load ptr, ptr %\00", align 1
+@1310 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1311 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1312 = private unnamed_addr constant [21 x i8] c".index = add i32 0, \00", align 1
+@1313 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1314 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1315 = private unnamed_addr constant [25 x i8] c".index = load i32, ptr %\00", align 1
+@1316 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1317 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1318 = private unnamed_addr constant [4 x i8] c" = \00", align 1
-@1319 = private unnamed_addr constant [6 x i8] c" i32 \00", align 1
-@1320 = private unnamed_addr constant [8 x i8] c".left, \00", align 1
-@1321 = private unnamed_addr constant [8 x i8] c".right\0A\00", align 1
-@1322 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1323 = private unnamed_addr constant [17 x i8] c" = add i32 0, 0\0A\00", align 1
-@1324 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1325 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1326 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1327 = private unnamed_addr constant [2 x i8] c"[\00", align 1
-@1328 = private unnamed_addr constant [2 x i8] c"]\00", align 1
-@1329 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@1330 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@1331 = private unnamed_addr constant [2 x i8] c",\00", align 1
-@1332 = private unnamed_addr constant [5 x i8] c".arg\00", align 1
-@1333 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1334 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1335 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1336 = private unnamed_addr constant [2 x i8] c"[\00", align 1
-@1337 = private unnamed_addr constant [2 x i8] c"]\00", align 1
-@1338 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@1339 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@1340 = private unnamed_addr constant [2 x i8] c",\00", align 1
-@1341 = private unnamed_addr constant [3 x i8] c", \00", align 1
-@1342 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@1343 = private unnamed_addr constant [20 x i8] c"commandLineArgCount\00", align 1
-@1344 = private unnamed_addr constant [28 x i8] c"csec_command_line_arg_count\00", align 1
-@1345 = private unnamed_addr constant [15 x i8] c"commandLineArg\00", align 1
-@1346 = private unnamed_addr constant [22 x i8] c"csec_command_line_arg\00", align 1
-@1347 = private unnamed_addr constant [5 x i8] c"kind\00", align 1
-@1348 = private unnamed_addr constant [12 x i8] c"tokenKindAt\00", align 1
-@1349 = private unnamed_addr constant [19 x i8] c"csec_token_kind_at\00", align 1
-@1350 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
-@1351 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1352 = private unnamed_addr constant [17 x i8] c" = add i32 0, 0\0A\00", align 1
-@1353 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1354 = private unnamed_addr constant [15 x i8] c" = add i32 0, \00", align 1
-@1355 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1318 = private unnamed_addr constant [23 x i8] c".index = add i32 0, 0\0A\00", align 1
+@1319 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1320 = private unnamed_addr constant [40 x i8] c".i8 = call i8 @csec_string_char_at(ptr \00", align 1
+@1321 = private unnamed_addr constant [11 x i8] c".obj, i32 \00", align 1
+@1322 = private unnamed_addr constant [9 x i8] c".index)\0A\00", align 1
+@1323 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1324 = private unnamed_addr constant [12 x i8] c" = zext i8 \00", align 1
+@1325 = private unnamed_addr constant [12 x i8] c".i8 to i32\0A\00", align 1
+@1326 = private unnamed_addr constant [2 x i8] c"+\00", align 1
+@1327 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1328 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1329 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1330 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1331 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1332 = private unnamed_addr constant [6 x i8] c".left\00", align 1
+@1333 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1334 = private unnamed_addr constant [42 x i8] c".left = call ptr @csec_to_string_char(i8 \00", align 1
+@1335 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1336 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@1337 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1338 = private unnamed_addr constant [26 x i8] c".left.i8 = load i8, ptr %\00", align 1
+@1339 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1340 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1341 = private unnamed_addr constant [42 x i8] c".left = call ptr @csec_to_string_char(i8 \00", align 1
+@1342 = private unnamed_addr constant [11 x i8] c".left.i8)\0A\00", align 1
+@1343 = private unnamed_addr constant [10 x i8] c".left.i32\00", align 1
+@1344 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1345 = private unnamed_addr constant [22 x i8] c".left.i64 = sext i32 \00", align 1
+@1346 = private unnamed_addr constant [18 x i8] c".left.i32 to i64\0A\00", align 1
+@1347 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1348 = private unnamed_addr constant [42 x i8] c".left = call ptr @csec_to_string_i64(i64 \00", align 1
+@1349 = private unnamed_addr constant [12 x i8] c".left.i64)\0A\00", align 1
+@1350 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1351 = private unnamed_addr constant [7 x i8] c".right\00", align 1
+@1352 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1353 = private unnamed_addr constant [43 x i8] c".right = call ptr @csec_to_string_char(i8 \00", align 1
+@1354 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1355 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
 @1356 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1357 = private unnamed_addr constant [15 x i8] c" = add i32 0, \00", align 1
+@1357 = private unnamed_addr constant [27 x i8] c".right.i8 = load i8, ptr %\00", align 1
 @1358 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1359 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
-@1360 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1361 = private unnamed_addr constant [20 x i8] c".c = load i8, ptr %\00", align 1
-@1362 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1359 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1360 = private unnamed_addr constant [43 x i8] c".right = call ptr @csec_to_string_char(i8 \00", align 1
+@1361 = private unnamed_addr constant [12 x i8] c".right.i8)\0A\00", align 1
+@1362 = private unnamed_addr constant [11 x i8] c".right.i32\00", align 1
 @1363 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1364 = private unnamed_addr constant [12 x i8] c" = zext i8 \00", align 1
-@1365 = private unnamed_addr constant [11 x i8] c".c to i32\0A\00", align 1
+@1364 = private unnamed_addr constant [23 x i8] c".right.i64 = sext i32 \00", align 1
+@1365 = private unnamed_addr constant [19 x i8] c".right.i32 to i64\0A\00", align 1
 @1366 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1367 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
-@1368 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1369 = private unnamed_addr constant [2 x i8] c".\00", align 1
-@1370 = private unnamed_addr constant [7 x i8] c"length\00", align 1
-@1371 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1372 = private unnamed_addr constant [23 x i8] c".obj = load ptr, ptr %\00", align 1
-@1373 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1374 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1375 = private unnamed_addr constant [41 x i8] c".i64 = call i64 @csec_string_length(ptr \00", align 1
-@1376 = private unnamed_addr constant [7 x i8] c".obj)\0A\00", align 1
-@1377 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1378 = private unnamed_addr constant [14 x i8] c" = trunc i64 \00", align 1
-@1379 = private unnamed_addr constant [13 x i8] c".i64 to i32\0A\00", align 1
-@1380 = private unnamed_addr constant [2 x i8] c".\00", align 1
-@1381 = private unnamed_addr constant [7 x i8] c"charAt\00", align 1
-@1382 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1383 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1384 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1367 = private unnamed_addr constant [43 x i8] c".right = call ptr @csec_to_string_i64(i64 \00", align 1
+@1368 = private unnamed_addr constant [13 x i8] c".right.i64)\0A\00", align 1
+@1369 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1370 = private unnamed_addr constant [37 x i8] c" = call ptr @csec_string_concat(ptr \00", align 1
+@1371 = private unnamed_addr constant [12 x i8] c".left, ptr \00", align 1
+@1372 = private unnamed_addr constant [9 x i8] c".right)\0A\00", align 1
+@1373 = private unnamed_addr constant [4 x i8] c"add\00", align 1
+@1374 = private unnamed_addr constant [4 x i8] c"sub\00", align 1
+@1375 = private unnamed_addr constant [4 x i8] c"mul\00", align 1
+@1376 = private unnamed_addr constant [5 x i8] c"sdiv\00", align 1
+@1377 = private unnamed_addr constant [5 x i8] c"srem\00", align 1
+@1378 = private unnamed_addr constant [4 x i8] c"shl\00", align 1
+@1379 = private unnamed_addr constant [5 x i8] c"ashr\00", align 1
+@1380 = private unnamed_addr constant [4 x i8] c"and\00", align 1
+@1381 = private unnamed_addr constant [3 x i8] c"or\00", align 1
+@1382 = private unnamed_addr constant [4 x i8] c"xor\00", align 1
+@1383 = private unnamed_addr constant [6 x i8] c".left\00", align 1
+@1384 = private unnamed_addr constant [7 x i8] c".right\00", align 1
 @1385 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1386 = private unnamed_addr constant [23 x i8] c".obj = load ptr, ptr %\00", align 1
-@1387 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1388 = private unnamed_addr constant [7 x i8] c".index\00", align 1
-@1389 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1390 = private unnamed_addr constant [40 x i8] c".i8 = call i8 @csec_string_char_at(ptr \00", align 1
-@1391 = private unnamed_addr constant [11 x i8] c".obj, i32 \00", align 1
-@1392 = private unnamed_addr constant [9 x i8] c".index)\0A\00", align 1
-@1393 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1394 = private unnamed_addr constant [12 x i8] c" = zext i8 \00", align 1
-@1395 = private unnamed_addr constant [12 x i8] c".i8 to i32\0A\00", align 1
-@1396 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1397 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1398 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1399 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1400 = private unnamed_addr constant [16 x i8] c".i8 = call i8 @\00", align 1
-@1401 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1402 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1403 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1404 = private unnamed_addr constant [12 x i8] c" = zext i8 \00", align 1
-@1405 = private unnamed_addr constant [12 x i8] c".i8 to i32\0A\00", align 1
-@1406 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1407 = private unnamed_addr constant [14 x i8] c" = call i32 @\00", align 1
-@1408 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1409 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1410 = private unnamed_addr constant [4 x i8] c"add\00", align 1
-@1411 = private unnamed_addr constant [4 x i8] c"sub\00", align 1
-@1412 = private unnamed_addr constant [4 x i8] c"mul\00", align 1
-@1413 = private unnamed_addr constant [5 x i8] c"sdiv\00", align 1
-@1414 = private unnamed_addr constant [5 x i8] c"srem\00", align 1
-@1415 = private unnamed_addr constant [4 x i8] c"shl\00", align 1
-@1416 = private unnamed_addr constant [5 x i8] c"ashr\00", align 1
-@1417 = private unnamed_addr constant [4 x i8] c"and\00", align 1
-@1418 = private unnamed_addr constant [3 x i8] c"or\00", align 1
-@1419 = private unnamed_addr constant [4 x i8] c"xor\00", align 1
-@1420 = private unnamed_addr constant [6 x i8] c".left\00", align 1
-@1421 = private unnamed_addr constant [7 x i8] c".right\00", align 1
-@1422 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1423 = private unnamed_addr constant [4 x i8] c" = \00", align 1
-@1424 = private unnamed_addr constant [6 x i8] c" i32 \00", align 1
-@1425 = private unnamed_addr constant [8 x i8] c".left, \00", align 1
-@1426 = private unnamed_addr constant [8 x i8] c".right\0A\00", align 1
-@1427 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1428 = private unnamed_addr constant [17 x i8] c" = add i32 0, 0\0A\00", align 1
-@1429 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
-@1430 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1431 = private unnamed_addr constant [7 x i8] c".init.\00", align 1
-@1432 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1433 = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00", align 1
-@1434 = private unnamed_addr constant [13 x i8] c"  store i32 \00", align 1
-@1435 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1386 = private unnamed_addr constant [4 x i8] c" = \00", align 1
+@1387 = private unnamed_addr constant [6 x i8] c" i32 \00", align 1
+@1388 = private unnamed_addr constant [8 x i8] c".left, \00", align 1
+@1389 = private unnamed_addr constant [8 x i8] c".right\0A\00", align 1
+@1390 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1391 = private unnamed_addr constant [17 x i8] c" = add i32 0, 0\0A\00", align 1
+@1392 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1393 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1394 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1395 = private unnamed_addr constant [2 x i8] c"[\00", align 1
+@1396 = private unnamed_addr constant [2 x i8] c"]\00", align 1
+@1397 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@1398 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@1399 = private unnamed_addr constant [2 x i8] c",\00", align 1
+@1400 = private unnamed_addr constant [5 x i8] c".arg\00", align 1
+@1401 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1402 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1403 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1404 = private unnamed_addr constant [2 x i8] c"[\00", align 1
+@1405 = private unnamed_addr constant [2 x i8] c"]\00", align 1
+@1406 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@1407 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@1408 = private unnamed_addr constant [2 x i8] c",\00", align 1
+@1409 = private unnamed_addr constant [3 x i8] c", \00", align 1
+@1410 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1411 = private unnamed_addr constant [20 x i8] c"commandLineArgCount\00", align 1
+@1412 = private unnamed_addr constant [28 x i8] c"csec_command_line_arg_count\00", align 1
+@1413 = private unnamed_addr constant [15 x i8] c"commandLineArg\00", align 1
+@1414 = private unnamed_addr constant [22 x i8] c"csec_command_line_arg\00", align 1
+@1415 = private unnamed_addr constant [5 x i8] c"kind\00", align 1
+@1416 = private unnamed_addr constant [12 x i8] c"tokenKindAt\00", align 1
+@1417 = private unnamed_addr constant [19 x i8] c"csec_token_kind_at\00", align 1
+@1418 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@1419 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1420 = private unnamed_addr constant [17 x i8] c" = add i32 0, 0\0A\00", align 1
+@1421 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1422 = private unnamed_addr constant [15 x i8] c" = add i32 0, \00", align 1
+@1423 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1424 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1425 = private unnamed_addr constant [15 x i8] c" = add i32 0, \00", align 1
+@1426 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1427 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@1428 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1429 = private unnamed_addr constant [20 x i8] c".c = load i8, ptr %\00", align 1
+@1430 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1431 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1432 = private unnamed_addr constant [12 x i8] c" = zext i8 \00", align 1
+@1433 = private unnamed_addr constant [11 x i8] c".c to i32\0A\00", align 1
+@1434 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1435 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
 @1436 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1437 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1438 = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00", align 1
-@1439 = private unnamed_addr constant [21 x i8] c"  store i32 0, ptr %\00", align 1
-@1440 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1441 = private unnamed_addr constant [2 x i8] c"0\00", align 1
-@1442 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1443 = private unnamed_addr constant [7 x i8] c".lval.\00", align 1
-@1444 = private unnamed_addr constant [6 x i8] c"%ltmp\00", align 1
-@1445 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1446 = private unnamed_addr constant [7 x i8] c".lval.\00", align 1
-@1447 = private unnamed_addr constant [19 x i8] c" = load i64, ptr %\00", align 1
-@1448 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1449 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1450 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1451 = private unnamed_addr constant [17 x i8] c" = add i64 0, 0\0A\00", align 1
-@1452 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1453 = private unnamed_addr constant [15 x i8] c" = add i64 0, \00", align 1
-@1454 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1455 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1456 = private unnamed_addr constant [19 x i8] c" = load i64, ptr %\00", align 1
-@1457 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1458 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1459 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1460 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1437 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@1438 = private unnamed_addr constant [7 x i8] c"length\00", align 1
+@1439 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1440 = private unnamed_addr constant [23 x i8] c".obj = load ptr, ptr %\00", align 1
+@1441 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1442 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1443 = private unnamed_addr constant [41 x i8] c".i64 = call i64 @csec_string_length(ptr \00", align 1
+@1444 = private unnamed_addr constant [7 x i8] c".obj)\0A\00", align 1
+@1445 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1446 = private unnamed_addr constant [14 x i8] c" = trunc i64 \00", align 1
+@1447 = private unnamed_addr constant [13 x i8] c".i64 to i32\0A\00", align 1
+@1448 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@1449 = private unnamed_addr constant [7 x i8] c"charAt\00", align 1
+@1450 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1451 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1452 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1453 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1454 = private unnamed_addr constant [23 x i8] c".obj = load ptr, ptr %\00", align 1
+@1455 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1456 = private unnamed_addr constant [7 x i8] c".index\00", align 1
+@1457 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1458 = private unnamed_addr constant [40 x i8] c".i8 = call i8 @csec_string_char_at(ptr \00", align 1
+@1459 = private unnamed_addr constant [11 x i8] c".obj, i32 \00", align 1
+@1460 = private unnamed_addr constant [9 x i8] c".index)\0A\00", align 1
 @1461 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1462 = private unnamed_addr constant [14 x i8] c" = call i64 @\00", align 1
-@1463 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1464 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1465 = private unnamed_addr constant [4 x i8] c"add\00", align 1
-@1466 = private unnamed_addr constant [4 x i8] c"sub\00", align 1
-@1467 = private unnamed_addr constant [4 x i8] c"mul\00", align 1
-@1468 = private unnamed_addr constant [5 x i8] c"sdiv\00", align 1
-@1469 = private unnamed_addr constant [5 x i8] c"srem\00", align 1
-@1470 = private unnamed_addr constant [4 x i8] c"shl\00", align 1
-@1471 = private unnamed_addr constant [5 x i8] c"ashr\00", align 1
-@1472 = private unnamed_addr constant [4 x i8] c"and\00", align 1
-@1473 = private unnamed_addr constant [3 x i8] c"or\00", align 1
-@1474 = private unnamed_addr constant [4 x i8] c"xor\00", align 1
-@1475 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1476 = private unnamed_addr constant [4 x i8] c" = \00", align 1
-@1477 = private unnamed_addr constant [6 x i8] c" i64 \00", align 1
-@1478 = private unnamed_addr constant [3 x i8] c", \00", align 1
-@1479 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1480 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1481 = private unnamed_addr constant [17 x i8] c" = add i64 0, 0\0A\00", align 1
-@1482 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
-@1483 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1484 = private unnamed_addr constant [8 x i8] c".linit.\00", align 1
-@1485 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1486 = private unnamed_addr constant [15 x i8] c" = alloca i64\0A\00", align 1
-@1487 = private unnamed_addr constant [13 x i8] c"  store i64 \00", align 1
-@1488 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1489 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1490 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1491 = private unnamed_addr constant [15 x i8] c" = alloca i64\0A\00", align 1
-@1492 = private unnamed_addr constant [21 x i8] c"  store i64 0, ptr %\00", align 1
-@1493 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1494 = private unnamed_addr constant [13 x i8] c"0.000000e+00\00", align 1
-@1495 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1496 = private unnamed_addr constant [7 x i8] c".fval.\00", align 1
-@1497 = private unnamed_addr constant [6 x i8] c"%ftmp\00", align 1
-@1498 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1499 = private unnamed_addr constant [7 x i8] c".fval.\00", align 1
-@1500 = private unnamed_addr constant [22 x i8] c" = load double, ptr %\00", align 1
-@1501 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1502 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1503 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1504 = private unnamed_addr constant [43 x i8] c" = fadd double 0.000000e+00, 0.000000e+00\0A\00", align 1
-@1505 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1506 = private unnamed_addr constant [30 x i8] c" = fadd double 0.000000e+00, \00", align 1
-@1507 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1508 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1509 = private unnamed_addr constant [22 x i8] c" = load double, ptr %\00", align 1
-@1510 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1511 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1512 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1513 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1514 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1515 = private unnamed_addr constant [17 x i8] c" = call double @\00", align 1
-@1516 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1517 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1518 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1519 = private unnamed_addr constant [2 x i8] c"+\00", align 1
-@1520 = private unnamed_addr constant [5 x i8] c"fadd\00", align 1
-@1521 = private unnamed_addr constant [2 x i8] c"-\00", align 1
-@1522 = private unnamed_addr constant [5 x i8] c"fsub\00", align 1
-@1523 = private unnamed_addr constant [2 x i8] c"*\00", align 1
-@1524 = private unnamed_addr constant [5 x i8] c"fmul\00", align 1
-@1525 = private unnamed_addr constant [2 x i8] c"/\00", align 1
-@1526 = private unnamed_addr constant [5 x i8] c"fdiv\00", align 1
-@1527 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1528 = private unnamed_addr constant [4 x i8] c" = \00", align 1
-@1529 = private unnamed_addr constant [9 x i8] c" double \00", align 1
-@1530 = private unnamed_addr constant [3 x i8] c", \00", align 1
-@1531 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1532 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1533 = private unnamed_addr constant [43 x i8] c" = fadd double 0.000000e+00, 0.000000e+00\0A\00", align 1
-@1534 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
-@1535 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1536 = private unnamed_addr constant [8 x i8] c".finit.\00", align 1
-@1537 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1538 = private unnamed_addr constant [18 x i8] c" = alloca double\0A\00", align 1
-@1539 = private unnamed_addr constant [16 x i8] c"  store double \00", align 1
-@1540 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1541 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1542 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1543 = private unnamed_addr constant [18 x i8] c" = alloca double\0A\00", align 1
-@1544 = private unnamed_addr constant [35 x i8] c"  store double 0.000000e+00, ptr %\00", align 1
-@1545 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1546 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
-@1547 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1548 = private unnamed_addr constant [8 x i8] c".pinit.\00", align 1
-@1549 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1550 = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00", align 1
-@1551 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1552 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
-@1553 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
-@1554 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
-@1555 = private unnamed_addr constant [13 x i8] c"  store ptr \00", align 1
+@1462 = private unnamed_addr constant [12 x i8] c" = zext i8 \00", align 1
+@1463 = private unnamed_addr constant [12 x i8] c".i8 to i32\0A\00", align 1
+@1464 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1465 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1466 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1467 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1468 = private unnamed_addr constant [16 x i8] c".i8 = call i8 @\00", align 1
+@1469 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1470 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1471 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1472 = private unnamed_addr constant [12 x i8] c" = zext i8 \00", align 1
+@1473 = private unnamed_addr constant [12 x i8] c".i8 to i32\0A\00", align 1
+@1474 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1475 = private unnamed_addr constant [14 x i8] c" = call i32 @\00", align 1
+@1476 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1477 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1478 = private unnamed_addr constant [4 x i8] c"add\00", align 1
+@1479 = private unnamed_addr constant [4 x i8] c"sub\00", align 1
+@1480 = private unnamed_addr constant [4 x i8] c"mul\00", align 1
+@1481 = private unnamed_addr constant [5 x i8] c"sdiv\00", align 1
+@1482 = private unnamed_addr constant [5 x i8] c"srem\00", align 1
+@1483 = private unnamed_addr constant [4 x i8] c"shl\00", align 1
+@1484 = private unnamed_addr constant [5 x i8] c"ashr\00", align 1
+@1485 = private unnamed_addr constant [4 x i8] c"and\00", align 1
+@1486 = private unnamed_addr constant [3 x i8] c"or\00", align 1
+@1487 = private unnamed_addr constant [4 x i8] c"xor\00", align 1
+@1488 = private unnamed_addr constant [6 x i8] c".left\00", align 1
+@1489 = private unnamed_addr constant [7 x i8] c".right\00", align 1
+@1490 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1491 = private unnamed_addr constant [4 x i8] c" = \00", align 1
+@1492 = private unnamed_addr constant [6 x i8] c" i32 \00", align 1
+@1493 = private unnamed_addr constant [8 x i8] c".left, \00", align 1
+@1494 = private unnamed_addr constant [8 x i8] c".right\0A\00", align 1
+@1495 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1496 = private unnamed_addr constant [17 x i8] c" = add i32 0, 0\0A\00", align 1
+@1497 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
+@1498 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1499 = private unnamed_addr constant [7 x i8] c".init.\00", align 1
+@1500 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1501 = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00", align 1
+@1502 = private unnamed_addr constant [13 x i8] c"  store i32 \00", align 1
+@1503 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1504 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1505 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1506 = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00", align 1
+@1507 = private unnamed_addr constant [21 x i8] c"  store i32 0, ptr %\00", align 1
+@1508 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1509 = private unnamed_addr constant [2 x i8] c"0\00", align 1
+@1510 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1511 = private unnamed_addr constant [7 x i8] c".lval.\00", align 1
+@1512 = private unnamed_addr constant [6 x i8] c"%ltmp\00", align 1
+@1513 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1514 = private unnamed_addr constant [7 x i8] c".lval.\00", align 1
+@1515 = private unnamed_addr constant [19 x i8] c" = load i64, ptr %\00", align 1
+@1516 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1517 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1518 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1519 = private unnamed_addr constant [17 x i8] c" = add i64 0, 0\0A\00", align 1
+@1520 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1521 = private unnamed_addr constant [15 x i8] c" = add i64 0, \00", align 1
+@1522 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1523 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1524 = private unnamed_addr constant [19 x i8] c" = load i64, ptr %\00", align 1
+@1525 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1526 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1527 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1528 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1529 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1530 = private unnamed_addr constant [14 x i8] c" = call i64 @\00", align 1
+@1531 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1532 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1533 = private unnamed_addr constant [4 x i8] c"add\00", align 1
+@1534 = private unnamed_addr constant [4 x i8] c"sub\00", align 1
+@1535 = private unnamed_addr constant [4 x i8] c"mul\00", align 1
+@1536 = private unnamed_addr constant [5 x i8] c"sdiv\00", align 1
+@1537 = private unnamed_addr constant [5 x i8] c"srem\00", align 1
+@1538 = private unnamed_addr constant [4 x i8] c"shl\00", align 1
+@1539 = private unnamed_addr constant [5 x i8] c"ashr\00", align 1
+@1540 = private unnamed_addr constant [4 x i8] c"and\00", align 1
+@1541 = private unnamed_addr constant [3 x i8] c"or\00", align 1
+@1542 = private unnamed_addr constant [4 x i8] c"xor\00", align 1
+@1543 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1544 = private unnamed_addr constant [4 x i8] c" = \00", align 1
+@1545 = private unnamed_addr constant [6 x i8] c" i64 \00", align 1
+@1546 = private unnamed_addr constant [3 x i8] c", \00", align 1
+@1547 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1548 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1549 = private unnamed_addr constant [17 x i8] c" = add i64 0, 0\0A\00", align 1
+@1550 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
+@1551 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1552 = private unnamed_addr constant [8 x i8] c".linit.\00", align 1
+@1553 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1554 = private unnamed_addr constant [15 x i8] c" = alloca i64\0A\00", align 1
+@1555 = private unnamed_addr constant [13 x i8] c"  store i64 \00", align 1
 @1556 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
 @1557 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1558 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1559 = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00", align 1
-@1560 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1561 = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00", align 1
-@1562 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1563 = private unnamed_addr constant [13 x i8] c"  store ptr \00", align 1
-@1564 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1565 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1566 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1567 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1568 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1569 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1570 = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00", align 1
+@1559 = private unnamed_addr constant [15 x i8] c" = alloca i64\0A\00", align 1
+@1560 = private unnamed_addr constant [21 x i8] c"  store i64 0, ptr %\00", align 1
+@1561 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1562 = private unnamed_addr constant [13 x i8] c"0.000000e+00\00", align 1
+@1563 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1564 = private unnamed_addr constant [7 x i8] c".fval.\00", align 1
+@1565 = private unnamed_addr constant [6 x i8] c"%ftmp\00", align 1
+@1566 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1567 = private unnamed_addr constant [7 x i8] c".fval.\00", align 1
+@1568 = private unnamed_addr constant [22 x i8] c" = load double, ptr %\00", align 1
+@1569 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1570 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @1571 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1572 = private unnamed_addr constant [14 x i8] c" = call ptr @\00", align 1
-@1573 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1574 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1575 = private unnamed_addr constant [13 x i8] c"  store ptr \00", align 1
-@1576 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1577 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1578 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1579 = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00", align 1
-@1580 = private unnamed_addr constant [24 x i8] c"  store ptr null, ptr %\00", align 1
-@1581 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1582 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
-@1583 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1584 = private unnamed_addr constant [8 x i8] c".cinit.\00", align 1
-@1585 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1586 = private unnamed_addr constant [14 x i8] c" = alloca i8\0A\00", align 1
-@1587 = private unnamed_addr constant [12 x i8] c"  store i8 \00", align 1
-@1588 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1589 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1590 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1591 = private unnamed_addr constant [14 x i8] c" = alloca i8\0A\00", align 1
-@1592 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1593 = private unnamed_addr constant [18 x i8] c" = load i8, ptr %\00", align 1
-@1594 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1595 = private unnamed_addr constant [12 x i8] c"  store i8 \00", align 1
-@1596 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1597 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1598 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1599 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1600 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1601 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1602 = private unnamed_addr constant [14 x i8] c" = alloca i8\0A\00", align 1
-@1603 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1604 = private unnamed_addr constant [13 x i8] c" = call i8 @\00", align 1
-@1605 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1606 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1607 = private unnamed_addr constant [12 x i8] c"  store i8 \00", align 1
+@1572 = private unnamed_addr constant [43 x i8] c" = fadd double 0.000000e+00, 0.000000e+00\0A\00", align 1
+@1573 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1574 = private unnamed_addr constant [30 x i8] c" = fadd double 0.000000e+00, \00", align 1
+@1575 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1576 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1577 = private unnamed_addr constant [22 x i8] c" = load double, ptr %\00", align 1
+@1578 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1579 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1580 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1581 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1582 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1583 = private unnamed_addr constant [17 x i8] c" = call double @\00", align 1
+@1584 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1585 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1586 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1587 = private unnamed_addr constant [2 x i8] c"+\00", align 1
+@1588 = private unnamed_addr constant [5 x i8] c"fadd\00", align 1
+@1589 = private unnamed_addr constant [2 x i8] c"-\00", align 1
+@1590 = private unnamed_addr constant [5 x i8] c"fsub\00", align 1
+@1591 = private unnamed_addr constant [2 x i8] c"*\00", align 1
+@1592 = private unnamed_addr constant [5 x i8] c"fmul\00", align 1
+@1593 = private unnamed_addr constant [2 x i8] c"/\00", align 1
+@1594 = private unnamed_addr constant [5 x i8] c"fdiv\00", align 1
+@1595 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1596 = private unnamed_addr constant [4 x i8] c" = \00", align 1
+@1597 = private unnamed_addr constant [9 x i8] c" double \00", align 1
+@1598 = private unnamed_addr constant [3 x i8] c", \00", align 1
+@1599 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1600 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1601 = private unnamed_addr constant [43 x i8] c" = fadd double 0.000000e+00, 0.000000e+00\0A\00", align 1
+@1602 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
+@1603 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1604 = private unnamed_addr constant [8 x i8] c".finit.\00", align 1
+@1605 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1606 = private unnamed_addr constant [18 x i8] c" = alloca double\0A\00", align 1
+@1607 = private unnamed_addr constant [16 x i8] c"  store double \00", align 1
 @1608 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
 @1609 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1610 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1611 = private unnamed_addr constant [14 x i8] c" = alloca i8\0A\00", align 1
-@1612 = private unnamed_addr constant [20 x i8] c"  store i8 0, ptr %\00", align 1
+@1611 = private unnamed_addr constant [18 x i8] c" = alloca double\0A\00", align 1
+@1612 = private unnamed_addr constant [35 x i8] c"  store double 0.000000e+00, ptr %\00", align 1
 @1613 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1614 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1615 = private unnamed_addr constant [2 x i8] c"=\00", align 1
-@1616 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
-@1617 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1618 = private unnamed_addr constant [10 x i8] c".fassign.\00", align 1
-@1619 = private unnamed_addr constant [16 x i8] c"  store double \00", align 1
-@1620 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1621 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1622 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1623 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1624 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1625 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
-@1626 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
-@1627 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
-@1628 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
-@1629 = private unnamed_addr constant [14 x i8] c"  store ptr %\00", align 1
-@1630 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
-@1631 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1632 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1633 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1634 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
-@1635 = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00", align 1
-@1636 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1637 = private unnamed_addr constant [14 x i8] c"  store ptr %\00", align 1
-@1638 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
-@1639 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1640 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1614 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
+@1615 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1616 = private unnamed_addr constant [8 x i8] c".pinit.\00", align 1
+@1617 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1618 = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00", align 1
+@1619 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1620 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
+@1621 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
+@1622 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
+@1623 = private unnamed_addr constant [13 x i8] c"  store ptr \00", align 1
+@1624 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1625 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1626 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1627 = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00", align 1
+@1628 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1629 = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00", align 1
+@1630 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1631 = private unnamed_addr constant [13 x i8] c"  store ptr \00", align 1
+@1632 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1633 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1634 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1635 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1636 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1637 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1638 = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00", align 1
+@1639 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1640 = private unnamed_addr constant [14 x i8] c" = call ptr @\00", align 1
 @1641 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1642 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1643 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1644 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1645 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
-@1646 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1647 = private unnamed_addr constant [14 x i8] c" = call ptr @\00", align 1
-@1648 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1649 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1650 = private unnamed_addr constant [13 x i8] c"  store ptr \00", align 1
-@1651 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1652 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1653 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1654 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1642 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1643 = private unnamed_addr constant [13 x i8] c"  store ptr \00", align 1
+@1644 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1645 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1646 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1647 = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00", align 1
+@1648 = private unnamed_addr constant [24 x i8] c"  store ptr null, ptr %\00", align 1
+@1649 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1650 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
+@1651 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1652 = private unnamed_addr constant [8 x i8] c".cinit.\00", align 1
+@1653 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1654 = private unnamed_addr constant [14 x i8] c" = alloca i8\0A\00", align 1
 @1655 = private unnamed_addr constant [12 x i8] c"  store i8 \00", align 1
 @1656 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
 @1657 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1658 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1659 = private unnamed_addr constant [10 x i8] c".cassign.\00", align 1
-@1660 = private unnamed_addr constant [18 x i8] c" = load i8, ptr %\00", align 1
-@1661 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1662 = private unnamed_addr constant [13 x i8] c"  store i8 %\00", align 1
-@1663 = private unnamed_addr constant [10 x i8] c".cassign.\00", align 1
+@1659 = private unnamed_addr constant [14 x i8] c" = alloca i8\0A\00", align 1
+@1660 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1661 = private unnamed_addr constant [18 x i8] c" = load i8, ptr %\00", align 1
+@1662 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1663 = private unnamed_addr constant [12 x i8] c"  store i8 \00", align 1
 @1664 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
 @1665 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1666 = private unnamed_addr constant [2 x i8] c"(\00", align 1
 @1667 = private unnamed_addr constant [2 x i8] c"(\00", align 1
 @1668 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1669 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1670 = private unnamed_addr constant [10 x i8] c".cassign.\00", align 1
+@1669 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1670 = private unnamed_addr constant [14 x i8] c" = alloca i8\0A\00", align 1
 @1671 = private unnamed_addr constant [3 x i8] c"  \00", align 1
 @1672 = private unnamed_addr constant [13 x i8] c" = call i8 @\00", align 1
 @1673 = private unnamed_addr constant [2 x i8] c"(\00", align 1
@@ -1679,818 +1679,946 @@ source_filename = "main"
 @1675 = private unnamed_addr constant [12 x i8] c"  store i8 \00", align 1
 @1676 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
 @1677 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1678 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1679 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1680 = private unnamed_addr constant [2 x i8] c"=\00", align 1
-@1681 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
-@1682 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1683 = private unnamed_addr constant [9 x i8] c".assign.\00", align 1
-@1684 = private unnamed_addr constant [13 x i8] c"  store i32 \00", align 1
-@1685 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1686 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1687 = private unnamed_addr constant [3 x i8] c"%=\00", align 1
-@1688 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1689 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1690 = private unnamed_addr constant [6 x i8] c".old.\00", align 1
-@1691 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
-@1692 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1693 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1694 = private unnamed_addr constant [6 x i8] c".rhs.\00", align 1
-@1695 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1696 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
-@1697 = private unnamed_addr constant [4 x i8] c" = \00", align 1
-@1698 = private unnamed_addr constant [7 x i8] c" i32 %\00", align 1
-@1699 = private unnamed_addr constant [6 x i8] c".old.\00", align 1
-@1700 = private unnamed_addr constant [4 x i8] c", %\00", align 1
-@1701 = private unnamed_addr constant [6 x i8] c".rhs.\00", align 1
-@1702 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1703 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
-@1704 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
-@1705 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1706 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1707 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1708 = private unnamed_addr constant [2 x i8] c"=\00", align 1
-@1709 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
-@1710 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1711 = private unnamed_addr constant [10 x i8] c".lassign.\00", align 1
-@1712 = private unnamed_addr constant [13 x i8] c"  store i64 \00", align 1
-@1713 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1714 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1715 = private unnamed_addr constant [3 x i8] c"%=\00", align 1
-@1716 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1717 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1718 = private unnamed_addr constant [7 x i8] c".lold.\00", align 1
-@1719 = private unnamed_addr constant [19 x i8] c" = load i64, ptr %\00", align 1
+@1678 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1679 = private unnamed_addr constant [14 x i8] c" = alloca i8\0A\00", align 1
+@1680 = private unnamed_addr constant [20 x i8] c"  store i8 0, ptr %\00", align 1
+@1681 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1682 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1683 = private unnamed_addr constant [2 x i8] c"=\00", align 1
+@1684 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
+@1685 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1686 = private unnamed_addr constant [10 x i8] c".fassign.\00", align 1
+@1687 = private unnamed_addr constant [16 x i8] c"  store double \00", align 1
+@1688 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1689 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1690 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1691 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1692 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1693 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
+@1694 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
+@1695 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
+@1696 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
+@1697 = private unnamed_addr constant [14 x i8] c"  store ptr %\00", align 1
+@1698 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
+@1699 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1700 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1701 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1702 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
+@1703 = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00", align 1
+@1704 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1705 = private unnamed_addr constant [14 x i8] c"  store ptr %\00", align 1
+@1706 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
+@1707 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1708 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1709 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1710 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1711 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1712 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1713 = private unnamed_addr constant [10 x i8] c".passign.\00", align 1
+@1714 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1715 = private unnamed_addr constant [14 x i8] c" = call ptr @\00", align 1
+@1716 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1717 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1718 = private unnamed_addr constant [13 x i8] c"  store ptr \00", align 1
+@1719 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
 @1720 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1721 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1722 = private unnamed_addr constant [7 x i8] c".lrhs.\00", align 1
-@1723 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1724 = private unnamed_addr constant [8 x i8] c".lnext.\00", align 1
-@1725 = private unnamed_addr constant [4 x i8] c" = \00", align 1
-@1726 = private unnamed_addr constant [7 x i8] c" i64 %\00", align 1
-@1727 = private unnamed_addr constant [7 x i8] c".lold.\00", align 1
-@1728 = private unnamed_addr constant [4 x i8] c", %\00", align 1
-@1729 = private unnamed_addr constant [7 x i8] c".lrhs.\00", align 1
-@1730 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1731 = private unnamed_addr constant [14 x i8] c"  store i64 %\00", align 1
-@1732 = private unnamed_addr constant [8 x i8] c".lnext.\00", align 1
-@1733 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1734 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1735 = private unnamed_addr constant [6 x i8] c"icmp_\00", align 1
-@1736 = private unnamed_addr constant [10 x i8] c".left.i32\00", align 1
-@1737 = private unnamed_addr constant [11 x i8] c".right.i32\00", align 1
-@1738 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1739 = private unnamed_addr constant [9 x i8] c" = icmp \00", align 1
-@1740 = private unnamed_addr constant [6 x i8] c" i32 \00", align 1
-@1741 = private unnamed_addr constant [12 x i8] c".left.i32, \00", align 1
-@1742 = private unnamed_addr constant [12 x i8] c".right.i32\0A\00", align 1
-@1743 = private unnamed_addr constant [5 x i8] c"true\00", align 1
-@1744 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1745 = private unnamed_addr constant [26 x i8] c" = icmp eq i1 true, true\0A\00", align 1
-@1746 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1747 = private unnamed_addr constant [27 x i8] c" = icmp eq i1 false, true\0A\00", align 1
-@1748 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1749 = private unnamed_addr constant [18 x i8] c" = load i1, ptr %\00", align 1
-@1750 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1751 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1752 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1753 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1754 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1755 = private unnamed_addr constant [13 x i8] c" = call i1 @\00", align 1
-@1756 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1757 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1758 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1759 = private unnamed_addr constant [21 x i8] c" = icmp eq i32 0, 0\0A\00", align 1
-@1760 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1761 = private unnamed_addr constant [27 x i8] c" = icmp eq i1 false, true\0A\00", align 1
-@1762 = private unnamed_addr constant [5 x i8] c"true\00", align 1
-@1763 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1764 = private unnamed_addr constant [26 x i8] c" = icmp eq i1 true, true\0A\00", align 1
-@1765 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1766 = private unnamed_addr constant [27 x i8] c" = icmp eq i1 false, true\0A\00", align 1
-@1767 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1768 = private unnamed_addr constant [18 x i8] c" = load i1, ptr %\00", align 1
-@1769 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1770 = private unnamed_addr constant [6 x i8] c".left\00", align 1
-@1771 = private unnamed_addr constant [7 x i8] c".right\00", align 1
-@1772 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1773 = private unnamed_addr constant [10 x i8] c" = or i1 \00", align 1
-@1774 = private unnamed_addr constant [8 x i8] c".left, \00", align 1
-@1775 = private unnamed_addr constant [8 x i8] c".right\0A\00", align 1
-@1776 = private unnamed_addr constant [19 x i8] c"  ; bool operands \00", align 1
-@1777 = private unnamed_addr constant [3 x i8] c", \00", align 1
-@1778 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1779 = private unnamed_addr constant [6 x i8] c".left\00", align 1
-@1780 = private unnamed_addr constant [7 x i8] c".right\00", align 1
-@1781 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1782 = private unnamed_addr constant [11 x i8] c" = and i1 \00", align 1
-@1783 = private unnamed_addr constant [8 x i8] c".left, \00", align 1
-@1784 = private unnamed_addr constant [8 x i8] c".right\0A\00", align 1
-@1785 = private unnamed_addr constant [19 x i8] c"  ; bool operands \00", align 1
-@1786 = private unnamed_addr constant [3 x i8] c", \00", align 1
-@1787 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1788 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
+@1721 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1722 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1723 = private unnamed_addr constant [12 x i8] c"  store i8 \00", align 1
+@1724 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1725 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1726 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1727 = private unnamed_addr constant [10 x i8] c".cassign.\00", align 1
+@1728 = private unnamed_addr constant [18 x i8] c" = load i8, ptr %\00", align 1
+@1729 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1730 = private unnamed_addr constant [13 x i8] c"  store i8 %\00", align 1
+@1731 = private unnamed_addr constant [10 x i8] c".cassign.\00", align 1
+@1732 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1733 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1734 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1735 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1736 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1737 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1738 = private unnamed_addr constant [10 x i8] c".cassign.\00", align 1
+@1739 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1740 = private unnamed_addr constant [13 x i8] c" = call i8 @\00", align 1
+@1741 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1742 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1743 = private unnamed_addr constant [12 x i8] c"  store i8 \00", align 1
+@1744 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1745 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1746 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1747 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1748 = private unnamed_addr constant [2 x i8] c"=\00", align 1
+@1749 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
+@1750 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1751 = private unnamed_addr constant [9 x i8] c".assign.\00", align 1
+@1752 = private unnamed_addr constant [13 x i8] c"  store i32 \00", align 1
+@1753 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1754 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1755 = private unnamed_addr constant [3 x i8] c"%=\00", align 1
+@1756 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1757 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1758 = private unnamed_addr constant [6 x i8] c".old.\00", align 1
+@1759 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
+@1760 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1761 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1762 = private unnamed_addr constant [6 x i8] c".rhs.\00", align 1
+@1763 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1764 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
+@1765 = private unnamed_addr constant [4 x i8] c" = \00", align 1
+@1766 = private unnamed_addr constant [7 x i8] c" i32 %\00", align 1
+@1767 = private unnamed_addr constant [6 x i8] c".old.\00", align 1
+@1768 = private unnamed_addr constant [4 x i8] c", %\00", align 1
+@1769 = private unnamed_addr constant [6 x i8] c".rhs.\00", align 1
+@1770 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1771 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
+@1772 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
+@1773 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1774 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1775 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1776 = private unnamed_addr constant [2 x i8] c"=\00", align 1
+@1777 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
+@1778 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1779 = private unnamed_addr constant [10 x i8] c".lassign.\00", align 1
+@1780 = private unnamed_addr constant [13 x i8] c"  store i64 \00", align 1
+@1781 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1782 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1783 = private unnamed_addr constant [3 x i8] c"%=\00", align 1
+@1784 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1785 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1786 = private unnamed_addr constant [7 x i8] c".lold.\00", align 1
+@1787 = private unnamed_addr constant [19 x i8] c" = load i64, ptr %\00", align 1
+@1788 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1789 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1790 = private unnamed_addr constant [8 x i8] c".binit.\00", align 1
+@1790 = private unnamed_addr constant [7 x i8] c".lrhs.\00", align 1
 @1791 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1792 = private unnamed_addr constant [14 x i8] c" = alloca i1\0A\00", align 1
-@1793 = private unnamed_addr constant [12 x i8] c"  store i1 \00", align 1
-@1794 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1795 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1796 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1797 = private unnamed_addr constant [14 x i8] c" = alloca i1\0A\00", align 1
-@1798 = private unnamed_addr constant [24 x i8] c"  store i1 false, ptr %\00", align 1
-@1799 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1800 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1801 = private unnamed_addr constant [2 x i8] c"=\00", align 1
-@1802 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
-@1803 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@1804 = private unnamed_addr constant [10 x i8] c".bassign.\00", align 1
-@1805 = private unnamed_addr constant [12 x i8] c"  store i1 \00", align 1
-@1806 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1807 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1808 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1809 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@1810 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1811 = private unnamed_addr constant [26 x i8] c" = inttoptr i64 0 to ptr\0A\00", align 1
+@1792 = private unnamed_addr constant [8 x i8] c".lnext.\00", align 1
+@1793 = private unnamed_addr constant [4 x i8] c" = \00", align 1
+@1794 = private unnamed_addr constant [7 x i8] c" i64 %\00", align 1
+@1795 = private unnamed_addr constant [7 x i8] c".lold.\00", align 1
+@1796 = private unnamed_addr constant [4 x i8] c", %\00", align 1
+@1797 = private unnamed_addr constant [7 x i8] c".lrhs.\00", align 1
+@1798 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1799 = private unnamed_addr constant [14 x i8] c"  store i64 %\00", align 1
+@1800 = private unnamed_addr constant [8 x i8] c".lnext.\00", align 1
+@1801 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1802 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1803 = private unnamed_addr constant [6 x i8] c"icmp_\00", align 1
+@1804 = private unnamed_addr constant [10 x i8] c".left.i32\00", align 1
+@1805 = private unnamed_addr constant [11 x i8] c".right.i32\00", align 1
+@1806 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1807 = private unnamed_addr constant [9 x i8] c" = icmp \00", align 1
+@1808 = private unnamed_addr constant [6 x i8] c" i32 \00", align 1
+@1809 = private unnamed_addr constant [12 x i8] c".left.i32, \00", align 1
+@1810 = private unnamed_addr constant [12 x i8] c".right.i32\0A\00", align 1
+@1811 = private unnamed_addr constant [5 x i8] c"true\00", align 1
 @1812 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1813 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
-@1814 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
-@1815 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
+@1813 = private unnamed_addr constant [26 x i8] c" = icmp eq i1 true, true\0A\00", align 1
+@1814 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1815 = private unnamed_addr constant [27 x i8] c" = icmp eq i1 false, true\0A\00", align 1
 @1816 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1817 = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00", align 1
+@1817 = private unnamed_addr constant [18 x i8] c" = load i1, ptr %\00", align 1
 @1818 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1819 = private unnamed_addr constant [2 x i8] c"(\00", align 1
 @1820 = private unnamed_addr constant [2 x i8] c"(\00", align 1
 @1821 = private unnamed_addr constant [2 x i8] c")\00", align 1
 @1822 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1823 = private unnamed_addr constant [14 x i8] c" = call ptr @\00", align 1
+@1823 = private unnamed_addr constant [13 x i8] c" = call i1 @\00", align 1
 @1824 = private unnamed_addr constant [2 x i8] c"(\00", align 1
 @1825 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1826 = private unnamed_addr constant [2 x i8] c".\00", align 1
-@1827 = private unnamed_addr constant [10 x i8] c"substring\00", align 1
-@1828 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1829 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1830 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1831 = private unnamed_addr constant [2 x i8] c",\00", align 1
-@1832 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1833 = private unnamed_addr constant [23 x i8] c".obj = load ptr, ptr %\00", align 1
-@1834 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1835 = private unnamed_addr constant [7 x i8] c".start\00", align 1
-@1836 = private unnamed_addr constant [8 x i8] c".length\00", align 1
-@1837 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1838 = private unnamed_addr constant [40 x i8] c" = call ptr @csec_string_substring(ptr \00", align 1
-@1839 = private unnamed_addr constant [11 x i8] c".obj, i32 \00", align 1
-@1840 = private unnamed_addr constant [13 x i8] c".start, i32 \00", align 1
-@1841 = private unnamed_addr constant [10 x i8] c".length)\0A\00", align 1
-@1842 = private unnamed_addr constant [2 x i8] c"+\00", align 1
-@1843 = private unnamed_addr constant [6 x i8] c".left\00", align 1
-@1844 = private unnamed_addr constant [7 x i8] c".right\00", align 1
-@1845 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1846 = private unnamed_addr constant [37 x i8] c" = call ptr @csec_string_concat(ptr \00", align 1
-@1847 = private unnamed_addr constant [12 x i8] c".left, ptr \00", align 1
-@1848 = private unnamed_addr constant [9 x i8] c".right)\0A\00", align 1
+@1826 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1827 = private unnamed_addr constant [21 x i8] c" = icmp eq i32 0, 0\0A\00", align 1
+@1828 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1829 = private unnamed_addr constant [27 x i8] c" = icmp eq i1 false, true\0A\00", align 1
+@1830 = private unnamed_addr constant [5 x i8] c"true\00", align 1
+@1831 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1832 = private unnamed_addr constant [26 x i8] c" = icmp eq i1 true, true\0A\00", align 1
+@1833 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1834 = private unnamed_addr constant [27 x i8] c" = icmp eq i1 false, true\0A\00", align 1
+@1835 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1836 = private unnamed_addr constant [18 x i8] c" = load i1, ptr %\00", align 1
+@1837 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1838 = private unnamed_addr constant [6 x i8] c".left\00", align 1
+@1839 = private unnamed_addr constant [7 x i8] c".right\00", align 1
+@1840 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1841 = private unnamed_addr constant [10 x i8] c" = or i1 \00", align 1
+@1842 = private unnamed_addr constant [8 x i8] c".left, \00", align 1
+@1843 = private unnamed_addr constant [8 x i8] c".right\0A\00", align 1
+@1844 = private unnamed_addr constant [19 x i8] c"  ; bool operands \00", align 1
+@1845 = private unnamed_addr constant [3 x i8] c", \00", align 1
+@1846 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1847 = private unnamed_addr constant [6 x i8] c".left\00", align 1
+@1848 = private unnamed_addr constant [7 x i8] c".right\00", align 1
 @1849 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1850 = private unnamed_addr constant [26 x i8] c" = inttoptr i64 0 to ptr\0A\00", align 1
-@1851 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1852 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1853 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1854 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1855 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1856 = private unnamed_addr constant [2 x i8] c".\00", align 1
-@1857 = private unnamed_addr constant [10 x i8] c"substring\00", align 1
-@1858 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1859 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1860 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1861 = private unnamed_addr constant [2 x i8] c"+\00", align 1
-@1862 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1863 = private unnamed_addr constant [6 x i8] c"value\00", align 1
-@1864 = private unnamed_addr constant [9 x i8] c"variable\00", align 1
-@1865 = private unnamed_addr constant [4 x i8] c"Int\00", align 1
-@1866 = private unnamed_addr constant [8 x i8] c"unknown\00", align 1
-@1867 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
-@1868 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
-@1869 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
-@1870 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
-@1871 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1872 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@1873 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@1874 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
+@1850 = private unnamed_addr constant [11 x i8] c" = and i1 \00", align 1
+@1851 = private unnamed_addr constant [8 x i8] c".left, \00", align 1
+@1852 = private unnamed_addr constant [8 x i8] c".right\0A\00", align 1
+@1853 = private unnamed_addr constant [19 x i8] c"  ; bool operands \00", align 1
+@1854 = private unnamed_addr constant [3 x i8] c", \00", align 1
+@1855 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1856 = private unnamed_addr constant [7 x i8] c".addr.\00", align 1
+@1857 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1858 = private unnamed_addr constant [8 x i8] c".binit.\00", align 1
+@1859 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1860 = private unnamed_addr constant [14 x i8] c" = alloca i1\0A\00", align 1
+@1861 = private unnamed_addr constant [12 x i8] c"  store i1 \00", align 1
+@1862 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@1863 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1864 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@1865 = private unnamed_addr constant [14 x i8] c" = alloca i1\0A\00", align 1
+@1866 = private unnamed_addr constant [24 x i8] c"  store i1 false, ptr %\00", align 1
+@1867 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1868 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1869 = private unnamed_addr constant [2 x i8] c"=\00", align 1
+@1870 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
+@1871 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@1872 = private unnamed_addr constant [10 x i8] c".bassign.\00", align 1
+@1873 = private unnamed_addr constant [12 x i8] c"  store i1 \00", align 1
+@1874 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
 @1875 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1876 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@1877 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@1876 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1877 = private unnamed_addr constant [7 x i8] c"return\00", align 1
 @1878 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1879 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
-@1880 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
-@1881 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
-@1882 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
-@1883 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1884 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@1885 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
-@1886 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1887 = private unnamed_addr constant [3 x i8] c"i8\00", align 1
-@1888 = private unnamed_addr constant [3 x i8] c"i1\00", align 1
-@1889 = private unnamed_addr constant [4 x i8] c"i64\00", align 1
-@1890 = private unnamed_addr constant [7 x i8] c"double\00", align 1
-@1891 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1892 = private unnamed_addr constant [9 x i8] c" = load \00", align 1
-@1893 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1894 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1895 = private unnamed_addr constant [7 x i8] c"  ret \00", align 1
-@1896 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@1897 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1898 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
-@1899 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1900 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1901 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1902 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@1903 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
-@1904 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@1905 = private unnamed_addr constant [3 x i8] c"i8\00", align 1
-@1906 = private unnamed_addr constant [3 x i8] c"i1\00", align 1
-@1907 = private unnamed_addr constant [4 x i8] c"i64\00", align 1
-@1908 = private unnamed_addr constant [7 x i8] c"double\00", align 1
-@1909 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@1910 = private unnamed_addr constant [9 x i8] c" = call \00", align 1
-@1911 = private unnamed_addr constant [3 x i8] c" @\00", align 1
-@1912 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@1913 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@1914 = private unnamed_addr constant [7 x i8] c"  ret \00", align 1
-@1915 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@1916 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1917 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
-@1918 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1919 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
-@1920 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
-@1921 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1922 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
-@1923 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
-@1924 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1925 = private unnamed_addr constant [3 x i8] c"if\00", align 1
-@1926 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@1927 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@1928 = private unnamed_addr constant [18 x i8] c"  ; malformed if\0A\00", align 1
-@1929 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1930 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@1879 = private unnamed_addr constant [26 x i8] c" = inttoptr i64 0 to ptr\0A\00", align 1
+@1880 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1881 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
+@1882 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
+@1883 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
+@1884 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1885 = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00", align 1
+@1886 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1887 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1888 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1889 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1890 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1891 = private unnamed_addr constant [14 x i8] c" = call ptr @\00", align 1
+@1892 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1893 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1894 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@1895 = private unnamed_addr constant [10 x i8] c"substring\00", align 1
+@1896 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1897 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1898 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1899 = private unnamed_addr constant [2 x i8] c",\00", align 1
+@1900 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1901 = private unnamed_addr constant [23 x i8] c".obj = load ptr, ptr %\00", align 1
+@1902 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1903 = private unnamed_addr constant [7 x i8] c".start\00", align 1
+@1904 = private unnamed_addr constant [8 x i8] c".length\00", align 1
+@1905 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1906 = private unnamed_addr constant [40 x i8] c" = call ptr @csec_string_substring(ptr \00", align 1
+@1907 = private unnamed_addr constant [11 x i8] c".obj, i32 \00", align 1
+@1908 = private unnamed_addr constant [13 x i8] c".start, i32 \00", align 1
+@1909 = private unnamed_addr constant [10 x i8] c".length)\0A\00", align 1
+@1910 = private unnamed_addr constant [2 x i8] c"+\00", align 1
+@1911 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1912 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1913 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1914 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1915 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1916 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1917 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1918 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@1919 = private unnamed_addr constant [10 x i8] c"substring\00", align 1
+@1920 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1921 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1922 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1923 = private unnamed_addr constant [2 x i8] c"+\00", align 1
+@1924 = private unnamed_addr constant [6 x i8] c".left\00", align 1
+@1925 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1926 = private unnamed_addr constant [42 x i8] c".left = call ptr @csec_to_string_char(i8 \00", align 1
+@1927 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1928 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@1929 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1930 = private unnamed_addr constant [26 x i8] c".left.i8 = load i8, ptr %\00", align 1
 @1931 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1932 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1933 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1934 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
-@1935 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1936 = private unnamed_addr constant [5 x i8] c"else\00", align 1
-@1937 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@1938 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@1939 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@1940 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1941 = private unnamed_addr constant [7 x i8] c"%cond.\00", align 1
-@1942 = private unnamed_addr constant [15 x i8] c"  br i1 %cond.\00", align 1
-@1943 = private unnamed_addr constant [18 x i8] c", label %if.then.\00", align 1
-@1944 = private unnamed_addr constant [18 x i8] c", label %if.else.\00", align 1
-@1945 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1946 = private unnamed_addr constant [9 x i8] c"if.then.\00", align 1
-@1947 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@1948 = private unnamed_addr constant [9 x i8] c"if.else.\00", align 1
-@1949 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@1950 = private unnamed_addr constant [8 x i8] c"if.end.\00", align 1
-@1951 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@1952 = private unnamed_addr constant [6 x i8] c"while\00", align 1
-@1953 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@1954 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@1955 = private unnamed_addr constant [21 x i8] c"  ; malformed while\0A\00", align 1
-@1956 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1957 = private unnamed_addr constant [24 x i8] c"  br label %while.cond.\00", align 1
-@1958 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1959 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1960 = private unnamed_addr constant [24 x i8] c"  br label %while.cond.\00", align 1
-@1961 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1962 = private unnamed_addr constant [12 x i8] c"while.cond.\00", align 1
-@1963 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@1964 = private unnamed_addr constant [12 x i8] c"%whilecond.\00", align 1
-@1965 = private unnamed_addr constant [20 x i8] c"  br i1 %whilecond.\00", align 1
-@1966 = private unnamed_addr constant [21 x i8] c", label %while.body.\00", align 1
-@1967 = private unnamed_addr constant [20 x i8] c", label %while.end.\00", align 1
-@1968 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1969 = private unnamed_addr constant [12 x i8] c"while.body.\00", align 1
-@1970 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@1971 = private unnamed_addr constant [11 x i8] c"while.end.\00", align 1
-@1972 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@1973 = private unnamed_addr constant [4 x i8] c"for\00", align 1
-@1974 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@1975 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@1976 = private unnamed_addr constant [19 x i8] c"  ; malformed for\0A\00", align 1
-@1977 = private unnamed_addr constant [28 x i8] c"  ; malformed for iterator\0A\00", align 1
-@1978 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
-@1979 = private unnamed_addr constant [26 x i8] c"  ; malformed for source\0A\00", align 1
-@1980 = private unnamed_addr constant [28 x i8] c"  ; unsupported for source\0A\00", align 1
-@1981 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@1982 = private unnamed_addr constant [4 x i8] c"slt\00", align 1
-@1983 = private unnamed_addr constant [3 x i8] c"to\00", align 1
-@1984 = private unnamed_addr constant [3 x i8] c"..\00", align 1
-@1985 = private unnamed_addr constant [4 x i8] c"sle\00", align 1
-@1986 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1987 = private unnamed_addr constant [7 x i8] c".step.\00", align 1
-@1988 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
-@1989 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1990 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@1991 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
-@1992 = private unnamed_addr constant [13 x i8] c" = add i32 %\00", align 1
-@1993 = private unnamed_addr constant [7 x i8] c".step.\00", align 1
-@1994 = private unnamed_addr constant [5 x i8] c", 1\0A\00", align 1
-@1995 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
-@1996 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
-@1997 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@1998 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1999 = private unnamed_addr constant [22 x i8] c"  br label %for.cond.\00", align 1
-@2000 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2001 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2002 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@2003 = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00", align 1
-@2004 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@2005 = private unnamed_addr constant [7 x i8] c".start\00", align 1
-@2006 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
-@2007 = private unnamed_addr constant [14 x i8] c".start, ptr %\00", align 1
-@2008 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2009 = private unnamed_addr constant [22 x i8] c"  br label %for.cond.\00", align 1
-@2010 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2011 = private unnamed_addr constant [10 x i8] c"for.cond.\00", align 1
-@2012 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2013 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@2014 = private unnamed_addr constant [23 x i8] c".val = load i32, ptr %\00", align 1
-@2015 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2016 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@2017 = private unnamed_addr constant [5 x i8] c".end\00", align 1
-@2018 = private unnamed_addr constant [12 x i8] c"  %forcond.\00", align 1
-@2019 = private unnamed_addr constant [9 x i8] c" = icmp \00", align 1
-@2020 = private unnamed_addr constant [7 x i8] c" i32 %\00", align 1
-@2021 = private unnamed_addr constant [8 x i8] c".val, %\00", align 1
-@2022 = private unnamed_addr constant [6 x i8] c".end\0A\00", align 1
-@2023 = private unnamed_addr constant [18 x i8] c"  br i1 %forcond.\00", align 1
-@2024 = private unnamed_addr constant [19 x i8] c", label %for.body.\00", align 1
-@2025 = private unnamed_addr constant [18 x i8] c", label %for.end.\00", align 1
-@2026 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2027 = private unnamed_addr constant [10 x i8] c"for.body.\00", align 1
-@2028 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2029 = private unnamed_addr constant [9 x i8] c"for.end.\00", align 1
-@2030 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2031 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
-@2032 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
-@2033 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
-@2034 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
-@2035 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@2036 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2037 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@2038 = private unnamed_addr constant [18 x i8] c"  ; malformed if\0A\00", align 1
-@2039 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2040 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
-@2041 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2042 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2043 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2044 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
-@2045 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2046 = private unnamed_addr constant [5 x i8] c"else\00", align 1
-@2047 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2048 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2049 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@2050 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2051 = private unnamed_addr constant [7 x i8] c"%cond.\00", align 1
-@2052 = private unnamed_addr constant [15 x i8] c"  br i1 %cond.\00", align 1
-@2053 = private unnamed_addr constant [18 x i8] c", label %if.then.\00", align 1
-@2054 = private unnamed_addr constant [18 x i8] c", label %if.else.\00", align 1
-@2055 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2056 = private unnamed_addr constant [9 x i8] c"if.then.\00", align 1
-@2057 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2058 = private unnamed_addr constant [9 x i8] c"if.else.\00", align 1
-@2059 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2060 = private unnamed_addr constant [8 x i8] c"if.end.\00", align 1
-@2061 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2062 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2063 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@2064 = private unnamed_addr constant [21 x i8] c"  ; malformed while\0A\00", align 1
-@2065 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2066 = private unnamed_addr constant [24 x i8] c"  br label %while.cond.\00", align 1
-@2067 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2068 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2069 = private unnamed_addr constant [24 x i8] c"  br label %while.cond.\00", align 1
-@2070 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2071 = private unnamed_addr constant [12 x i8] c"while.cond.\00", align 1
-@2072 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2073 = private unnamed_addr constant [12 x i8] c"%whilecond.\00", align 1
-@2074 = private unnamed_addr constant [20 x i8] c"  br i1 %whilecond.\00", align 1
-@2075 = private unnamed_addr constant [21 x i8] c", label %while.body.\00", align 1
-@2076 = private unnamed_addr constant [20 x i8] c", label %while.end.\00", align 1
-@2077 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2078 = private unnamed_addr constant [12 x i8] c"while.body.\00", align 1
-@2079 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2080 = private unnamed_addr constant [11 x i8] c"while.end.\00", align 1
-@2081 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2082 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2083 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@2084 = private unnamed_addr constant [19 x i8] c"  ; malformed for\0A\00", align 1
-@2085 = private unnamed_addr constant [28 x i8] c"  ; malformed for iterator\0A\00", align 1
-@2086 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
-@2087 = private unnamed_addr constant [26 x i8] c"  ; malformed for source\0A\00", align 1
-@2088 = private unnamed_addr constant [28 x i8] c"  ; unsupported for source\0A\00", align 1
-@2089 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2090 = private unnamed_addr constant [4 x i8] c"slt\00", align 1
-@2091 = private unnamed_addr constant [3 x i8] c"to\00", align 1
-@2092 = private unnamed_addr constant [3 x i8] c"..\00", align 1
-@2093 = private unnamed_addr constant [4 x i8] c"sle\00", align 1
-@2094 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@2095 = private unnamed_addr constant [7 x i8] c".step.\00", align 1
-@2096 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
-@2097 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2098 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@2099 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
-@2100 = private unnamed_addr constant [13 x i8] c" = add i32 %\00", align 1
-@2101 = private unnamed_addr constant [7 x i8] c".step.\00", align 1
-@2102 = private unnamed_addr constant [5 x i8] c", 1\0A\00", align 1
-@2103 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
-@2104 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
-@2105 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@2106 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2107 = private unnamed_addr constant [22 x i8] c"  br label %for.cond.\00", align 1
-@2108 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2109 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2110 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@2111 = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00", align 1
-@2112 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@2113 = private unnamed_addr constant [7 x i8] c".start\00", align 1
-@2114 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
-@2115 = private unnamed_addr constant [14 x i8] c".start, ptr %\00", align 1
-@2116 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2117 = private unnamed_addr constant [22 x i8] c"  br label %for.cond.\00", align 1
-@2118 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2119 = private unnamed_addr constant [10 x i8] c"for.cond.\00", align 1
-@2120 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2121 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@2122 = private unnamed_addr constant [23 x i8] c".val = load i32, ptr %\00", align 1
-@2123 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2124 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@2125 = private unnamed_addr constant [5 x i8] c".end\00", align 1
-@2126 = private unnamed_addr constant [12 x i8] c"  %forcond.\00", align 1
-@2127 = private unnamed_addr constant [9 x i8] c" = icmp \00", align 1
-@2128 = private unnamed_addr constant [7 x i8] c" i32 %\00", align 1
-@2129 = private unnamed_addr constant [8 x i8] c".val, %\00", align 1
-@2130 = private unnamed_addr constant [6 x i8] c".end\0A\00", align 1
-@2131 = private unnamed_addr constant [18 x i8] c"  br i1 %forcond.\00", align 1
-@2132 = private unnamed_addr constant [19 x i8] c", label %for.body.\00", align 1
-@2133 = private unnamed_addr constant [18 x i8] c", label %for.end.\00", align 1
+@1932 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1933 = private unnamed_addr constant [42 x i8] c".left = call ptr @csec_to_string_char(i8 \00", align 1
+@1934 = private unnamed_addr constant [11 x i8] c".left.i8)\0A\00", align 1
+@1935 = private unnamed_addr constant [10 x i8] c".left.i32\00", align 1
+@1936 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1937 = private unnamed_addr constant [22 x i8] c".left.i64 = sext i32 \00", align 1
+@1938 = private unnamed_addr constant [18 x i8] c".left.i32 to i64\0A\00", align 1
+@1939 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1940 = private unnamed_addr constant [42 x i8] c".left = call ptr @csec_to_string_i64(i64 \00", align 1
+@1941 = private unnamed_addr constant [12 x i8] c".left.i64)\0A\00", align 1
+@1942 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1943 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1944 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1945 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1946 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1947 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@1948 = private unnamed_addr constant [10 x i8] c"substring\00", align 1
+@1949 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1950 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1951 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1952 = private unnamed_addr constant [2 x i8] c"+\00", align 1
+@1953 = private unnamed_addr constant [7 x i8] c".right\00", align 1
+@1954 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1955 = private unnamed_addr constant [43 x i8] c".right = call ptr @csec_to_string_char(i8 \00", align 1
+@1956 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@1957 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@1958 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1959 = private unnamed_addr constant [27 x i8] c".right.i8 = load i8, ptr %\00", align 1
+@1960 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1961 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1962 = private unnamed_addr constant [43 x i8] c".right = call ptr @csec_to_string_char(i8 \00", align 1
+@1963 = private unnamed_addr constant [12 x i8] c".right.i8)\0A\00", align 1
+@1964 = private unnamed_addr constant [11 x i8] c".right.i32\00", align 1
+@1965 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1966 = private unnamed_addr constant [23 x i8] c".right.i64 = sext i32 \00", align 1
+@1967 = private unnamed_addr constant [19 x i8] c".right.i32 to i64\0A\00", align 1
+@1968 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1969 = private unnamed_addr constant [43 x i8] c".right = call ptr @csec_to_string_i64(i64 \00", align 1
+@1970 = private unnamed_addr constant [13 x i8] c".right.i64)\0A\00", align 1
+@1971 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1972 = private unnamed_addr constant [37 x i8] c" = call ptr @csec_string_concat(ptr \00", align 1
+@1973 = private unnamed_addr constant [12 x i8] c".left, ptr \00", align 1
+@1974 = private unnamed_addr constant [9 x i8] c".right)\0A\00", align 1
+@1975 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@1976 = private unnamed_addr constant [26 x i8] c" = inttoptr i64 0 to ptr\0A\00", align 1
+@1977 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1978 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1979 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1980 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1981 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1982 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@1983 = private unnamed_addr constant [10 x i8] c"substring\00", align 1
+@1984 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1985 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@1986 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@1987 = private unnamed_addr constant [2 x i8] c"+\00", align 1
+@1988 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@1989 = private unnamed_addr constant [6 x i8] c"value\00", align 1
+@1990 = private unnamed_addr constant [9 x i8] c"variable\00", align 1
+@1991 = private unnamed_addr constant [4 x i8] c"Int\00", align 1
+@1992 = private unnamed_addr constant [8 x i8] c"unknown\00", align 1
+@1993 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
+@1994 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
+@1995 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
+@1996 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@1997 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@1998 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@1999 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2000 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
+@2001 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2002 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2003 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@2004 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@2005 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
+@2006 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
+@2007 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
+@2008 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
+@2009 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2010 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2011 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@2012 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@2013 = private unnamed_addr constant [3 x i8] c"i8\00", align 1
+@2014 = private unnamed_addr constant [3 x i8] c"i1\00", align 1
+@2015 = private unnamed_addr constant [4 x i8] c"i64\00", align 1
+@2016 = private unnamed_addr constant [7 x i8] c"double\00", align 1
+@2017 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@2018 = private unnamed_addr constant [9 x i8] c" = load \00", align 1
+@2019 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@2020 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2021 = private unnamed_addr constant [7 x i8] c"  ret \00", align 1
+@2022 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@2023 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2024 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
+@2025 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2026 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2027 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2028 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@2029 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@2030 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@2031 = private unnamed_addr constant [3 x i8] c"i8\00", align 1
+@2032 = private unnamed_addr constant [3 x i8] c"i1\00", align 1
+@2033 = private unnamed_addr constant [4 x i8] c"i64\00", align 1
+@2034 = private unnamed_addr constant [7 x i8] c"double\00", align 1
+@2035 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@2036 = private unnamed_addr constant [9 x i8] c" = call \00", align 1
+@2037 = private unnamed_addr constant [3 x i8] c" @\00", align 1
+@2038 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2039 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@2040 = private unnamed_addr constant [7 x i8] c"  ret \00", align 1
+@2041 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@2042 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2043 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
+@2044 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2045 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@2046 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
+@2047 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2048 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@2049 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
+@2050 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2051 = private unnamed_addr constant [3 x i8] c"if\00", align 1
+@2052 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2053 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2054 = private unnamed_addr constant [18 x i8] c"  ; malformed if\0A\00", align 1
+@2055 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2056 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2057 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2058 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2059 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2060 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2061 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2062 = private unnamed_addr constant [5 x i8] c"else\00", align 1
+@2063 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2064 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2065 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2066 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2067 = private unnamed_addr constant [7 x i8] c"%cond.\00", align 1
+@2068 = private unnamed_addr constant [15 x i8] c"  br i1 %cond.\00", align 1
+@2069 = private unnamed_addr constant [18 x i8] c", label %if.then.\00", align 1
+@2070 = private unnamed_addr constant [18 x i8] c", label %if.else.\00", align 1
+@2071 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2072 = private unnamed_addr constant [9 x i8] c"if.then.\00", align 1
+@2073 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2074 = private unnamed_addr constant [9 x i8] c"if.else.\00", align 1
+@2075 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2076 = private unnamed_addr constant [8 x i8] c"if.end.\00", align 1
+@2077 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2078 = private unnamed_addr constant [6 x i8] c"while\00", align 1
+@2079 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2080 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2081 = private unnamed_addr constant [21 x i8] c"  ; malformed while\0A\00", align 1
+@2082 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2083 = private unnamed_addr constant [24 x i8] c"  br label %while.cond.\00", align 1
+@2084 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2085 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2086 = private unnamed_addr constant [24 x i8] c"  br label %while.cond.\00", align 1
+@2087 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2088 = private unnamed_addr constant [12 x i8] c"while.cond.\00", align 1
+@2089 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2090 = private unnamed_addr constant [12 x i8] c"%whilecond.\00", align 1
+@2091 = private unnamed_addr constant [20 x i8] c"  br i1 %whilecond.\00", align 1
+@2092 = private unnamed_addr constant [21 x i8] c", label %while.body.\00", align 1
+@2093 = private unnamed_addr constant [20 x i8] c", label %while.end.\00", align 1
+@2094 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2095 = private unnamed_addr constant [12 x i8] c"while.body.\00", align 1
+@2096 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2097 = private unnamed_addr constant [11 x i8] c"while.end.\00", align 1
+@2098 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2099 = private unnamed_addr constant [4 x i8] c"for\00", align 1
+@2100 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2101 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2102 = private unnamed_addr constant [19 x i8] c"  ; malformed for\0A\00", align 1
+@2103 = private unnamed_addr constant [28 x i8] c"  ; malformed for iterator\0A\00", align 1
+@2104 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
+@2105 = private unnamed_addr constant [26 x i8] c"  ; malformed for source\0A\00", align 1
+@2106 = private unnamed_addr constant [28 x i8] c"  ; unsupported for source\0A\00", align 1
+@2107 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2108 = private unnamed_addr constant [4 x i8] c"slt\00", align 1
+@2109 = private unnamed_addr constant [3 x i8] c"to\00", align 1
+@2110 = private unnamed_addr constant [3 x i8] c"..\00", align 1
+@2111 = private unnamed_addr constant [4 x i8] c"sle\00", align 1
+@2112 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2113 = private unnamed_addr constant [7 x i8] c".step.\00", align 1
+@2114 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
+@2115 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2116 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2117 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
+@2118 = private unnamed_addr constant [13 x i8] c" = add i32 %\00", align 1
+@2119 = private unnamed_addr constant [7 x i8] c".step.\00", align 1
+@2120 = private unnamed_addr constant [5 x i8] c", 1\0A\00", align 1
+@2121 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
+@2122 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
+@2123 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@2124 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2125 = private unnamed_addr constant [22 x i8] c"  br label %for.cond.\00", align 1
+@2126 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2127 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2128 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2129 = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00", align 1
+@2130 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@2131 = private unnamed_addr constant [7 x i8] c".start\00", align 1
+@2132 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
+@2133 = private unnamed_addr constant [14 x i8] c".start, ptr %\00", align 1
 @2134 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2135 = private unnamed_addr constant [10 x i8] c"for.body.\00", align 1
-@2136 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2137 = private unnamed_addr constant [9 x i8] c"for.end.\00", align 1
+@2135 = private unnamed_addr constant [22 x i8] c"  br label %for.cond.\00", align 1
+@2136 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2137 = private unnamed_addr constant [10 x i8] c"for.cond.\00", align 1
 @2138 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2139 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@2140 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2141 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
-@2142 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2143 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
-@2144 = private unnamed_addr constant [16 x i8] c"  ret i32 %ret\0A\00", align 1
-@2145 = private unnamed_addr constant [13 x i8] c"  ret i32 0\0A\00", align 1
-@2146 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
-@2147 = private unnamed_addr constant [6 x i8] c"value\00", align 1
-@2148 = private unnamed_addr constant [9 x i8] c"variable\00", align 1
-@2149 = private unnamed_addr constant [4 x i8] c"Int\00", align 1
-@2150 = private unnamed_addr constant [8 x i8] c"unknown\00", align 1
-@2151 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
-@2152 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
-@2153 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
-@2154 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
-@2155 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@2156 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@2157 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2158 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
-@2159 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2160 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2161 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
-@2162 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@2163 = private unnamed_addr constant [5 x i8] c".ret\00", align 1
-@2164 = private unnamed_addr constant [24 x i8] c"  %ret.bool = zext i1 %\00", align 1
-@2165 = private unnamed_addr constant [13 x i8] c".ret to i32\0A\00", align 1
-@2166 = private unnamed_addr constant [21 x i8] c"  ret i32 %ret.bool\0A\00", align 1
-@2167 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
-@2168 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@2169 = private unnamed_addr constant [5 x i8] c".ret\00", align 1
-@2170 = private unnamed_addr constant [32 x i8] c"  %ret.double = fptosi double %\00", align 1
-@2171 = private unnamed_addr constant [13 x i8] c".ret to i32\0A\00", align 1
-@2172 = private unnamed_addr constant [23 x i8] c"  ret i32 %ret.double\0A\00", align 1
-@2173 = private unnamed_addr constant [2 x i8] c"%\00", align 1
-@2174 = private unnamed_addr constant [5 x i8] c".ret\00", align 1
-@2175 = private unnamed_addr constant [12 x i8] c"  ret i32 %\00", align 1
-@2176 = private unnamed_addr constant [6 x i8] c".ret\0A\00", align 1
-@2177 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
-@2178 = private unnamed_addr constant [16 x i8] c"  ret i32 %ret\0A\00", align 1
-@2179 = private unnamed_addr constant [3 x i8] c"if\00", align 1
-@2180 = private unnamed_addr constant [6 x i8] c"while\00", align 1
-@2181 = private unnamed_addr constant [4 x i8] c"for\00", align 1
-@2182 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
-@2183 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
-@2184 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
-@2185 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
-@2186 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@2187 = private unnamed_addr constant [13 x i8] c"  ret i32 0\0A\00", align 1
-@2188 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2189 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2190 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@2139 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2140 = private unnamed_addr constant [23 x i8] c".val = load i32, ptr %\00", align 1
+@2141 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2142 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@2143 = private unnamed_addr constant [5 x i8] c".end\00", align 1
+@2144 = private unnamed_addr constant [12 x i8] c"  %forcond.\00", align 1
+@2145 = private unnamed_addr constant [9 x i8] c" = icmp \00", align 1
+@2146 = private unnamed_addr constant [7 x i8] c" i32 %\00", align 1
+@2147 = private unnamed_addr constant [8 x i8] c".val, %\00", align 1
+@2148 = private unnamed_addr constant [6 x i8] c".end\0A\00", align 1
+@2149 = private unnamed_addr constant [18 x i8] c"  br i1 %forcond.\00", align 1
+@2150 = private unnamed_addr constant [19 x i8] c", label %for.body.\00", align 1
+@2151 = private unnamed_addr constant [18 x i8] c", label %for.end.\00", align 1
+@2152 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2153 = private unnamed_addr constant [10 x i8] c"for.body.\00", align 1
+@2154 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2155 = private unnamed_addr constant [9 x i8] c"for.end.\00", align 1
+@2156 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2157 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
+@2158 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
+@2159 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
+@2160 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@2161 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@2162 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2163 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2164 = private unnamed_addr constant [18 x i8] c"  ; malformed if\0A\00", align 1
+@2165 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2166 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2167 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2168 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2169 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2170 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2171 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2172 = private unnamed_addr constant [5 x i8] c"else\00", align 1
+@2173 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2174 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2175 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2176 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2177 = private unnamed_addr constant [7 x i8] c"%cond.\00", align 1
+@2178 = private unnamed_addr constant [15 x i8] c"  br i1 %cond.\00", align 1
+@2179 = private unnamed_addr constant [18 x i8] c", label %if.then.\00", align 1
+@2180 = private unnamed_addr constant [18 x i8] c", label %if.else.\00", align 1
+@2181 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2182 = private unnamed_addr constant [9 x i8] c"if.then.\00", align 1
+@2183 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2184 = private unnamed_addr constant [9 x i8] c"if.else.\00", align 1
+@2185 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2186 = private unnamed_addr constant [8 x i8] c"if.end.\00", align 1
+@2187 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2188 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2189 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2190 = private unnamed_addr constant [21 x i8] c"  ; malformed while\0A\00", align 1
 @2191 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2192 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2193 = private unnamed_addr constant [8 x i8] c"unknown\00", align 1
-@2194 = private unnamed_addr constant [2 x i8] c":\00", align 1
-@2195 = private unnamed_addr constant [3 x i8] c", \00", align 1
-@2196 = private unnamed_addr constant [7 x i8] c" %arg.\00", align 1
-@2197 = private unnamed_addr constant [2 x i8] c",\00", align 1
-@2198 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2199 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2200 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@2201 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2202 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2203 = private unnamed_addr constant [8 x i8] c"unknown\00", align 1
-@2204 = private unnamed_addr constant [2 x i8] c":\00", align 1
-@2205 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
-@2206 = private unnamed_addr constant [11 x i8] c" = alloca \00", align 1
-@2207 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2208 = private unnamed_addr constant [9 x i8] c"  store \00", align 1
-@2209 = private unnamed_addr constant [7 x i8] c" %arg.\00", align 1
-@2210 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
-@2211 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2212 = private unnamed_addr constant [2 x i8] c",\00", align 1
-@2213 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2214 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@2215 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
-@2216 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2217 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
-@2218 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2219 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2220 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@2221 = private unnamed_addr constant [18 x i8] c" = load i1, ptr %\00", align 1
-@2222 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2223 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
-@2224 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2225 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
-@2226 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2227 = private unnamed_addr constant [3 x i8] c"if\00", align 1
-@2228 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2229 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@2230 = private unnamed_addr constant [18 x i8] c"  ; malformed if\0A\00", align 1
-@2231 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2232 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2233 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2192 = private unnamed_addr constant [24 x i8] c"  br label %while.cond.\00", align 1
+@2193 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2194 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2195 = private unnamed_addr constant [24 x i8] c"  br label %while.cond.\00", align 1
+@2196 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2197 = private unnamed_addr constant [12 x i8] c"while.cond.\00", align 1
+@2198 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2199 = private unnamed_addr constant [12 x i8] c"%whilecond.\00", align 1
+@2200 = private unnamed_addr constant [20 x i8] c"  br i1 %whilecond.\00", align 1
+@2201 = private unnamed_addr constant [21 x i8] c", label %while.body.\00", align 1
+@2202 = private unnamed_addr constant [20 x i8] c", label %while.end.\00", align 1
+@2203 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2204 = private unnamed_addr constant [12 x i8] c"while.body.\00", align 1
+@2205 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2206 = private unnamed_addr constant [11 x i8] c"while.end.\00", align 1
+@2207 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2208 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2209 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2210 = private unnamed_addr constant [19 x i8] c"  ; malformed for\0A\00", align 1
+@2211 = private unnamed_addr constant [28 x i8] c"  ; malformed for iterator\0A\00", align 1
+@2212 = private unnamed_addr constant [3 x i8] c"<-\00", align 1
+@2213 = private unnamed_addr constant [26 x i8] c"  ; malformed for source\0A\00", align 1
+@2214 = private unnamed_addr constant [28 x i8] c"  ; unsupported for source\0A\00", align 1
+@2215 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2216 = private unnamed_addr constant [4 x i8] c"slt\00", align 1
+@2217 = private unnamed_addr constant [3 x i8] c"to\00", align 1
+@2218 = private unnamed_addr constant [3 x i8] c"..\00", align 1
+@2219 = private unnamed_addr constant [4 x i8] c"sle\00", align 1
+@2220 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2221 = private unnamed_addr constant [7 x i8] c".step.\00", align 1
+@2222 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00", align 1
+@2223 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2224 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2225 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
+@2226 = private unnamed_addr constant [13 x i8] c" = add i32 %\00", align 1
+@2227 = private unnamed_addr constant [7 x i8] c".step.\00", align 1
+@2228 = private unnamed_addr constant [5 x i8] c", 1\0A\00", align 1
+@2229 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
+@2230 = private unnamed_addr constant [7 x i8] c".next.\00", align 1
+@2231 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@2232 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2233 = private unnamed_addr constant [22 x i8] c"  br label %for.cond.\00", align 1
 @2234 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2235 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2236 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2237 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
-@2238 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2239 = private unnamed_addr constant [5 x i8] c"else\00", align 1
-@2240 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2241 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2242 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@2243 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2244 = private unnamed_addr constant [7 x i8] c"%cond.\00", align 1
-@2245 = private unnamed_addr constant [15 x i8] c"  br i1 %cond.\00", align 1
-@2246 = private unnamed_addr constant [18 x i8] c", label %if.then.\00", align 1
-@2247 = private unnamed_addr constant [18 x i8] c", label %if.else.\00", align 1
-@2248 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2249 = private unnamed_addr constant [9 x i8] c"if.then.\00", align 1
-@2250 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2251 = private unnamed_addr constant [9 x i8] c"if.else.\00", align 1
-@2252 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2253 = private unnamed_addr constant [8 x i8] c"if.end.\00", align 1
-@2254 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2255 = private unnamed_addr constant [16 x i8] c"  ret i1 false\0A\00", align 1
-@2256 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2257 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@2258 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2259 = private unnamed_addr constant [10 x i8] c"  ret i8 \00", align 1
+@2236 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2237 = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00", align 1
+@2238 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@2239 = private unnamed_addr constant [7 x i8] c".start\00", align 1
+@2240 = private unnamed_addr constant [14 x i8] c"  store i32 %\00", align 1
+@2241 = private unnamed_addr constant [14 x i8] c".start, ptr %\00", align 1
+@2242 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2243 = private unnamed_addr constant [22 x i8] c"  br label %for.cond.\00", align 1
+@2244 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2245 = private unnamed_addr constant [10 x i8] c"for.cond.\00", align 1
+@2246 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2247 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2248 = private unnamed_addr constant [23 x i8] c".val = load i32, ptr %\00", align 1
+@2249 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2250 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@2251 = private unnamed_addr constant [5 x i8] c".end\00", align 1
+@2252 = private unnamed_addr constant [12 x i8] c"  %forcond.\00", align 1
+@2253 = private unnamed_addr constant [9 x i8] c" = icmp \00", align 1
+@2254 = private unnamed_addr constant [7 x i8] c" i32 %\00", align 1
+@2255 = private unnamed_addr constant [8 x i8] c".val, %\00", align 1
+@2256 = private unnamed_addr constant [6 x i8] c".end\0A\00", align 1
+@2257 = private unnamed_addr constant [18 x i8] c"  br i1 %forcond.\00", align 1
+@2258 = private unnamed_addr constant [19 x i8] c", label %for.body.\00", align 1
+@2259 = private unnamed_addr constant [18 x i8] c", label %for.end.\00", align 1
 @2260 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2261 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2262 = private unnamed_addr constant [24 x i8] c"  %ret = load i8, ptr %\00", align 1
-@2263 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2264 = private unnamed_addr constant [15 x i8] c"  ret i8 %ret\0A\00", align 1
-@2265 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2266 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2267 = private unnamed_addr constant [2 x i8] c")\00", align 1
-@2268 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
-@2269 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@2270 = private unnamed_addr constant [13 x i8] c" = call i8 @\00", align 1
-@2271 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2272 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
-@2273 = private unnamed_addr constant [10 x i8] c"  ret i8 \00", align 1
-@2274 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2275 = private unnamed_addr constant [12 x i8] c"  ret i8 0\0A\00", align 1
-@2276 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2277 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@2278 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2279 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
-@2280 = private unnamed_addr constant [19 x i8] c"  ret double %ret\0A\00", align 1
-@2281 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2282 = private unnamed_addr constant [28 x i8] c"  %ret = load double, ptr %\00", align 1
-@2283 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2284 = private unnamed_addr constant [19 x i8] c"  ret double %ret\0A\00", align 1
-@2285 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
-@2286 = private unnamed_addr constant [19 x i8] c"  ret double %ret\0A\00", align 1
-@2287 = private unnamed_addr constant [27 x i8] c"  ret double 0.000000e+00\0A\00", align 1
-@2288 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2289 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@2290 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2291 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
-@2292 = private unnamed_addr constant [16 x i8] c"  ret i64 %ret\0A\00", align 1
-@2293 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2294 = private unnamed_addr constant [25 x i8] c"  %ret = load i64, ptr %\00", align 1
-@2295 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2296 = private unnamed_addr constant [16 x i8] c"  ret i64 %ret\0A\00", align 1
-@2297 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
-@2298 = private unnamed_addr constant [16 x i8] c"  ret i64 %ret\0A\00", align 1
-@2299 = private unnamed_addr constant [13 x i8] c"  ret i64 0\0A\00", align 1
-@2300 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2301 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@2302 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
-@2303 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2304 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@2305 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
-@2306 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
-@2307 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
-@2308 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
-@2309 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2310 = private unnamed_addr constant [2 x i8] c";\00", align 1
-@2311 = private unnamed_addr constant [3 x i8] c"  \00", align 1
-@2312 = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00", align 1
-@2313 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2314 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
-@2315 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2316 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
-@2317 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2318 = private unnamed_addr constant [16 x i8] c"  ret ptr null\0A\00", align 1
-@2319 = private unnamed_addr constant [3 x i8] c"if\00", align 1
-@2320 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2321 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@2322 = private unnamed_addr constant [18 x i8] c"  ; malformed if\0A\00", align 1
-@2323 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2261 = private unnamed_addr constant [10 x i8] c"for.body.\00", align 1
+@2262 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2263 = private unnamed_addr constant [9 x i8] c"for.end.\00", align 1
+@2264 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2265 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@2266 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2267 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
+@2268 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2269 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
+@2270 = private unnamed_addr constant [16 x i8] c"  ret i32 %ret\0A\00", align 1
+@2271 = private unnamed_addr constant [13 x i8] c"  ret i32 0\0A\00", align 1
+@2272 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
+@2273 = private unnamed_addr constant [6 x i8] c"value\00", align 1
+@2274 = private unnamed_addr constant [9 x i8] c"variable\00", align 1
+@2275 = private unnamed_addr constant [4 x i8] c"Int\00", align 1
+@2276 = private unnamed_addr constant [8 x i8] c"unknown\00", align 1
+@2277 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
+@2278 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
+@2279 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
+@2280 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@2281 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@2282 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@2283 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2284 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
+@2285 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2286 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2287 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
+@2288 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@2289 = private unnamed_addr constant [5 x i8] c".ret\00", align 1
+@2290 = private unnamed_addr constant [24 x i8] c"  %ret.bool = zext i1 %\00", align 1
+@2291 = private unnamed_addr constant [13 x i8] c".ret to i32\0A\00", align 1
+@2292 = private unnamed_addr constant [21 x i8] c"  ret i32 %ret.bool\0A\00", align 1
+@2293 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
+@2294 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@2295 = private unnamed_addr constant [5 x i8] c".ret\00", align 1
+@2296 = private unnamed_addr constant [32 x i8] c"  %ret.double = fptosi double %\00", align 1
+@2297 = private unnamed_addr constant [13 x i8] c".ret to i32\0A\00", align 1
+@2298 = private unnamed_addr constant [23 x i8] c"  ret i32 %ret.double\0A\00", align 1
+@2299 = private unnamed_addr constant [2 x i8] c"%\00", align 1
+@2300 = private unnamed_addr constant [5 x i8] c".ret\00", align 1
+@2301 = private unnamed_addr constant [12 x i8] c"  ret i32 %\00", align 1
+@2302 = private unnamed_addr constant [6 x i8] c".ret\0A\00", align 1
+@2303 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
+@2304 = private unnamed_addr constant [16 x i8] c"  ret i32 %ret\0A\00", align 1
+@2305 = private unnamed_addr constant [3 x i8] c"if\00", align 1
+@2306 = private unnamed_addr constant [6 x i8] c"while\00", align 1
+@2307 = private unnamed_addr constant [4 x i8] c"for\00", align 1
+@2308 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
+@2309 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
+@2310 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
+@2311 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@2312 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@2313 = private unnamed_addr constant [13 x i8] c"  ret i32 0\0A\00", align 1
+@2314 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2315 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2316 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@2317 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2318 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2319 = private unnamed_addr constant [8 x i8] c"unknown\00", align 1
+@2320 = private unnamed_addr constant [2 x i8] c":\00", align 1
+@2321 = private unnamed_addr constant [3 x i8] c", \00", align 1
+@2322 = private unnamed_addr constant [7 x i8] c" %arg.\00", align 1
+@2323 = private unnamed_addr constant [2 x i8] c",\00", align 1
 @2324 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2325 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
-@2326 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2325 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2326 = private unnamed_addr constant [2 x i8] c")\00", align 1
 @2327 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @2328 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2329 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
-@2330 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2331 = private unnamed_addr constant [5 x i8] c"else\00", align 1
-@2332 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2333 = private unnamed_addr constant [2 x i8] c"{\00", align 1
-@2334 = private unnamed_addr constant [2 x i8] c"}\00", align 1
-@2335 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2336 = private unnamed_addr constant [7 x i8] c"%cond.\00", align 1
-@2337 = private unnamed_addr constant [15 x i8] c"  br i1 %cond.\00", align 1
-@2338 = private unnamed_addr constant [18 x i8] c", label %if.then.\00", align 1
-@2339 = private unnamed_addr constant [18 x i8] c", label %if.else.\00", align 1
-@2340 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2341 = private unnamed_addr constant [9 x i8] c"if.then.\00", align 1
-@2342 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2343 = private unnamed_addr constant [9 x i8] c"if.else.\00", align 1
-@2344 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2345 = private unnamed_addr constant [8 x i8] c"if.end.\00", align 1
-@2346 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
-@2347 = private unnamed_addr constant [16 x i8] c"  ret ptr null\0A\00", align 1
-@2348 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2349 = private unnamed_addr constant [7 x i8] c"return\00", align 1
-@2350 = private unnamed_addr constant [12 x i8] c"  ret void\0A\00", align 1
-@2351 = private unnamed_addr constant [12 x i8] c"  ret void\0A\00", align 1
-@2352 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2353 = private unnamed_addr constant [4 x i8] c"\\0A\00", align 1
-@2354 = private unnamed_addr constant [4 x i8] c"\\0D\00", align 1
-@2355 = private unnamed_addr constant [4 x i8] c"\\09\00", align 1
-@2356 = private unnamed_addr constant [4 x i8] c"\\22\00", align 1
-@2357 = private unnamed_addr constant [4 x i8] c"\\5C\00", align 1
-@2358 = private unnamed_addr constant [4 x i8] c"\\22\00", align 1
-@2359 = private unnamed_addr constant [4 x i8] c"\\5C\00", align 1
-@2360 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2361 = private unnamed_addr constant [4 x i8] c"\\00\00", align 1
+@2329 = private unnamed_addr constant [8 x i8] c"unknown\00", align 1
+@2330 = private unnamed_addr constant [2 x i8] c":\00", align 1
+@2331 = private unnamed_addr constant [4 x i8] c"  %\00", align 1
+@2332 = private unnamed_addr constant [11 x i8] c" = alloca \00", align 1
+@2333 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2334 = private unnamed_addr constant [9 x i8] c"  store \00", align 1
+@2335 = private unnamed_addr constant [7 x i8] c" %arg.\00", align 1
+@2336 = private unnamed_addr constant [8 x i8] c", ptr %\00", align 1
+@2337 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2338 = private unnamed_addr constant [2 x i8] c",\00", align 1
+@2339 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2340 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@2341 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@2342 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2343 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
+@2344 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2345 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2346 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@2347 = private unnamed_addr constant [18 x i8] c" = load i1, ptr %\00", align 1
+@2348 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2349 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
+@2350 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2351 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
+@2352 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2353 = private unnamed_addr constant [3 x i8] c"if\00", align 1
+@2354 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2355 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2356 = private unnamed_addr constant [18 x i8] c"  ; malformed if\0A\00", align 1
+@2357 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2358 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2359 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2360 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2361 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @2362 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2363 = private unnamed_addr constant [7 x i8] c"@.str.\00", align 1
-@2364 = private unnamed_addr constant [35 x i8] c" = private unnamed_addr constant [\00", align 1
-@2365 = private unnamed_addr constant [10 x i8] c" x i8] c\22\00", align 1
-@2366 = private unnamed_addr constant [3 x i8] c"\22\0A\00", align 1
-@2367 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2368 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2369 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
-@2370 = private unnamed_addr constant [12 x i8] c"define i8 @\00", align 1
-@2371 = private unnamed_addr constant [13 x i8] c"() {\0Aentry:\0A\00", align 1
-@2372 = private unnamed_addr constant [10 x i8] c"  ret i8 \00", align 1
-@2373 = private unnamed_addr constant [5 x i8] c"\0A}\0A\0A\00", align 1
-@2374 = private unnamed_addr constant [4 x i8] c"Int\00", align 1
-@2375 = private unnamed_addr constant [13 x i8] c"define i32 @\00", align 1
-@2376 = private unnamed_addr constant [13 x i8] c"() {\0Aentry:\0A\00", align 1
-@2377 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
-@2378 = private unnamed_addr constant [5 x i8] c"\0A}\0A\0A\00", align 1
-@2379 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
-@2380 = private unnamed_addr constant [12 x i8] c"define i1 @\00", align 1
-@2381 = private unnamed_addr constant [13 x i8] c"() {\0Aentry:\0A\00", align 1
-@2382 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
-@2383 = private unnamed_addr constant [5 x i8] c"\0A}\0A\0A\00", align 1
-@2384 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@2385 = private unnamed_addr constant [13 x i8] c"define ptr @\00", align 1
-@2386 = private unnamed_addr constant [13 x i8] c"() {\0Aentry:\0A\00", align 1
-@2387 = private unnamed_addr constant [34 x i8] c"  %ret = getelementptr inbounds [\00", align 1
-@2388 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
-@2389 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
-@2390 = private unnamed_addr constant [19 x i8] c"  ret ptr %ret\0A}\0A\0A\00", align 1
-@2391 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2392 = private unnamed_addr constant [4 x i8] c"Int\00", align 1
-@2393 = private unnamed_addr constant [13 x i8] c"define i32 @\00", align 1
-@2394 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2395 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
-@2396 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
-@2397 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
-@2398 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
-@2399 = private unnamed_addr constant [12 x i8] c"define i1 @\00", align 1
-@2400 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2401 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
-@2402 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
-@2403 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
-@2404 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
-@2405 = private unnamed_addr constant [12 x i8] c"define i8 @\00", align 1
-@2406 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2407 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
-@2408 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
-@2409 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
-@2410 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
-@2411 = private unnamed_addr constant [16 x i8] c"define double @\00", align 1
-@2412 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2413 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
-@2414 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
-@2415 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
-@2416 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
-@2417 = private unnamed_addr constant [13 x i8] c"define i64 @\00", align 1
-@2418 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2419 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
-@2420 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
-@2421 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
-@2422 = private unnamed_addr constant [5 x i8] c"Unit\00", align 1
-@2423 = private unnamed_addr constant [14 x i8] c"define void @\00", align 1
-@2424 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2425 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
-@2426 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
-@2427 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
-@2428 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
-@2429 = private unnamed_addr constant [13 x i8] c"define ptr @\00", align 1
-@2430 = private unnamed_addr constant [2 x i8] c"(\00", align 1
-@2431 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
-@2432 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
-@2433 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
-@2434 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2435 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2436 = private unnamed_addr constant [30 x i8] c"; ModuleID = 'csec.selfhost'\0A\00", align 1
-@2437 = private unnamed_addr constant [36 x i8] c"source_filename = \22csec.selfhost\22\0A\0A\00", align 1
-@2438 = private unnamed_addr constant [38 x i8] c"declare i64 @csec_string_length(ptr)\0A\00", align 1
-@2439 = private unnamed_addr constant [44 x i8] c"declare i8 @csec_string_char_at(ptr, i32)\0A\0A\00", align 1
-@2440 = private unnamed_addr constant [44 x i8] c"declare i32 @csec_command_line_arg_count()\0A\00", align 1
-@2441 = private unnamed_addr constant [41 x i8] c"declare ptr @csec_command_line_arg(i32)\0A\00", align 1
-@2442 = private unnamed_addr constant [43 x i8] c"declare ptr @csec_file_read_all_text(ptr)\0A\00", align 1
-@2443 = private unnamed_addr constant [49 x i8] c"declare i32 @csec_file_write_all_text(ptr, ptr)\0A\00", align 1
-@2444 = private unnamed_addr constant [38 x i8] c"declare void @csec_print_string(ptr)\0A\00", align 1
-@2445 = private unnamed_addr constant [43 x i8] c"declare ptr @csec_string_concat(ptr, ptr)\0A\00", align 1
-@2446 = private unnamed_addr constant [48 x i8] c"declare i32 @csec_string_starts_with(ptr, ptr)\0A\00", align 1
-@2447 = private unnamed_addr constant [51 x i8] c"declare ptr @csec_string_substring(ptr, i32, i32)\0A\00", align 1
-@2448 = private unnamed_addr constant [39 x i8] c"declare i64 @csec_token_builder_new()\0A\00", align 1
-@2449 = private unnamed_addr constant [54 x i8] c"declare i32 @csec_token_builder_append(i64, i8, ptr)\0A\00", align 1
-@2450 = private unnamed_addr constant [45 x i8] c"declare ptr @csec_token_builder_finish(i64)\0A\00", align 1
-@2451 = private unnamed_addr constant [42 x i8] c"declare i8 @csec_token_kind_at(ptr, i32)\0A\00", align 1
-@2452 = private unnamed_addr constant [43 x i8] c"declare ptr @csec_token_text_at(ptr, i32)\0A\00", align 1
-@2453 = private unnamed_addr constant [40 x i8] c"declare ptr @csec_expand_imports(ptr)\0A\0A\00", align 1
-@2454 = private unnamed_addr constant [4 x i8] c"def\00", align 1
-@2455 = private unnamed_addr constant [22 x i8] c"define i32 @main() {\0A\00", align 1
-@2456 = private unnamed_addr constant [3 x i8] c"}\0A\00", align 1
-@2457 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2458 = private unnamed_addr constant [2 x i8] c".\00", align 1
-@2459 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2460 = private unnamed_addr constant [2 x i8] c"/\00", align 1
+@2363 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2364 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2365 = private unnamed_addr constant [5 x i8] c"else\00", align 1
+@2366 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2367 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2368 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2369 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2370 = private unnamed_addr constant [7 x i8] c"%cond.\00", align 1
+@2371 = private unnamed_addr constant [15 x i8] c"  br i1 %cond.\00", align 1
+@2372 = private unnamed_addr constant [18 x i8] c", label %if.then.\00", align 1
+@2373 = private unnamed_addr constant [18 x i8] c", label %if.else.\00", align 1
+@2374 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2375 = private unnamed_addr constant [9 x i8] c"if.then.\00", align 1
+@2376 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2377 = private unnamed_addr constant [9 x i8] c"if.else.\00", align 1
+@2378 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2379 = private unnamed_addr constant [8 x i8] c"if.end.\00", align 1
+@2380 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2381 = private unnamed_addr constant [16 x i8] c"  ret i1 false\0A\00", align 1
+@2382 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2383 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@2384 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2385 = private unnamed_addr constant [10 x i8] c"  ret i8 \00", align 1
+@2386 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2387 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2388 = private unnamed_addr constant [24 x i8] c"  %ret = load i8, ptr %\00", align 1
+@2389 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2390 = private unnamed_addr constant [15 x i8] c"  ret i8 %ret\0A\00", align 1
+@2391 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2392 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2393 = private unnamed_addr constant [2 x i8] c")\00", align 1
+@2394 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@2395 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@2396 = private unnamed_addr constant [13 x i8] c" = call i8 @\00", align 1
+@2397 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2398 = private unnamed_addr constant [3 x i8] c")\0A\00", align 1
+@2399 = private unnamed_addr constant [10 x i8] c"  ret i8 \00", align 1
+@2400 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2401 = private unnamed_addr constant [12 x i8] c"  ret i8 0\0A\00", align 1
+@2402 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2403 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@2404 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2405 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
+@2406 = private unnamed_addr constant [19 x i8] c"  ret double %ret\0A\00", align 1
+@2407 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2408 = private unnamed_addr constant [28 x i8] c"  %ret = load double, ptr %\00", align 1
+@2409 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2410 = private unnamed_addr constant [19 x i8] c"  ret double %ret\0A\00", align 1
+@2411 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
+@2412 = private unnamed_addr constant [19 x i8] c"  ret double %ret\0A\00", align 1
+@2413 = private unnamed_addr constant [27 x i8] c"  ret double 0.000000e+00\0A\00", align 1
+@2414 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2415 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@2416 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2417 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
+@2418 = private unnamed_addr constant [16 x i8] c"  ret i64 %ret\0A\00", align 1
+@2419 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2420 = private unnamed_addr constant [25 x i8] c"  %ret = load i64, ptr %\00", align 1
+@2421 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2422 = private unnamed_addr constant [16 x i8] c"  ret i64 %ret\0A\00", align 1
+@2423 = private unnamed_addr constant [5 x i8] c"%ret\00", align 1
+@2424 = private unnamed_addr constant [16 x i8] c"  ret i64 %ret\0A\00", align 1
+@2425 = private unnamed_addr constant [13 x i8] c"  ret i64 0\0A\00", align 1
+@2426 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2427 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@2428 = private unnamed_addr constant [6 x i8] c"%ret.\00", align 1
+@2429 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2430 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@2431 = private unnamed_addr constant [28 x i8] c" = getelementptr inbounds [\00", align 1
+@2432 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
+@2433 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
+@2434 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
+@2435 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2436 = private unnamed_addr constant [2 x i8] c";\00", align 1
+@2437 = private unnamed_addr constant [3 x i8] c"  \00", align 1
+@2438 = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00", align 1
+@2439 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2440 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
+@2441 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2442 = private unnamed_addr constant [11 x i8] c"  ret ptr \00", align 1
+@2443 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2444 = private unnamed_addr constant [16 x i8] c"  ret ptr null\0A\00", align 1
+@2445 = private unnamed_addr constant [3 x i8] c"if\00", align 1
+@2446 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2447 = private unnamed_addr constant [2 x i8] c"}\00", align 1
+@2448 = private unnamed_addr constant [18 x i8] c"  ; malformed if\0A\00", align 1
+@2449 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2450 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2451 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2452 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2453 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2454 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2455 = private unnamed_addr constant [20 x i8] c"  br label %if.end.\00", align 1
+@2456 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2457 = private unnamed_addr constant [5 x i8] c"else\00", align 1
+@2458 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2459 = private unnamed_addr constant [2 x i8] c"{\00", align 1
+@2460 = private unnamed_addr constant [2 x i8] c"}\00", align 1
 @2461 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2462 = private unnamed_addr constant [3 x i8] c"//\00", align 1
-@2463 = private unnamed_addr constant [7 x i8] c"import\00", align 1
-@2464 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2465 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2466 = private unnamed_addr constant [6 x i8] c".csec\00", align 1
-@2467 = private unnamed_addr constant [6 x i8] c".csec\00", align 1
-@2468 = private unnamed_addr constant [2 x i8] c"/\00", align 1
-@2469 = private unnamed_addr constant [2 x i8] c"/\00", align 1
-@2470 = private unnamed_addr constant [2 x i8] c"|\00", align 1
-@2471 = private unnamed_addr constant [2 x i8] c"|\00", align 1
-@2472 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2473 = private unnamed_addr constant [7 x i8] c"import\00", align 1
+@2462 = private unnamed_addr constant [7 x i8] c"%cond.\00", align 1
+@2463 = private unnamed_addr constant [15 x i8] c"  br i1 %cond.\00", align 1
+@2464 = private unnamed_addr constant [18 x i8] c", label %if.then.\00", align 1
+@2465 = private unnamed_addr constant [18 x i8] c", label %if.else.\00", align 1
+@2466 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2467 = private unnamed_addr constant [9 x i8] c"if.then.\00", align 1
+@2468 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2469 = private unnamed_addr constant [9 x i8] c"if.else.\00", align 1
+@2470 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2471 = private unnamed_addr constant [8 x i8] c"if.end.\00", align 1
+@2472 = private unnamed_addr constant [3 x i8] c":\0A\00", align 1
+@2473 = private unnamed_addr constant [16 x i8] c"  ret ptr null\0A\00", align 1
 @2474 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@2475 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2476 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2477 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2478 = private unnamed_addr constant [9 x i8] c"tokenlen\00", align 1
-@2479 = private unnamed_addr constant [8 x i8] c"tokens=\00", align 1
-@2480 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2481 = private unnamed_addr constant [7 x i8] c"tokens\00", align 1
-@2482 = private unnamed_addr constant [4 x i8] c"ast\00", align 1
-@2483 = private unnamed_addr constant [8 x i8] c"symbols\00", align 1
-@2484 = private unnamed_addr constant [3 x i8] c"ir\00", align 1
-@2485 = private unnamed_addr constant [5 x i8] c"llvm\00", align 1
-@2486 = private unnamed_addr constant [14 x i8] c"compile error\00", align 1
-@2487 = private unnamed_addr constant [20 x i8] c"selfhost/input.csec\00", align 1
-@2488 = private unnamed_addr constant [15 x i8] c"selfhost/out.c\00", align 1
-@2489 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@2475 = private unnamed_addr constant [7 x i8] c"return\00", align 1
+@2476 = private unnamed_addr constant [12 x i8] c"  ret void\0A\00", align 1
+@2477 = private unnamed_addr constant [12 x i8] c"  ret void\0A\00", align 1
+@2478 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2479 = private unnamed_addr constant [4 x i8] c"\\0A\00", align 1
+@2480 = private unnamed_addr constant [4 x i8] c"\\0D\00", align 1
+@2481 = private unnamed_addr constant [4 x i8] c"\\09\00", align 1
+@2482 = private unnamed_addr constant [4 x i8] c"\\22\00", align 1
+@2483 = private unnamed_addr constant [4 x i8] c"\\5C\00", align 1
+@2484 = private unnamed_addr constant [4 x i8] c"\\22\00", align 1
+@2485 = private unnamed_addr constant [4 x i8] c"\\5C\00", align 1
+@2486 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2487 = private unnamed_addr constant [4 x i8] c"\\00\00", align 1
+@2488 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2489 = private unnamed_addr constant [7 x i8] c"@.str.\00", align 1
+@2490 = private unnamed_addr constant [35 x i8] c" = private unnamed_addr constant [\00", align 1
+@2491 = private unnamed_addr constant [10 x i8] c" x i8] c\22\00", align 1
+@2492 = private unnamed_addr constant [3 x i8] c"\22\0A\00", align 1
+@2493 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2494 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2495 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@2496 = private unnamed_addr constant [12 x i8] c"define i8 @\00", align 1
+@2497 = private unnamed_addr constant [13 x i8] c"() {\0Aentry:\0A\00", align 1
+@2498 = private unnamed_addr constant [10 x i8] c"  ret i8 \00", align 1
+@2499 = private unnamed_addr constant [5 x i8] c"\0A}\0A\0A\00", align 1
+@2500 = private unnamed_addr constant [4 x i8] c"Int\00", align 1
+@2501 = private unnamed_addr constant [13 x i8] c"define i32 @\00", align 1
+@2502 = private unnamed_addr constant [13 x i8] c"() {\0Aentry:\0A\00", align 1
+@2503 = private unnamed_addr constant [11 x i8] c"  ret i32 \00", align 1
+@2504 = private unnamed_addr constant [5 x i8] c"\0A}\0A\0A\00", align 1
+@2505 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
+@2506 = private unnamed_addr constant [12 x i8] c"define i1 @\00", align 1
+@2507 = private unnamed_addr constant [13 x i8] c"() {\0Aentry:\0A\00", align 1
+@2508 = private unnamed_addr constant [10 x i8] c"  ret i1 \00", align 1
+@2509 = private unnamed_addr constant [5 x i8] c"\0A}\0A\0A\00", align 1
+@2510 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@2511 = private unnamed_addr constant [13 x i8] c"define ptr @\00", align 1
+@2512 = private unnamed_addr constant [13 x i8] c"() {\0Aentry:\0A\00", align 1
+@2513 = private unnamed_addr constant [34 x i8] c"  %ret = getelementptr inbounds [\00", align 1
+@2514 = private unnamed_addr constant [19 x i8] c" x i8], ptr @.str.\00", align 1
+@2515 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00", align 1
+@2516 = private unnamed_addr constant [19 x i8] c"  ret ptr %ret\0A}\0A\0A\00", align 1
+@2517 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2518 = private unnamed_addr constant [4 x i8] c"Int\00", align 1
+@2519 = private unnamed_addr constant [13 x i8] c"define i32 @\00", align 1
+@2520 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2521 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
+@2522 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
+@2523 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
+@2524 = private unnamed_addr constant [8 x i8] c"Boolean\00", align 1
+@2525 = private unnamed_addr constant [12 x i8] c"define i1 @\00", align 1
+@2526 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2527 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
+@2528 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
+@2529 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
+@2530 = private unnamed_addr constant [5 x i8] c"Char\00", align 1
+@2531 = private unnamed_addr constant [12 x i8] c"define i8 @\00", align 1
+@2532 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2533 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
+@2534 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
+@2535 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
+@2536 = private unnamed_addr constant [7 x i8] c"Double\00", align 1
+@2537 = private unnamed_addr constant [16 x i8] c"define double @\00", align 1
+@2538 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2539 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
+@2540 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
+@2541 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
+@2542 = private unnamed_addr constant [5 x i8] c"Long\00", align 1
+@2543 = private unnamed_addr constant [13 x i8] c"define i64 @\00", align 1
+@2544 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2545 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
+@2546 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
+@2547 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
+@2548 = private unnamed_addr constant [5 x i8] c"Unit\00", align 1
+@2549 = private unnamed_addr constant [14 x i8] c"define void @\00", align 1
+@2550 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2551 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
+@2552 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
+@2553 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
+@2554 = private unnamed_addr constant [4 x i8] c"ptr\00", align 1
+@2555 = private unnamed_addr constant [13 x i8] c"define ptr @\00", align 1
+@2556 = private unnamed_addr constant [2 x i8] c"(\00", align 1
+@2557 = private unnamed_addr constant [5 x i8] c") {\0A\00", align 1
+@2558 = private unnamed_addr constant [8 x i8] c"entry:\0A\00", align 1
+@2559 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00", align 1
+@2560 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2561 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2562 = private unnamed_addr constant [30 x i8] c"; ModuleID = 'csec.selfhost'\0A\00", align 1
+@2563 = private unnamed_addr constant [36 x i8] c"source_filename = \22csec.selfhost\22\0A\0A\00", align 1
+@2564 = private unnamed_addr constant [38 x i8] c"declare i64 @csec_string_length(ptr)\0A\00", align 1
+@2565 = private unnamed_addr constant [44 x i8] c"declare i8 @csec_string_char_at(ptr, i32)\0A\0A\00", align 1
+@2566 = private unnamed_addr constant [44 x i8] c"declare i32 @csec_command_line_arg_count()\0A\00", align 1
+@2567 = private unnamed_addr constant [41 x i8] c"declare ptr @csec_command_line_arg(i32)\0A\00", align 1
+@2568 = private unnamed_addr constant [43 x i8] c"declare ptr @csec_file_read_all_text(ptr)\0A\00", align 1
+@2569 = private unnamed_addr constant [49 x i8] c"declare i32 @csec_file_write_all_text(ptr, ptr)\0A\00", align 1
+@2570 = private unnamed_addr constant [38 x i8] c"declare void @csec_print_string(ptr)\0A\00", align 1
+@2571 = private unnamed_addr constant [43 x i8] c"declare ptr @csec_string_concat(ptr, ptr)\0A\00", align 1
+@2572 = private unnamed_addr constant [48 x i8] c"declare i32 @csec_string_starts_with(ptr, ptr)\0A\00", align 1
+@2573 = private unnamed_addr constant [51 x i8] c"declare ptr @csec_string_substring(ptr, i32, i32)\0A\00", align 1
+@2574 = private unnamed_addr constant [38 x i8] c"declare ptr @csec_to_string_i64(i64)\0A\00", align 1
+@2575 = private unnamed_addr constant [38 x i8] c"declare ptr @csec_to_string_char(i8)\0A\00", align 1
+@2576 = private unnamed_addr constant [39 x i8] c"declare i64 @csec_token_builder_new()\0A\00", align 1
+@2577 = private unnamed_addr constant [54 x i8] c"declare i32 @csec_token_builder_append(i64, i8, ptr)\0A\00", align 1
+@2578 = private unnamed_addr constant [45 x i8] c"declare ptr @csec_token_builder_finish(i64)\0A\00", align 1
+@2579 = private unnamed_addr constant [42 x i8] c"declare i8 @csec_token_kind_at(ptr, i32)\0A\00", align 1
+@2580 = private unnamed_addr constant [43 x i8] c"declare ptr @csec_token_text_at(ptr, i32)\0A\00", align 1
+@2581 = private unnamed_addr constant [40 x i8] c"declare ptr @csec_expand_imports(ptr)\0A\0A\00", align 1
+@2582 = private unnamed_addr constant [4 x i8] c"def\00", align 1
+@2583 = private unnamed_addr constant [22 x i8] c"define i32 @main() {\0A\00", align 1
+@2584 = private unnamed_addr constant [3 x i8] c"}\0A\00", align 1
+@2585 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2586 = private unnamed_addr constant [2 x i8] c".\00", align 1
+@2587 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2588 = private unnamed_addr constant [2 x i8] c"/\00", align 1
+@2589 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2590 = private unnamed_addr constant [3 x i8] c"//\00", align 1
+@2591 = private unnamed_addr constant [7 x i8] c"import\00", align 1
+@2592 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2593 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2594 = private unnamed_addr constant [6 x i8] c".csec\00", align 1
+@2595 = private unnamed_addr constant [6 x i8] c".csec\00", align 1
+@2596 = private unnamed_addr constant [2 x i8] c"/\00", align 1
+@2597 = private unnamed_addr constant [2 x i8] c"/\00", align 1
+@2598 = private unnamed_addr constant [2 x i8] c"|\00", align 1
+@2599 = private unnamed_addr constant [2 x i8] c"|\00", align 1
+@2600 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2601 = private unnamed_addr constant [7 x i8] c"import\00", align 1
+@2602 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@2603 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2604 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2605 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2606 = private unnamed_addr constant [9 x i8] c"tokenlen\00", align 1
+@2607 = private unnamed_addr constant [8 x i8] c"tokens=\00", align 1
+@2608 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2609 = private unnamed_addr constant [7 x i8] c"tokens\00", align 1
+@2610 = private unnamed_addr constant [4 x i8] c"ast\00", align 1
+@2611 = private unnamed_addr constant [8 x i8] c"symbols\00", align 1
+@2612 = private unnamed_addr constant [3 x i8] c"ir\00", align 1
+@2613 = private unnamed_addr constant [5 x i8] c"llvm\00", align 1
+@2614 = private unnamed_addr constant [14 x i8] c"compile error\00", align 1
+@2615 = private unnamed_addr constant [20 x i8] c"selfhost/input.csec\00", align 1
+@2616 = private unnamed_addr constant [15 x i8] c"selfhost/out.c\00", align 1
+@2617 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 
 define i32 @main(i32 %0, ptr %1) {
 entry:
@@ -15904,12 +16032,10 @@ then45:                                           ; preds = %and_end39
   br i1 %calltmp50, label %or_end, label %or_rhs
 
 ifcont46:                                         ; preds = %ifcont73, %and_end39
-  %calltmp76 = call i32 @_expressionTopLevelOperator(ptr %0, i32 %1, i32 %calltmp)
-  %op = alloca i32, align 4
-  store i32 %calltmp76, ptr %op, align 4
-  %op.load = load i32, ptr %op, align 4
-  %gttmp = icmp sgt i32 %op.load, %1
-  br i1 %gttmp, label %and_rhs78, label %and_end79
+  %calltmp75 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp76 = call i8 @_kindIdentifier()
+  %eqtmp77 = icmp eq i8 %calltmp75, %calltmp76
+  br i1 %eqtmp77, label %and_rhs79, label %and_end80
 
 or_rhs:                                           ; preds = %then45
   %llvmType.load51 = load ptr, ptr %llvmType, align 8
@@ -15955,54 +16081,147 @@ then72:                                           ; preds = %or_end67
 ifcont73:                                         ; preds = %or_end67
   br label %ifcont46
 
-and_rhs78:                                        ; preds = %ifcont46
-  %op.load80 = load i32, ptr %op, align 4
-  %calltmp81 = call i8 @_tokenKindAt(ptr %0, i32 %op.load80)
-  %calltmp82 = call i8 @_kindOperator()
-  %eqtmp83 = icmp eq i8 %calltmp81, %calltmp82
-  br label %and_end79
+and_rhs79:                                        ; preds = %ifcont46
+  %addtmp81 = add i32 %1, 1
+  %lttmp = icmp slt i32 %addtmp81, %calltmp
+  br label %and_end80
 
-and_end79:                                        ; preds = %and_rhs78, %ifcont46
-  %and_result77.0 = phi i1 [ %eqtmp83, %and_rhs78 ], [ false, %ifcont46 ]
-  %ifcond85 = icmp ne i1 %and_result77.0, false
-  br i1 %ifcond85, label %then86, label %ifcont87
+and_end80:                                        ; preds = %and_rhs79, %ifcont46
+  %and_result78.0 = phi i1 [ %lttmp, %and_rhs79 ], [ false, %ifcont46 ]
+  br i1 %and_result78.0, label %and_rhs85, label %and_end86
 
-then86:                                           ; preds = %and_end79
-  %op.load88 = load i32, ptr %op, align 4
-  %calltmp89 = call ptr @_tokenTextAt(ptr %0, i32 %op.load88)
-  %calltmp90 = call i1 @_strEq(ptr %calltmp89, ptr @1242)
-  br i1 %calltmp90, label %and_rhs92, label %and_end93
+and_rhs85:                                        ; preds = %and_end80
+  %addtmp87 = add i32 %1, 1
+  %calltmp88 = call i8 @_kindOperator()
+  %calltmp89 = call i1 @_tokenIs(ptr %0, i32 %addtmp87, i8 %calltmp88, ptr @1242)
+  br label %and_end86
 
-ifcont87:                                         ; preds = %ifcont109, %and_end79
-  ret ptr @1246
+and_end86:                                        ; preds = %and_rhs85, %and_end80
+  %and_result84.0 = phi i1 [ %calltmp89, %and_rhs85 ], [ false, %and_end80 ]
+  br i1 %and_result84.0, label %and_rhs92, label %and_end93
 
-and_rhs92:                                        ; preds = %then86
-  %op.load94 = load i32, ptr %op, align 4
-  %calltmp95 = call ptr @_llvmCallArgumentType(ptr %0, i32 %1, i32 %op.load94)
-  %calltmp96 = call i1 @_strEq(ptr %calltmp95, ptr @1243)
-  br i1 %calltmp96, label %or_end99, label %or_rhs98
-
-and_end93:                                        ; preds = %or_end99, %then86
-  %and_result91.0 = phi i1 [ %or_result97.0, %or_end99 ], [ false, %then86 ]
-  %ifcond107 = icmp ne i1 %and_result91.0, false
-  br i1 %ifcond107, label %then108, label %ifcont109
-
-or_rhs98:                                         ; preds = %and_rhs92
-  %op.load100 = load i32, ptr %op, align 4
-  %addtmp101 = add i32 %op.load100, 1
-  %calltmp103 = call ptr @_llvmCallArgumentType(ptr %0, i32 %addtmp101, i32 %calltmp)
-  %calltmp104 = call i1 @_strEq(ptr %calltmp103, ptr @1244)
-  br label %or_end99
-
-or_end99:                                         ; preds = %or_rhs98, %and_rhs92
-  %or_result97.0 = phi i1 [ true, %and_rhs92 ], [ %calltmp104, %or_rhs98 ]
+and_rhs92:                                        ; preds = %and_end86
+  %addtmp94 = add i32 %1, 1
+  %calltmp96 = call i32 @_findClosingToken(ptr %0, i32 %addtmp94, i32 %calltmp, ptr @1243, ptr @1244)
+  %subtmp = sub i32 %calltmp, 1
+  %eqtmp98 = icmp eq i32 %calltmp96, %subtmp
   br label %and_end93
 
-then108:                                          ; preds = %and_end93
-  ret ptr @1245
+and_end93:                                        ; preds = %and_rhs92, %and_end86
+  %and_result91.0 = phi i1 [ %eqtmp98, %and_rhs92 ], [ false, %and_end86 ]
+  %ifcond100 = icmp ne i1 %and_result91.0, false
+  br i1 %ifcond100, label %then101, label %ifcont102
 
-ifcont109:                                        ; preds = %and_end93
-  br label %ifcont87
+then101:                                          ; preds = %and_end93
+  %calltmp103 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp104 = call ptr @_lookupFunctionReturnType(ptr %0, ptr %calltmp103)
+  %calltmp105 = call ptr @_irTypeName(ptr %calltmp104)
+  %returnType = alloca ptr, align 8
+  store ptr %calltmp105, ptr %returnType, align 8
+  %returnType.load = load ptr, ptr %returnType, align 8
+  %calltmp106 = call i1 @_strEq(ptr %returnType.load, ptr @1245)
+  br i1 %calltmp106, label %or_end109, label %or_rhs108
+
+ifcont102:                                        ; preds = %ifcont133, %and_end93
+  %calltmp136 = call i32 @_expressionTopLevelOperator(ptr %0, i32 %1, i32 %calltmp)
+  %op = alloca i32, align 4
+  store i32 %calltmp136, ptr %op, align 4
+  %op.load = load i32, ptr %op, align 4
+  %gttmp = icmp sgt i32 %op.load, %1
+  br i1 %gttmp, label %and_rhs138, label %and_end139
+
+or_rhs108:                                        ; preds = %then101
+  %returnType.load110 = load ptr, ptr %returnType, align 8
+  %calltmp111 = call i1 @_strEq(ptr %returnType.load110, ptr @1246)
+  br label %or_end109
+
+or_end109:                                        ; preds = %or_rhs108, %then101
+  %or_result107.0 = phi i1 [ true, %then101 ], [ %calltmp111, %or_rhs108 ]
+  br i1 %or_result107.0, label %or_end115, label %or_rhs114
+
+or_rhs114:                                        ; preds = %or_end109
+  %returnType.load116 = load ptr, ptr %returnType, align 8
+  %calltmp117 = call i1 @_strEq(ptr %returnType.load116, ptr @1247)
+  br label %or_end115
+
+or_end115:                                        ; preds = %or_rhs114, %or_end109
+  %or_result113.0 = phi i1 [ true, %or_end109 ], [ %calltmp117, %or_rhs114 ]
+  br i1 %or_result113.0, label %or_end121, label %or_rhs120
+
+or_rhs120:                                        ; preds = %or_end115
+  %returnType.load122 = load ptr, ptr %returnType, align 8
+  %calltmp123 = call i1 @_strEq(ptr %returnType.load122, ptr @1248)
+  br label %or_end121
+
+or_end121:                                        ; preds = %or_rhs120, %or_end115
+  %or_result119.0 = phi i1 [ true, %or_end115 ], [ %calltmp123, %or_rhs120 ]
+  br i1 %or_result119.0, label %or_end127, label %or_rhs126
+
+or_rhs126:                                        ; preds = %or_end121
+  %returnType.load128 = load ptr, ptr %returnType, align 8
+  %calltmp129 = call i1 @_strEq(ptr %returnType.load128, ptr @1249)
+  br label %or_end127
+
+or_end127:                                        ; preds = %or_rhs126, %or_end121
+  %or_result125.0 = phi i1 [ true, %or_end121 ], [ %calltmp129, %or_rhs126 ]
+  %ifcond131 = icmp ne i1 %or_result125.0, false
+  br i1 %ifcond131, label %then132, label %ifcont133
+
+then132:                                          ; preds = %or_end127
+  %returnType.load134 = load ptr, ptr %returnType, align 8
+  ret ptr %returnType.load134
+
+ifcont133:                                        ; preds = %or_end127
+  br label %ifcont102
+
+and_rhs138:                                       ; preds = %ifcont102
+  %op.load140 = load i32, ptr %op, align 4
+  %calltmp141 = call i8 @_tokenKindAt(ptr %0, i32 %op.load140)
+  %calltmp142 = call i8 @_kindOperator()
+  %eqtmp143 = icmp eq i8 %calltmp141, %calltmp142
+  br label %and_end139
+
+and_end139:                                       ; preds = %and_rhs138, %ifcont102
+  %and_result137.0 = phi i1 [ %eqtmp143, %and_rhs138 ], [ false, %ifcont102 ]
+  %ifcond145 = icmp ne i1 %and_result137.0, false
+  br i1 %ifcond145, label %then146, label %ifcont147
+
+then146:                                          ; preds = %and_end139
+  %op.load148 = load i32, ptr %op, align 4
+  %calltmp149 = call ptr @_tokenTextAt(ptr %0, i32 %op.load148)
+  %calltmp150 = call i1 @_strEq(ptr %calltmp149, ptr @1250)
+  br i1 %calltmp150, label %and_rhs152, label %and_end153
+
+ifcont147:                                        ; preds = %ifcont169, %and_end139
+  ret ptr @1254
+
+and_rhs152:                                       ; preds = %then146
+  %op.load154 = load i32, ptr %op, align 4
+  %calltmp155 = call ptr @_llvmCallArgumentType(ptr %0, i32 %1, i32 %op.load154)
+  %calltmp156 = call i1 @_strEq(ptr %calltmp155, ptr @1251)
+  br i1 %calltmp156, label %or_end159, label %or_rhs158
+
+and_end153:                                       ; preds = %or_end159, %then146
+  %and_result151.0 = phi i1 [ %or_result157.0, %or_end159 ], [ false, %then146 ]
+  %ifcond167 = icmp ne i1 %and_result151.0, false
+  br i1 %ifcond167, label %then168, label %ifcont169
+
+or_rhs158:                                        ; preds = %and_rhs152
+  %op.load160 = load i32, ptr %op, align 4
+  %addtmp161 = add i32 %op.load160, 1
+  %calltmp163 = call ptr @_llvmCallArgumentType(ptr %0, i32 %addtmp161, i32 %calltmp)
+  %calltmp164 = call i1 @_strEq(ptr %calltmp163, ptr @1252)
+  br label %or_end159
+
+or_end159:                                        ; preds = %or_rhs158, %and_rhs152
+  %or_result157.0 = phi i1 [ true, %and_rhs152 ], [ %calltmp164, %or_rhs158 ]
+  br label %and_end153
+
+then168:                                          ; preds = %and_end153
+  ret ptr @1253
+
+ifcont169:                                        ; preds = %and_end153
+  br label %ifcont147
 }
 
 define ptr @_llvmCallArgumentValue(ptr %0, i32 %1, i32 %2, ptr %3, i32 %4) {
@@ -16013,7 +16232,7 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @1247
+  ret ptr @1255
 
 ifcont:                                           ; preds = %entry
   %calltmp1 = call i8 @_tokenKindAt(ptr %0, i32 %1)
@@ -16077,7 +16296,7 @@ then35:                                           ; preds = %and_end29
   ret ptr %calltmp37
 
 ifcont36:                                         ; preds = %and_end29
-  %str.concat = call ptr @csec_string_concat(ptr %3, ptr @1248)
+  %str.concat = call ptr @csec_string_concat(ptr %3, ptr @1256)
   %str.sext = sext i32 %4 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat38 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
@@ -16092,8 +16311,8 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat = call ptr @csec_string_concat(ptr @1249, ptr %3)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1250)
+  %str.concat = call ptr @csec_string_concat(ptr @1257, ptr %3)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1258)
   ret ptr %str.concat1
 
 ifcont:                                           ; preds = %entry
@@ -16121,17 +16340,17 @@ then7:                                            ; preds = %and_end
   %addtmp10 = add i64 %str.length, 1
   %byteLength = alloca i32, align 4
   store i64 %addtmp10, ptr %byteLength, align 4
-  %str.concat11 = call ptr @csec_string_concat(ptr @1251, ptr %3)
-  %str.concat12 = call ptr @csec_string_concat(ptr %str.concat11, ptr @1252)
+  %str.concat11 = call ptr @csec_string_concat(ptr @1259, ptr %3)
+  %str.concat12 = call ptr @csec_string_concat(ptr %str.concat11, ptr @1260)
   %byteLength.load = load i32, ptr %byteLength, align 4
   %str.sext = sext i32 %byteLength.load to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr %str.int.call)
-  %str.concat14 = call ptr @csec_string_concat(ptr %str.concat13, ptr @1253)
+  %str.concat14 = call ptr @csec_string_concat(ptr %str.concat13, ptr @1261)
   %str.sext15 = sext i32 %1 to i64
   %str.int.call16 = call ptr @csec_to_string_i64(i64 %str.sext15)
   %str.concat17 = call ptr @csec_string_concat(ptr %str.concat14, ptr %str.int.call16)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1254)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1262)
   ret ptr %str.concat18
 
 ifcont8:                                          ; preds = %and_end
@@ -16151,11 +16370,11 @@ and_end24:                                        ; preds = %and_rhs23, %ifcont8
   br i1 %ifcond29, label %then30, label %ifcont31
 
 then30:                                           ; preds = %and_end24
-  %str.concat32 = call ptr @csec_string_concat(ptr @1255, ptr %3)
-  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @1256)
+  %str.concat32 = call ptr @csec_string_concat(ptr @1263, ptr %3)
+  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @1264)
   %calltmp34 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %str.concat35 = call ptr @csec_string_concat(ptr %str.concat33, ptr %calltmp34)
-  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1257)
+  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1265)
   ret ptr %str.concat36
 
 ifcont31:                                         ; preds = %and_end24
@@ -16175,12 +16394,12 @@ and_end42:                                        ; preds = %and_rhs41, %ifcont3
   br i1 %ifcond47, label %then48, label %ifcont49
 
 then48:                                           ; preds = %and_end42
-  %str.concat50 = call ptr @csec_string_concat(ptr @1258, ptr %3)
-  %str.concat51 = call ptr @csec_string_concat(ptr %str.concat50, ptr @1259)
+  %str.concat50 = call ptr @csec_string_concat(ptr @1266, ptr %3)
+  %str.concat51 = call ptr @csec_string_concat(ptr %str.concat50, ptr @1267)
   %calltmp52 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp53 = call ptr @_llvmCharI8Value(ptr %calltmp52)
   %str.concat54 = call ptr @csec_string_concat(ptr %str.concat51, ptr %calltmp53)
-  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @1260)
+  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @1268)
   ret ptr %str.concat55
 
 ifcont49:                                         ; preds = %and_end42
@@ -16216,7 +16435,7 @@ then67:                                           ; preds = %and_end61
   %llvmType = alloca ptr, align 8
   store ptr %calltmp73, ptr %llvmType, align 8
   %llvmType.load = load ptr, ptr %llvmType, align 8
-  %calltmp74 = call i1 @_strEq(ptr %llvmType.load, ptr @1261)
+  %calltmp74 = call i1 @_strEq(ptr %llvmType.load, ptr @1269)
   br i1 %calltmp74, label %or_end, label %or_rhs
 
 ifcont68:                                         ; preds = %and_end61
@@ -16227,7 +16446,7 @@ ifcont68:                                         ; preds = %and_end61
 
 or_rhs:                                           ; preds = %then67
   %llvmType.load75 = load ptr, ptr %llvmType, align 8
-  %calltmp76 = call i1 @_strEq(ptr %llvmType.load75, ptr @1262)
+  %calltmp76 = call i1 @_strEq(ptr %llvmType.load75, ptr @1270)
   br label %or_end
 
 or_end:                                           ; preds = %or_rhs, %then67
@@ -16236,7 +16455,7 @@ or_end:                                           ; preds = %or_rhs, %then67
 
 or_rhs78:                                         ; preds = %or_end
   %llvmType.load80 = load ptr, ptr %llvmType, align 8
-  %calltmp81 = call i1 @_strEq(ptr %llvmType.load80, ptr @1263)
+  %calltmp81 = call i1 @_strEq(ptr %llvmType.load80, ptr @1271)
   br label %or_end79
 
 or_end79:                                         ; preds = %or_rhs78, %or_end
@@ -16245,7 +16464,7 @@ or_end79:                                         ; preds = %or_rhs78, %or_end
 
 or_rhs84:                                         ; preds = %or_end79
   %llvmType.load86 = load ptr, ptr %llvmType, align 8
-  %calltmp87 = call i1 @_strEq(ptr %llvmType.load86, ptr @1264)
+  %calltmp87 = call i1 @_strEq(ptr %llvmType.load86, ptr @1272)
   br label %or_end85
 
 or_end85:                                         ; preds = %or_rhs84, %or_end79
@@ -16254,7 +16473,7 @@ or_end85:                                         ; preds = %or_rhs84, %or_end79
 
 or_rhs90:                                         ; preds = %or_end85
   %llvmType.load92 = load ptr, ptr %llvmType, align 8
-  %calltmp93 = call i1 @_strEq(ptr %llvmType.load92, ptr @1265)
+  %calltmp93 = call i1 @_strEq(ptr %llvmType.load92, ptr @1273)
   br label %or_end91
 
 or_end91:                                         ; preds = %or_rhs90, %or_end85
@@ -16263,26 +16482,26 @@ or_end91:                                         ; preds = %or_rhs90, %or_end85
   br i1 %ifcond95, label %then96, label %ifcont97
 
 then96:                                           ; preds = %or_end91
-  %str.concat98 = call ptr @csec_string_concat(ptr @1266, ptr %3)
-  %str.concat99 = call ptr @csec_string_concat(ptr %str.concat98, ptr @1267)
+  %str.concat98 = call ptr @csec_string_concat(ptr @1274, ptr %3)
+  %str.concat99 = call ptr @csec_string_concat(ptr %str.concat98, ptr @1275)
   %llvmType.load100 = load ptr, ptr %llvmType, align 8
   %str.concat101 = call ptr @csec_string_concat(ptr %str.concat99, ptr %llvmType.load100)
-  %str.concat102 = call ptr @csec_string_concat(ptr %str.concat101, ptr @1268)
+  %str.concat102 = call ptr @csec_string_concat(ptr %str.concat101, ptr @1276)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat103 = call ptr @csec_string_concat(ptr %str.concat102, ptr %storageName.load)
-  %str.concat104 = call ptr @csec_string_concat(ptr %str.concat103, ptr @1269)
+  %str.concat104 = call ptr @csec_string_concat(ptr %str.concat103, ptr @1277)
   ret ptr %str.concat104
 
 ifcont97:                                         ; preds = %or_end91
-  %str.concat105 = call ptr @csec_string_concat(ptr @1270, ptr %3)
-  %str.concat106 = call ptr @csec_string_concat(ptr %str.concat105, ptr @1271)
+  %str.concat105 = call ptr @csec_string_concat(ptr @1278, ptr %3)
+  %str.concat106 = call ptr @csec_string_concat(ptr %str.concat105, ptr @1279)
   %storageName.load107 = load ptr, ptr %storageName, align 8
   %str.concat108 = call ptr @csec_string_concat(ptr %str.concat106, ptr %storageName.load107)
-  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @1272)
+  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @1280)
   ret ptr %str.concat109
 
 and_rhs114:                                       ; preds = %ifcont68
-  %addtmp116 = add i32 %1, 4
+  %addtmp116 = add i32 %1, 1
   %lttmp = icmp slt i32 %addtmp116, %calltmp
   br label %and_end115
 
@@ -16293,7 +16512,7 @@ and_end115:                                       ; preds = %and_rhs114, %ifcont
 and_rhs120:                                       ; preds = %and_end115
   %addtmp122 = add i32 %1, 1
   %calltmp123 = call i8 @_kindOperator()
-  %calltmp124 = call i1 @_tokenIs(ptr %0, i32 %addtmp122, i8 %calltmp123, ptr @1273)
+  %calltmp124 = call i1 @_tokenIs(ptr %0, i32 %addtmp122, i8 %calltmp123, ptr @1281)
   br label %and_end121
 
 and_end121:                                       ; preds = %and_rhs120, %and_end115
@@ -16301,342 +16520,734 @@ and_end121:                                       ; preds = %and_rhs120, %and_en
   br i1 %and_result119.0, label %and_rhs127, label %and_end128
 
 and_rhs127:                                       ; preds = %and_end121
-  %addtmp129 = add i32 %1, 2
-  %calltmp130 = call i8 @_kindIdentifier()
-  %calltmp131 = call i1 @_tokenIs(ptr %0, i32 %addtmp129, i8 %calltmp130, ptr @1274)
+  %addtmp129 = add i32 %1, 1
+  %calltmp131 = call i32 @_findClosingToken(ptr %0, i32 %addtmp129, i32 %calltmp, ptr @1282, ptr @1283)
+  %subtmp = sub i32 %calltmp, 1
+  %eqtmp133 = icmp eq i32 %calltmp131, %subtmp
   br label %and_end128
 
 and_end128:                                       ; preds = %and_rhs127, %and_end121
-  %and_result126.0 = phi i1 [ %calltmp131, %and_rhs127 ], [ false, %and_end121 ]
-  br i1 %and_result126.0, label %and_rhs134, label %and_end135
+  %and_result126.0 = phi i1 [ %eqtmp133, %and_rhs127 ], [ false, %and_end121 ]
+  %ifcond135 = icmp ne i1 %and_result126.0, false
+  br i1 %ifcond135, label %then136, label %ifcont137
 
-and_rhs134:                                       ; preds = %and_end128
-  %addtmp136 = add i32 %1, 3
-  %calltmp137 = call i8 @_kindOperator()
-  %calltmp138 = call i1 @_tokenIs(ptr %0, i32 %addtmp136, i8 %calltmp137, ptr @1275)
-  br label %and_end135
+then136:                                          ; preds = %and_end128
+  %calltmp138 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %callee = alloca ptr, align 8
+  store ptr %calltmp138, ptr %callee, align 8
+  %callee.load = load ptr, ptr %callee, align 8
+  %calltmp139 = call ptr @_lookupFunctionReturnType(ptr %0, ptr %callee.load)
+  %calltmp140 = call ptr @_irTypeName(ptr %calltmp139)
+  %returnType = alloca ptr, align 8
+  store ptr %calltmp140, ptr %returnType, align 8
+  %returnType.load = load ptr, ptr %returnType, align 8
+  %calltmp141 = call i1 @_strEq(ptr %returnType.load, ptr @1284)
+  br i1 %calltmp141, label %and_rhs143, label %and_end144
 
-and_end135:                                       ; preds = %and_rhs134, %and_end128
-  %and_result133.0 = phi i1 [ %calltmp138, %and_rhs134 ], [ false, %and_end128 ]
-  br i1 %and_result133.0, label %and_rhs141, label %and_end142
+ifcont137:                                        ; preds = %ifcont210, %and_end128
+  %calltmp216 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp217 = call i8 @_kindIdentifier()
+  %eqtmp218 = icmp eq i8 %calltmp216, %calltmp217
+  br i1 %eqtmp218, label %and_rhs220, label %and_end221
 
-and_rhs141:                                       ; preds = %and_end135
-  %addtmp143 = add i32 %1, 3
-  %calltmp145 = call i32 @_findClosingToken(ptr %0, i32 %addtmp143, i32 %calltmp, ptr @1276, ptr @1277)
-  %subtmp = sub i32 %calltmp, 1
-  %eqtmp147 = icmp eq i32 %calltmp145, %subtmp
-  br label %and_end142
+and_rhs143:                                       ; preds = %then136
+  %callee.load145 = load ptr, ptr %callee, align 8
+  %calltmp146 = call i1 @_strEq(ptr %callee.load145, ptr @1285)
+  br label %and_end144
 
-and_end142:                                       ; preds = %and_rhs141, %and_end135
-  %and_result140.0 = phi i1 [ %eqtmp147, %and_rhs141 ], [ false, %and_end135 ]
-  %ifcond149 = icmp ne i1 %and_result140.0, false
-  br i1 %ifcond149, label %then150, label %ifcont151
+and_end144:                                       ; preds = %and_rhs143, %then136
+  %and_result142.0 = phi i1 [ %calltmp146, %and_rhs143 ], [ false, %then136 ]
+  %ifcond148 = icmp ne i1 %and_result142.0, false
+  br i1 %ifcond148, label %then149, label %ifcont150
 
-then150:                                          ; preds = %and_end142
-  %calltmp152 = call ptr @_tokenTextAt(ptr %0, i32 %1)
-  %name153 = alloca ptr, align 8
-  store ptr %calltmp152, ptr %name153, align 8
-  %addtmp154 = add i32 %1, 4
-  %calltmp155 = call i32 @_skipTrivia(ptr %0, i32 %addtmp154)
+then149:                                          ; preds = %and_end144
+  %addtmp151 = add i32 %1, 2
+  %subtmp153 = sub i32 %calltmp, 1
+  %str.concat154 = call ptr @csec_string_concat(ptr %3, ptr @1286)
+  %calltmp155 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %addtmp151, i32 %subtmp153, ptr %str.concat154)
+  %str.concat156 = call ptr @csec_string_concat(ptr %calltmp155, ptr @1287)
+  %str.concat157 = call ptr @csec_string_concat(ptr %str.concat156, ptr %3)
+  %str.concat158 = call ptr @csec_string_concat(ptr %str.concat157, ptr @1288)
+  %str.concat159 = call ptr @csec_string_concat(ptr %str.concat158, ptr %3)
+  %str.concat160 = call ptr @csec_string_concat(ptr %str.concat159, ptr @1289)
+  ret ptr %str.concat160
+
+ifcont150:                                        ; preds = %and_end144
+  %returnType.load161 = load ptr, ptr %returnType, align 8
+  %calltmp162 = call i1 @_strEq(ptr %returnType.load161, ptr @1290)
+  br i1 %calltmp162, label %and_rhs164, label %and_end165
+
+and_rhs164:                                       ; preds = %ifcont150
+  %callee.load166 = load ptr, ptr %callee, align 8
+  %calltmp167 = call i1 @_strEq(ptr %callee.load166, ptr @1291)
+  br label %and_end165
+
+and_end165:                                       ; preds = %and_rhs164, %ifcont150
+  %and_result163.0 = phi i1 [ %calltmp167, %and_rhs164 ], [ false, %ifcont150 ]
+  %ifcond169 = icmp ne i1 %and_result163.0, false
+  br i1 %ifcond169, label %then170, label %ifcont171
+
+then170:                                          ; preds = %and_end165
+  %addtmp172 = add i32 %1, 2
+  %subtmp174 = sub i32 %calltmp, 1
+  %calltmp175 = call i32 @_findTokenTextInRange(ptr %0, i32 %addtmp172, i32 %subtmp174, ptr @1292)
+  %comma = alloca i32, align 4
+  store i32 %calltmp175, ptr %comma, align 4
+  %comma.load = load i32, ptr %comma, align 4
+  %addtmp176 = add i32 %1, 2
+  %gttmp = icmp sgt i32 %comma.load, %addtmp176
+  %ifcond177 = icmp ne i1 %gttmp, false
+  br i1 %ifcond177, label %then178, label %ifcont179
+
+ifcont171:                                        ; preds = %ifcont179, %and_end165
+  %returnType.load198 = load ptr, ptr %returnType, align 8
+  %calltmp199 = call i1 @_strEq(ptr %returnType.load198, ptr @1299)
+  br i1 %calltmp199, label %and_rhs201, label %and_end202
+
+then178:                                          ; preds = %then170
+  %addtmp180 = add i32 %1, 2
+  %comma.load181 = load i32, ptr %comma, align 4
+  %str.concat182 = call ptr @csec_string_concat(ptr %3, ptr @1293)
+  %calltmp183 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %addtmp180, i32 %comma.load181, ptr %str.concat182)
+  %comma.load184 = load i32, ptr %comma, align 4
+  %addtmp185 = add i32 %comma.load184, 1
+  %subtmp187 = sub i32 %calltmp, 1
+  %str.concat188 = call ptr @csec_string_concat(ptr %3, ptr @1294)
+  %calltmp189 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %addtmp185, i32 %subtmp187, ptr %str.concat188)
+  %str.concat190 = call ptr @csec_string_concat(ptr %calltmp183, ptr %calltmp189)
+  %str.concat191 = call ptr @csec_string_concat(ptr %str.concat190, ptr @1295)
+  %str.concat192 = call ptr @csec_string_concat(ptr %str.concat191, ptr %3)
+  %str.concat193 = call ptr @csec_string_concat(ptr %str.concat192, ptr @1296)
+  %str.concat194 = call ptr @csec_string_concat(ptr %str.concat193, ptr %3)
+  %str.concat195 = call ptr @csec_string_concat(ptr %str.concat194, ptr @1297)
+  %str.concat196 = call ptr @csec_string_concat(ptr %str.concat195, ptr %3)
+  %str.concat197 = call ptr @csec_string_concat(ptr %str.concat196, ptr @1298)
+  ret ptr %str.concat197
+
+ifcont179:                                        ; preds = %then170
+  br label %ifcont171
+
+and_rhs201:                                       ; preds = %ifcont171
+  %addtmp203 = add i32 %1, 2
+  %subtmp205 = sub i32 %calltmp, 1
+  %eqtmp206 = icmp eq i32 %addtmp203, %subtmp205
+  br label %and_end202
+
+and_end202:                                       ; preds = %and_rhs201, %ifcont171
+  %and_result200.0 = phi i1 [ %eqtmp206, %and_rhs201 ], [ false, %ifcont171 ]
+  %ifcond208 = icmp ne i1 %and_result200.0, false
+  br i1 %ifcond208, label %then209, label %ifcont210
+
+then209:                                          ; preds = %and_end202
+  %str.concat211 = call ptr @csec_string_concat(ptr @1300, ptr %3)
+  %str.concat212 = call ptr @csec_string_concat(ptr %str.concat211, ptr @1301)
+  %callee.load213 = load ptr, ptr %callee, align 8
+  %str.concat214 = call ptr @csec_string_concat(ptr %str.concat212, ptr %callee.load213)
+  %str.concat215 = call ptr @csec_string_concat(ptr %str.concat214, ptr @1302)
+  ret ptr %str.concat215
+
+ifcont210:                                        ; preds = %and_end202
+  br label %ifcont137
+
+and_rhs220:                                       ; preds = %ifcont137
+  %addtmp222 = add i32 %1, 4
+  %lttmp224 = icmp slt i32 %addtmp222, %calltmp
+  br label %and_end221
+
+and_end221:                                       ; preds = %and_rhs220, %ifcont137
+  %and_result219.0 = phi i1 [ %lttmp224, %and_rhs220 ], [ false, %ifcont137 ]
+  br i1 %and_result219.0, label %and_rhs227, label %and_end228
+
+and_rhs227:                                       ; preds = %and_end221
+  %addtmp229 = add i32 %1, 1
+  %calltmp230 = call i8 @_kindOperator()
+  %calltmp231 = call i1 @_tokenIs(ptr %0, i32 %addtmp229, i8 %calltmp230, ptr @1303)
+  br label %and_end228
+
+and_end228:                                       ; preds = %and_rhs227, %and_end221
+  %and_result226.0 = phi i1 [ %calltmp231, %and_rhs227 ], [ false, %and_end221 ]
+  br i1 %and_result226.0, label %and_rhs234, label %and_end235
+
+and_rhs234:                                       ; preds = %and_end228
+  %addtmp236 = add i32 %1, 2
+  %calltmp237 = call i8 @_kindIdentifier()
+  %calltmp238 = call i1 @_tokenIs(ptr %0, i32 %addtmp236, i8 %calltmp237, ptr @1304)
+  br label %and_end235
+
+and_end235:                                       ; preds = %and_rhs234, %and_end228
+  %and_result233.0 = phi i1 [ %calltmp238, %and_rhs234 ], [ false, %and_end228 ]
+  br i1 %and_result233.0, label %and_rhs241, label %and_end242
+
+and_rhs241:                                       ; preds = %and_end235
+  %addtmp243 = add i32 %1, 3
+  %calltmp244 = call i8 @_kindOperator()
+  %calltmp245 = call i1 @_tokenIs(ptr %0, i32 %addtmp243, i8 %calltmp244, ptr @1305)
+  br label %and_end242
+
+and_end242:                                       ; preds = %and_rhs241, %and_end235
+  %and_result240.0 = phi i1 [ %calltmp245, %and_rhs241 ], [ false, %and_end235 ]
+  br i1 %and_result240.0, label %and_rhs248, label %and_end249
+
+and_rhs248:                                       ; preds = %and_end242
+  %addtmp250 = add i32 %1, 3
+  %calltmp252 = call i32 @_findClosingToken(ptr %0, i32 %addtmp250, i32 %calltmp, ptr @1306, ptr @1307)
+  %subtmp254 = sub i32 %calltmp, 1
+  %eqtmp255 = icmp eq i32 %calltmp252, %subtmp254
+  br label %and_end249
+
+and_end249:                                       ; preds = %and_rhs248, %and_end242
+  %and_result247.0 = phi i1 [ %eqtmp255, %and_rhs248 ], [ false, %and_end242 ]
+  %ifcond257 = icmp ne i1 %and_result247.0, false
+  br i1 %ifcond257, label %then258, label %ifcont259
+
+then258:                                          ; preds = %and_end249
+  %calltmp260 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %name261 = alloca ptr, align 8
+  store ptr %calltmp260, ptr %name261, align 8
+  %addtmp262 = add i32 %1, 4
+  %calltmp263 = call i32 @_skipTrivia(ptr %0, i32 %addtmp262)
   %indexStart = alloca i32, align 4
-  store i32 %calltmp155, ptr %indexStart, align 4
+  store i32 %calltmp263, ptr %indexStart, align 4
   %indexStart.load = load i32, ptr %indexStart, align 4
-  %subtmp157 = sub i32 %calltmp, 1
-  %calltmp158 = call i32 @_trimExpressionEnd(ptr %0, i32 %indexStart.load, i32 %subtmp157)
+  %subtmp265 = sub i32 %calltmp, 1
+  %calltmp266 = call i32 @_trimExpressionEnd(ptr %0, i32 %indexStart.load, i32 %subtmp265)
   %indexEnd = alloca i32, align 4
-  store i32 %calltmp158, ptr %indexEnd, align 4
-  %name.load159 = load ptr, ptr %name153, align 8
-  %calltmp160 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %name.load159)
-  %storageName161 = alloca ptr, align 8
-  store ptr %calltmp160, ptr %storageName161, align 8
-  %str.concat162 = call ptr @csec_string_concat(ptr @1278, ptr %3)
-  %str.concat163 = call ptr @csec_string_concat(ptr %str.concat162, ptr @1279)
-  %storageName.load164 = load ptr, ptr %storageName161, align 8
-  %str.concat165 = call ptr @csec_string_concat(ptr %str.concat163, ptr %storageName.load164)
-  %str.concat166 = call ptr @csec_string_concat(ptr %str.concat165, ptr @1280)
+  store i32 %calltmp266, ptr %indexEnd, align 4
+  %name.load267 = load ptr, ptr %name261, align 8
+  %calltmp268 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %name.load267)
+  %storageName269 = alloca ptr, align 8
+  store ptr %calltmp268, ptr %storageName269, align 8
+  %str.concat270 = call ptr @csec_string_concat(ptr @1308, ptr %3)
+  %str.concat271 = call ptr @csec_string_concat(ptr %str.concat270, ptr @1309)
+  %storageName.load272 = load ptr, ptr %storageName269, align 8
+  %str.concat273 = call ptr @csec_string_concat(ptr %str.concat271, ptr %storageName.load272)
+  %str.concat274 = call ptr @csec_string_concat(ptr %str.concat273, ptr @1310)
   %output = alloca ptr, align 8
-  store ptr %str.concat166, ptr %output, align 8
-  %indexStart.load167 = load i32, ptr %indexStart, align 4
-  %calltmp168 = call i8 @_tokenKindAt(ptr %0, i32 %indexStart.load167)
-  %calltmp169 = call i8 @_kindInteger()
-  %eqtmp170 = icmp eq i8 %calltmp168, %calltmp169
-  br i1 %eqtmp170, label %and_rhs172, label %and_end173
+  store ptr %str.concat274, ptr %output, align 8
+  %indexStart.load275 = load i32, ptr %indexStart, align 4
+  %calltmp276 = call i8 @_tokenKindAt(ptr %0, i32 %indexStart.load275)
+  %calltmp277 = call i8 @_kindInteger()
+  %eqtmp278 = icmp eq i8 %calltmp276, %calltmp277
+  br i1 %eqtmp278, label %and_rhs280, label %and_end281
 
-ifcont151:                                        ; preds = %and_end142
-  %calltmp236 = call i32 @_expressionTopLevelOperator(ptr %0, i32 %1, i32 %calltmp)
+ifcont259:                                        ; preds = %and_end249
+  %calltmp344 = call i32 @_expressionTopLevelOperator(ptr %0, i32 %1, i32 %calltmp)
   %op = alloca i32, align 4
-  store i32 %calltmp236, ptr %op, align 4
+  store i32 %calltmp344, ptr %op, align 4
   %op.load = load i32, ptr %op, align 4
-  %gttmp = icmp sgt i32 %op.load, %1
-  br i1 %gttmp, label %and_rhs238, label %and_end239
+  %gttmp345 = icmp sgt i32 %op.load, %1
+  br i1 %gttmp345, label %and_rhs347, label %and_end348
 
-and_rhs172:                                       ; preds = %then150
+and_rhs280:                                       ; preds = %then258
   %indexEnd.load = load i32, ptr %indexEnd, align 4
-  %indexStart.load174 = load i32, ptr %indexStart, align 4
-  %addtmp175 = add i32 %indexStart.load174, 1
-  %eqtmp176 = icmp eq i32 %indexEnd.load, %addtmp175
-  br label %and_end173
+  %indexStart.load282 = load i32, ptr %indexStart, align 4
+  %addtmp283 = add i32 %indexStart.load282, 1
+  %eqtmp284 = icmp eq i32 %indexEnd.load, %addtmp283
+  br label %and_end281
 
-and_end173:                                       ; preds = %and_rhs172, %then150
-  %and_result171.0 = phi i1 [ %eqtmp176, %and_rhs172 ], [ false, %then150 ]
-  %ifcond178 = icmp ne i1 %and_result171.0, false
-  br i1 %ifcond178, label %then179, label %else
+and_end281:                                       ; preds = %and_rhs280, %then258
+  %and_result279.0 = phi i1 [ %eqtmp284, %and_rhs280 ], [ false, %then258 ]
+  %ifcond286 = icmp ne i1 %and_result279.0, false
+  br i1 %ifcond286, label %then287, label %else
 
-then179:                                          ; preds = %and_end173
+then287:                                          ; preds = %and_end281
   %output.load = load ptr, ptr %output, align 8
-  %output.load181 = load ptr, ptr %output, align 8
-  %str.concat182 = call ptr @csec_string_concat(ptr %output.load181, ptr @1281)
-  %str.concat183 = call ptr @csec_string_concat(ptr %str.concat182, ptr %3)
-  %str.concat184 = call ptr @csec_string_concat(ptr %str.concat183, ptr @1282)
-  %indexStart.load185 = load i32, ptr %indexStart, align 4
-  %calltmp186 = call ptr @_tokenTextAt(ptr %0, i32 %indexStart.load185)
-  %str.concat187 = call ptr @csec_string_concat(ptr %str.concat184, ptr %calltmp186)
-  %str.concat188 = call ptr @csec_string_concat(ptr %str.concat187, ptr @1283)
-  store ptr %str.concat188, ptr %output, align 8
-  br label %ifcont180
+  %output.load289 = load ptr, ptr %output, align 8
+  %str.concat290 = call ptr @csec_string_concat(ptr %output.load289, ptr @1311)
+  %str.concat291 = call ptr @csec_string_concat(ptr %str.concat290, ptr %3)
+  %str.concat292 = call ptr @csec_string_concat(ptr %str.concat291, ptr @1312)
+  %indexStart.load293 = load i32, ptr %indexStart, align 4
+  %calltmp294 = call ptr @_tokenTextAt(ptr %0, i32 %indexStart.load293)
+  %str.concat295 = call ptr @csec_string_concat(ptr %str.concat292, ptr %calltmp294)
+  %str.concat296 = call ptr @csec_string_concat(ptr %str.concat295, ptr @1313)
+  store ptr %str.concat296, ptr %output, align 8
+  br label %ifcont288
 
-else:                                             ; preds = %and_end173
-  %indexStart.load189 = load i32, ptr %indexStart, align 4
-  %calltmp190 = call i8 @_tokenKindAt(ptr %0, i32 %indexStart.load189)
-  %calltmp191 = call i8 @_kindIdentifier()
-  %eqtmp192 = icmp eq i8 %calltmp190, %calltmp191
-  br i1 %eqtmp192, label %and_rhs194, label %and_end195
+else:                                             ; preds = %and_end281
+  %indexStart.load297 = load i32, ptr %indexStart, align 4
+  %calltmp298 = call i8 @_tokenKindAt(ptr %0, i32 %indexStart.load297)
+  %calltmp299 = call i8 @_kindIdentifier()
+  %eqtmp300 = icmp eq i8 %calltmp298, %calltmp299
+  br i1 %eqtmp300, label %and_rhs302, label %and_end303
 
-ifcont180:                                        ; preds = %ifcont204, %then179
-  %result221 = phi ptr [ %str.concat188, %then179 ], [ %result, %ifcont204 ]
-  %output.load222 = load ptr, ptr %output, align 8
-  %str.concat223 = call ptr @csec_string_concat(ptr %output.load222, ptr @1289)
-  %str.concat224 = call ptr @csec_string_concat(ptr %str.concat223, ptr %3)
-  %str.concat225 = call ptr @csec_string_concat(ptr %str.concat224, ptr @1290)
-  %str.concat226 = call ptr @csec_string_concat(ptr %str.concat225, ptr %3)
-  %str.concat227 = call ptr @csec_string_concat(ptr %str.concat226, ptr @1291)
-  %str.concat228 = call ptr @csec_string_concat(ptr %str.concat227, ptr %3)
-  %str.concat229 = call ptr @csec_string_concat(ptr %str.concat228, ptr @1292)
-  %str.concat230 = call ptr @csec_string_concat(ptr %str.concat229, ptr @1293)
-  %str.concat231 = call ptr @csec_string_concat(ptr %str.concat230, ptr %3)
-  %str.concat232 = call ptr @csec_string_concat(ptr %str.concat231, ptr @1294)
-  %str.concat233 = call ptr @csec_string_concat(ptr %str.concat232, ptr %3)
-  %str.concat234 = call ptr @csec_string_concat(ptr %str.concat233, ptr @1295)
-  ret ptr %str.concat234
+ifcont288:                                        ; preds = %ifcont312, %then287
+  %result329 = phi ptr [ %str.concat296, %then287 ], [ %result, %ifcont312 ]
+  %output.load330 = load ptr, ptr %output, align 8
+  %str.concat331 = call ptr @csec_string_concat(ptr %output.load330, ptr @1319)
+  %str.concat332 = call ptr @csec_string_concat(ptr %str.concat331, ptr %3)
+  %str.concat333 = call ptr @csec_string_concat(ptr %str.concat332, ptr @1320)
+  %str.concat334 = call ptr @csec_string_concat(ptr %str.concat333, ptr %3)
+  %str.concat335 = call ptr @csec_string_concat(ptr %str.concat334, ptr @1321)
+  %str.concat336 = call ptr @csec_string_concat(ptr %str.concat335, ptr %3)
+  %str.concat337 = call ptr @csec_string_concat(ptr %str.concat336, ptr @1322)
+  %str.concat338 = call ptr @csec_string_concat(ptr %str.concat337, ptr @1323)
+  %str.concat339 = call ptr @csec_string_concat(ptr %str.concat338, ptr %3)
+  %str.concat340 = call ptr @csec_string_concat(ptr %str.concat339, ptr @1324)
+  %str.concat341 = call ptr @csec_string_concat(ptr %str.concat340, ptr %3)
+  %str.concat342 = call ptr @csec_string_concat(ptr %str.concat341, ptr @1325)
+  ret ptr %str.concat342
 
-and_rhs194:                                       ; preds = %else
-  %indexEnd.load196 = load i32, ptr %indexEnd, align 4
-  %indexStart.load197 = load i32, ptr %indexStart, align 4
-  %addtmp198 = add i32 %indexStart.load197, 1
-  %eqtmp199 = icmp eq i32 %indexEnd.load196, %addtmp198
-  br label %and_end195
+and_rhs302:                                       ; preds = %else
+  %indexEnd.load304 = load i32, ptr %indexEnd, align 4
+  %indexStart.load305 = load i32, ptr %indexStart, align 4
+  %addtmp306 = add i32 %indexStart.load305, 1
+  %eqtmp307 = icmp eq i32 %indexEnd.load304, %addtmp306
+  br label %and_end303
 
-and_end195:                                       ; preds = %and_rhs194, %else
-  %and_result193.0 = phi i1 [ %eqtmp199, %and_rhs194 ], [ false, %else ]
-  %ifcond201 = icmp ne i1 %and_result193.0, false
-  br i1 %ifcond201, label %then202, label %else203
+and_end303:                                       ; preds = %and_rhs302, %else
+  %and_result301.0 = phi i1 [ %eqtmp307, %and_rhs302 ], [ false, %else ]
+  %ifcond309 = icmp ne i1 %and_result301.0, false
+  br i1 %ifcond309, label %then310, label %else311
 
-then202:                                          ; preds = %and_end195
-  %output.load205 = load ptr, ptr %output, align 8
-  %output.load206 = load ptr, ptr %output, align 8
-  %str.concat207 = call ptr @csec_string_concat(ptr %output.load206, ptr @1284)
-  %str.concat208 = call ptr @csec_string_concat(ptr %str.concat207, ptr %3)
-  %str.concat209 = call ptr @csec_string_concat(ptr %str.concat208, ptr @1285)
-  %indexStart.load210 = load i32, ptr %indexStart, align 4
-  %indexStart.load211 = load i32, ptr %indexStart, align 4
-  %calltmp212 = call ptr @_tokenTextAt(ptr %0, i32 %indexStart.load211)
-  %calltmp213 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %indexStart.load210, ptr %calltmp212)
-  %str.concat214 = call ptr @csec_string_concat(ptr %str.concat209, ptr %calltmp213)
-  %str.concat215 = call ptr @csec_string_concat(ptr %str.concat214, ptr @1286)
-  store ptr %str.concat215, ptr %output, align 8
-  br label %ifcont204
+then310:                                          ; preds = %and_end303
+  %output.load313 = load ptr, ptr %output, align 8
+  %output.load314 = load ptr, ptr %output, align 8
+  %str.concat315 = call ptr @csec_string_concat(ptr %output.load314, ptr @1314)
+  %str.concat316 = call ptr @csec_string_concat(ptr %str.concat315, ptr %3)
+  %str.concat317 = call ptr @csec_string_concat(ptr %str.concat316, ptr @1315)
+  %indexStart.load318 = load i32, ptr %indexStart, align 4
+  %indexStart.load319 = load i32, ptr %indexStart, align 4
+  %calltmp320 = call ptr @_tokenTextAt(ptr %0, i32 %indexStart.load319)
+  %calltmp321 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %indexStart.load318, ptr %calltmp320)
+  %str.concat322 = call ptr @csec_string_concat(ptr %str.concat317, ptr %calltmp321)
+  %str.concat323 = call ptr @csec_string_concat(ptr %str.concat322, ptr @1316)
+  store ptr %str.concat323, ptr %output, align 8
+  br label %ifcont312
 
-else203:                                          ; preds = %and_end195
-  %output.load216 = load ptr, ptr %output, align 8
-  %output.load217 = load ptr, ptr %output, align 8
-  %str.concat218 = call ptr @csec_string_concat(ptr %output.load217, ptr @1287)
-  %str.concat219 = call ptr @csec_string_concat(ptr %str.concat218, ptr %3)
-  %str.concat220 = call ptr @csec_string_concat(ptr %str.concat219, ptr @1288)
-  store ptr %str.concat220, ptr %output, align 8
-  br label %ifcont204
+else311:                                          ; preds = %and_end303
+  %output.load324 = load ptr, ptr %output, align 8
+  %output.load325 = load ptr, ptr %output, align 8
+  %str.concat326 = call ptr @csec_string_concat(ptr %output.load325, ptr @1317)
+  %str.concat327 = call ptr @csec_string_concat(ptr %str.concat326, ptr %3)
+  %str.concat328 = call ptr @csec_string_concat(ptr %str.concat327, ptr @1318)
+  store ptr %str.concat328, ptr %output, align 8
+  br label %ifcont312
 
-ifcont204:                                        ; preds = %else203, %then202
-  %result = phi ptr [ %str.concat215, %then202 ], [ %str.concat220, %else203 ]
-  br label %ifcont180
+ifcont312:                                        ; preds = %else311, %then310
+  %result = phi ptr [ %str.concat323, %then310 ], [ %str.concat328, %else311 ]
+  br label %ifcont288
 
-and_rhs238:                                       ; preds = %ifcont151
-  %op.load240 = load i32, ptr %op, align 4
-  %calltmp241 = call i8 @_tokenKindAt(ptr %0, i32 %op.load240)
-  %calltmp242 = call i8 @_kindOperator()
-  %eqtmp243 = icmp eq i8 %calltmp241, %calltmp242
-  br label %and_end239
+and_rhs347:                                       ; preds = %ifcont259
+  %op.load349 = load i32, ptr %op, align 4
+  %calltmp350 = call i8 @_tokenKindAt(ptr %0, i32 %op.load349)
+  %calltmp351 = call i8 @_kindOperator()
+  %eqtmp352 = icmp eq i8 %calltmp350, %calltmp351
+  br label %and_end348
 
-and_end239:                                       ; preds = %and_rhs238, %ifcont151
-  %and_result237.0 = phi i1 [ %eqtmp243, %and_rhs238 ], [ false, %ifcont151 ]
-  %ifcond245 = icmp ne i1 %and_result237.0, false
-  br i1 %ifcond245, label %then246, label %ifcont247
+and_end348:                                       ; preds = %and_rhs347, %ifcont259
+  %and_result346.0 = phi i1 [ %eqtmp352, %and_rhs347 ], [ false, %ifcont259 ]
+  %ifcond354 = icmp ne i1 %and_result346.0, false
+  br i1 %ifcond354, label %then355, label %ifcont356
 
-then246:                                          ; preds = %and_end239
-  %op.load248 = load i32, ptr %op, align 4
-  %calltmp249 = call ptr @_tokenTextAt(ptr %0, i32 %op.load248)
-  %calltmp250 = call i1 @_strEq(ptr %calltmp249, ptr @1296)
-  br i1 %calltmp250, label %and_rhs252, label %and_end253
+then355:                                          ; preds = %and_end348
+  %op.load357 = load i32, ptr %op, align 4
+  %calltmp358 = call ptr @_tokenTextAt(ptr %0, i32 %op.load357)
+  %calltmp359 = call i1 @_strEq(ptr %calltmp358, ptr @1326)
+  br i1 %calltmp359, label %and_rhs361, label %and_end362
 
-ifcont247:                                        ; preds = %ifcont346, %and_end239
-  %str.concat366 = call ptr @csec_string_concat(ptr @1322, ptr %3)
-  %str.concat367 = call ptr @csec_string_concat(ptr %str.concat366, ptr @1323)
-  ret ptr %str.concat367
+ifcont356:                                        ; preds = %ifcont631, %and_end348
+  %str.concat651 = call ptr @csec_string_concat(ptr @1390, ptr %3)
+  %str.concat652 = call ptr @csec_string_concat(ptr %str.concat651, ptr @1391)
+  ret ptr %str.concat652
 
-and_rhs252:                                       ; preds = %then246
-  %op.load254 = load i32, ptr %op, align 4
-  %calltmp255 = call ptr @_llvmCallArgumentType(ptr %0, i32 %1, i32 %op.load254)
-  %calltmp256 = call i1 @_strEq(ptr %calltmp255, ptr @1297)
-  br i1 %calltmp256, label %or_end259, label %or_rhs258
+and_rhs361:                                       ; preds = %then355
+  %op.load363 = load i32, ptr %op, align 4
+  %calltmp364 = call ptr @_llvmCallArgumentType(ptr %0, i32 %1, i32 %op.load363)
+  %calltmp365 = call i1 @_strEq(ptr %calltmp364, ptr @1327)
+  br i1 %calltmp365, label %or_end368, label %or_rhs367
 
-and_end253:                                       ; preds = %or_end259, %then246
-  %and_result251.0 = phi i1 [ %or_result257.0, %or_end259 ], [ false, %then246 ]
-  %ifcond267 = icmp ne i1 %and_result251.0, false
-  br i1 %ifcond267, label %then268, label %ifcont269
+and_end362:                                       ; preds = %or_end368, %then355
+  %and_result360.0 = phi i1 [ %or_result366.0, %or_end368 ], [ false, %then355 ]
+  %ifcond376 = icmp ne i1 %and_result360.0, false
+  br i1 %ifcond376, label %then377, label %ifcont378
 
-or_rhs258:                                        ; preds = %and_rhs252
-  %op.load260 = load i32, ptr %op, align 4
-  %addtmp261 = add i32 %op.load260, 1
-  %calltmp263 = call ptr @_llvmCallArgumentType(ptr %0, i32 %addtmp261, i32 %calltmp)
-  %calltmp264 = call i1 @_strEq(ptr %calltmp263, ptr @1298)
-  br label %or_end259
+or_rhs367:                                        ; preds = %and_rhs361
+  %op.load369 = load i32, ptr %op, align 4
+  %addtmp370 = add i32 %op.load369, 1
+  %calltmp372 = call ptr @_llvmCallArgumentType(ptr %0, i32 %addtmp370, i32 %calltmp)
+  %calltmp373 = call i1 @_strEq(ptr %calltmp372, ptr @1328)
+  br label %or_end368
 
-or_end259:                                        ; preds = %or_rhs258, %and_rhs252
-  %or_result257.0 = phi i1 [ true, %and_rhs252 ], [ %calltmp264, %or_rhs258 ]
-  br label %and_end253
+or_end368:                                        ; preds = %or_rhs367, %and_rhs361
+  %or_result366.0 = phi i1 [ true, %and_rhs361 ], [ %calltmp373, %or_rhs367 ]
+  br label %and_end362
 
-then268:                                          ; preds = %and_end253
-  %op.load270 = load i32, ptr %op, align 4
-  %str.concat271 = call ptr @csec_string_concat(ptr %3, ptr @1299)
-  %calltmp272 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %1, i32 %op.load270, ptr %str.concat271)
-  %op.load273 = load i32, ptr %op, align 4
-  %addtmp274 = add i32 %op.load273, 1
-  %str.concat276 = call ptr @csec_string_concat(ptr %3, ptr @1300)
-  %calltmp277 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %addtmp274, i32 %calltmp, ptr %str.concat276)
-  %str.concat278 = call ptr @csec_string_concat(ptr %calltmp272, ptr %calltmp277)
-  %str.concat279 = call ptr @csec_string_concat(ptr %str.concat278, ptr @1301)
-  %str.concat280 = call ptr @csec_string_concat(ptr %str.concat279, ptr %3)
-  %str.concat281 = call ptr @csec_string_concat(ptr %str.concat280, ptr @1302)
-  %str.concat282 = call ptr @csec_string_concat(ptr %str.concat281, ptr %3)
-  %str.concat283 = call ptr @csec_string_concat(ptr %str.concat282, ptr @1303)
-  %str.concat284 = call ptr @csec_string_concat(ptr %str.concat283, ptr %3)
-  %str.concat285 = call ptr @csec_string_concat(ptr %str.concat284, ptr @1304)
-  ret ptr %str.concat285
+then377:                                          ; preds = %and_end362
+  %op.load379 = load i32, ptr %op, align 4
+  %addtmp380 = add i32 %op.load379, 1
+  %calltmp381 = call i32 @_skipTrivia(ptr %0, i32 %addtmp380)
+  %rightStart = alloca i32, align 4
+  store i32 %calltmp381, ptr %rightStart, align 4
+  %leftCode = alloca ptr, align 8
+  store ptr @1329, ptr %leftCode, align 8
+  %rightCode = alloca ptr, align 8
+  store ptr @1330, ptr %rightCode, align 8
+  %op.load382 = load i32, ptr %op, align 4
+  %calltmp383 = call ptr @_llvmCallArgumentType(ptr %0, i32 %1, i32 %op.load382)
+  %calltmp384 = call i1 @_strEq(ptr %calltmp383, ptr @1331)
+  %ifcond385 = icmp ne i1 %calltmp384, false
+  br i1 %ifcond385, label %then386, label %else387
 
-ifcont269:                                        ; preds = %and_end253
-  %op.load286 = load i32, ptr %op, align 4
-  %calltmp287 = call ptr @_tokenTextAt(ptr %0, i32 %op.load286)
-  %calltmp288 = call ptr @_irOperatorName(ptr %calltmp287)
+ifcont378:                                        ; preds = %and_end362
+  %op.load571 = load i32, ptr %op, align 4
+  %calltmp572 = call ptr @_tokenTextAt(ptr %0, i32 %op.load571)
+  %calltmp573 = call ptr @_irOperatorName(ptr %calltmp572)
   %mnemonic = alloca ptr, align 8
-  store ptr %calltmp288, ptr %mnemonic, align 8
+  store ptr %calltmp573, ptr %mnemonic, align 8
   %mnemonic.load = load ptr, ptr %mnemonic, align 8
-  %calltmp289 = call i1 @_strEq(ptr %mnemonic.load, ptr @1305)
-  br i1 %calltmp289, label %or_end292, label %or_rhs291
+  %calltmp574 = call i1 @_strEq(ptr %mnemonic.load, ptr @1373)
+  br i1 %calltmp574, label %or_end577, label %or_rhs576
 
-or_rhs291:                                        ; preds = %ifcont269
-  %mnemonic.load293 = load ptr, ptr %mnemonic, align 8
-  %calltmp294 = call i1 @_strEq(ptr %mnemonic.load293, ptr @1306)
-  br label %or_end292
+then386:                                          ; preds = %then377
+  %leftCode.load = load ptr, ptr %leftCode, align 8
+  %op.load389 = load i32, ptr %op, align 4
+  %str.concat390 = call ptr @csec_string_concat(ptr %3, ptr @1332)
+  %calltmp391 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %1, i32 %op.load389, ptr %str.concat390)
+  store ptr %calltmp391, ptr %leftCode, align 8
+  br label %ifcont388
 
-or_end292:                                        ; preds = %or_rhs291, %ifcont269
-  %or_result290.0 = phi i1 [ true, %ifcont269 ], [ %calltmp294, %or_rhs291 ]
-  br i1 %or_result290.0, label %or_end298, label %or_rhs297
+else387:                                          ; preds = %then377
+  %calltmp392 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp393 = call i8 @_kindChar()
+  %eqtmp394 = icmp eq i8 %calltmp392, %calltmp393
+  br i1 %eqtmp394, label %and_rhs396, label %and_end397
 
-or_rhs297:                                        ; preds = %or_end292
-  %mnemonic.load299 = load ptr, ptr %mnemonic, align 8
-  %calltmp300 = call i1 @_strEq(ptr %mnemonic.load299, ptr @1307)
-  br label %or_end298
+ifcont388:                                        ; preds = %ifcont406, %then386
+  %result464 = phi ptr [ %calltmp391, %then386 ], [ %result463, %ifcont406 ]
+  %rightStart.load = load i32, ptr %rightStart, align 4
+  %calltmp466 = call ptr @_llvmCallArgumentType(ptr %0, i32 %rightStart.load, i32 %calltmp)
+  %calltmp467 = call i1 @_strEq(ptr %calltmp466, ptr @1350)
+  %ifcond468 = icmp ne i1 %calltmp467, false
+  br i1 %ifcond468, label %then469, label %else470
 
-or_end298:                                        ; preds = %or_rhs297, %or_end292
-  %or_result296.0 = phi i1 [ true, %or_end292 ], [ %calltmp300, %or_rhs297 ]
-  br i1 %or_result296.0, label %or_end304, label %or_rhs303
+and_rhs396:                                       ; preds = %else387
+  %op.load398 = load i32, ptr %op, align 4
+  %calltmp399 = call i32 @_trimExpressionEnd(ptr %0, i32 %1, i32 %op.load398)
+  %addtmp400 = add i32 %1, 1
+  %eqtmp401 = icmp eq i32 %calltmp399, %addtmp400
+  br label %and_end397
 
-or_rhs303:                                        ; preds = %or_end298
-  %mnemonic.load305 = load ptr, ptr %mnemonic, align 8
-  %calltmp306 = call i1 @_strEq(ptr %mnemonic.load305, ptr @1308)
-  br label %or_end304
+and_end397:                                       ; preds = %and_rhs396, %else387
+  %and_result395.0 = phi i1 [ %eqtmp401, %and_rhs396 ], [ false, %else387 ]
+  %ifcond403 = icmp ne i1 %and_result395.0, false
+  br i1 %ifcond403, label %then404, label %else405
 
-or_end304:                                        ; preds = %or_rhs303, %or_end298
-  %or_result302.0 = phi i1 [ true, %or_end298 ], [ %calltmp306, %or_rhs303 ]
-  br i1 %or_result302.0, label %or_end310, label %or_rhs309
+then404:                                          ; preds = %and_end397
+  %leftCode.load407 = load ptr, ptr %leftCode, align 8
+  %str.concat408 = call ptr @csec_string_concat(ptr @1333, ptr %3)
+  %str.concat409 = call ptr @csec_string_concat(ptr %str.concat408, ptr @1334)
+  %calltmp410 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp411 = call ptr @_llvmCharI8Value(ptr %calltmp410)
+  %str.concat412 = call ptr @csec_string_concat(ptr %str.concat409, ptr %calltmp411)
+  %str.concat413 = call ptr @csec_string_concat(ptr %str.concat412, ptr @1335)
+  store ptr %str.concat413, ptr %leftCode, align 8
+  br label %ifcont406
 
-or_rhs309:                                        ; preds = %or_end304
-  %mnemonic.load311 = load ptr, ptr %mnemonic, align 8
-  %calltmp312 = call i1 @_strEq(ptr %mnemonic.load311, ptr @1309)
-  br label %or_end310
+else405:                                          ; preds = %and_end397
+  %calltmp414 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp415 = call i8 @_kindIdentifier()
+  %eqtmp416 = icmp eq i8 %calltmp414, %calltmp415
+  br i1 %eqtmp416, label %and_rhs418, label %and_end419
 
-or_end310:                                        ; preds = %or_rhs309, %or_end304
-  %or_result308.0 = phi i1 [ true, %or_end304 ], [ %calltmp312, %or_rhs309 ]
-  br i1 %or_result308.0, label %or_end316, label %or_rhs315
+ifcont406:                                        ; preds = %ifcont435, %then404
+  %result463 = phi ptr [ %str.concat413, %then404 ], [ %result462, %ifcont435 ]
+  br label %ifcont388
 
-or_rhs315:                                        ; preds = %or_end310
-  %mnemonic.load317 = load ptr, ptr %mnemonic, align 8
-  %calltmp318 = call i1 @_strEq(ptr %mnemonic.load317, ptr @1310)
-  br label %or_end316
+and_rhs418:                                       ; preds = %else405
+  %op.load420 = load i32, ptr %op, align 4
+  %calltmp421 = call i32 @_trimExpressionEnd(ptr %0, i32 %1, i32 %op.load420)
+  %addtmp422 = add i32 %1, 1
+  %eqtmp423 = icmp eq i32 %calltmp421, %addtmp422
+  br label %and_end419
 
-or_end316:                                        ; preds = %or_rhs315, %or_end310
-  %or_result314.0 = phi i1 [ true, %or_end310 ], [ %calltmp318, %or_rhs315 ]
-  br i1 %or_result314.0, label %or_end322, label %or_rhs321
+and_end419:                                       ; preds = %and_rhs418, %else405
+  %and_result417.0 = phi i1 [ %eqtmp423, %and_rhs418 ], [ false, %else405 ]
+  br i1 %and_result417.0, label %and_rhs426, label %and_end427
 
-or_rhs321:                                        ; preds = %or_end316
-  %mnemonic.load323 = load ptr, ptr %mnemonic, align 8
-  %calltmp324 = call i1 @_strEq(ptr %mnemonic.load323, ptr @1311)
-  br label %or_end322
+and_rhs426:                                       ; preds = %and_end419
+  %calltmp428 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp429 = call ptr @_lookupVisibleValueType(ptr %0, i32 %1, ptr %calltmp428)
+  %calltmp430 = call i1 @_strEq(ptr %calltmp429, ptr @1336)
+  br label %and_end427
 
-or_end322:                                        ; preds = %or_rhs321, %or_end316
-  %or_result320.0 = phi i1 [ true, %or_end316 ], [ %calltmp324, %or_rhs321 ]
-  br i1 %or_result320.0, label %or_end328, label %or_rhs327
+and_end427:                                       ; preds = %and_rhs426, %and_end419
+  %and_result425.0 = phi i1 [ %calltmp430, %and_rhs426 ], [ false, %and_end419 ]
+  %ifcond432 = icmp ne i1 %and_result425.0, false
+  br i1 %ifcond432, label %then433, label %else434
 
-or_rhs327:                                        ; preds = %or_end322
-  %mnemonic.load329 = load ptr, ptr %mnemonic, align 8
-  %calltmp330 = call i1 @_strEq(ptr %mnemonic.load329, ptr @1312)
-  br label %or_end328
+then433:                                          ; preds = %and_end427
+  %leftCode.load436 = load ptr, ptr %leftCode, align 8
+  %str.concat437 = call ptr @csec_string_concat(ptr @1337, ptr %3)
+  %str.concat438 = call ptr @csec_string_concat(ptr %str.concat437, ptr @1338)
+  %calltmp439 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp440 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %calltmp439)
+  %str.concat441 = call ptr @csec_string_concat(ptr %str.concat438, ptr %calltmp440)
+  %str.concat442 = call ptr @csec_string_concat(ptr %str.concat441, ptr @1339)
+  %str.concat443 = call ptr @csec_string_concat(ptr %str.concat442, ptr @1340)
+  %str.concat444 = call ptr @csec_string_concat(ptr %str.concat443, ptr %3)
+  %str.concat445 = call ptr @csec_string_concat(ptr %str.concat444, ptr @1341)
+  %str.concat446 = call ptr @csec_string_concat(ptr %str.concat445, ptr %3)
+  %str.concat447 = call ptr @csec_string_concat(ptr %str.concat446, ptr @1342)
+  store ptr %str.concat447, ptr %leftCode, align 8
+  br label %ifcont435
 
-or_end328:                                        ; preds = %or_rhs327, %or_end322
-  %or_result326.0 = phi i1 [ true, %or_end322 ], [ %calltmp330, %or_rhs327 ]
-  br i1 %or_result326.0, label %or_end334, label %or_rhs333
+else434:                                          ; preds = %and_end427
+  %leftCode.load448 = load ptr, ptr %leftCode, align 8
+  %op.load449 = load i32, ptr %op, align 4
+  %str.concat450 = call ptr @csec_string_concat(ptr %3, ptr @1343)
+  %calltmp451 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %1, i32 %op.load449, ptr %str.concat450)
+  %str.concat452 = call ptr @csec_string_concat(ptr %calltmp451, ptr @1344)
+  %str.concat453 = call ptr @csec_string_concat(ptr %str.concat452, ptr %3)
+  %str.concat454 = call ptr @csec_string_concat(ptr %str.concat453, ptr @1345)
+  %str.concat455 = call ptr @csec_string_concat(ptr %str.concat454, ptr %3)
+  %str.concat456 = call ptr @csec_string_concat(ptr %str.concat455, ptr @1346)
+  %str.concat457 = call ptr @csec_string_concat(ptr %str.concat456, ptr @1347)
+  %str.concat458 = call ptr @csec_string_concat(ptr %str.concat457, ptr %3)
+  %str.concat459 = call ptr @csec_string_concat(ptr %str.concat458, ptr @1348)
+  %str.concat460 = call ptr @csec_string_concat(ptr %str.concat459, ptr %3)
+  %str.concat461 = call ptr @csec_string_concat(ptr %str.concat460, ptr @1349)
+  store ptr %str.concat461, ptr %leftCode, align 8
+  br label %ifcont435
 
-or_rhs333:                                        ; preds = %or_end328
-  %mnemonic.load335 = load ptr, ptr %mnemonic, align 8
-  %calltmp336 = call i1 @_strEq(ptr %mnemonic.load335, ptr @1313)
-  br label %or_end334
+ifcont435:                                        ; preds = %else434, %then433
+  %result462 = phi ptr [ %str.concat447, %then433 ], [ %str.concat461, %else434 ]
+  br label %ifcont406
 
-or_end334:                                        ; preds = %or_rhs333, %or_end328
-  %or_result332.0 = phi i1 [ true, %or_end328 ], [ %calltmp336, %or_rhs333 ]
-  br i1 %or_result332.0, label %or_end340, label %or_rhs339
+then469:                                          ; preds = %ifcont388
+  %rightCode.load = load ptr, ptr %rightCode, align 8
+  %rightStart.load472 = load i32, ptr %rightStart, align 4
+  %str.concat474 = call ptr @csec_string_concat(ptr %3, ptr @1351)
+  %calltmp475 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %rightStart.load472, i32 %calltmp, ptr %str.concat474)
+  store ptr %calltmp475, ptr %rightCode, align 8
+  br label %ifcont471
 
-or_rhs339:                                        ; preds = %or_end334
-  %mnemonic.load341 = load ptr, ptr %mnemonic, align 8
-  %calltmp342 = call i1 @_strEq(ptr %mnemonic.load341, ptr @1314)
-  br label %or_end340
+else470:                                          ; preds = %ifcont388
+  %rightStart.load476 = load i32, ptr %rightStart, align 4
+  %calltmp477 = call i8 @_tokenKindAt(ptr %0, i32 %rightStart.load476)
+  %calltmp478 = call i8 @_kindChar()
+  %eqtmp479 = icmp eq i8 %calltmp477, %calltmp478
+  br i1 %eqtmp479, label %and_rhs481, label %and_end482
 
-or_end340:                                        ; preds = %or_rhs339, %or_end334
-  %or_result338.0 = phi i1 [ true, %or_end334 ], [ %calltmp342, %or_rhs339 ]
-  %ifcond344 = icmp ne i1 %or_result338.0, false
-  br i1 %ifcond344, label %then345, label %ifcont346
+ifcont471:                                        ; preds = %ifcont493, %then469
+  %result560 = phi ptr [ %calltmp475, %then469 ], [ %result559, %ifcont493 ]
+  %leftCode.load561 = load ptr, ptr %leftCode, align 8
+  %rightCode.load562 = load ptr, ptr %rightCode, align 8
+  %str.concat563 = call ptr @csec_string_concat(ptr %leftCode.load561, ptr %rightCode.load562)
+  %str.concat564 = call ptr @csec_string_concat(ptr %str.concat563, ptr @1369)
+  %str.concat565 = call ptr @csec_string_concat(ptr %str.concat564, ptr %3)
+  %str.concat566 = call ptr @csec_string_concat(ptr %str.concat565, ptr @1370)
+  %str.concat567 = call ptr @csec_string_concat(ptr %str.concat566, ptr %3)
+  %str.concat568 = call ptr @csec_string_concat(ptr %str.concat567, ptr @1371)
+  %str.concat569 = call ptr @csec_string_concat(ptr %str.concat568, ptr %3)
+  %str.concat570 = call ptr @csec_string_concat(ptr %str.concat569, ptr @1372)
+  ret ptr %str.concat570
 
-then345:                                          ; preds = %or_end340
-  %op.load347 = load i32, ptr %op, align 4
-  %str.concat348 = call ptr @csec_string_concat(ptr %3, ptr @1315)
-  %calltmp349 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %1, i32 %op.load347, ptr %str.concat348)
-  %op.load350 = load i32, ptr %op, align 4
-  %addtmp351 = add i32 %op.load350, 1
-  %str.concat353 = call ptr @csec_string_concat(ptr %3, ptr @1316)
-  %calltmp354 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %addtmp351, i32 %calltmp, ptr %str.concat353)
-  %str.concat355 = call ptr @csec_string_concat(ptr %calltmp349, ptr %calltmp354)
-  %str.concat356 = call ptr @csec_string_concat(ptr %str.concat355, ptr @1317)
-  %str.concat357 = call ptr @csec_string_concat(ptr %str.concat356, ptr %3)
-  %str.concat358 = call ptr @csec_string_concat(ptr %str.concat357, ptr @1318)
-  %mnemonic.load359 = load ptr, ptr %mnemonic, align 8
-  %str.concat360 = call ptr @csec_string_concat(ptr %str.concat358, ptr %mnemonic.load359)
-  %str.concat361 = call ptr @csec_string_concat(ptr %str.concat360, ptr @1319)
-  %str.concat362 = call ptr @csec_string_concat(ptr %str.concat361, ptr %3)
-  %str.concat363 = call ptr @csec_string_concat(ptr %str.concat362, ptr @1320)
-  %str.concat364 = call ptr @csec_string_concat(ptr %str.concat363, ptr %3)
-  %str.concat365 = call ptr @csec_string_concat(ptr %str.concat364, ptr @1321)
-  ret ptr %str.concat365
+and_rhs481:                                       ; preds = %else470
+  %rightStart.load483 = load i32, ptr %rightStart, align 4
+  %calltmp485 = call i32 @_trimExpressionEnd(ptr %0, i32 %rightStart.load483, i32 %calltmp)
+  %rightStart.load486 = load i32, ptr %rightStart, align 4
+  %addtmp487 = add i32 %rightStart.load486, 1
+  %eqtmp488 = icmp eq i32 %calltmp485, %addtmp487
+  br label %and_end482
 
-ifcont346:                                        ; preds = %or_end340
-  br label %ifcont247
+and_end482:                                       ; preds = %and_rhs481, %else470
+  %and_result480.0 = phi i1 [ %eqtmp488, %and_rhs481 ], [ false, %else470 ]
+  %ifcond490 = icmp ne i1 %and_result480.0, false
+  br i1 %ifcond490, label %then491, label %else492
+
+then491:                                          ; preds = %and_end482
+  %rightCode.load494 = load ptr, ptr %rightCode, align 8
+  %str.concat495 = call ptr @csec_string_concat(ptr @1352, ptr %3)
+  %str.concat496 = call ptr @csec_string_concat(ptr %str.concat495, ptr @1353)
+  %rightStart.load497 = load i32, ptr %rightStart, align 4
+  %calltmp498 = call ptr @_tokenTextAt(ptr %0, i32 %rightStart.load497)
+  %calltmp499 = call ptr @_llvmCharI8Value(ptr %calltmp498)
+  %str.concat500 = call ptr @csec_string_concat(ptr %str.concat496, ptr %calltmp499)
+  %str.concat501 = call ptr @csec_string_concat(ptr %str.concat500, ptr @1354)
+  store ptr %str.concat501, ptr %rightCode, align 8
+  br label %ifcont493
+
+else492:                                          ; preds = %and_end482
+  %rightStart.load502 = load i32, ptr %rightStart, align 4
+  %calltmp503 = call i8 @_tokenKindAt(ptr %0, i32 %rightStart.load502)
+  %calltmp504 = call i8 @_kindIdentifier()
+  %eqtmp505 = icmp eq i8 %calltmp503, %calltmp504
+  br i1 %eqtmp505, label %and_rhs507, label %and_end508
+
+ifcont493:                                        ; preds = %ifcont528, %then491
+  %result559 = phi ptr [ %str.concat501, %then491 ], [ %result558, %ifcont528 ]
+  br label %ifcont471
+
+and_rhs507:                                       ; preds = %else492
+  %rightStart.load509 = load i32, ptr %rightStart, align 4
+  %calltmp511 = call i32 @_trimExpressionEnd(ptr %0, i32 %rightStart.load509, i32 %calltmp)
+  %rightStart.load512 = load i32, ptr %rightStart, align 4
+  %addtmp513 = add i32 %rightStart.load512, 1
+  %eqtmp514 = icmp eq i32 %calltmp511, %addtmp513
+  br label %and_end508
+
+and_end508:                                       ; preds = %and_rhs507, %else492
+  %and_result506.0 = phi i1 [ %eqtmp514, %and_rhs507 ], [ false, %else492 ]
+  br i1 %and_result506.0, label %and_rhs517, label %and_end518
+
+and_rhs517:                                       ; preds = %and_end508
+  %rightStart.load519 = load i32, ptr %rightStart, align 4
+  %rightStart.load520 = load i32, ptr %rightStart, align 4
+  %calltmp521 = call ptr @_tokenTextAt(ptr %0, i32 %rightStart.load520)
+  %calltmp522 = call ptr @_lookupVisibleValueType(ptr %0, i32 %rightStart.load519, ptr %calltmp521)
+  %calltmp523 = call i1 @_strEq(ptr %calltmp522, ptr @1355)
+  br label %and_end518
+
+and_end518:                                       ; preds = %and_rhs517, %and_end508
+  %and_result516.0 = phi i1 [ %calltmp523, %and_rhs517 ], [ false, %and_end508 ]
+  %ifcond525 = icmp ne i1 %and_result516.0, false
+  br i1 %ifcond525, label %then526, label %else527
+
+then526:                                          ; preds = %and_end518
+  %rightCode.load529 = load ptr, ptr %rightCode, align 8
+  %str.concat530 = call ptr @csec_string_concat(ptr @1356, ptr %3)
+  %str.concat531 = call ptr @csec_string_concat(ptr %str.concat530, ptr @1357)
+  %rightStart.load532 = load i32, ptr %rightStart, align 4
+  %rightStart.load533 = load i32, ptr %rightStart, align 4
+  %calltmp534 = call ptr @_tokenTextAt(ptr %0, i32 %rightStart.load533)
+  %calltmp535 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %rightStart.load532, ptr %calltmp534)
+  %str.concat536 = call ptr @csec_string_concat(ptr %str.concat531, ptr %calltmp535)
+  %str.concat537 = call ptr @csec_string_concat(ptr %str.concat536, ptr @1358)
+  %str.concat538 = call ptr @csec_string_concat(ptr %str.concat537, ptr @1359)
+  %str.concat539 = call ptr @csec_string_concat(ptr %str.concat538, ptr %3)
+  %str.concat540 = call ptr @csec_string_concat(ptr %str.concat539, ptr @1360)
+  %str.concat541 = call ptr @csec_string_concat(ptr %str.concat540, ptr %3)
+  %str.concat542 = call ptr @csec_string_concat(ptr %str.concat541, ptr @1361)
+  store ptr %str.concat542, ptr %rightCode, align 8
+  br label %ifcont528
+
+else527:                                          ; preds = %and_end518
+  %rightCode.load543 = load ptr, ptr %rightCode, align 8
+  %rightStart.load544 = load i32, ptr %rightStart, align 4
+  %str.concat546 = call ptr @csec_string_concat(ptr %3, ptr @1362)
+  %calltmp547 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %rightStart.load544, i32 %calltmp, ptr %str.concat546)
+  %str.concat548 = call ptr @csec_string_concat(ptr %calltmp547, ptr @1363)
+  %str.concat549 = call ptr @csec_string_concat(ptr %str.concat548, ptr %3)
+  %str.concat550 = call ptr @csec_string_concat(ptr %str.concat549, ptr @1364)
+  %str.concat551 = call ptr @csec_string_concat(ptr %str.concat550, ptr %3)
+  %str.concat552 = call ptr @csec_string_concat(ptr %str.concat551, ptr @1365)
+  %str.concat553 = call ptr @csec_string_concat(ptr %str.concat552, ptr @1366)
+  %str.concat554 = call ptr @csec_string_concat(ptr %str.concat553, ptr %3)
+  %str.concat555 = call ptr @csec_string_concat(ptr %str.concat554, ptr @1367)
+  %str.concat556 = call ptr @csec_string_concat(ptr %str.concat555, ptr %3)
+  %str.concat557 = call ptr @csec_string_concat(ptr %str.concat556, ptr @1368)
+  store ptr %str.concat557, ptr %rightCode, align 8
+  br label %ifcont528
+
+ifcont528:                                        ; preds = %else527, %then526
+  %result558 = phi ptr [ %str.concat542, %then526 ], [ %str.concat557, %else527 ]
+  br label %ifcont493
+
+or_rhs576:                                        ; preds = %ifcont378
+  %mnemonic.load578 = load ptr, ptr %mnemonic, align 8
+  %calltmp579 = call i1 @_strEq(ptr %mnemonic.load578, ptr @1374)
+  br label %or_end577
+
+or_end577:                                        ; preds = %or_rhs576, %ifcont378
+  %or_result575.0 = phi i1 [ true, %ifcont378 ], [ %calltmp579, %or_rhs576 ]
+  br i1 %or_result575.0, label %or_end583, label %or_rhs582
+
+or_rhs582:                                        ; preds = %or_end577
+  %mnemonic.load584 = load ptr, ptr %mnemonic, align 8
+  %calltmp585 = call i1 @_strEq(ptr %mnemonic.load584, ptr @1375)
+  br label %or_end583
+
+or_end583:                                        ; preds = %or_rhs582, %or_end577
+  %or_result581.0 = phi i1 [ true, %or_end577 ], [ %calltmp585, %or_rhs582 ]
+  br i1 %or_result581.0, label %or_end589, label %or_rhs588
+
+or_rhs588:                                        ; preds = %or_end583
+  %mnemonic.load590 = load ptr, ptr %mnemonic, align 8
+  %calltmp591 = call i1 @_strEq(ptr %mnemonic.load590, ptr @1376)
+  br label %or_end589
+
+or_end589:                                        ; preds = %or_rhs588, %or_end583
+  %or_result587.0 = phi i1 [ true, %or_end583 ], [ %calltmp591, %or_rhs588 ]
+  br i1 %or_result587.0, label %or_end595, label %or_rhs594
+
+or_rhs594:                                        ; preds = %or_end589
+  %mnemonic.load596 = load ptr, ptr %mnemonic, align 8
+  %calltmp597 = call i1 @_strEq(ptr %mnemonic.load596, ptr @1377)
+  br label %or_end595
+
+or_end595:                                        ; preds = %or_rhs594, %or_end589
+  %or_result593.0 = phi i1 [ true, %or_end589 ], [ %calltmp597, %or_rhs594 ]
+  br i1 %or_result593.0, label %or_end601, label %or_rhs600
+
+or_rhs600:                                        ; preds = %or_end595
+  %mnemonic.load602 = load ptr, ptr %mnemonic, align 8
+  %calltmp603 = call i1 @_strEq(ptr %mnemonic.load602, ptr @1378)
+  br label %or_end601
+
+or_end601:                                        ; preds = %or_rhs600, %or_end595
+  %or_result599.0 = phi i1 [ true, %or_end595 ], [ %calltmp603, %or_rhs600 ]
+  br i1 %or_result599.0, label %or_end607, label %or_rhs606
+
+or_rhs606:                                        ; preds = %or_end601
+  %mnemonic.load608 = load ptr, ptr %mnemonic, align 8
+  %calltmp609 = call i1 @_strEq(ptr %mnemonic.load608, ptr @1379)
+  br label %or_end607
+
+or_end607:                                        ; preds = %or_rhs606, %or_end601
+  %or_result605.0 = phi i1 [ true, %or_end601 ], [ %calltmp609, %or_rhs606 ]
+  br i1 %or_result605.0, label %or_end613, label %or_rhs612
+
+or_rhs612:                                        ; preds = %or_end607
+  %mnemonic.load614 = load ptr, ptr %mnemonic, align 8
+  %calltmp615 = call i1 @_strEq(ptr %mnemonic.load614, ptr @1380)
+  br label %or_end613
+
+or_end613:                                        ; preds = %or_rhs612, %or_end607
+  %or_result611.0 = phi i1 [ true, %or_end607 ], [ %calltmp615, %or_rhs612 ]
+  br i1 %or_result611.0, label %or_end619, label %or_rhs618
+
+or_rhs618:                                        ; preds = %or_end613
+  %mnemonic.load620 = load ptr, ptr %mnemonic, align 8
+  %calltmp621 = call i1 @_strEq(ptr %mnemonic.load620, ptr @1381)
+  br label %or_end619
+
+or_end619:                                        ; preds = %or_rhs618, %or_end613
+  %or_result617.0 = phi i1 [ true, %or_end613 ], [ %calltmp621, %or_rhs618 ]
+  br i1 %or_result617.0, label %or_end625, label %or_rhs624
+
+or_rhs624:                                        ; preds = %or_end619
+  %mnemonic.load626 = load ptr, ptr %mnemonic, align 8
+  %calltmp627 = call i1 @_strEq(ptr %mnemonic.load626, ptr @1382)
+  br label %or_end625
+
+or_end625:                                        ; preds = %or_rhs624, %or_end619
+  %or_result623.0 = phi i1 [ true, %or_end619 ], [ %calltmp627, %or_rhs624 ]
+  %ifcond629 = icmp ne i1 %or_result623.0, false
+  br i1 %ifcond629, label %then630, label %ifcont631
+
+then630:                                          ; preds = %or_end625
+  %op.load632 = load i32, ptr %op, align 4
+  %str.concat633 = call ptr @csec_string_concat(ptr %3, ptr @1383)
+  %calltmp634 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %1, i32 %op.load632, ptr %str.concat633)
+  %op.load635 = load i32, ptr %op, align 4
+  %addtmp636 = add i32 %op.load635, 1
+  %str.concat638 = call ptr @csec_string_concat(ptr %3, ptr @1384)
+  %calltmp639 = call ptr @_generateLLVMCallArgumentLoadI32(ptr %0, i32 %addtmp636, i32 %calltmp, ptr %str.concat638)
+  %str.concat640 = call ptr @csec_string_concat(ptr %calltmp634, ptr %calltmp639)
+  %str.concat641 = call ptr @csec_string_concat(ptr %str.concat640, ptr @1385)
+  %str.concat642 = call ptr @csec_string_concat(ptr %str.concat641, ptr %3)
+  %str.concat643 = call ptr @csec_string_concat(ptr %str.concat642, ptr @1386)
+  %mnemonic.load644 = load ptr, ptr %mnemonic, align 8
+  %str.concat645 = call ptr @csec_string_concat(ptr %str.concat643, ptr %mnemonic.load644)
+  %str.concat646 = call ptr @csec_string_concat(ptr %str.concat645, ptr @1387)
+  %str.concat647 = call ptr @csec_string_concat(ptr %str.concat646, ptr %3)
+  %str.concat648 = call ptr @csec_string_concat(ptr %str.concat647, ptr @1388)
+  %str.concat649 = call ptr @csec_string_concat(ptr %str.concat648, ptr %3)
+  %str.concat650 = call ptr @csec_string_concat(ptr %str.concat649, ptr @1389)
+  ret ptr %str.concat650
+
+ifcont631:                                        ; preds = %or_end625
+  br label %ifcont356
 }
 
 define ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %1, i32 %2, ptr %3) {
@@ -16644,7 +17255,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont93, %entry
-  %output.0 = phi ptr [ @1324, %entry ], [ %output.1, %ifcont93 ]
+  %output.0 = phi ptr [ @1392, %entry ], [ %output.1, %ifcont93 ]
   %brace.0 = phi i32 [ 0, %entry ], [ %brace.1, %ifcont93 ]
   %bracket.0 = phi i32 [ 0, %entry ], [ %bracket.1, %ifcont93 ]
   %paren.0 = phi i32 [ 0, %entry ], [ %paren.1, %ifcont93 ]
@@ -16691,7 +17302,7 @@ then:                                             ; preds = %and_end6
   %text = alloca ptr, align 8
   store ptr %calltmp13, ptr %text, align 8
   %text.load = load ptr, ptr %text, align 8
-  %calltmp14 = call i1 @_strEq(ptr %text.load, ptr @1325)
+  %calltmp14 = call i1 @_strEq(ptr %text.load, ptr @1393)
   %ifcond15 = icmp ne i1 %calltmp14, false
   br i1 %ifcond15, label %then16, label %else
 
@@ -16709,7 +17320,7 @@ then16:                                           ; preds = %then
 
 else:                                             ; preds = %then
   %text.load19 = load ptr, ptr %text, align 8
-  %calltmp20 = call i1 @_strEq(ptr %text.load19, ptr @1326)
+  %calltmp20 = call i1 @_strEq(ptr %text.load19, ptr @1394)
   %ifcond21 = icmp ne i1 %calltmp20, false
   br i1 %ifcond21, label %then22, label %else23
 
@@ -16726,7 +17337,7 @@ then22:                                           ; preds = %else
 
 else23:                                           ; preds = %else
   %text.load27 = load ptr, ptr %text, align 8
-  %calltmp28 = call i1 @_strEq(ptr %text.load27, ptr @1327)
+  %calltmp28 = call i1 @_strEq(ptr %text.load27, ptr @1395)
   %ifcond29 = icmp ne i1 %calltmp28, false
   br i1 %ifcond29, label %then30, label %else31
 
@@ -16743,7 +17354,7 @@ then30:                                           ; preds = %else23
 
 else31:                                           ; preds = %else23
   %text.load35 = load ptr, ptr %text, align 8
-  %calltmp36 = call i1 @_strEq(ptr %text.load35, ptr @1328)
+  %calltmp36 = call i1 @_strEq(ptr %text.load35, ptr @1396)
   %ifcond37 = icmp ne i1 %calltmp36, false
   br i1 %ifcond37, label %then38, label %else39
 
@@ -16759,7 +17370,7 @@ then38:                                           ; preds = %else31
 
 else39:                                           ; preds = %else31
   %text.load44 = load ptr, ptr %text, align 8
-  %calltmp45 = call i1 @_strEq(ptr %text.load44, ptr @1329)
+  %calltmp45 = call i1 @_strEq(ptr %text.load44, ptr @1397)
   %ifcond46 = icmp ne i1 %calltmp45, false
   br i1 %ifcond46, label %then47, label %else48
 
@@ -16775,7 +17386,7 @@ then47:                                           ; preds = %else39
 
 else48:                                           ; preds = %else39
   %text.load52 = load ptr, ptr %text, align 8
-  %calltmp53 = call i1 @_strEq(ptr %text.load52, ptr @1330)
+  %calltmp53 = call i1 @_strEq(ptr %text.load52, ptr @1398)
   %ifcond54 = icmp ne i1 %calltmp53, false
   br i1 %ifcond54, label %then55, label %else56
 
@@ -16790,7 +17401,7 @@ then55:                                           ; preds = %else48
 
 else56:                                           ; preds = %else48
   %text.load61 = load ptr, ptr %text, align 8
-  %calltmp62 = call i1 @_strEq(ptr %text.load61, ptr @1331)
+  %calltmp62 = call i1 @_strEq(ptr %text.load61, ptr @1399)
   br i1 %calltmp62, label %and_rhs64, label %and_end65
 
 ifcont57:                                         ; preds = %ifcont83, %then55
@@ -16875,7 +17486,7 @@ then113:                                          ; preds = %and_end106
 
 else114:                                          ; preds = %and_end106
   %argEnd.load120 = load i32, ptr %argEnd, align 4
-  %str.concat = call ptr @csec_string_concat(ptr %3, ptr @1332)
+  %str.concat = call ptr @csec_string_concat(ptr %3, ptr @1400)
   %str.sext = sext i32 %index.0 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat121 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
@@ -16896,7 +17507,7 @@ entry:
 
 whilecond:                                        ; preds = %ifcont93, %entry
   %first.0 = phi i1 [ true, %entry ], [ %first.1, %ifcont93 ]
-  %output.0 = phi ptr [ @1333, %entry ], [ %output.1, %ifcont93 ]
+  %output.0 = phi ptr [ @1401, %entry ], [ %output.1, %ifcont93 ]
   %brace.0 = phi i32 [ 0, %entry ], [ %brace.1, %ifcont93 ]
   %bracket.0 = phi i32 [ 0, %entry ], [ %bracket.1, %ifcont93 ]
   %paren.0 = phi i32 [ 0, %entry ], [ %paren.1, %ifcont93 ]
@@ -16943,7 +17554,7 @@ then:                                             ; preds = %and_end6
   %text = alloca ptr, align 8
   store ptr %calltmp13, ptr %text, align 8
   %text.load = load ptr, ptr %text, align 8
-  %calltmp14 = call i1 @_strEq(ptr %text.load, ptr @1334)
+  %calltmp14 = call i1 @_strEq(ptr %text.load, ptr @1402)
   %ifcond15 = icmp ne i1 %calltmp14, false
   br i1 %ifcond15, label %then16, label %else
 
@@ -16961,7 +17572,7 @@ then16:                                           ; preds = %then
 
 else:                                             ; preds = %then
   %text.load19 = load ptr, ptr %text, align 8
-  %calltmp20 = call i1 @_strEq(ptr %text.load19, ptr @1335)
+  %calltmp20 = call i1 @_strEq(ptr %text.load19, ptr @1403)
   %ifcond21 = icmp ne i1 %calltmp20, false
   br i1 %ifcond21, label %then22, label %else23
 
@@ -16978,7 +17589,7 @@ then22:                                           ; preds = %else
 
 else23:                                           ; preds = %else
   %text.load27 = load ptr, ptr %text, align 8
-  %calltmp28 = call i1 @_strEq(ptr %text.load27, ptr @1336)
+  %calltmp28 = call i1 @_strEq(ptr %text.load27, ptr @1404)
   %ifcond29 = icmp ne i1 %calltmp28, false
   br i1 %ifcond29, label %then30, label %else31
 
@@ -16995,7 +17606,7 @@ then30:                                           ; preds = %else23
 
 else31:                                           ; preds = %else23
   %text.load35 = load ptr, ptr %text, align 8
-  %calltmp36 = call i1 @_strEq(ptr %text.load35, ptr @1337)
+  %calltmp36 = call i1 @_strEq(ptr %text.load35, ptr @1405)
   %ifcond37 = icmp ne i1 %calltmp36, false
   br i1 %ifcond37, label %then38, label %else39
 
@@ -17011,7 +17622,7 @@ then38:                                           ; preds = %else31
 
 else39:                                           ; preds = %else31
   %text.load44 = load ptr, ptr %text, align 8
-  %calltmp45 = call i1 @_strEq(ptr %text.load44, ptr @1338)
+  %calltmp45 = call i1 @_strEq(ptr %text.load44, ptr @1406)
   %ifcond46 = icmp ne i1 %calltmp45, false
   br i1 %ifcond46, label %then47, label %else48
 
@@ -17027,7 +17638,7 @@ then47:                                           ; preds = %else39
 
 else48:                                           ; preds = %else39
   %text.load52 = load ptr, ptr %text, align 8
-  %calltmp53 = call i1 @_strEq(ptr %text.load52, ptr @1339)
+  %calltmp53 = call i1 @_strEq(ptr %text.load52, ptr @1407)
   %ifcond54 = icmp ne i1 %calltmp53, false
   br i1 %ifcond54, label %then55, label %else56
 
@@ -17042,7 +17653,7 @@ then55:                                           ; preds = %else48
 
 else56:                                           ; preds = %else48
   %text.load61 = load ptr, ptr %text, align 8
-  %calltmp62 = call i1 @_strEq(ptr %text.load61, ptr @1340)
+  %calltmp62 = call i1 @_strEq(ptr %text.load61, ptr @1408)
   br i1 %calltmp62, label %and_rhs64, label %and_end65
 
 ifcont57:                                         ; preds = %ifcont83, %then55
@@ -17113,7 +17724,7 @@ ifcont99:                                         ; preds = %ifcont103, %then92
   br label %ifcont93
 
 then102:                                          ; preds = %then98
-  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @1341)
+  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @1409)
   br label %ifcont103
 
 ifcont103:                                        ; preds = %then102, %then98
@@ -17121,7 +17732,7 @@ ifcont103:                                        ; preds = %then102, %then98
   %argEnd.load108 = load i32, ptr %argEnd, align 4
   %calltmp109 = call ptr @_llvmCallArgumentType(ptr %0, i32 %argStart.0, i32 %argEnd.load108)
   %str.concat110 = call ptr @csec_string_concat(ptr %output.3, ptr %calltmp109)
-  %str.concat111 = call ptr @csec_string_concat(ptr %str.concat110, ptr @1342)
+  %str.concat111 = call ptr @csec_string_concat(ptr %str.concat110, ptr @1410)
   %argEnd.load113 = load i32, ptr %argEnd, align 4
   %calltmp114 = call ptr @_llvmCallArgumentValue(ptr %0, i32 %argStart.0, i32 %argEnd.load113, ptr %3, i32 %index.0)
   %str.concat115 = call ptr @csec_string_concat(ptr %str.concat111, ptr %calltmp114)
@@ -17131,20 +17742,20 @@ ifcont103:                                        ; preds = %then102, %then98
 
 define ptr @_llvmRuntimeCallName(ptr %0) {
 entry:
-  %calltmp = call i1 @_strEq(ptr %0, ptr @1343)
+  %calltmp = call i1 @_strEq(ptr %0, ptr @1411)
   %ifcond = icmp ne i1 %calltmp, false
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @1344
+  ret ptr @1412
 
 ifcont:                                           ; preds = %entry
-  %calltmp1 = call i1 @_strEq(ptr %0, ptr @1345)
+  %calltmp1 = call i1 @_strEq(ptr %0, ptr @1413)
   %ifcond2 = icmp ne i1 %calltmp1, false
   br i1 %ifcond2, label %then3, label %ifcont4
 
 then3:                                            ; preds = %ifcont
-  ret ptr @1346
+  ret ptr @1414
 
 ifcont4:                                          ; preds = %ifcont
   ret ptr %0
@@ -17152,7 +17763,7 @@ ifcont4:                                          ; preds = %ifcont
 
 define i1 @_llvmCallReturnsChar(ptr %0, ptr %1) {
 entry:
-  %str.bool.i32 = call i32 @csec_string_starts_with(ptr %1, ptr @1347)
+  %str.bool.i32 = call i32 @csec_string_starts_with(ptr %1, ptr @1415)
   %str.bool = icmp ne i32 %str.bool.i32, 0
   %ifcond = icmp ne i1 %str.bool, false
   br i1 %ifcond, label %then, label %ifcont
@@ -17161,7 +17772,7 @@ then:                                             ; preds = %entry
   ret i1 true
 
 ifcont:                                           ; preds = %entry
-  %calltmp = call i1 @_strEq(ptr %1, ptr @1348)
+  %calltmp = call i1 @_strEq(ptr %1, ptr @1416)
   %ifcond1 = icmp ne i1 %calltmp, false
   br i1 %ifcond1, label %then2, label %ifcont3
 
@@ -17169,7 +17780,7 @@ then2:                                            ; preds = %ifcont
   ret i1 true
 
 ifcont3:                                          ; preds = %ifcont
-  %calltmp4 = call i1 @_strEq(ptr %1, ptr @1349)
+  %calltmp4 = call i1 @_strEq(ptr %1, ptr @1417)
   %ifcond5 = icmp ne i1 %calltmp4, false
   br i1 %ifcond5, label %then6, label %ifcont7
 
@@ -17178,7 +17789,7 @@ then6:                                            ; preds = %ifcont3
 
 ifcont7:                                          ; preds = %ifcont3
   %calltmp8 = call ptr @_lookupFunctionReturnType(ptr %0, ptr %1)
-  %calltmp9 = call i1 @_strEq(ptr %calltmp8, ptr @1350)
+  %calltmp9 = call i1 @_strEq(ptr %calltmp8, ptr @1418)
   %ifcond10 = icmp ne i1 %calltmp9, false
   br i1 %ifcond10, label %then11, label %ifcont12
 
@@ -17197,8 +17808,8 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat = call ptr @csec_string_concat(ptr @1351, ptr %3)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1352)
+  %str.concat = call ptr @csec_string_concat(ptr @1419, ptr %3)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1420)
   ret ptr %str.concat1
 
 ifcont:                                           ; preds = %entry
@@ -17218,11 +17829,11 @@ and_end:                                          ; preds = %and_rhs, %ifcont
   br i1 %ifcond6, label %then7, label %ifcont8
 
 then7:                                            ; preds = %and_end
-  %str.concat9 = call ptr @csec_string_concat(ptr @1353, ptr %3)
-  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1354)
+  %str.concat9 = call ptr @csec_string_concat(ptr @1421, ptr %3)
+  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1422)
   %calltmp11 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %str.concat12 = call ptr @csec_string_concat(ptr %str.concat10, ptr %calltmp11)
-  %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr @1355)
+  %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr @1423)
   ret ptr %str.concat13
 
 ifcont8:                                          ; preds = %and_end
@@ -17242,12 +17853,12 @@ and_end19:                                        ; preds = %and_rhs18, %ifcont8
   br i1 %ifcond24, label %then25, label %ifcont26
 
 then25:                                           ; preds = %and_end19
-  %str.concat27 = call ptr @csec_string_concat(ptr @1356, ptr %3)
-  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1357)
+  %str.concat27 = call ptr @csec_string_concat(ptr @1424, ptr %3)
+  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1425)
   %calltmp29 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp30 = call ptr @_llvmCharI8Value(ptr %calltmp29)
   %str.concat31 = call ptr @csec_string_concat(ptr %str.concat28, ptr %calltmp30)
-  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1358)
+  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1426)
   ret ptr %str.concat32
 
 ifcont26:                                         ; preds = %and_end19
@@ -17279,7 +17890,7 @@ then44:                                           ; preds = %and_end38
   %storageName = alloca ptr, align 8
   store ptr %calltmp49, ptr %storageName, align 8
   %valueType.load = load ptr, ptr %valueType, align 8
-  %calltmp50 = call i1 @_strEq(ptr %valueType.load, ptr @1359)
+  %calltmp50 = call i1 @_strEq(ptr %valueType.load, ptr @1427)
   %ifcond51 = icmp ne i1 %calltmp50, false
   br i1 %ifcond51, label %then52, label %ifcont53
 
@@ -17290,24 +17901,24 @@ ifcont45:                                         ; preds = %and_end38
   br i1 %eqtmp70, label %and_rhs72, label %and_end73
 
 then52:                                           ; preds = %then44
-  %str.concat54 = call ptr @csec_string_concat(ptr @1360, ptr %3)
-  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @1361)
+  %str.concat54 = call ptr @csec_string_concat(ptr @1428, ptr %3)
+  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @1429)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat56 = call ptr @csec_string_concat(ptr %str.concat55, ptr %storageName.load)
-  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1362)
-  %str.concat58 = call ptr @csec_string_concat(ptr %str.concat57, ptr @1363)
+  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1430)
+  %str.concat58 = call ptr @csec_string_concat(ptr %str.concat57, ptr @1431)
   %str.concat59 = call ptr @csec_string_concat(ptr %str.concat58, ptr %3)
-  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @1364)
+  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @1432)
   %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr %3)
-  %str.concat62 = call ptr @csec_string_concat(ptr %str.concat61, ptr @1365)
+  %str.concat62 = call ptr @csec_string_concat(ptr %str.concat61, ptr @1433)
   ret ptr %str.concat62
 
 ifcont53:                                         ; preds = %then44
-  %str.concat63 = call ptr @csec_string_concat(ptr @1366, ptr %3)
-  %str.concat64 = call ptr @csec_string_concat(ptr %str.concat63, ptr @1367)
+  %str.concat63 = call ptr @csec_string_concat(ptr @1434, ptr %3)
+  %str.concat64 = call ptr @csec_string_concat(ptr %str.concat63, ptr @1435)
   %storageName.load65 = load ptr, ptr %storageName, align 8
   %str.concat66 = call ptr @csec_string_concat(ptr %str.concat64, ptr %storageName.load65)
-  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @1368)
+  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @1436)
   ret ptr %str.concat67
 
 and_rhs72:                                        ; preds = %ifcont45
@@ -17322,7 +17933,7 @@ and_end73:                                        ; preds = %and_rhs72, %ifcont4
 and_rhs78:                                        ; preds = %and_end73
   %addtmp80 = add i32 %1, 1
   %calltmp81 = call i8 @_kindOperator()
-  %calltmp82 = call i1 @_tokenIs(ptr %0, i32 %addtmp80, i8 %calltmp81, ptr @1369)
+  %calltmp82 = call i1 @_tokenIs(ptr %0, i32 %addtmp80, i8 %calltmp81, ptr @1437)
   br label %and_end79
 
 and_end79:                                        ; preds = %and_rhs78, %and_end73
@@ -17332,7 +17943,7 @@ and_end79:                                        ; preds = %and_rhs78, %and_end
 and_rhs85:                                        ; preds = %and_end79
   %addtmp87 = add i32 %1, 2
   %calltmp88 = call i8 @_kindIdentifier()
-  %calltmp89 = call i1 @_tokenIs(ptr %0, i32 %addtmp87, i8 %calltmp88, ptr @1370)
+  %calltmp89 = call i1 @_tokenIs(ptr %0, i32 %addtmp87, i8 %calltmp88, ptr @1438)
   br label %and_end86
 
 and_end86:                                        ; preds = %and_rhs85, %and_end79
@@ -17348,21 +17959,21 @@ then92:                                           ; preds = %and_end86
   %calltmp97 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %name.load96)
   %storageName98 = alloca ptr, align 8
   store ptr %calltmp97, ptr %storageName98, align 8
-  %str.concat99 = call ptr @csec_string_concat(ptr @1371, ptr %3)
-  %str.concat100 = call ptr @csec_string_concat(ptr %str.concat99, ptr @1372)
+  %str.concat99 = call ptr @csec_string_concat(ptr @1439, ptr %3)
+  %str.concat100 = call ptr @csec_string_concat(ptr %str.concat99, ptr @1440)
   %storageName.load101 = load ptr, ptr %storageName98, align 8
   %str.concat102 = call ptr @csec_string_concat(ptr %str.concat100, ptr %storageName.load101)
-  %str.concat103 = call ptr @csec_string_concat(ptr %str.concat102, ptr @1373)
-  %str.concat104 = call ptr @csec_string_concat(ptr %str.concat103, ptr @1374)
+  %str.concat103 = call ptr @csec_string_concat(ptr %str.concat102, ptr @1441)
+  %str.concat104 = call ptr @csec_string_concat(ptr %str.concat103, ptr @1442)
   %str.concat105 = call ptr @csec_string_concat(ptr %str.concat104, ptr %3)
-  %str.concat106 = call ptr @csec_string_concat(ptr %str.concat105, ptr @1375)
+  %str.concat106 = call ptr @csec_string_concat(ptr %str.concat105, ptr @1443)
   %str.concat107 = call ptr @csec_string_concat(ptr %str.concat106, ptr %3)
-  %str.concat108 = call ptr @csec_string_concat(ptr %str.concat107, ptr @1376)
-  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @1377)
+  %str.concat108 = call ptr @csec_string_concat(ptr %str.concat107, ptr @1444)
+  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @1445)
   %str.concat110 = call ptr @csec_string_concat(ptr %str.concat109, ptr %3)
-  %str.concat111 = call ptr @csec_string_concat(ptr %str.concat110, ptr @1378)
+  %str.concat111 = call ptr @csec_string_concat(ptr %str.concat110, ptr @1446)
   %str.concat112 = call ptr @csec_string_concat(ptr %str.concat111, ptr %3)
-  %str.concat113 = call ptr @csec_string_concat(ptr %str.concat112, ptr @1379)
+  %str.concat113 = call ptr @csec_string_concat(ptr %str.concat112, ptr @1447)
   ret ptr %str.concat113
 
 ifcont93:                                         ; preds = %and_end86
@@ -17383,7 +17994,7 @@ and_end119:                                       ; preds = %and_rhs118, %ifcont
 and_rhs125:                                       ; preds = %and_end119
   %addtmp127 = add i32 %1, 1
   %calltmp128 = call i8 @_kindOperator()
-  %calltmp129 = call i1 @_tokenIs(ptr %0, i32 %addtmp127, i8 %calltmp128, ptr @1380)
+  %calltmp129 = call i1 @_tokenIs(ptr %0, i32 %addtmp127, i8 %calltmp128, ptr @1448)
   br label %and_end126
 
 and_end126:                                       ; preds = %and_rhs125, %and_end119
@@ -17393,7 +18004,7 @@ and_end126:                                       ; preds = %and_rhs125, %and_en
 and_rhs132:                                       ; preds = %and_end126
   %addtmp134 = add i32 %1, 2
   %calltmp135 = call i8 @_kindIdentifier()
-  %calltmp136 = call i1 @_tokenIs(ptr %0, i32 %addtmp134, i8 %calltmp135, ptr @1381)
+  %calltmp136 = call i1 @_tokenIs(ptr %0, i32 %addtmp134, i8 %calltmp135, ptr @1449)
   br label %and_end133
 
 and_end133:                                       ; preds = %and_rhs132, %and_end126
@@ -17403,7 +18014,7 @@ and_end133:                                       ; preds = %and_rhs132, %and_en
 and_rhs139:                                       ; preds = %and_end133
   %addtmp141 = add i32 %1, 3
   %calltmp142 = call i8 @_kindOperator()
-  %calltmp143 = call i1 @_tokenIs(ptr %0, i32 %addtmp141, i8 %calltmp142, ptr @1382)
+  %calltmp143 = call i1 @_tokenIs(ptr %0, i32 %addtmp141, i8 %calltmp142, ptr @1450)
   br label %and_end140
 
 and_end140:                                       ; preds = %and_rhs139, %and_end133
@@ -17412,7 +18023,7 @@ and_end140:                                       ; preds = %and_rhs139, %and_en
 
 and_rhs146:                                       ; preds = %and_end140
   %addtmp148 = add i32 %1, 3
-  %calltmp150 = call i32 @_findClosingToken(ptr %0, i32 %addtmp148, i32 %calltmp, ptr @1383, ptr @1384)
+  %calltmp150 = call i32 @_findClosingToken(ptr %0, i32 %addtmp148, i32 %calltmp, ptr @1451, ptr @1452)
   %subtmp = sub i32 %calltmp, 1
   %eqtmp152 = icmp eq i32 %calltmp150, %subtmp
   br label %and_end147
@@ -17430,28 +18041,28 @@ then155:                                          ; preds = %and_end147
   %calltmp160 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %name.load159)
   %storageName161 = alloca ptr, align 8
   store ptr %calltmp160, ptr %storageName161, align 8
-  %str.concat162 = call ptr @csec_string_concat(ptr @1385, ptr %3)
-  %str.concat163 = call ptr @csec_string_concat(ptr %str.concat162, ptr @1386)
+  %str.concat162 = call ptr @csec_string_concat(ptr @1453, ptr %3)
+  %str.concat163 = call ptr @csec_string_concat(ptr %str.concat162, ptr @1454)
   %storageName.load164 = load ptr, ptr %storageName161, align 8
   %str.concat165 = call ptr @csec_string_concat(ptr %str.concat163, ptr %storageName.load164)
-  %str.concat166 = call ptr @csec_string_concat(ptr %str.concat165, ptr @1387)
+  %str.concat166 = call ptr @csec_string_concat(ptr %str.concat165, ptr @1455)
   %addtmp167 = add i32 %1, 4
   %subtmp169 = sub i32 %calltmp, 1
-  %str.concat170 = call ptr @csec_string_concat(ptr %3, ptr @1388)
+  %str.concat170 = call ptr @csec_string_concat(ptr %3, ptr @1456)
   %calltmp171 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp167, i32 %subtmp169, ptr %str.concat170)
   %str.concat172 = call ptr @csec_string_concat(ptr %str.concat166, ptr %calltmp171)
-  %str.concat173 = call ptr @csec_string_concat(ptr %str.concat172, ptr @1389)
+  %str.concat173 = call ptr @csec_string_concat(ptr %str.concat172, ptr @1457)
   %str.concat174 = call ptr @csec_string_concat(ptr %str.concat173, ptr %3)
-  %str.concat175 = call ptr @csec_string_concat(ptr %str.concat174, ptr @1390)
+  %str.concat175 = call ptr @csec_string_concat(ptr %str.concat174, ptr @1458)
   %str.concat176 = call ptr @csec_string_concat(ptr %str.concat175, ptr %3)
-  %str.concat177 = call ptr @csec_string_concat(ptr %str.concat176, ptr @1391)
+  %str.concat177 = call ptr @csec_string_concat(ptr %str.concat176, ptr @1459)
   %str.concat178 = call ptr @csec_string_concat(ptr %str.concat177, ptr %3)
-  %str.concat179 = call ptr @csec_string_concat(ptr %str.concat178, ptr @1392)
-  %str.concat180 = call ptr @csec_string_concat(ptr %str.concat179, ptr @1393)
+  %str.concat179 = call ptr @csec_string_concat(ptr %str.concat178, ptr @1460)
+  %str.concat180 = call ptr @csec_string_concat(ptr %str.concat179, ptr @1461)
   %str.concat181 = call ptr @csec_string_concat(ptr %str.concat180, ptr %3)
-  %str.concat182 = call ptr @csec_string_concat(ptr %str.concat181, ptr @1394)
+  %str.concat182 = call ptr @csec_string_concat(ptr %str.concat181, ptr @1462)
   %str.concat183 = call ptr @csec_string_concat(ptr %str.concat182, ptr %3)
-  %str.concat184 = call ptr @csec_string_concat(ptr %str.concat183, ptr @1395)
+  %str.concat184 = call ptr @csec_string_concat(ptr %str.concat183, ptr @1463)
   ret ptr %str.concat184
 
 ifcont156:                                        ; preds = %and_end147
@@ -17472,7 +18083,7 @@ and_end190:                                       ; preds = %and_rhs189, %ifcont
 and_rhs196:                                       ; preds = %and_end190
   %addtmp198 = add i32 %1, 1
   %calltmp199 = call i8 @_kindOperator()
-  %calltmp200 = call i1 @_tokenIs(ptr %0, i32 %addtmp198, i8 %calltmp199, ptr @1396)
+  %calltmp200 = call i1 @_tokenIs(ptr %0, i32 %addtmp198, i8 %calltmp199, ptr @1464)
   br label %and_end197
 
 and_end197:                                       ; preds = %and_rhs196, %and_end190
@@ -17481,7 +18092,7 @@ and_end197:                                       ; preds = %and_rhs196, %and_en
 
 and_rhs203:                                       ; preds = %and_end197
   %addtmp205 = add i32 %1, 1
-  %calltmp207 = call i32 @_findClosingToken(ptr %0, i32 %addtmp205, i32 %calltmp, ptr @1397, ptr @1398)
+  %calltmp207 = call i32 @_findClosingToken(ptr %0, i32 %addtmp205, i32 %calltmp, ptr @1465, ptr @1466)
   %subtmp209 = sub i32 %calltmp, 1
   %eqtmp210 = icmp eq i32 %calltmp207, %subtmp209
   br label %and_end204
@@ -17512,41 +18123,41 @@ then218:                                          ; preds = %then213
   %addtmp220 = add i32 %1, 2
   %subtmp222 = sub i32 %calltmp, 1
   %calltmp223 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp220, i32 %subtmp222, ptr %3)
-  %str.concat224 = call ptr @csec_string_concat(ptr %calltmp223, ptr @1399)
+  %str.concat224 = call ptr @csec_string_concat(ptr %calltmp223, ptr @1467)
   %str.concat225 = call ptr @csec_string_concat(ptr %str.concat224, ptr %3)
-  %str.concat226 = call ptr @csec_string_concat(ptr %str.concat225, ptr @1400)
+  %str.concat226 = call ptr @csec_string_concat(ptr %str.concat225, ptr @1468)
   %callee.load227 = load ptr, ptr %callee, align 8
   %calltmp228 = call ptr @_llvmRuntimeCallName(ptr %callee.load227)
   %str.concat229 = call ptr @csec_string_concat(ptr %str.concat226, ptr %calltmp228)
-  %str.concat230 = call ptr @csec_string_concat(ptr %str.concat229, ptr @1401)
+  %str.concat230 = call ptr @csec_string_concat(ptr %str.concat229, ptr @1469)
   %addtmp231 = add i32 %1, 2
   %subtmp233 = sub i32 %calltmp, 1
   %calltmp234 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp231, i32 %subtmp233, ptr %3)
   %str.concat235 = call ptr @csec_string_concat(ptr %str.concat230, ptr %calltmp234)
-  %str.concat236 = call ptr @csec_string_concat(ptr %str.concat235, ptr @1402)
-  %str.concat237 = call ptr @csec_string_concat(ptr %str.concat236, ptr @1403)
+  %str.concat236 = call ptr @csec_string_concat(ptr %str.concat235, ptr @1470)
+  %str.concat237 = call ptr @csec_string_concat(ptr %str.concat236, ptr @1471)
   %str.concat238 = call ptr @csec_string_concat(ptr %str.concat237, ptr %3)
-  %str.concat239 = call ptr @csec_string_concat(ptr %str.concat238, ptr @1404)
+  %str.concat239 = call ptr @csec_string_concat(ptr %str.concat238, ptr @1472)
   %str.concat240 = call ptr @csec_string_concat(ptr %str.concat239, ptr %3)
-  %str.concat241 = call ptr @csec_string_concat(ptr %str.concat240, ptr @1405)
+  %str.concat241 = call ptr @csec_string_concat(ptr %str.concat240, ptr @1473)
   ret ptr %str.concat241
 
 ifcont219:                                        ; preds = %then213
   %addtmp242 = add i32 %1, 2
   %subtmp244 = sub i32 %calltmp, 1
   %calltmp245 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp242, i32 %subtmp244, ptr %3)
-  %str.concat246 = call ptr @csec_string_concat(ptr %calltmp245, ptr @1406)
+  %str.concat246 = call ptr @csec_string_concat(ptr %calltmp245, ptr @1474)
   %str.concat247 = call ptr @csec_string_concat(ptr %str.concat246, ptr %3)
-  %str.concat248 = call ptr @csec_string_concat(ptr %str.concat247, ptr @1407)
+  %str.concat248 = call ptr @csec_string_concat(ptr %str.concat247, ptr @1475)
   %calltmp249 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp250 = call ptr @_llvmRuntimeCallName(ptr %calltmp249)
   %str.concat251 = call ptr @csec_string_concat(ptr %str.concat248, ptr %calltmp250)
-  %str.concat252 = call ptr @csec_string_concat(ptr %str.concat251, ptr @1408)
+  %str.concat252 = call ptr @csec_string_concat(ptr %str.concat251, ptr @1476)
   %addtmp253 = add i32 %1, 2
   %subtmp255 = sub i32 %calltmp, 1
   %calltmp256 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp253, i32 %subtmp255, ptr %3)
   %str.concat257 = call ptr @csec_string_concat(ptr %str.concat252, ptr %calltmp256)
-  %str.concat258 = call ptr @csec_string_concat(ptr %str.concat257, ptr @1409)
+  %str.concat258 = call ptr @csec_string_concat(ptr %str.concat257, ptr @1477)
   ret ptr %str.concat258
 
 and_rhs262:                                       ; preds = %ifcont214
@@ -17568,17 +18179,17 @@ then270:                                          ; preds = %and_end263
   %mnemonic = alloca ptr, align 8
   store ptr %calltmp274, ptr %mnemonic, align 8
   %mnemonic.load = load ptr, ptr %mnemonic, align 8
-  %calltmp275 = call i1 @_strEq(ptr %mnemonic.load, ptr @1410)
+  %calltmp275 = call i1 @_strEq(ptr %mnemonic.load, ptr @1478)
   br i1 %calltmp275, label %or_end, label %or_rhs
 
 ifcont271:                                        ; preds = %ifcont328, %and_end263
-  %str.concat348 = call ptr @csec_string_concat(ptr @1427, ptr %3)
-  %str.concat349 = call ptr @csec_string_concat(ptr %str.concat348, ptr @1428)
+  %str.concat348 = call ptr @csec_string_concat(ptr @1495, ptr %3)
+  %str.concat349 = call ptr @csec_string_concat(ptr %str.concat348, ptr @1496)
   ret ptr %str.concat349
 
 or_rhs:                                           ; preds = %then270
   %mnemonic.load276 = load ptr, ptr %mnemonic, align 8
-  %calltmp277 = call i1 @_strEq(ptr %mnemonic.load276, ptr @1411)
+  %calltmp277 = call i1 @_strEq(ptr %mnemonic.load276, ptr @1479)
   br label %or_end
 
 or_end:                                           ; preds = %or_rhs, %then270
@@ -17587,7 +18198,7 @@ or_end:                                           ; preds = %or_rhs, %then270
 
 or_rhs279:                                        ; preds = %or_end
   %mnemonic.load281 = load ptr, ptr %mnemonic, align 8
-  %calltmp282 = call i1 @_strEq(ptr %mnemonic.load281, ptr @1412)
+  %calltmp282 = call i1 @_strEq(ptr %mnemonic.load281, ptr @1480)
   br label %or_end280
 
 or_end280:                                        ; preds = %or_rhs279, %or_end
@@ -17596,7 +18207,7 @@ or_end280:                                        ; preds = %or_rhs279, %or_end
 
 or_rhs285:                                        ; preds = %or_end280
   %mnemonic.load287 = load ptr, ptr %mnemonic, align 8
-  %calltmp288 = call i1 @_strEq(ptr %mnemonic.load287, ptr @1413)
+  %calltmp288 = call i1 @_strEq(ptr %mnemonic.load287, ptr @1481)
   br label %or_end286
 
 or_end286:                                        ; preds = %or_rhs285, %or_end280
@@ -17605,7 +18216,7 @@ or_end286:                                        ; preds = %or_rhs285, %or_end2
 
 or_rhs291:                                        ; preds = %or_end286
   %mnemonic.load293 = load ptr, ptr %mnemonic, align 8
-  %calltmp294 = call i1 @_strEq(ptr %mnemonic.load293, ptr @1414)
+  %calltmp294 = call i1 @_strEq(ptr %mnemonic.load293, ptr @1482)
   br label %or_end292
 
 or_end292:                                        ; preds = %or_rhs291, %or_end286
@@ -17614,7 +18225,7 @@ or_end292:                                        ; preds = %or_rhs291, %or_end2
 
 or_rhs297:                                        ; preds = %or_end292
   %mnemonic.load299 = load ptr, ptr %mnemonic, align 8
-  %calltmp300 = call i1 @_strEq(ptr %mnemonic.load299, ptr @1415)
+  %calltmp300 = call i1 @_strEq(ptr %mnemonic.load299, ptr @1483)
   br label %or_end298
 
 or_end298:                                        ; preds = %or_rhs297, %or_end292
@@ -17623,7 +18234,7 @@ or_end298:                                        ; preds = %or_rhs297, %or_end2
 
 or_rhs303:                                        ; preds = %or_end298
   %mnemonic.load305 = load ptr, ptr %mnemonic, align 8
-  %calltmp306 = call i1 @_strEq(ptr %mnemonic.load305, ptr @1416)
+  %calltmp306 = call i1 @_strEq(ptr %mnemonic.load305, ptr @1484)
   br label %or_end304
 
 or_end304:                                        ; preds = %or_rhs303, %or_end298
@@ -17632,7 +18243,7 @@ or_end304:                                        ; preds = %or_rhs303, %or_end2
 
 or_rhs309:                                        ; preds = %or_end304
   %mnemonic.load311 = load ptr, ptr %mnemonic, align 8
-  %calltmp312 = call i1 @_strEq(ptr %mnemonic.load311, ptr @1417)
+  %calltmp312 = call i1 @_strEq(ptr %mnemonic.load311, ptr @1485)
   br label %or_end310
 
 or_end310:                                        ; preds = %or_rhs309, %or_end304
@@ -17641,7 +18252,7 @@ or_end310:                                        ; preds = %or_rhs309, %or_end3
 
 or_rhs315:                                        ; preds = %or_end310
   %mnemonic.load317 = load ptr, ptr %mnemonic, align 8
-  %calltmp318 = call i1 @_strEq(ptr %mnemonic.load317, ptr @1418)
+  %calltmp318 = call i1 @_strEq(ptr %mnemonic.load317, ptr @1486)
   br label %or_end316
 
 or_end316:                                        ; preds = %or_rhs315, %or_end310
@@ -17650,7 +18261,7 @@ or_end316:                                        ; preds = %or_rhs315, %or_end3
 
 or_rhs321:                                        ; preds = %or_end316
   %mnemonic.load323 = load ptr, ptr %mnemonic, align 8
-  %calltmp324 = call i1 @_strEq(ptr %mnemonic.load323, ptr @1419)
+  %calltmp324 = call i1 @_strEq(ptr %mnemonic.load323, ptr @1487)
   br label %or_end322
 
 or_end322:                                        ; preds = %or_rhs321, %or_end316
@@ -17660,23 +18271,23 @@ or_end322:                                        ; preds = %or_rhs321, %or_end3
 
 then327:                                          ; preds = %or_end322
   %op.load329 = load i32, ptr %op, align 4
-  %str.concat330 = call ptr @csec_string_concat(ptr %3, ptr @1420)
+  %str.concat330 = call ptr @csec_string_concat(ptr %3, ptr @1488)
   %calltmp331 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %1, i32 %op.load329, ptr %str.concat330)
   %op.load332 = load i32, ptr %op, align 4
   %addtmp333 = add i32 %op.load332, 1
-  %str.concat335 = call ptr @csec_string_concat(ptr %3, ptr @1421)
+  %str.concat335 = call ptr @csec_string_concat(ptr %3, ptr @1489)
   %calltmp336 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp333, i32 %calltmp, ptr %str.concat335)
   %str.concat337 = call ptr @csec_string_concat(ptr %calltmp331, ptr %calltmp336)
-  %str.concat338 = call ptr @csec_string_concat(ptr %str.concat337, ptr @1422)
+  %str.concat338 = call ptr @csec_string_concat(ptr %str.concat337, ptr @1490)
   %str.concat339 = call ptr @csec_string_concat(ptr %str.concat338, ptr %3)
-  %str.concat340 = call ptr @csec_string_concat(ptr %str.concat339, ptr @1423)
+  %str.concat340 = call ptr @csec_string_concat(ptr %str.concat339, ptr @1491)
   %mnemonic.load341 = load ptr, ptr %mnemonic, align 8
   %str.concat342 = call ptr @csec_string_concat(ptr %str.concat340, ptr %mnemonic.load341)
-  %str.concat343 = call ptr @csec_string_concat(ptr %str.concat342, ptr @1424)
+  %str.concat343 = call ptr @csec_string_concat(ptr %str.concat342, ptr @1492)
   %str.concat344 = call ptr @csec_string_concat(ptr %str.concat343, ptr %3)
-  %str.concat345 = call ptr @csec_string_concat(ptr %str.concat344, ptr @1425)
+  %str.concat345 = call ptr @csec_string_concat(ptr %str.concat344, ptr @1493)
   %str.concat346 = call ptr @csec_string_concat(ptr %str.concat345, ptr %3)
-  %str.concat347 = call ptr @csec_string_concat(ptr %str.concat346, ptr @1426)
+  %str.concat347 = call ptr @csec_string_concat(ptr %str.concat346, ptr @1494)
   ret ptr %str.concat347
 
 ifcont328:                                        ; preds = %or_end322
@@ -17688,12 +18299,12 @@ entry:
   %calltmp = call i32 @_findTopLevelOperator(ptr %0, i32 %1, i32 %2, i32 1)
   %addtmp = add i32 %1, 1
   %calltmp1 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp)
-  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1429)
+  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1497)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat2 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
-  %str.concat4 = call ptr @csec_string_concat(ptr @1430, ptr %calltmp1)
-  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1431)
+  %str.concat4 = call ptr @csec_string_concat(ptr @1498, ptr %calltmp1)
+  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1499)
   %str.sext6 = sext i32 %1 to i64
   %str.int.call7 = call ptr @csec_to_string_i64(i64 %str.sext6)
   %str.concat8 = call ptr @csec_string_concat(ptr %str.concat5, ptr %str.int.call7)
@@ -17702,24 +18313,24 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat9 = call ptr @csec_string_concat(ptr @1432, ptr %str.concat2)
-  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1433)
+  %str.concat9 = call ptr @csec_string_concat(ptr @1500, ptr %str.concat2)
+  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1501)
   %addtmp12 = add i32 %calltmp, 1
   %calltmp13 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp12, i32 %2, ptr %str.concat8)
   %str.concat14 = call ptr @csec_string_concat(ptr %str.concat10, ptr %calltmp13)
-  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1434)
+  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1502)
   %str.concat17 = call ptr @csec_string_concat(ptr %str.concat15, ptr %str.concat8)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1435)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1503)
   %str.concat20 = call ptr @csec_string_concat(ptr %str.concat18, ptr %str.concat2)
-  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1436)
+  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1504)
   ret ptr %str.concat21
 
 ifcont:                                           ; preds = %entry
-  %str.concat23 = call ptr @csec_string_concat(ptr @1437, ptr %str.concat2)
-  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1438)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1439)
+  %str.concat23 = call ptr @csec_string_concat(ptr @1505, ptr %str.concat2)
+  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1506)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1507)
   %str.concat27 = call ptr @csec_string_concat(ptr %str.concat25, ptr %str.concat2)
-  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1440)
+  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1508)
   ret ptr %str.concat28
 }
 
@@ -17731,7 +18342,7 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @1441
+  ret ptr @1509
 
 ifcont:                                           ; preds = %entry
   %calltmp1 = call i8 @_tokenKindAt(ptr %0, i32 %1)
@@ -17771,15 +18382,15 @@ and_end14:                                        ; preds = %and_rhs13, %ifcont7
 
 then20:                                           ; preds = %and_end14
   %calltmp22 = call ptr @_tokenTextAt(ptr %0, i32 %1)
-  %str.concat = call ptr @csec_string_concat(ptr @1442, ptr %calltmp22)
-  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat, ptr @1443)
+  %str.concat = call ptr @csec_string_concat(ptr @1510, ptr %calltmp22)
+  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat, ptr @1511)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr %str.int.call)
   ret ptr %str.concat24
 
 ifcont21:                                         ; preds = %and_end14
-  ret ptr @1444
+  ret ptr @1512
 }
 
 define ptr @_generateLLVMLoadI64IfIdentifier(ptr %0, i32 %1, i32 %2) {
@@ -17809,19 +18420,19 @@ then:                                             ; preds = %and_end
   %storageName = alloca ptr, align 8
   store ptr %calltmp5, ptr %storageName, align 8
   %name.load6 = load ptr, ptr %name, align 8
-  %str.concat = call ptr @csec_string_concat(ptr @1445, ptr %name.load6)
-  %str.concat7 = call ptr @csec_string_concat(ptr %str.concat, ptr @1446)
+  %str.concat = call ptr @csec_string_concat(ptr @1513, ptr %name.load6)
+  %str.concat7 = call ptr @csec_string_concat(ptr %str.concat, ptr @1514)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat8 = call ptr @csec_string_concat(ptr %str.concat7, ptr %str.int.call)
-  %str.concat9 = call ptr @csec_string_concat(ptr %str.concat8, ptr @1447)
+  %str.concat9 = call ptr @csec_string_concat(ptr %str.concat8, ptr @1515)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr %storageName.load)
-  %str.concat11 = call ptr @csec_string_concat(ptr %str.concat10, ptr @1448)
+  %str.concat11 = call ptr @csec_string_concat(ptr %str.concat10, ptr @1516)
   ret ptr %str.concat11
 
 ifcont:                                           ; preds = %and_end
-  ret ptr @1449
+  ret ptr @1517
 }
 
 define ptr @_generateLLVMExpressionI64(ptr %0, i32 %1, i32 %2, ptr %3) {
@@ -17832,8 +18443,8 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat = call ptr @csec_string_concat(ptr @1450, ptr %3)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1451)
+  %str.concat = call ptr @csec_string_concat(ptr @1518, ptr %3)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1519)
   ret ptr %str.concat1
 
 ifcont:                                           ; preds = %entry
@@ -17853,11 +18464,11 @@ and_end:                                          ; preds = %and_rhs, %ifcont
   br i1 %ifcond6, label %then7, label %ifcont8
 
 then7:                                            ; preds = %and_end
-  %str.concat9 = call ptr @csec_string_concat(ptr @1452, ptr %3)
-  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1453)
+  %str.concat9 = call ptr @csec_string_concat(ptr @1520, ptr %3)
+  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1521)
   %calltmp11 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %str.concat12 = call ptr @csec_string_concat(ptr %str.concat10, ptr %calltmp11)
-  %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr @1454)
+  %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr @1522)
   ret ptr %str.concat13
 
 ifcont8:                                          ; preds = %and_end
@@ -17877,12 +18488,12 @@ and_end19:                                        ; preds = %and_rhs18, %ifcont8
   br i1 %ifcond24, label %then25, label %ifcont26
 
 then25:                                           ; preds = %and_end19
-  %str.concat27 = call ptr @csec_string_concat(ptr @1455, ptr %3)
-  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1456)
+  %str.concat27 = call ptr @csec_string_concat(ptr @1523, ptr %3)
+  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1524)
   %calltmp29 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp30 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %calltmp29)
   %str.concat31 = call ptr @csec_string_concat(ptr %str.concat28, ptr %calltmp30)
-  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1457)
+  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1525)
   ret ptr %str.concat32
 
 ifcont26:                                         ; preds = %and_end19
@@ -17903,7 +18514,7 @@ and_end38:                                        ; preds = %and_rhs37, %ifcont2
 and_rhs43:                                        ; preds = %and_end38
   %addtmp45 = add i32 %1, 1
   %calltmp46 = call i8 @_kindOperator()
-  %calltmp47 = call i1 @_tokenIs(ptr %0, i32 %addtmp45, i8 %calltmp46, ptr @1458)
+  %calltmp47 = call i1 @_tokenIs(ptr %0, i32 %addtmp45, i8 %calltmp46, ptr @1526)
   br label %and_end44
 
 and_end44:                                        ; preds = %and_rhs43, %and_end38
@@ -17912,7 +18523,7 @@ and_end44:                                        ; preds = %and_rhs43, %and_end
 
 and_rhs50:                                        ; preds = %and_end44
   %addtmp52 = add i32 %1, 1
-  %calltmp54 = call i32 @_findClosingToken(ptr %0, i32 %addtmp52, i32 %calltmp, ptr @1459, ptr @1460)
+  %calltmp54 = call i32 @_findClosingToken(ptr %0, i32 %addtmp52, i32 %calltmp, ptr @1527, ptr @1528)
   %subtmp = sub i32 %calltmp, 1
   %eqtmp56 = icmp eq i32 %calltmp54, %subtmp
   br label %and_end51
@@ -17926,18 +18537,18 @@ then59:                                           ; preds = %and_end51
   %addtmp61 = add i32 %1, 2
   %subtmp63 = sub i32 %calltmp, 1
   %calltmp64 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp61, i32 %subtmp63, ptr %3)
-  %str.concat65 = call ptr @csec_string_concat(ptr %calltmp64, ptr @1461)
+  %str.concat65 = call ptr @csec_string_concat(ptr %calltmp64, ptr @1529)
   %str.concat66 = call ptr @csec_string_concat(ptr %str.concat65, ptr %3)
-  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @1462)
+  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @1530)
   %calltmp68 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp69 = call ptr @_llvmRuntimeCallName(ptr %calltmp68)
   %str.concat70 = call ptr @csec_string_concat(ptr %str.concat67, ptr %calltmp69)
-  %str.concat71 = call ptr @csec_string_concat(ptr %str.concat70, ptr @1463)
+  %str.concat71 = call ptr @csec_string_concat(ptr %str.concat70, ptr @1531)
   %addtmp72 = add i32 %1, 2
   %subtmp74 = sub i32 %calltmp, 1
   %calltmp75 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp72, i32 %subtmp74, ptr %3)
   %str.concat76 = call ptr @csec_string_concat(ptr %str.concat71, ptr %calltmp75)
-  %str.concat77 = call ptr @csec_string_concat(ptr %str.concat76, ptr @1464)
+  %str.concat77 = call ptr @csec_string_concat(ptr %str.concat76, ptr @1532)
   ret ptr %str.concat77
 
 ifcont60:                                         ; preds = %and_end51
@@ -17967,17 +18578,17 @@ then89:                                           ; preds = %and_end82
   %mnemonic = alloca ptr, align 8
   store ptr %calltmp93, ptr %mnemonic, align 8
   %mnemonic.load = load ptr, ptr %mnemonic, align 8
-  %calltmp94 = call i1 @_strEq(ptr %mnemonic.load, ptr @1465)
+  %calltmp94 = call i1 @_strEq(ptr %mnemonic.load, ptr @1533)
   br i1 %calltmp94, label %or_end, label %or_rhs
 
 ifcont90:                                         ; preds = %ifcont147, %and_end82
-  %str.concat171 = call ptr @csec_string_concat(ptr @1480, ptr %3)
-  %str.concat172 = call ptr @csec_string_concat(ptr %str.concat171, ptr @1481)
+  %str.concat171 = call ptr @csec_string_concat(ptr @1548, ptr %3)
+  %str.concat172 = call ptr @csec_string_concat(ptr %str.concat171, ptr @1549)
   ret ptr %str.concat172
 
 or_rhs:                                           ; preds = %then89
   %mnemonic.load95 = load ptr, ptr %mnemonic, align 8
-  %calltmp96 = call i1 @_strEq(ptr %mnemonic.load95, ptr @1466)
+  %calltmp96 = call i1 @_strEq(ptr %mnemonic.load95, ptr @1534)
   br label %or_end
 
 or_end:                                           ; preds = %or_rhs, %then89
@@ -17986,7 +18597,7 @@ or_end:                                           ; preds = %or_rhs, %then89
 
 or_rhs98:                                         ; preds = %or_end
   %mnemonic.load100 = load ptr, ptr %mnemonic, align 8
-  %calltmp101 = call i1 @_strEq(ptr %mnemonic.load100, ptr @1467)
+  %calltmp101 = call i1 @_strEq(ptr %mnemonic.load100, ptr @1535)
   br label %or_end99
 
 or_end99:                                         ; preds = %or_rhs98, %or_end
@@ -17995,7 +18606,7 @@ or_end99:                                         ; preds = %or_rhs98, %or_end
 
 or_rhs104:                                        ; preds = %or_end99
   %mnemonic.load106 = load ptr, ptr %mnemonic, align 8
-  %calltmp107 = call i1 @_strEq(ptr %mnemonic.load106, ptr @1468)
+  %calltmp107 = call i1 @_strEq(ptr %mnemonic.load106, ptr @1536)
   br label %or_end105
 
 or_end105:                                        ; preds = %or_rhs104, %or_end99
@@ -18004,7 +18615,7 @@ or_end105:                                        ; preds = %or_rhs104, %or_end9
 
 or_rhs110:                                        ; preds = %or_end105
   %mnemonic.load112 = load ptr, ptr %mnemonic, align 8
-  %calltmp113 = call i1 @_strEq(ptr %mnemonic.load112, ptr @1469)
+  %calltmp113 = call i1 @_strEq(ptr %mnemonic.load112, ptr @1537)
   br label %or_end111
 
 or_end111:                                        ; preds = %or_rhs110, %or_end105
@@ -18013,7 +18624,7 @@ or_end111:                                        ; preds = %or_rhs110, %or_end1
 
 or_rhs116:                                        ; preds = %or_end111
   %mnemonic.load118 = load ptr, ptr %mnemonic, align 8
-  %calltmp119 = call i1 @_strEq(ptr %mnemonic.load118, ptr @1470)
+  %calltmp119 = call i1 @_strEq(ptr %mnemonic.load118, ptr @1538)
   br label %or_end117
 
 or_end117:                                        ; preds = %or_rhs116, %or_end111
@@ -18022,7 +18633,7 @@ or_end117:                                        ; preds = %or_rhs116, %or_end1
 
 or_rhs122:                                        ; preds = %or_end117
   %mnemonic.load124 = load ptr, ptr %mnemonic, align 8
-  %calltmp125 = call i1 @_strEq(ptr %mnemonic.load124, ptr @1471)
+  %calltmp125 = call i1 @_strEq(ptr %mnemonic.load124, ptr @1539)
   br label %or_end123
 
 or_end123:                                        ; preds = %or_rhs122, %or_end117
@@ -18031,7 +18642,7 @@ or_end123:                                        ; preds = %or_rhs122, %or_end1
 
 or_rhs128:                                        ; preds = %or_end123
   %mnemonic.load130 = load ptr, ptr %mnemonic, align 8
-  %calltmp131 = call i1 @_strEq(ptr %mnemonic.load130, ptr @1472)
+  %calltmp131 = call i1 @_strEq(ptr %mnemonic.load130, ptr @1540)
   br label %or_end129
 
 or_end129:                                        ; preds = %or_rhs128, %or_end123
@@ -18040,7 +18651,7 @@ or_end129:                                        ; preds = %or_rhs128, %or_end1
 
 or_rhs134:                                        ; preds = %or_end129
   %mnemonic.load136 = load ptr, ptr %mnemonic, align 8
-  %calltmp137 = call i1 @_strEq(ptr %mnemonic.load136, ptr @1473)
+  %calltmp137 = call i1 @_strEq(ptr %mnemonic.load136, ptr @1541)
   br label %or_end135
 
 or_end135:                                        ; preds = %or_rhs134, %or_end129
@@ -18049,7 +18660,7 @@ or_end135:                                        ; preds = %or_rhs134, %or_end1
 
 or_rhs140:                                        ; preds = %or_end135
   %mnemonic.load142 = load ptr, ptr %mnemonic, align 8
-  %calltmp143 = call i1 @_strEq(ptr %mnemonic.load142, ptr @1474)
+  %calltmp143 = call i1 @_strEq(ptr %mnemonic.load142, ptr @1542)
   br label %or_end141
 
 or_end141:                                        ; preds = %or_rhs140, %or_end135
@@ -18064,21 +18675,21 @@ then146:                                          ; preds = %or_end141
   %addtmp151 = add i32 %op.load150, 1
   %calltmp153 = call ptr @_generateLLVMLoadI64IfIdentifier(ptr %0, i32 %addtmp151, i32 %calltmp)
   %str.concat154 = call ptr @csec_string_concat(ptr %calltmp149, ptr %calltmp153)
-  %str.concat155 = call ptr @csec_string_concat(ptr %str.concat154, ptr @1475)
+  %str.concat155 = call ptr @csec_string_concat(ptr %str.concat154, ptr @1543)
   %str.concat156 = call ptr @csec_string_concat(ptr %str.concat155, ptr %3)
-  %str.concat157 = call ptr @csec_string_concat(ptr %str.concat156, ptr @1476)
+  %str.concat157 = call ptr @csec_string_concat(ptr %str.concat156, ptr @1544)
   %mnemonic.load158 = load ptr, ptr %mnemonic, align 8
   %str.concat159 = call ptr @csec_string_concat(ptr %str.concat157, ptr %mnemonic.load158)
-  %str.concat160 = call ptr @csec_string_concat(ptr %str.concat159, ptr @1477)
+  %str.concat160 = call ptr @csec_string_concat(ptr %str.concat159, ptr @1545)
   %op.load161 = load i32, ptr %op, align 4
   %calltmp162 = call ptr @_llvmI64Value(ptr %0, i32 %1, i32 %op.load161)
   %str.concat163 = call ptr @csec_string_concat(ptr %str.concat160, ptr %calltmp162)
-  %str.concat164 = call ptr @csec_string_concat(ptr %str.concat163, ptr @1478)
+  %str.concat164 = call ptr @csec_string_concat(ptr %str.concat163, ptr @1546)
   %op.load165 = load i32, ptr %op, align 4
   %addtmp166 = add i32 %op.load165, 1
   %calltmp168 = call ptr @_llvmI64Value(ptr %0, i32 %addtmp166, i32 %calltmp)
   %str.concat169 = call ptr @csec_string_concat(ptr %str.concat164, ptr %calltmp168)
-  %str.concat170 = call ptr @csec_string_concat(ptr %str.concat169, ptr @1479)
+  %str.concat170 = call ptr @csec_string_concat(ptr %str.concat169, ptr @1547)
   ret ptr %str.concat170
 
 ifcont147:                                        ; preds = %or_end141
@@ -18090,12 +18701,12 @@ entry:
   %calltmp = call i32 @_findTopLevelOperator(ptr %0, i32 %1, i32 %2, i32 1)
   %addtmp = add i32 %1, 1
   %calltmp1 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp)
-  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1482)
+  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1550)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat2 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
-  %str.concat4 = call ptr @csec_string_concat(ptr @1483, ptr %calltmp1)
-  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1484)
+  %str.concat4 = call ptr @csec_string_concat(ptr @1551, ptr %calltmp1)
+  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1552)
   %str.sext6 = sext i32 %1 to i64
   %str.int.call7 = call ptr @csec_to_string_i64(i64 %str.sext6)
   %str.concat8 = call ptr @csec_string_concat(ptr %str.concat5, ptr %str.int.call7)
@@ -18104,24 +18715,24 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat9 = call ptr @csec_string_concat(ptr @1485, ptr %str.concat2)
-  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1486)
+  %str.concat9 = call ptr @csec_string_concat(ptr @1553, ptr %str.concat2)
+  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1554)
   %addtmp12 = add i32 %calltmp, 1
   %calltmp13 = call ptr @_generateLLVMExpressionI64(ptr %0, i32 %addtmp12, i32 %2, ptr %str.concat8)
   %str.concat14 = call ptr @csec_string_concat(ptr %str.concat10, ptr %calltmp13)
-  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1487)
+  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1555)
   %str.concat17 = call ptr @csec_string_concat(ptr %str.concat15, ptr %str.concat8)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1488)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1556)
   %str.concat20 = call ptr @csec_string_concat(ptr %str.concat18, ptr %str.concat2)
-  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1489)
+  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1557)
   ret ptr %str.concat21
 
 ifcont:                                           ; preds = %entry
-  %str.concat23 = call ptr @csec_string_concat(ptr @1490, ptr %str.concat2)
-  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1491)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1492)
+  %str.concat23 = call ptr @csec_string_concat(ptr @1558, ptr %str.concat2)
+  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1559)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1560)
   %str.concat27 = call ptr @csec_string_concat(ptr %str.concat25, ptr %str.concat2)
-  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1493)
+  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1561)
   ret ptr %str.concat28
 }
 
@@ -18133,7 +18744,7 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @1494
+  ret ptr @1562
 
 ifcont:                                           ; preds = %entry
   %calltmp1 = call i8 @_tokenKindAt(ptr %0, i32 %1)
@@ -18183,15 +18794,15 @@ and_end17:                                        ; preds = %and_rhs16, %ifcont1
 
 then23:                                           ; preds = %and_end17
   %calltmp25 = call ptr @_tokenTextAt(ptr %0, i32 %1)
-  %str.concat = call ptr @csec_string_concat(ptr @1495, ptr %calltmp25)
-  %str.concat26 = call ptr @csec_string_concat(ptr %str.concat, ptr @1496)
+  %str.concat = call ptr @csec_string_concat(ptr @1563, ptr %calltmp25)
+  %str.concat26 = call ptr @csec_string_concat(ptr %str.concat, ptr @1564)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr %str.int.call)
   ret ptr %str.concat27
 
 ifcont24:                                         ; preds = %and_end17
-  ret ptr @1497
+  ret ptr @1565
 }
 
 define ptr @_generateLLVMLoadF64IfIdentifier(ptr %0, i32 %1, i32 %2) {
@@ -18221,19 +18832,19 @@ then:                                             ; preds = %and_end
   %storageName = alloca ptr, align 8
   store ptr %calltmp5, ptr %storageName, align 8
   %name.load6 = load ptr, ptr %name, align 8
-  %str.concat = call ptr @csec_string_concat(ptr @1498, ptr %name.load6)
-  %str.concat7 = call ptr @csec_string_concat(ptr %str.concat, ptr @1499)
+  %str.concat = call ptr @csec_string_concat(ptr @1566, ptr %name.load6)
+  %str.concat7 = call ptr @csec_string_concat(ptr %str.concat, ptr @1567)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat8 = call ptr @csec_string_concat(ptr %str.concat7, ptr %str.int.call)
-  %str.concat9 = call ptr @csec_string_concat(ptr %str.concat8, ptr @1500)
+  %str.concat9 = call ptr @csec_string_concat(ptr %str.concat8, ptr @1568)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr %storageName.load)
-  %str.concat11 = call ptr @csec_string_concat(ptr %str.concat10, ptr @1501)
+  %str.concat11 = call ptr @csec_string_concat(ptr %str.concat10, ptr @1569)
   ret ptr %str.concat11
 
 ifcont:                                           ; preds = %and_end
-  ret ptr @1502
+  ret ptr @1570
 }
 
 define ptr @_generateLLVMExpressionF64(ptr %0, i32 %1, i32 %2, ptr %3) {
@@ -18244,8 +18855,8 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat = call ptr @csec_string_concat(ptr @1503, ptr %3)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1504)
+  %str.concat = call ptr @csec_string_concat(ptr @1571, ptr %3)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1572)
   ret ptr %str.concat1
 
 ifcont:                                           ; preds = %entry
@@ -18275,11 +18886,11 @@ and_end:                                          ; preds = %and_rhs, %or_end
   br i1 %ifcond9, label %then10, label %ifcont11
 
 then10:                                           ; preds = %and_end
-  %str.concat12 = call ptr @csec_string_concat(ptr @1505, ptr %3)
-  %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr @1506)
+  %str.concat12 = call ptr @csec_string_concat(ptr @1573, ptr %3)
+  %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr @1574)
   %calltmp14 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %str.concat15 = call ptr @csec_string_concat(ptr %str.concat13, ptr %calltmp14)
-  %str.concat16 = call ptr @csec_string_concat(ptr %str.concat15, ptr @1507)
+  %str.concat16 = call ptr @csec_string_concat(ptr %str.concat15, ptr @1575)
   ret ptr %str.concat16
 
 ifcont11:                                         ; preds = %and_end
@@ -18299,12 +18910,12 @@ and_end22:                                        ; preds = %and_rhs21, %ifcont1
   br i1 %ifcond27, label %then28, label %ifcont29
 
 then28:                                           ; preds = %and_end22
-  %str.concat30 = call ptr @csec_string_concat(ptr @1508, ptr %3)
-  %str.concat31 = call ptr @csec_string_concat(ptr %str.concat30, ptr @1509)
+  %str.concat30 = call ptr @csec_string_concat(ptr @1576, ptr %3)
+  %str.concat31 = call ptr @csec_string_concat(ptr %str.concat30, ptr @1577)
   %calltmp32 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp33 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %calltmp32)
   %str.concat34 = call ptr @csec_string_concat(ptr %str.concat31, ptr %calltmp33)
-  %str.concat35 = call ptr @csec_string_concat(ptr %str.concat34, ptr @1510)
+  %str.concat35 = call ptr @csec_string_concat(ptr %str.concat34, ptr @1578)
   ret ptr %str.concat35
 
 ifcont29:                                         ; preds = %and_end22
@@ -18325,7 +18936,7 @@ and_end41:                                        ; preds = %and_rhs40, %ifcont2
 and_rhs46:                                        ; preds = %and_end41
   %addtmp48 = add i32 %1, 1
   %calltmp49 = call i8 @_kindOperator()
-  %calltmp50 = call i1 @_tokenIs(ptr %0, i32 %addtmp48, i8 %calltmp49, ptr @1511)
+  %calltmp50 = call i1 @_tokenIs(ptr %0, i32 %addtmp48, i8 %calltmp49, ptr @1579)
   br label %and_end47
 
 and_end47:                                        ; preds = %and_rhs46, %and_end41
@@ -18334,7 +18945,7 @@ and_end47:                                        ; preds = %and_rhs46, %and_end
 
 and_rhs53:                                        ; preds = %and_end47
   %addtmp55 = add i32 %1, 1
-  %calltmp57 = call i32 @_findClosingToken(ptr %0, i32 %addtmp55, i32 %calltmp, ptr @1512, ptr @1513)
+  %calltmp57 = call i32 @_findClosingToken(ptr %0, i32 %addtmp55, i32 %calltmp, ptr @1580, ptr @1581)
   %subtmp = sub i32 %calltmp, 1
   %eqtmp59 = icmp eq i32 %calltmp57, %subtmp
   br label %and_end54
@@ -18348,18 +18959,18 @@ then62:                                           ; preds = %and_end54
   %addtmp64 = add i32 %1, 2
   %subtmp66 = sub i32 %calltmp, 1
   %calltmp67 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp64, i32 %subtmp66, ptr %3)
-  %str.concat68 = call ptr @csec_string_concat(ptr %calltmp67, ptr @1514)
+  %str.concat68 = call ptr @csec_string_concat(ptr %calltmp67, ptr @1582)
   %str.concat69 = call ptr @csec_string_concat(ptr %str.concat68, ptr %3)
-  %str.concat70 = call ptr @csec_string_concat(ptr %str.concat69, ptr @1515)
+  %str.concat70 = call ptr @csec_string_concat(ptr %str.concat69, ptr @1583)
   %calltmp71 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp72 = call ptr @_llvmRuntimeCallName(ptr %calltmp71)
   %str.concat73 = call ptr @csec_string_concat(ptr %str.concat70, ptr %calltmp72)
-  %str.concat74 = call ptr @csec_string_concat(ptr %str.concat73, ptr @1516)
+  %str.concat74 = call ptr @csec_string_concat(ptr %str.concat73, ptr @1584)
   %addtmp75 = add i32 %1, 2
   %subtmp77 = sub i32 %calltmp, 1
   %calltmp78 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp75, i32 %subtmp77, ptr %3)
   %str.concat79 = call ptr @csec_string_concat(ptr %str.concat74, ptr %calltmp78)
-  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @1517)
+  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @1585)
   ret ptr %str.concat80
 
 ifcont63:                                         ; preds = %and_end54
@@ -18388,53 +18999,53 @@ then92:                                           ; preds = %and_end85
   %opText = alloca ptr, align 8
   store ptr %calltmp95, ptr %opText, align 8
   %mnemonic = alloca ptr, align 8
-  store ptr @1518, ptr %mnemonic, align 8
+  store ptr @1586, ptr %mnemonic, align 8
   %opText.load = load ptr, ptr %opText, align 8
-  %calltmp96 = call i1 @_strEq(ptr %opText.load, ptr @1519)
+  %calltmp96 = call i1 @_strEq(ptr %opText.load, ptr @1587)
   %ifcond97 = icmp ne i1 %calltmp96, false
   br i1 %ifcond97, label %then98, label %ifcont99
 
 ifcont93:                                         ; preds = %ifcont122, %and_end85
-  %str.concat146 = call ptr @csec_string_concat(ptr @1532, ptr %3)
-  %str.concat147 = call ptr @csec_string_concat(ptr %str.concat146, ptr @1533)
+  %str.concat146 = call ptr @csec_string_concat(ptr @1600, ptr %3)
+  %str.concat147 = call ptr @csec_string_concat(ptr %str.concat146, ptr @1601)
   ret ptr %str.concat147
 
 then98:                                           ; preds = %then92
   %mnemonic.load = load ptr, ptr %mnemonic, align 8
-  store ptr @1520, ptr %mnemonic, align 8
+  store ptr @1588, ptr %mnemonic, align 8
   br label %ifcont99
 
 ifcont99:                                         ; preds = %then98, %then92
   %opText.load100 = load ptr, ptr %opText, align 8
-  %calltmp101 = call i1 @_strEq(ptr %opText.load100, ptr @1521)
+  %calltmp101 = call i1 @_strEq(ptr %opText.load100, ptr @1589)
   %ifcond102 = icmp ne i1 %calltmp101, false
   br i1 %ifcond102, label %then103, label %ifcont104
 
 then103:                                          ; preds = %ifcont99
   %mnemonic.load105 = load ptr, ptr %mnemonic, align 8
-  store ptr @1522, ptr %mnemonic, align 8
+  store ptr @1590, ptr %mnemonic, align 8
   br label %ifcont104
 
 ifcont104:                                        ; preds = %then103, %ifcont99
   %opText.load106 = load ptr, ptr %opText, align 8
-  %calltmp107 = call i1 @_strEq(ptr %opText.load106, ptr @1523)
+  %calltmp107 = call i1 @_strEq(ptr %opText.load106, ptr @1591)
   %ifcond108 = icmp ne i1 %calltmp107, false
   br i1 %ifcond108, label %then109, label %ifcont110
 
 then109:                                          ; preds = %ifcont104
   %mnemonic.load111 = load ptr, ptr %mnemonic, align 8
-  store ptr @1524, ptr %mnemonic, align 8
+  store ptr @1592, ptr %mnemonic, align 8
   br label %ifcont110
 
 ifcont110:                                        ; preds = %then109, %ifcont104
   %opText.load112 = load ptr, ptr %opText, align 8
-  %calltmp113 = call i1 @_strEq(ptr %opText.load112, ptr @1525)
+  %calltmp113 = call i1 @_strEq(ptr %opText.load112, ptr @1593)
   %ifcond114 = icmp ne i1 %calltmp113, false
   br i1 %ifcond114, label %then115, label %ifcont116
 
 then115:                                          ; preds = %ifcont110
   %mnemonic.load117 = load ptr, ptr %mnemonic, align 8
-  store ptr @1526, ptr %mnemonic, align 8
+  store ptr @1594, ptr %mnemonic, align 8
   br label %ifcont116
 
 ifcont116:                                        ; preds = %then115, %ifcont110
@@ -18451,21 +19062,21 @@ then121:                                          ; preds = %ifcont116
   %addtmp126 = add i32 %op.load125, 1
   %calltmp128 = call ptr @_generateLLVMLoadF64IfIdentifier(ptr %0, i32 %addtmp126, i32 %calltmp)
   %str.concat129 = call ptr @csec_string_concat(ptr %calltmp124, ptr %calltmp128)
-  %str.concat130 = call ptr @csec_string_concat(ptr %str.concat129, ptr @1527)
+  %str.concat130 = call ptr @csec_string_concat(ptr %str.concat129, ptr @1595)
   %str.concat131 = call ptr @csec_string_concat(ptr %str.concat130, ptr %3)
-  %str.concat132 = call ptr @csec_string_concat(ptr %str.concat131, ptr @1528)
+  %str.concat132 = call ptr @csec_string_concat(ptr %str.concat131, ptr @1596)
   %mnemonic.load133 = load ptr, ptr %mnemonic, align 8
   %str.concat134 = call ptr @csec_string_concat(ptr %str.concat132, ptr %mnemonic.load133)
-  %str.concat135 = call ptr @csec_string_concat(ptr %str.concat134, ptr @1529)
+  %str.concat135 = call ptr @csec_string_concat(ptr %str.concat134, ptr @1597)
   %op.load136 = load i32, ptr %op, align 4
   %calltmp137 = call ptr @_llvmF64Value(ptr %0, i32 %1, i32 %op.load136)
   %str.concat138 = call ptr @csec_string_concat(ptr %str.concat135, ptr %calltmp137)
-  %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr @1530)
+  %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr @1598)
   %op.load140 = load i32, ptr %op, align 4
   %addtmp141 = add i32 %op.load140, 1
   %calltmp143 = call ptr @_llvmF64Value(ptr %0, i32 %addtmp141, i32 %calltmp)
   %str.concat144 = call ptr @csec_string_concat(ptr %str.concat139, ptr %calltmp143)
-  %str.concat145 = call ptr @csec_string_concat(ptr %str.concat144, ptr @1531)
+  %str.concat145 = call ptr @csec_string_concat(ptr %str.concat144, ptr @1599)
   ret ptr %str.concat145
 
 ifcont122:                                        ; preds = %ifcont116
@@ -18477,12 +19088,12 @@ entry:
   %calltmp = call i32 @_findTopLevelOperator(ptr %0, i32 %1, i32 %2, i32 1)
   %addtmp = add i32 %1, 1
   %calltmp1 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp)
-  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1534)
+  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1602)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat2 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
-  %str.concat4 = call ptr @csec_string_concat(ptr @1535, ptr %calltmp1)
-  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1536)
+  %str.concat4 = call ptr @csec_string_concat(ptr @1603, ptr %calltmp1)
+  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1604)
   %str.sext6 = sext i32 %1 to i64
   %str.int.call7 = call ptr @csec_to_string_i64(i64 %str.sext6)
   %str.concat8 = call ptr @csec_string_concat(ptr %str.concat5, ptr %str.int.call7)
@@ -18491,24 +19102,24 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat9 = call ptr @csec_string_concat(ptr @1537, ptr %str.concat2)
-  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1538)
+  %str.concat9 = call ptr @csec_string_concat(ptr @1605, ptr %str.concat2)
+  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1606)
   %addtmp12 = add i32 %calltmp, 1
   %calltmp13 = call ptr @_generateLLVMExpressionF64(ptr %0, i32 %addtmp12, i32 %2, ptr %str.concat8)
   %str.concat14 = call ptr @csec_string_concat(ptr %str.concat10, ptr %calltmp13)
-  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1539)
+  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1607)
   %str.concat17 = call ptr @csec_string_concat(ptr %str.concat15, ptr %str.concat8)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1540)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1608)
   %str.concat20 = call ptr @csec_string_concat(ptr %str.concat18, ptr %str.concat2)
-  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1541)
+  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1609)
   ret ptr %str.concat21
 
 ifcont:                                           ; preds = %entry
-  %str.concat23 = call ptr @csec_string_concat(ptr @1542, ptr %str.concat2)
-  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1543)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1544)
+  %str.concat23 = call ptr @csec_string_concat(ptr @1610, ptr %str.concat2)
+  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1611)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1612)
   %str.concat27 = call ptr @csec_string_concat(ptr %str.concat25, ptr %str.concat2)
-  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1545)
+  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1613)
   ret ptr %str.concat28
 }
 
@@ -18517,12 +19128,12 @@ entry:
   %calltmp = call i32 @_findTopLevelOperator(ptr %0, i32 %1, i32 %2, i32 1)
   %addtmp = add i32 %1, 1
   %calltmp1 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp)
-  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1546)
+  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1614)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat2 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
-  %str.concat4 = call ptr @csec_string_concat(ptr @1547, ptr %calltmp1)
-  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1548)
+  %str.concat4 = call ptr @csec_string_concat(ptr @1615, ptr %calltmp1)
+  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1616)
   %str.sext6 = sext i32 %1 to i64
   %str.int.call7 = call ptr @csec_to_string_i64(i64 %str.sext6)
   %str.concat8 = call ptr @csec_string_concat(ptr %str.concat5, ptr %str.int.call7)
@@ -18546,11 +19157,11 @@ then:                                             ; preds = %entry
   br i1 %eqtmp, label %and_rhs, label %and_end
 
 ifcont:                                           ; preds = %ifcont112, %entry
-  %str.concat148 = call ptr @csec_string_concat(ptr @1578, ptr %str.concat2)
-  %str.concat149 = call ptr @csec_string_concat(ptr %str.concat148, ptr @1579)
-  %str.concat150 = call ptr @csec_string_concat(ptr %str.concat149, ptr @1580)
+  %str.concat148 = call ptr @csec_string_concat(ptr @1646, ptr %str.concat2)
+  %str.concat149 = call ptr @csec_string_concat(ptr %str.concat148, ptr @1647)
+  %str.concat150 = call ptr @csec_string_concat(ptr %str.concat149, ptr @1648)
   %str.concat152 = call ptr @csec_string_concat(ptr %str.concat150, ptr %str.concat2)
-  %str.concat153 = call ptr @csec_string_concat(ptr %str.concat152, ptr @1581)
+  %str.concat153 = call ptr @csec_string_concat(ptr %str.concat152, ptr @1649)
   ret ptr %str.concat153
 
 and_rhs:                                          ; preds = %then
@@ -18575,26 +19186,26 @@ then20:                                           ; preds = %and_end
   %addtmp24 = add i64 %str.length, 1
   %byteLength = alloca i32, align 4
   store i64 %addtmp24, ptr %byteLength, align 4
-  %str.concat25 = call ptr @csec_string_concat(ptr @1549, ptr %str.concat2)
-  %str.concat26 = call ptr @csec_string_concat(ptr %str.concat25, ptr @1550)
-  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1551)
+  %str.concat25 = call ptr @csec_string_concat(ptr @1617, ptr %str.concat2)
+  %str.concat26 = call ptr @csec_string_concat(ptr %str.concat25, ptr @1618)
+  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1619)
   %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr %str.concat8)
-  %str.concat29 = call ptr @csec_string_concat(ptr %str.concat28, ptr @1552)
+  %str.concat29 = call ptr @csec_string_concat(ptr %str.concat28, ptr @1620)
   %byteLength.load = load i32, ptr %byteLength, align 4
   %str.sext30 = sext i32 %byteLength.load to i64
   %str.int.call31 = call ptr @csec_to_string_i64(i64 %str.sext30)
   %str.concat32 = call ptr @csec_string_concat(ptr %str.concat29, ptr %str.int.call31)
-  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @1553)
+  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @1621)
   %exprStart.load34 = load i32, ptr %exprStart, align 4
   %str.sext35 = sext i32 %exprStart.load34 to i64
   %str.int.call36 = call ptr @csec_to_string_i64(i64 %str.sext35)
   %str.concat37 = call ptr @csec_string_concat(ptr %str.concat33, ptr %str.int.call36)
-  %str.concat38 = call ptr @csec_string_concat(ptr %str.concat37, ptr @1554)
-  %str.concat39 = call ptr @csec_string_concat(ptr %str.concat38, ptr @1555)
+  %str.concat38 = call ptr @csec_string_concat(ptr %str.concat37, ptr @1622)
+  %str.concat39 = call ptr @csec_string_concat(ptr %str.concat38, ptr @1623)
   %str.concat41 = call ptr @csec_string_concat(ptr %str.concat39, ptr %str.concat8)
-  %str.concat42 = call ptr @csec_string_concat(ptr %str.concat41, ptr @1556)
+  %str.concat42 = call ptr @csec_string_concat(ptr %str.concat41, ptr @1624)
   %str.concat44 = call ptr @csec_string_concat(ptr %str.concat42, ptr %str.concat2)
-  %str.concat45 = call ptr @csec_string_concat(ptr %str.concat44, ptr @1557)
+  %str.concat45 = call ptr @csec_string_concat(ptr %str.concat44, ptr @1625)
   ret ptr %str.concat45
 
 ifcont21:                                         ; preds = %and_end
@@ -18623,19 +19234,19 @@ then59:                                           ; preds = %and_end52
   %calltmp64 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %exprStart.load61, ptr %calltmp63)
   %exprStorageName = alloca ptr, align 8
   store ptr %calltmp64, ptr %exprStorageName, align 8
-  %str.concat66 = call ptr @csec_string_concat(ptr @1558, ptr %str.concat2)
-  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @1559)
-  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1560)
+  %str.concat66 = call ptr @csec_string_concat(ptr @1626, ptr %str.concat2)
+  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @1627)
+  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1628)
   %str.concat70 = call ptr @csec_string_concat(ptr %str.concat68, ptr %str.concat8)
-  %str.concat71 = call ptr @csec_string_concat(ptr %str.concat70, ptr @1561)
+  %str.concat71 = call ptr @csec_string_concat(ptr %str.concat70, ptr @1629)
   %exprStorageName.load = load ptr, ptr %exprStorageName, align 8
   %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr %exprStorageName.load)
-  %str.concat73 = call ptr @csec_string_concat(ptr %str.concat72, ptr @1562)
-  %str.concat74 = call ptr @csec_string_concat(ptr %str.concat73, ptr @1563)
+  %str.concat73 = call ptr @csec_string_concat(ptr %str.concat72, ptr @1630)
+  %str.concat74 = call ptr @csec_string_concat(ptr %str.concat73, ptr @1631)
   %str.concat76 = call ptr @csec_string_concat(ptr %str.concat74, ptr %str.concat8)
-  %str.concat77 = call ptr @csec_string_concat(ptr %str.concat76, ptr @1564)
+  %str.concat77 = call ptr @csec_string_concat(ptr %str.concat76, ptr @1632)
   %str.concat79 = call ptr @csec_string_concat(ptr %str.concat77, ptr %str.concat2)
-  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @1565)
+  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @1633)
   ret ptr %str.concat80
 
 ifcont60:                                         ; preds = %and_end52
@@ -18660,7 +19271,7 @@ and_rhs93:                                        ; preds = %and_end87
   %exprStart.load95 = load i32, ptr %exprStart, align 4
   %addtmp96 = add i32 %exprStart.load95, 1
   %calltmp97 = call i8 @_kindOperator()
-  %calltmp98 = call i1 @_tokenIs(ptr %0, i32 %addtmp96, i8 %calltmp97, ptr @1566)
+  %calltmp98 = call i1 @_tokenIs(ptr %0, i32 %addtmp96, i8 %calltmp97, ptr @1634)
   br label %and_end94
 
 and_end94:                                        ; preds = %and_rhs93, %and_end87
@@ -18671,7 +19282,7 @@ and_rhs101:                                       ; preds = %and_end94
   %exprStart.load103 = load i32, ptr %exprStart, align 4
   %addtmp104 = add i32 %exprStart.load103, 1
   %exprEnd.load105 = load i32, ptr %exprEnd, align 4
-  %calltmp106 = call i32 @_findClosingToken(ptr %0, i32 %addtmp104, i32 %exprEnd.load105, ptr @1567, ptr @1568)
+  %calltmp106 = call i32 @_findClosingToken(ptr %0, i32 %addtmp104, i32 %exprEnd.load105, ptr @1635, ptr @1636)
   %exprEnd.load107 = load i32, ptr %exprEnd, align 4
   %subtmp = sub i32 %exprEnd.load107, 1
   %eqtmp108 = icmp eq i32 %calltmp106, %subtmp
@@ -18683,34 +19294,34 @@ and_end102:                                       ; preds = %and_rhs101, %and_en
   br i1 %ifcond110, label %then111, label %ifcont112
 
 then111:                                          ; preds = %and_end102
-  %str.concat114 = call ptr @csec_string_concat(ptr @1569, ptr %str.concat2)
-  %str.concat115 = call ptr @csec_string_concat(ptr %str.concat114, ptr @1570)
+  %str.concat114 = call ptr @csec_string_concat(ptr @1637, ptr %str.concat2)
+  %str.concat115 = call ptr @csec_string_concat(ptr %str.concat114, ptr @1638)
   %exprStart.load116 = load i32, ptr %exprStart, align 4
   %addtmp117 = add i32 %exprStart.load116, 2
   %exprEnd.load118 = load i32, ptr %exprEnd, align 4
   %subtmp119 = sub i32 %exprEnd.load118, 1
   %calltmp121 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp117, i32 %subtmp119, ptr %str.concat8)
   %str.concat122 = call ptr @csec_string_concat(ptr %str.concat115, ptr %calltmp121)
-  %str.concat123 = call ptr @csec_string_concat(ptr %str.concat122, ptr @1571)
+  %str.concat123 = call ptr @csec_string_concat(ptr %str.concat122, ptr @1639)
   %str.concat125 = call ptr @csec_string_concat(ptr %str.concat123, ptr %str.concat8)
-  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @1572)
+  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @1640)
   %exprStart.load127 = load i32, ptr %exprStart, align 4
   %calltmp128 = call ptr @_tokenTextAt(ptr %0, i32 %exprStart.load127)
   %calltmp129 = call ptr @_llvmRuntimeCallName(ptr %calltmp128)
   %str.concat130 = call ptr @csec_string_concat(ptr %str.concat126, ptr %calltmp129)
-  %str.concat131 = call ptr @csec_string_concat(ptr %str.concat130, ptr @1573)
+  %str.concat131 = call ptr @csec_string_concat(ptr %str.concat130, ptr @1641)
   %exprStart.load132 = load i32, ptr %exprStart, align 4
   %addtmp133 = add i32 %exprStart.load132, 2
   %exprEnd.load134 = load i32, ptr %exprEnd, align 4
   %subtmp135 = sub i32 %exprEnd.load134, 1
   %calltmp137 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp133, i32 %subtmp135, ptr %str.concat8)
   %str.concat138 = call ptr @csec_string_concat(ptr %str.concat131, ptr %calltmp137)
-  %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr @1574)
-  %str.concat140 = call ptr @csec_string_concat(ptr %str.concat139, ptr @1575)
+  %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr @1642)
+  %str.concat140 = call ptr @csec_string_concat(ptr %str.concat139, ptr @1643)
   %str.concat142 = call ptr @csec_string_concat(ptr %str.concat140, ptr %str.concat8)
-  %str.concat143 = call ptr @csec_string_concat(ptr %str.concat142, ptr @1576)
+  %str.concat143 = call ptr @csec_string_concat(ptr %str.concat142, ptr @1644)
   %str.concat145 = call ptr @csec_string_concat(ptr %str.concat143, ptr %str.concat2)
-  %str.concat146 = call ptr @csec_string_concat(ptr %str.concat145, ptr @1577)
+  %str.concat146 = call ptr @csec_string_concat(ptr %str.concat145, ptr @1645)
   ret ptr %str.concat146
 
 ifcont112:                                        ; preds = %and_end102
@@ -18722,12 +19333,12 @@ entry:
   %calltmp = call i32 @_findTopLevelOperator(ptr %0, i32 %1, i32 %2, i32 1)
   %addtmp = add i32 %1, 1
   %calltmp1 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp)
-  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1582)
+  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1650)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat2 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
-  %str.concat4 = call ptr @csec_string_concat(ptr @1583, ptr %calltmp1)
-  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1584)
+  %str.concat4 = call ptr @csec_string_concat(ptr @1651, ptr %calltmp1)
+  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1652)
   %str.sext6 = sext i32 %1 to i64
   %str.int.call7 = call ptr @csec_to_string_i64(i64 %str.sext6)
   %str.concat8 = call ptr @csec_string_concat(ptr %str.concat5, ptr %str.int.call7)
@@ -18751,11 +19362,11 @@ then:                                             ; preds = %entry
   br i1 %eqtmp, label %and_rhs, label %and_end
 
 ifcont:                                           ; preds = %ifcont98, %entry
-  %str.concat134 = call ptr @csec_string_concat(ptr @1610, ptr %str.concat2)
-  %str.concat135 = call ptr @csec_string_concat(ptr %str.concat134, ptr @1611)
-  %str.concat136 = call ptr @csec_string_concat(ptr %str.concat135, ptr @1612)
+  %str.concat134 = call ptr @csec_string_concat(ptr @1678, ptr %str.concat2)
+  %str.concat135 = call ptr @csec_string_concat(ptr %str.concat134, ptr @1679)
+  %str.concat136 = call ptr @csec_string_concat(ptr %str.concat135, ptr @1680)
   %str.concat138 = call ptr @csec_string_concat(ptr %str.concat136, ptr %str.concat2)
-  %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr @1613)
+  %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr @1681)
   ret ptr %str.concat139
 
 and_rhs:                                          ; preds = %then
@@ -18771,16 +19382,16 @@ and_end:                                          ; preds = %and_rhs, %then
   br i1 %ifcond19, label %then20, label %ifcont21
 
 then20:                                           ; preds = %and_end
-  %str.concat22 = call ptr @csec_string_concat(ptr @1585, ptr %str.concat2)
-  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat22, ptr @1586)
-  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1587)
+  %str.concat22 = call ptr @csec_string_concat(ptr @1653, ptr %str.concat2)
+  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat22, ptr @1654)
+  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1655)
   %exprStart.load25 = load i32, ptr %exprStart, align 4
   %calltmp26 = call ptr @_tokenTextAt(ptr %0, i32 %exprStart.load25)
   %calltmp27 = call ptr @_llvmCharI8Value(ptr %calltmp26)
   %str.concat28 = call ptr @csec_string_concat(ptr %str.concat24, ptr %calltmp27)
-  %str.concat29 = call ptr @csec_string_concat(ptr %str.concat28, ptr @1588)
+  %str.concat29 = call ptr @csec_string_concat(ptr %str.concat28, ptr @1656)
   %str.concat31 = call ptr @csec_string_concat(ptr %str.concat29, ptr %str.concat2)
-  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1589)
+  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1657)
   ret ptr %str.concat32
 
 ifcont21:                                         ; preds = %and_end
@@ -18809,19 +19420,19 @@ then46:                                           ; preds = %and_end39
   %calltmp51 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %exprStart.load48, ptr %calltmp50)
   %exprStorageName = alloca ptr, align 8
   store ptr %calltmp51, ptr %exprStorageName, align 8
-  %str.concat53 = call ptr @csec_string_concat(ptr @1590, ptr %str.concat2)
-  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr @1591)
-  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @1592)
+  %str.concat53 = call ptr @csec_string_concat(ptr @1658, ptr %str.concat2)
+  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr @1659)
+  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @1660)
   %str.concat56 = call ptr @csec_string_concat(ptr %str.concat55, ptr %str.concat8)
-  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1593)
+  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1661)
   %exprStorageName.load = load ptr, ptr %exprStorageName, align 8
   %str.concat58 = call ptr @csec_string_concat(ptr %str.concat57, ptr %exprStorageName.load)
-  %str.concat59 = call ptr @csec_string_concat(ptr %str.concat58, ptr @1594)
-  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @1595)
+  %str.concat59 = call ptr @csec_string_concat(ptr %str.concat58, ptr @1662)
+  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @1663)
   %str.concat62 = call ptr @csec_string_concat(ptr %str.concat60, ptr %str.concat8)
-  %str.concat63 = call ptr @csec_string_concat(ptr %str.concat62, ptr @1596)
+  %str.concat63 = call ptr @csec_string_concat(ptr %str.concat62, ptr @1664)
   %str.concat65 = call ptr @csec_string_concat(ptr %str.concat63, ptr %str.concat2)
-  %str.concat66 = call ptr @csec_string_concat(ptr %str.concat65, ptr @1597)
+  %str.concat66 = call ptr @csec_string_concat(ptr %str.concat65, ptr @1665)
   ret ptr %str.concat66
 
 ifcont47:                                         ; preds = %and_end39
@@ -18846,7 +19457,7 @@ and_rhs79:                                        ; preds = %and_end73
   %exprStart.load81 = load i32, ptr %exprStart, align 4
   %addtmp82 = add i32 %exprStart.load81, 1
   %calltmp83 = call i8 @_kindOperator()
-  %calltmp84 = call i1 @_tokenIs(ptr %0, i32 %addtmp82, i8 %calltmp83, ptr @1598)
+  %calltmp84 = call i1 @_tokenIs(ptr %0, i32 %addtmp82, i8 %calltmp83, ptr @1666)
   br label %and_end80
 
 and_end80:                                        ; preds = %and_rhs79, %and_end73
@@ -18857,7 +19468,7 @@ and_rhs87:                                        ; preds = %and_end80
   %exprStart.load89 = load i32, ptr %exprStart, align 4
   %addtmp90 = add i32 %exprStart.load89, 1
   %exprEnd.load91 = load i32, ptr %exprEnd, align 4
-  %calltmp92 = call i32 @_findClosingToken(ptr %0, i32 %addtmp90, i32 %exprEnd.load91, ptr @1599, ptr @1600)
+  %calltmp92 = call i32 @_findClosingToken(ptr %0, i32 %addtmp90, i32 %exprEnd.load91, ptr @1667, ptr @1668)
   %exprEnd.load93 = load i32, ptr %exprEnd, align 4
   %subtmp = sub i32 %exprEnd.load93, 1
   %eqtmp94 = icmp eq i32 %calltmp92, %subtmp
@@ -18869,34 +19480,34 @@ and_end88:                                        ; preds = %and_rhs87, %and_end
   br i1 %ifcond96, label %then97, label %ifcont98
 
 then97:                                           ; preds = %and_end88
-  %str.concat100 = call ptr @csec_string_concat(ptr @1601, ptr %str.concat2)
-  %str.concat101 = call ptr @csec_string_concat(ptr %str.concat100, ptr @1602)
+  %str.concat100 = call ptr @csec_string_concat(ptr @1669, ptr %str.concat2)
+  %str.concat101 = call ptr @csec_string_concat(ptr %str.concat100, ptr @1670)
   %exprStart.load102 = load i32, ptr %exprStart, align 4
   %addtmp103 = add i32 %exprStart.load102, 2
   %exprEnd.load104 = load i32, ptr %exprEnd, align 4
   %subtmp105 = sub i32 %exprEnd.load104, 1
   %calltmp107 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp103, i32 %subtmp105, ptr %str.concat8)
   %str.concat108 = call ptr @csec_string_concat(ptr %str.concat101, ptr %calltmp107)
-  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @1603)
+  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @1671)
   %str.concat111 = call ptr @csec_string_concat(ptr %str.concat109, ptr %str.concat8)
-  %str.concat112 = call ptr @csec_string_concat(ptr %str.concat111, ptr @1604)
+  %str.concat112 = call ptr @csec_string_concat(ptr %str.concat111, ptr @1672)
   %exprStart.load113 = load i32, ptr %exprStart, align 4
   %calltmp114 = call ptr @_tokenTextAt(ptr %0, i32 %exprStart.load113)
   %calltmp115 = call ptr @_llvmRuntimeCallName(ptr %calltmp114)
   %str.concat116 = call ptr @csec_string_concat(ptr %str.concat112, ptr %calltmp115)
-  %str.concat117 = call ptr @csec_string_concat(ptr %str.concat116, ptr @1605)
+  %str.concat117 = call ptr @csec_string_concat(ptr %str.concat116, ptr @1673)
   %exprStart.load118 = load i32, ptr %exprStart, align 4
   %addtmp119 = add i32 %exprStart.load118, 2
   %exprEnd.load120 = load i32, ptr %exprEnd, align 4
   %subtmp121 = sub i32 %exprEnd.load120, 1
   %calltmp123 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp119, i32 %subtmp121, ptr %str.concat8)
   %str.concat124 = call ptr @csec_string_concat(ptr %str.concat117, ptr %calltmp123)
-  %str.concat125 = call ptr @csec_string_concat(ptr %str.concat124, ptr @1606)
-  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @1607)
+  %str.concat125 = call ptr @csec_string_concat(ptr %str.concat124, ptr @1674)
+  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @1675)
   %str.concat128 = call ptr @csec_string_concat(ptr %str.concat126, ptr %str.concat8)
-  %str.concat129 = call ptr @csec_string_concat(ptr %str.concat128, ptr @1608)
+  %str.concat129 = call ptr @csec_string_concat(ptr %str.concat128, ptr @1676)
   %str.concat131 = call ptr @csec_string_concat(ptr %str.concat129, ptr %str.concat2)
-  %str.concat132 = call ptr @csec_string_concat(ptr %str.concat131, ptr @1609)
+  %str.concat132 = call ptr @csec_string_concat(ptr %str.concat131, ptr @1677)
   ret ptr %str.concat132
 
 ifcont98:                                         ; preds = %and_end88
@@ -18921,7 +19532,7 @@ or_end:                                           ; preds = %or_rhs, %entry
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end
-  ret ptr @1614
+  ret ptr @1682
 
 ifcont:                                           ; preds = %or_end
   %calltmp3 = call ptr @_tokenTextAt(ptr %0, i32 %1)
@@ -18935,12 +19546,12 @@ ifcont:                                           ; preds = %or_end
   %opText = alloca ptr, align 8
   store ptr %calltmp6, ptr %opText, align 8
   %opText.load = load ptr, ptr %opText, align 8
-  %calltmp7 = call i1 @_strEq(ptr %opText.load, ptr @1615)
+  %calltmp7 = call i1 @_strEq(ptr %opText.load, ptr @1683)
   br i1 %calltmp7, label %or_end10, label %or_rhs9
 
 or_rhs9:                                          ; preds = %ifcont
   %opText.load11 = load ptr, ptr %opText, align 8
-  %calltmp12 = call i1 @_strEq(ptr %opText.load11, ptr @1616)
+  %calltmp12 = call i1 @_strEq(ptr %opText.load11, ptr @1684)
   br label %or_end10
 
 or_end10:                                         ; preds = %or_rhs9, %ifcont
@@ -18950,8 +19561,8 @@ or_end10:                                         ; preds = %or_rhs9, %ifcont
 
 then15:                                           ; preds = %or_end10
   %name.load17 = load ptr, ptr %name, align 8
-  %str.concat = call ptr @csec_string_concat(ptr @1617, ptr %name.load17)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat, ptr @1618)
+  %str.concat = call ptr @csec_string_concat(ptr @1685, ptr %name.load17)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat, ptr @1686)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat19 = call ptr @csec_string_concat(ptr %str.concat18, ptr %str.int.call)
@@ -18960,17 +19571,17 @@ then15:                                           ; preds = %or_end10
   %addtmp = add i32 %calltmp, 1
   %resultName.load = load ptr, ptr %resultName, align 8
   %calltmp21 = call ptr @_generateLLVMExpressionF64(ptr %0, i32 %addtmp, i32 %2, ptr %resultName.load)
-  %str.concat22 = call ptr @csec_string_concat(ptr %calltmp21, ptr @1619)
+  %str.concat22 = call ptr @csec_string_concat(ptr %calltmp21, ptr @1687)
   %resultName.load23 = load ptr, ptr %resultName, align 8
   %str.concat24 = call ptr @csec_string_concat(ptr %str.concat22, ptr %resultName.load23)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1620)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1688)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat26 = call ptr @csec_string_concat(ptr %str.concat25, ptr %storageName.load)
-  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1621)
+  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1689)
   ret ptr %str.concat27
 
 ifcont16:                                         ; preds = %or_end10
-  ret ptr @1622
+  ret ptr @1690
 }
 
 define ptr @_generateLLVMAssignmentPtr(ptr %0, i32 %1, i32 %2) {
@@ -18991,7 +19602,7 @@ or_end:                                           ; preds = %or_rhs, %entry
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end
-  ret ptr @1623
+  ret ptr @1691
 
 ifcont:                                           ; preds = %or_end
   %calltmp3 = call ptr @_tokenTextAt(ptr %0, i32 %1)
@@ -19038,33 +19649,33 @@ then15:                                           ; preds = %and_end
   %byteLength = alloca i32, align 4
   store i64 %addtmp19, ptr %byteLength, align 4
   %name.load20 = load ptr, ptr %name, align 8
-  %str.concat = call ptr @csec_string_concat(ptr @1624, ptr %name.load20)
-  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat, ptr @1625)
+  %str.concat = call ptr @csec_string_concat(ptr @1692, ptr %name.load20)
+  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat, ptr @1693)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat22 = call ptr @csec_string_concat(ptr %str.concat21, ptr %str.int.call)
-  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat22, ptr @1626)
+  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat22, ptr @1694)
   %byteLength.load = load i32, ptr %byteLength, align 4
   %str.sext24 = sext i32 %byteLength.load to i64
   %str.int.call25 = call ptr @csec_to_string_i64(i64 %str.sext24)
   %str.concat26 = call ptr @csec_string_concat(ptr %str.concat23, ptr %str.int.call25)
-  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1627)
+  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1695)
   %exprStart.load28 = load i32, ptr %exprStart, align 4
   %str.sext29 = sext i32 %exprStart.load28 to i64
   %str.int.call30 = call ptr @csec_to_string_i64(i64 %str.sext29)
   %str.concat31 = call ptr @csec_string_concat(ptr %str.concat27, ptr %str.int.call30)
-  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1628)
-  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @1629)
+  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1696)
+  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @1697)
   %name.load34 = load ptr, ptr %name, align 8
   %str.concat35 = call ptr @csec_string_concat(ptr %str.concat33, ptr %name.load34)
-  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1630)
+  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1698)
   %str.sext37 = sext i32 %1 to i64
   %str.int.call38 = call ptr @csec_to_string_i64(i64 %str.sext37)
   %str.concat39 = call ptr @csec_string_concat(ptr %str.concat36, ptr %str.int.call38)
-  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @1631)
+  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @1699)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat41 = call ptr @csec_string_concat(ptr %str.concat40, ptr %storageName.load)
-  %str.concat42 = call ptr @csec_string_concat(ptr %str.concat41, ptr @1632)
+  %str.concat42 = call ptr @csec_string_concat(ptr %str.concat41, ptr @1700)
   ret ptr %str.concat42
 
 ifcont16:                                         ; preds = %and_end
@@ -19094,26 +19705,26 @@ then56:                                           ; preds = %and_end49
   %exprStorageName = alloca ptr, align 8
   store ptr %calltmp61, ptr %exprStorageName, align 8
   %name.load62 = load ptr, ptr %name, align 8
-  %str.concat63 = call ptr @csec_string_concat(ptr @1633, ptr %name.load62)
-  %str.concat64 = call ptr @csec_string_concat(ptr %str.concat63, ptr @1634)
+  %str.concat63 = call ptr @csec_string_concat(ptr @1701, ptr %name.load62)
+  %str.concat64 = call ptr @csec_string_concat(ptr %str.concat63, ptr @1702)
   %str.sext65 = sext i32 %1 to i64
   %str.int.call66 = call ptr @csec_to_string_i64(i64 %str.sext65)
   %str.concat67 = call ptr @csec_string_concat(ptr %str.concat64, ptr %str.int.call66)
-  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1635)
+  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1703)
   %exprStorageName.load = load ptr, ptr %exprStorageName, align 8
   %str.concat69 = call ptr @csec_string_concat(ptr %str.concat68, ptr %exprStorageName.load)
-  %str.concat70 = call ptr @csec_string_concat(ptr %str.concat69, ptr @1636)
-  %str.concat71 = call ptr @csec_string_concat(ptr %str.concat70, ptr @1637)
+  %str.concat70 = call ptr @csec_string_concat(ptr %str.concat69, ptr @1704)
+  %str.concat71 = call ptr @csec_string_concat(ptr %str.concat70, ptr @1705)
   %name.load72 = load ptr, ptr %name, align 8
   %str.concat73 = call ptr @csec_string_concat(ptr %str.concat71, ptr %name.load72)
-  %str.concat74 = call ptr @csec_string_concat(ptr %str.concat73, ptr @1638)
+  %str.concat74 = call ptr @csec_string_concat(ptr %str.concat73, ptr @1706)
   %str.sext75 = sext i32 %1 to i64
   %str.int.call76 = call ptr @csec_to_string_i64(i64 %str.sext75)
   %str.concat77 = call ptr @csec_string_concat(ptr %str.concat74, ptr %str.int.call76)
-  %str.concat78 = call ptr @csec_string_concat(ptr %str.concat77, ptr @1639)
+  %str.concat78 = call ptr @csec_string_concat(ptr %str.concat77, ptr @1707)
   %storageName.load79 = load ptr, ptr %storageName, align 8
   %str.concat80 = call ptr @csec_string_concat(ptr %str.concat78, ptr %storageName.load79)
-  %str.concat81 = call ptr @csec_string_concat(ptr %str.concat80, ptr @1640)
+  %str.concat81 = call ptr @csec_string_concat(ptr %str.concat80, ptr @1708)
   ret ptr %str.concat81
 
 ifcont57:                                         ; preds = %and_end49
@@ -19138,7 +19749,7 @@ and_rhs94:                                        ; preds = %and_end88
   %exprStart.load96 = load i32, ptr %exprStart, align 4
   %addtmp97 = add i32 %exprStart.load96, 1
   %calltmp98 = call i8 @_kindOperator()
-  %calltmp99 = call i1 @_tokenIs(ptr %0, i32 %addtmp97, i8 %calltmp98, ptr @1641)
+  %calltmp99 = call i1 @_tokenIs(ptr %0, i32 %addtmp97, i8 %calltmp98, ptr @1709)
   br label %and_end95
 
 and_end95:                                        ; preds = %and_rhs94, %and_end88
@@ -19149,7 +19760,7 @@ and_rhs102:                                       ; preds = %and_end95
   %exprStart.load104 = load i32, ptr %exprStart, align 4
   %addtmp105 = add i32 %exprStart.load104, 1
   %exprEnd.load106 = load i32, ptr %exprEnd, align 4
-  %calltmp107 = call i32 @_findClosingToken(ptr %0, i32 %addtmp105, i32 %exprEnd.load106, ptr @1642, ptr @1643)
+  %calltmp107 = call i32 @_findClosingToken(ptr %0, i32 %addtmp105, i32 %exprEnd.load106, ptr @1710, ptr @1711)
   %exprEnd.load108 = load i32, ptr %exprEnd, align 4
   %subtmp = sub i32 %exprEnd.load108, 1
   %eqtmp109 = icmp eq i32 %calltmp107, %subtmp
@@ -19162,8 +19773,8 @@ and_end103:                                       ; preds = %and_rhs102, %and_en
 
 then112:                                          ; preds = %and_end103
   %name.load114 = load ptr, ptr %name, align 8
-  %str.concat115 = call ptr @csec_string_concat(ptr @1644, ptr %name.load114)
-  %str.concat116 = call ptr @csec_string_concat(ptr %str.concat115, ptr @1645)
+  %str.concat115 = call ptr @csec_string_concat(ptr @1712, ptr %name.load114)
+  %str.concat116 = call ptr @csec_string_concat(ptr %str.concat115, ptr @1713)
   %str.sext117 = sext i32 %1 to i64
   %str.int.call118 = call ptr @csec_to_string_i64(i64 %str.sext117)
   %str.concat119 = call ptr @csec_string_concat(ptr %str.concat116, ptr %str.int.call118)
@@ -19175,15 +19786,15 @@ then112:                                          ; preds = %and_end103
   %subtmp123 = sub i32 %exprEnd.load122, 1
   %resultName.load = load ptr, ptr %resultName, align 8
   %calltmp124 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp121, i32 %subtmp123, ptr %resultName.load)
-  %str.concat125 = call ptr @csec_string_concat(ptr %calltmp124, ptr @1646)
+  %str.concat125 = call ptr @csec_string_concat(ptr %calltmp124, ptr @1714)
   %resultName.load126 = load ptr, ptr %resultName, align 8
   %str.concat127 = call ptr @csec_string_concat(ptr %str.concat125, ptr %resultName.load126)
-  %str.concat128 = call ptr @csec_string_concat(ptr %str.concat127, ptr @1647)
+  %str.concat128 = call ptr @csec_string_concat(ptr %str.concat127, ptr @1715)
   %exprStart.load129 = load i32, ptr %exprStart, align 4
   %calltmp130 = call ptr @_tokenTextAt(ptr %0, i32 %exprStart.load129)
   %calltmp131 = call ptr @_llvmRuntimeCallName(ptr %calltmp130)
   %str.concat132 = call ptr @csec_string_concat(ptr %str.concat128, ptr %calltmp131)
-  %str.concat133 = call ptr @csec_string_concat(ptr %str.concat132, ptr @1648)
+  %str.concat133 = call ptr @csec_string_concat(ptr %str.concat132, ptr @1716)
   %exprStart.load134 = load i32, ptr %exprStart, align 4
   %addtmp135 = add i32 %exprStart.load134, 2
   %exprEnd.load136 = load i32, ptr %exprEnd, align 4
@@ -19191,18 +19802,18 @@ then112:                                          ; preds = %and_end103
   %resultName.load138 = load ptr, ptr %resultName, align 8
   %calltmp139 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp135, i32 %subtmp137, ptr %resultName.load138)
   %str.concat140 = call ptr @csec_string_concat(ptr %str.concat133, ptr %calltmp139)
-  %str.concat141 = call ptr @csec_string_concat(ptr %str.concat140, ptr @1649)
-  %str.concat142 = call ptr @csec_string_concat(ptr %str.concat141, ptr @1650)
+  %str.concat141 = call ptr @csec_string_concat(ptr %str.concat140, ptr @1717)
+  %str.concat142 = call ptr @csec_string_concat(ptr %str.concat141, ptr @1718)
   %resultName.load143 = load ptr, ptr %resultName, align 8
   %str.concat144 = call ptr @csec_string_concat(ptr %str.concat142, ptr %resultName.load143)
-  %str.concat145 = call ptr @csec_string_concat(ptr %str.concat144, ptr @1651)
+  %str.concat145 = call ptr @csec_string_concat(ptr %str.concat144, ptr @1719)
   %storageName.load146 = load ptr, ptr %storageName, align 8
   %str.concat147 = call ptr @csec_string_concat(ptr %str.concat145, ptr %storageName.load146)
-  %str.concat148 = call ptr @csec_string_concat(ptr %str.concat147, ptr @1652)
+  %str.concat148 = call ptr @csec_string_concat(ptr %str.concat147, ptr @1720)
   ret ptr %str.concat148
 
 ifcont113:                                        ; preds = %and_end103
-  ret ptr @1653
+  ret ptr @1721
 }
 
 define ptr @_generateLLVMAssignmentI8(ptr %0, i32 %1, i32 %2) {
@@ -19223,7 +19834,7 @@ or_end:                                           ; preds = %or_rhs, %entry
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end
-  ret ptr @1654
+  ret ptr @1722
 
 ifcont:                                           ; preds = %or_end
   %calltmp3 = call ptr @_tokenTextAt(ptr %0, i32 %1)
@@ -19263,11 +19874,11 @@ then15:                                           ; preds = %and_end
   %exprStart.load17 = load i32, ptr %exprStart, align 4
   %calltmp18 = call ptr @_tokenTextAt(ptr %0, i32 %exprStart.load17)
   %calltmp19 = call ptr @_llvmCharI8Value(ptr %calltmp18)
-  %str.concat = call ptr @csec_string_concat(ptr @1655, ptr %calltmp19)
-  %str.concat20 = call ptr @csec_string_concat(ptr %str.concat, ptr @1656)
+  %str.concat = call ptr @csec_string_concat(ptr @1723, ptr %calltmp19)
+  %str.concat20 = call ptr @csec_string_concat(ptr %str.concat, ptr @1724)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr %storageName.load)
-  %str.concat22 = call ptr @csec_string_concat(ptr %str.concat21, ptr @1657)
+  %str.concat22 = call ptr @csec_string_concat(ptr %str.concat21, ptr @1725)
   ret ptr %str.concat22
 
 ifcont16:                                         ; preds = %and_end
@@ -19297,26 +19908,26 @@ then36:                                           ; preds = %and_end29
   %exprStorageName = alloca ptr, align 8
   store ptr %calltmp41, ptr %exprStorageName, align 8
   %name.load42 = load ptr, ptr %name, align 8
-  %str.concat43 = call ptr @csec_string_concat(ptr @1658, ptr %name.load42)
-  %str.concat44 = call ptr @csec_string_concat(ptr %str.concat43, ptr @1659)
+  %str.concat43 = call ptr @csec_string_concat(ptr @1726, ptr %name.load42)
+  %str.concat44 = call ptr @csec_string_concat(ptr %str.concat43, ptr @1727)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat45 = call ptr @csec_string_concat(ptr %str.concat44, ptr %str.int.call)
-  %str.concat46 = call ptr @csec_string_concat(ptr %str.concat45, ptr @1660)
+  %str.concat46 = call ptr @csec_string_concat(ptr %str.concat45, ptr @1728)
   %exprStorageName.load = load ptr, ptr %exprStorageName, align 8
   %str.concat47 = call ptr @csec_string_concat(ptr %str.concat46, ptr %exprStorageName.load)
-  %str.concat48 = call ptr @csec_string_concat(ptr %str.concat47, ptr @1661)
-  %str.concat49 = call ptr @csec_string_concat(ptr %str.concat48, ptr @1662)
+  %str.concat48 = call ptr @csec_string_concat(ptr %str.concat47, ptr @1729)
+  %str.concat49 = call ptr @csec_string_concat(ptr %str.concat48, ptr @1730)
   %name.load50 = load ptr, ptr %name, align 8
   %str.concat51 = call ptr @csec_string_concat(ptr %str.concat49, ptr %name.load50)
-  %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr @1663)
+  %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr @1731)
   %str.sext53 = sext i32 %1 to i64
   %str.int.call54 = call ptr @csec_to_string_i64(i64 %str.sext53)
   %str.concat55 = call ptr @csec_string_concat(ptr %str.concat52, ptr %str.int.call54)
-  %str.concat56 = call ptr @csec_string_concat(ptr %str.concat55, ptr @1664)
+  %str.concat56 = call ptr @csec_string_concat(ptr %str.concat55, ptr @1732)
   %storageName.load57 = load ptr, ptr %storageName, align 8
   %str.concat58 = call ptr @csec_string_concat(ptr %str.concat56, ptr %storageName.load57)
-  %str.concat59 = call ptr @csec_string_concat(ptr %str.concat58, ptr @1665)
+  %str.concat59 = call ptr @csec_string_concat(ptr %str.concat58, ptr @1733)
   ret ptr %str.concat59
 
 ifcont37:                                         ; preds = %and_end29
@@ -19341,7 +19952,7 @@ and_rhs72:                                        ; preds = %and_end66
   %exprStart.load74 = load i32, ptr %exprStart, align 4
   %addtmp75 = add i32 %exprStart.load74, 1
   %calltmp76 = call i8 @_kindOperator()
-  %calltmp77 = call i1 @_tokenIs(ptr %0, i32 %addtmp75, i8 %calltmp76, ptr @1666)
+  %calltmp77 = call i1 @_tokenIs(ptr %0, i32 %addtmp75, i8 %calltmp76, ptr @1734)
   br label %and_end73
 
 and_end73:                                        ; preds = %and_rhs72, %and_end66
@@ -19352,7 +19963,7 @@ and_rhs80:                                        ; preds = %and_end73
   %exprStart.load82 = load i32, ptr %exprStart, align 4
   %addtmp83 = add i32 %exprStart.load82, 1
   %exprEnd.load84 = load i32, ptr %exprEnd, align 4
-  %calltmp85 = call i32 @_findClosingToken(ptr %0, i32 %addtmp83, i32 %exprEnd.load84, ptr @1667, ptr @1668)
+  %calltmp85 = call i32 @_findClosingToken(ptr %0, i32 %addtmp83, i32 %exprEnd.load84, ptr @1735, ptr @1736)
   %exprEnd.load86 = load i32, ptr %exprEnd, align 4
   %subtmp = sub i32 %exprEnd.load86, 1
   %eqtmp87 = icmp eq i32 %calltmp85, %subtmp
@@ -19365,8 +19976,8 @@ and_end81:                                        ; preds = %and_rhs80, %and_end
 
 then90:                                           ; preds = %and_end81
   %name.load92 = load ptr, ptr %name, align 8
-  %str.concat93 = call ptr @csec_string_concat(ptr @1669, ptr %name.load92)
-  %str.concat94 = call ptr @csec_string_concat(ptr %str.concat93, ptr @1670)
+  %str.concat93 = call ptr @csec_string_concat(ptr @1737, ptr %name.load92)
+  %str.concat94 = call ptr @csec_string_concat(ptr %str.concat93, ptr @1738)
   %str.sext95 = sext i32 %1 to i64
   %str.int.call96 = call ptr @csec_to_string_i64(i64 %str.sext95)
   %str.concat97 = call ptr @csec_string_concat(ptr %str.concat94, ptr %str.int.call96)
@@ -19378,15 +19989,15 @@ then90:                                           ; preds = %and_end81
   %subtmp101 = sub i32 %exprEnd.load100, 1
   %resultName.load = load ptr, ptr %resultName, align 8
   %calltmp102 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp99, i32 %subtmp101, ptr %resultName.load)
-  %str.concat103 = call ptr @csec_string_concat(ptr %calltmp102, ptr @1671)
+  %str.concat103 = call ptr @csec_string_concat(ptr %calltmp102, ptr @1739)
   %resultName.load104 = load ptr, ptr %resultName, align 8
   %str.concat105 = call ptr @csec_string_concat(ptr %str.concat103, ptr %resultName.load104)
-  %str.concat106 = call ptr @csec_string_concat(ptr %str.concat105, ptr @1672)
+  %str.concat106 = call ptr @csec_string_concat(ptr %str.concat105, ptr @1740)
   %exprStart.load107 = load i32, ptr %exprStart, align 4
   %calltmp108 = call ptr @_tokenTextAt(ptr %0, i32 %exprStart.load107)
   %calltmp109 = call ptr @_llvmRuntimeCallName(ptr %calltmp108)
   %str.concat110 = call ptr @csec_string_concat(ptr %str.concat106, ptr %calltmp109)
-  %str.concat111 = call ptr @csec_string_concat(ptr %str.concat110, ptr @1673)
+  %str.concat111 = call ptr @csec_string_concat(ptr %str.concat110, ptr @1741)
   %exprStart.load112 = load i32, ptr %exprStart, align 4
   %addtmp113 = add i32 %exprStart.load112, 2
   %exprEnd.load114 = load i32, ptr %exprEnd, align 4
@@ -19394,18 +20005,18 @@ then90:                                           ; preds = %and_end81
   %resultName.load116 = load ptr, ptr %resultName, align 8
   %calltmp117 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp113, i32 %subtmp115, ptr %resultName.load116)
   %str.concat118 = call ptr @csec_string_concat(ptr %str.concat111, ptr %calltmp117)
-  %str.concat119 = call ptr @csec_string_concat(ptr %str.concat118, ptr @1674)
-  %str.concat120 = call ptr @csec_string_concat(ptr %str.concat119, ptr @1675)
+  %str.concat119 = call ptr @csec_string_concat(ptr %str.concat118, ptr @1742)
+  %str.concat120 = call ptr @csec_string_concat(ptr %str.concat119, ptr @1743)
   %resultName.load121 = load ptr, ptr %resultName, align 8
   %str.concat122 = call ptr @csec_string_concat(ptr %str.concat120, ptr %resultName.load121)
-  %str.concat123 = call ptr @csec_string_concat(ptr %str.concat122, ptr @1676)
+  %str.concat123 = call ptr @csec_string_concat(ptr %str.concat122, ptr @1744)
   %storageName.load124 = load ptr, ptr %storageName, align 8
   %str.concat125 = call ptr @csec_string_concat(ptr %str.concat123, ptr %storageName.load124)
-  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @1677)
+  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @1745)
   ret ptr %str.concat126
 
 ifcont91:                                         ; preds = %and_end81
-  ret ptr @1678
+  ret ptr @1746
 }
 
 define ptr @_generateLLVMAssignmentI32(ptr %0, i32 %1, i32 %2) {
@@ -19426,7 +20037,7 @@ or_end:                                           ; preds = %or_rhs, %entry
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end
-  ret ptr @1679
+  ret ptr @1747
 
 ifcont:                                           ; preds = %or_end
   %calltmp3 = call ptr @_tokenTextAt(ptr %0, i32 %1)
@@ -19440,12 +20051,12 @@ ifcont:                                           ; preds = %or_end
   %opText = alloca ptr, align 8
   store ptr %calltmp6, ptr %opText, align 8
   %opText.load = load ptr, ptr %opText, align 8
-  %calltmp7 = call i1 @_strEq(ptr %opText.load, ptr @1680)
+  %calltmp7 = call i1 @_strEq(ptr %opText.load, ptr @1748)
   br i1 %calltmp7, label %or_end10, label %or_rhs9
 
 or_rhs9:                                          ; preds = %ifcont
   %opText.load11 = load ptr, ptr %opText, align 8
-  %calltmp12 = call i1 @_strEq(ptr %opText.load11, ptr @1681)
+  %calltmp12 = call i1 @_strEq(ptr %opText.load11, ptr @1749)
   br label %or_end10
 
 or_end10:                                         ; preds = %or_rhs9, %ifcont
@@ -19455,8 +20066,8 @@ or_end10:                                         ; preds = %or_rhs9, %ifcont
 
 then15:                                           ; preds = %or_end10
   %name.load17 = load ptr, ptr %name, align 8
-  %str.concat = call ptr @csec_string_concat(ptr @1682, ptr %name.load17)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat, ptr @1683)
+  %str.concat = call ptr @csec_string_concat(ptr @1750, ptr %name.load17)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat, ptr @1751)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat19 = call ptr @csec_string_concat(ptr %str.concat18, ptr %str.int.call)
@@ -19465,13 +20076,13 @@ then15:                                           ; preds = %or_end10
   %addtmp = add i32 %calltmp, 1
   %resultName.load = load ptr, ptr %resultName, align 8
   %calltmp21 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp, i32 %2, ptr %resultName.load)
-  %str.concat22 = call ptr @csec_string_concat(ptr %calltmp21, ptr @1684)
+  %str.concat22 = call ptr @csec_string_concat(ptr %calltmp21, ptr @1752)
   %resultName.load23 = load ptr, ptr %resultName, align 8
   %str.concat24 = call ptr @csec_string_concat(ptr %str.concat22, ptr %resultName.load23)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1685)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1753)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat26 = call ptr @csec_string_concat(ptr %str.concat25, ptr %storageName.load)
-  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1686)
+  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1754)
   ret ptr %str.concat27
 
 ifcont16:                                         ; preds = %or_end10
@@ -19480,72 +20091,72 @@ ifcont16:                                         ; preds = %or_end10
   %binaryOp = alloca ptr, align 8
   store ptr %str.substring, ptr %binaryOp, align 8
   %opText.load29 = load ptr, ptr %opText, align 8
-  %calltmp30 = call i1 @_strEq(ptr %opText.load29, ptr @1687)
+  %calltmp30 = call i1 @_strEq(ptr %opText.load29, ptr @1755)
   %ifcond31 = icmp ne i1 %calltmp30, false
   br i1 %ifcond31, label %then32, label %ifcont33
 
 then32:                                           ; preds = %ifcont16
   %binaryOp.load = load ptr, ptr %binaryOp, align 8
-  store ptr @1688, ptr %binaryOp, align 8
+  store ptr @1756, ptr %binaryOp, align 8
   br label %ifcont33
 
 ifcont33:                                         ; preds = %then32, %ifcont16
   %name.load34 = load ptr, ptr %name, align 8
-  %str.concat35 = call ptr @csec_string_concat(ptr @1689, ptr %name.load34)
-  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1690)
+  %str.concat35 = call ptr @csec_string_concat(ptr @1757, ptr %name.load34)
+  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1758)
   %str.sext37 = sext i32 %1 to i64
   %str.int.call38 = call ptr @csec_to_string_i64(i64 %str.sext37)
   %str.concat39 = call ptr @csec_string_concat(ptr %str.concat36, ptr %str.int.call38)
-  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @1691)
+  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @1759)
   %storageName.load41 = load ptr, ptr %storageName, align 8
   %str.concat42 = call ptr @csec_string_concat(ptr %str.concat40, ptr %storageName.load41)
-  %str.concat43 = call ptr @csec_string_concat(ptr %str.concat42, ptr @1692)
+  %str.concat43 = call ptr @csec_string_concat(ptr %str.concat42, ptr @1760)
   %addtmp45 = add i32 %calltmp, 1
   %name.load46 = load ptr, ptr %name, align 8
-  %str.concat47 = call ptr @csec_string_concat(ptr @1693, ptr %name.load46)
-  %str.concat48 = call ptr @csec_string_concat(ptr %str.concat47, ptr @1694)
+  %str.concat47 = call ptr @csec_string_concat(ptr @1761, ptr %name.load46)
+  %str.concat48 = call ptr @csec_string_concat(ptr %str.concat47, ptr @1762)
   %str.sext49 = sext i32 %1 to i64
   %str.int.call50 = call ptr @csec_to_string_i64(i64 %str.sext49)
   %str.concat51 = call ptr @csec_string_concat(ptr %str.concat48, ptr %str.int.call50)
   %calltmp52 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp45, i32 %2, ptr %str.concat51)
   %str.concat53 = call ptr @csec_string_concat(ptr %str.concat43, ptr %calltmp52)
-  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr @1695)
+  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr @1763)
   %name.load55 = load ptr, ptr %name, align 8
   %str.concat56 = call ptr @csec_string_concat(ptr %str.concat54, ptr %name.load55)
-  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1696)
+  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1764)
   %str.sext58 = sext i32 %1 to i64
   %str.int.call59 = call ptr @csec_to_string_i64(i64 %str.sext58)
   %str.concat60 = call ptr @csec_string_concat(ptr %str.concat57, ptr %str.int.call59)
-  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @1697)
+  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @1765)
   %binaryOp.load62 = load ptr, ptr %binaryOp, align 8
   %calltmp63 = call ptr @_irOperatorName(ptr %binaryOp.load62)
   %str.concat64 = call ptr @csec_string_concat(ptr %str.concat61, ptr %calltmp63)
-  %str.concat65 = call ptr @csec_string_concat(ptr %str.concat64, ptr @1698)
+  %str.concat65 = call ptr @csec_string_concat(ptr %str.concat64, ptr @1766)
   %name.load66 = load ptr, ptr %name, align 8
   %str.concat67 = call ptr @csec_string_concat(ptr %str.concat65, ptr %name.load66)
-  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1699)
+  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1767)
   %str.sext69 = sext i32 %1 to i64
   %str.int.call70 = call ptr @csec_to_string_i64(i64 %str.sext69)
   %str.concat71 = call ptr @csec_string_concat(ptr %str.concat68, ptr %str.int.call70)
-  %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr @1700)
+  %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr @1768)
   %name.load73 = load ptr, ptr %name, align 8
   %str.concat74 = call ptr @csec_string_concat(ptr %str.concat72, ptr %name.load73)
-  %str.concat75 = call ptr @csec_string_concat(ptr %str.concat74, ptr @1701)
+  %str.concat75 = call ptr @csec_string_concat(ptr %str.concat74, ptr @1769)
   %str.sext76 = sext i32 %1 to i64
   %str.int.call77 = call ptr @csec_to_string_i64(i64 %str.sext76)
   %str.concat78 = call ptr @csec_string_concat(ptr %str.concat75, ptr %str.int.call77)
-  %str.concat79 = call ptr @csec_string_concat(ptr %str.concat78, ptr @1702)
-  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @1703)
+  %str.concat79 = call ptr @csec_string_concat(ptr %str.concat78, ptr @1770)
+  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @1771)
   %name.load81 = load ptr, ptr %name, align 8
   %str.concat82 = call ptr @csec_string_concat(ptr %str.concat80, ptr %name.load81)
-  %str.concat83 = call ptr @csec_string_concat(ptr %str.concat82, ptr @1704)
+  %str.concat83 = call ptr @csec_string_concat(ptr %str.concat82, ptr @1772)
   %str.sext84 = sext i32 %1 to i64
   %str.int.call85 = call ptr @csec_to_string_i64(i64 %str.sext84)
   %str.concat86 = call ptr @csec_string_concat(ptr %str.concat83, ptr %str.int.call85)
-  %str.concat87 = call ptr @csec_string_concat(ptr %str.concat86, ptr @1705)
+  %str.concat87 = call ptr @csec_string_concat(ptr %str.concat86, ptr @1773)
   %storageName.load88 = load ptr, ptr %storageName, align 8
   %str.concat89 = call ptr @csec_string_concat(ptr %str.concat87, ptr %storageName.load88)
-  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @1706)
+  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @1774)
   ret ptr %str.concat90
 }
 
@@ -19567,7 +20178,7 @@ or_end:                                           ; preds = %or_rhs, %entry
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end
-  ret ptr @1707
+  ret ptr @1775
 
 ifcont:                                           ; preds = %or_end
   %calltmp3 = call ptr @_tokenTextAt(ptr %0, i32 %1)
@@ -19581,12 +20192,12 @@ ifcont:                                           ; preds = %or_end
   %opText = alloca ptr, align 8
   store ptr %calltmp6, ptr %opText, align 8
   %opText.load = load ptr, ptr %opText, align 8
-  %calltmp7 = call i1 @_strEq(ptr %opText.load, ptr @1708)
+  %calltmp7 = call i1 @_strEq(ptr %opText.load, ptr @1776)
   br i1 %calltmp7, label %or_end10, label %or_rhs9
 
 or_rhs9:                                          ; preds = %ifcont
   %opText.load11 = load ptr, ptr %opText, align 8
-  %calltmp12 = call i1 @_strEq(ptr %opText.load11, ptr @1709)
+  %calltmp12 = call i1 @_strEq(ptr %opText.load11, ptr @1777)
   br label %or_end10
 
 or_end10:                                         ; preds = %or_rhs9, %ifcont
@@ -19596,8 +20207,8 @@ or_end10:                                         ; preds = %or_rhs9, %ifcont
 
 then15:                                           ; preds = %or_end10
   %name.load17 = load ptr, ptr %name, align 8
-  %str.concat = call ptr @csec_string_concat(ptr @1710, ptr %name.load17)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat, ptr @1711)
+  %str.concat = call ptr @csec_string_concat(ptr @1778, ptr %name.load17)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat, ptr @1779)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat19 = call ptr @csec_string_concat(ptr %str.concat18, ptr %str.int.call)
@@ -19606,13 +20217,13 @@ then15:                                           ; preds = %or_end10
   %addtmp = add i32 %calltmp, 1
   %resultName.load = load ptr, ptr %resultName, align 8
   %calltmp21 = call ptr @_generateLLVMExpressionI64(ptr %0, i32 %addtmp, i32 %2, ptr %resultName.load)
-  %str.concat22 = call ptr @csec_string_concat(ptr %calltmp21, ptr @1712)
+  %str.concat22 = call ptr @csec_string_concat(ptr %calltmp21, ptr @1780)
   %resultName.load23 = load ptr, ptr %resultName, align 8
   %str.concat24 = call ptr @csec_string_concat(ptr %str.concat22, ptr %resultName.load23)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1713)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1781)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat26 = call ptr @csec_string_concat(ptr %str.concat25, ptr %storageName.load)
-  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1714)
+  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1782)
   ret ptr %str.concat27
 
 ifcont16:                                         ; preds = %or_end10
@@ -19621,72 +20232,72 @@ ifcont16:                                         ; preds = %or_end10
   %binaryOp = alloca ptr, align 8
   store ptr %str.substring, ptr %binaryOp, align 8
   %opText.load29 = load ptr, ptr %opText, align 8
-  %calltmp30 = call i1 @_strEq(ptr %opText.load29, ptr @1715)
+  %calltmp30 = call i1 @_strEq(ptr %opText.load29, ptr @1783)
   %ifcond31 = icmp ne i1 %calltmp30, false
   br i1 %ifcond31, label %then32, label %ifcont33
 
 then32:                                           ; preds = %ifcont16
   %binaryOp.load = load ptr, ptr %binaryOp, align 8
-  store ptr @1716, ptr %binaryOp, align 8
+  store ptr @1784, ptr %binaryOp, align 8
   br label %ifcont33
 
 ifcont33:                                         ; preds = %then32, %ifcont16
   %name.load34 = load ptr, ptr %name, align 8
-  %str.concat35 = call ptr @csec_string_concat(ptr @1717, ptr %name.load34)
-  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1718)
+  %str.concat35 = call ptr @csec_string_concat(ptr @1785, ptr %name.load34)
+  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1786)
   %str.sext37 = sext i32 %1 to i64
   %str.int.call38 = call ptr @csec_to_string_i64(i64 %str.sext37)
   %str.concat39 = call ptr @csec_string_concat(ptr %str.concat36, ptr %str.int.call38)
-  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @1719)
+  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @1787)
   %storageName.load41 = load ptr, ptr %storageName, align 8
   %str.concat42 = call ptr @csec_string_concat(ptr %str.concat40, ptr %storageName.load41)
-  %str.concat43 = call ptr @csec_string_concat(ptr %str.concat42, ptr @1720)
+  %str.concat43 = call ptr @csec_string_concat(ptr %str.concat42, ptr @1788)
   %addtmp45 = add i32 %calltmp, 1
   %name.load46 = load ptr, ptr %name, align 8
-  %str.concat47 = call ptr @csec_string_concat(ptr @1721, ptr %name.load46)
-  %str.concat48 = call ptr @csec_string_concat(ptr %str.concat47, ptr @1722)
+  %str.concat47 = call ptr @csec_string_concat(ptr @1789, ptr %name.load46)
+  %str.concat48 = call ptr @csec_string_concat(ptr %str.concat47, ptr @1790)
   %str.sext49 = sext i32 %1 to i64
   %str.int.call50 = call ptr @csec_to_string_i64(i64 %str.sext49)
   %str.concat51 = call ptr @csec_string_concat(ptr %str.concat48, ptr %str.int.call50)
   %calltmp52 = call ptr @_generateLLVMExpressionI64(ptr %0, i32 %addtmp45, i32 %2, ptr %str.concat51)
   %str.concat53 = call ptr @csec_string_concat(ptr %str.concat43, ptr %calltmp52)
-  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr @1723)
+  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr @1791)
   %name.load55 = load ptr, ptr %name, align 8
   %str.concat56 = call ptr @csec_string_concat(ptr %str.concat54, ptr %name.load55)
-  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1724)
+  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1792)
   %str.sext58 = sext i32 %1 to i64
   %str.int.call59 = call ptr @csec_to_string_i64(i64 %str.sext58)
   %str.concat60 = call ptr @csec_string_concat(ptr %str.concat57, ptr %str.int.call59)
-  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @1725)
+  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @1793)
   %binaryOp.load62 = load ptr, ptr %binaryOp, align 8
   %calltmp63 = call ptr @_irOperatorName(ptr %binaryOp.load62)
   %str.concat64 = call ptr @csec_string_concat(ptr %str.concat61, ptr %calltmp63)
-  %str.concat65 = call ptr @csec_string_concat(ptr %str.concat64, ptr @1726)
+  %str.concat65 = call ptr @csec_string_concat(ptr %str.concat64, ptr @1794)
   %name.load66 = load ptr, ptr %name, align 8
   %str.concat67 = call ptr @csec_string_concat(ptr %str.concat65, ptr %name.load66)
-  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1727)
+  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1795)
   %str.sext69 = sext i32 %1 to i64
   %str.int.call70 = call ptr @csec_to_string_i64(i64 %str.sext69)
   %str.concat71 = call ptr @csec_string_concat(ptr %str.concat68, ptr %str.int.call70)
-  %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr @1728)
+  %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr @1796)
   %name.load73 = load ptr, ptr %name, align 8
   %str.concat74 = call ptr @csec_string_concat(ptr %str.concat72, ptr %name.load73)
-  %str.concat75 = call ptr @csec_string_concat(ptr %str.concat74, ptr @1729)
+  %str.concat75 = call ptr @csec_string_concat(ptr %str.concat74, ptr @1797)
   %str.sext76 = sext i32 %1 to i64
   %str.int.call77 = call ptr @csec_to_string_i64(i64 %str.sext76)
   %str.concat78 = call ptr @csec_string_concat(ptr %str.concat75, ptr %str.int.call77)
-  %str.concat79 = call ptr @csec_string_concat(ptr %str.concat78, ptr @1730)
-  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @1731)
+  %str.concat79 = call ptr @csec_string_concat(ptr %str.concat78, ptr @1798)
+  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @1799)
   %name.load81 = load ptr, ptr %name, align 8
   %str.concat82 = call ptr @csec_string_concat(ptr %str.concat80, ptr %name.load81)
-  %str.concat83 = call ptr @csec_string_concat(ptr %str.concat82, ptr @1732)
+  %str.concat83 = call ptr @csec_string_concat(ptr %str.concat82, ptr @1800)
   %str.sext84 = sext i32 %1 to i64
   %str.int.call85 = call ptr @csec_to_string_i64(i64 %str.sext84)
   %str.concat86 = call ptr @csec_string_concat(ptr %str.concat83, ptr %str.int.call85)
-  %str.concat87 = call ptr @csec_string_concat(ptr %str.concat86, ptr @1733)
+  %str.concat87 = call ptr @csec_string_concat(ptr %str.concat86, ptr @1801)
   %storageName.load88 = load ptr, ptr %storageName, align 8
   %str.concat89 = call ptr @csec_string_concat(ptr %str.concat87, ptr %storageName.load88)
-  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @1734)
+  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @1802)
   ret ptr %str.concat90
 }
 
@@ -19704,7 +20315,7 @@ then:                                             ; preds = %entry
   %mnemonic = alloca ptr, align 8
   store ptr %calltmp4, ptr %mnemonic, align 8
   %mnemonic.load = load ptr, ptr %mnemonic, align 8
-  %str.bool.i32 = call i32 @csec_string_starts_with(ptr %mnemonic.load, ptr @1735)
+  %str.bool.i32 = call i32 @csec_string_starts_with(ptr %mnemonic.load, ptr @1803)
   %str.bool = icmp ne i32 %str.bool.i32, 0
   %ifcond5 = icmp ne i1 %str.bool, false
   br i1 %ifcond5, label %then6, label %ifcont7
@@ -19716,15 +20327,15 @@ ifcont:                                           ; preds = %ifcont7, %entry
   br i1 %eqtmp, label %and_rhs, label %and_end
 
 then6:                                            ; preds = %then
-  %str.concat = call ptr @csec_string_concat(ptr %3, ptr @1736)
+  %str.concat = call ptr @csec_string_concat(ptr %3, ptr @1804)
   %calltmp9 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %1, i32 %calltmp1, ptr %str.concat)
   %addtmp = add i32 %calltmp1, 1
-  %str.concat12 = call ptr @csec_string_concat(ptr %3, ptr @1737)
+  %str.concat12 = call ptr @csec_string_concat(ptr %3, ptr @1805)
   %calltmp13 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp, i32 %calltmp, ptr %str.concat12)
   %str.concat14 = call ptr @csec_string_concat(ptr %calltmp9, ptr %calltmp13)
-  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1738)
+  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1806)
   %str.concat16 = call ptr @csec_string_concat(ptr %str.concat15, ptr %3)
-  %str.concat17 = call ptr @csec_string_concat(ptr %str.concat16, ptr @1739)
+  %str.concat17 = call ptr @csec_string_concat(ptr %str.concat16, ptr @1807)
   %mnemonic.load18 = load ptr, ptr %mnemonic, align 8
   %mnemonic.load19 = load ptr, ptr %mnemonic, align 8
   %str.length = call i64 @csec_string_length(ptr %mnemonic.load19)
@@ -19732,11 +20343,11 @@ then6:                                            ; preds = %then
   %str.arg.trunc = trunc i64 %subtmp to i32
   %str.substring = call ptr @csec_string_substring(ptr %mnemonic.load18, i32 5, i32 %str.arg.trunc)
   %str.concat20 = call ptr @csec_string_concat(ptr %str.concat17, ptr %str.substring)
-  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1740)
+  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1808)
   %str.concat22 = call ptr @csec_string_concat(ptr %str.concat21, ptr %3)
-  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat22, ptr @1741)
+  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat22, ptr @1809)
   %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr %3)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1742)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1810)
   ret ptr %str.concat25
 
 ifcont7:                                          ; preds = %then
@@ -19754,7 +20365,7 @@ and_end:                                          ; preds = %and_rhs, %ifcont
 
 then32:                                           ; preds = %and_end
   %calltmp34 = call ptr @_tokenTextAt(ptr %0, i32 %1)
-  %calltmp35 = call i1 @_strEq(ptr %calltmp34, ptr @1743)
+  %calltmp35 = call i1 @_strEq(ptr %calltmp34, ptr @1811)
   %ifcond36 = icmp ne i1 %calltmp35, false
   br i1 %ifcond36, label %then37, label %ifcont38
 
@@ -19765,13 +20376,13 @@ ifcont33:                                         ; preds = %and_end
   br i1 %eqtmp45, label %and_rhs47, label %and_end48
 
 then37:                                           ; preds = %then32
-  %str.concat39 = call ptr @csec_string_concat(ptr @1744, ptr %3)
-  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @1745)
+  %str.concat39 = call ptr @csec_string_concat(ptr @1812, ptr %3)
+  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @1813)
   ret ptr %str.concat40
 
 ifcont38:                                         ; preds = %then32
-  %str.concat41 = call ptr @csec_string_concat(ptr @1746, ptr %3)
-  %str.concat42 = call ptr @csec_string_concat(ptr %str.concat41, ptr @1747)
+  %str.concat41 = call ptr @csec_string_concat(ptr @1814, ptr %3)
+  %str.concat42 = call ptr @csec_string_concat(ptr %str.concat41, ptr @1815)
   ret ptr %str.concat42
 
 and_rhs47:                                        ; preds = %ifcont33
@@ -19785,12 +20396,12 @@ and_end48:                                        ; preds = %and_rhs47, %ifcont3
   br i1 %ifcond53, label %then54, label %ifcont55
 
 then54:                                           ; preds = %and_end48
-  %str.concat56 = call ptr @csec_string_concat(ptr @1748, ptr %3)
-  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1749)
+  %str.concat56 = call ptr @csec_string_concat(ptr @1816, ptr %3)
+  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1817)
   %calltmp58 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp59 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %calltmp58)
   %str.concat60 = call ptr @csec_string_concat(ptr %str.concat57, ptr %calltmp59)
-  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @1750)
+  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @1818)
   ret ptr %str.concat61
 
 ifcont55:                                         ; preds = %and_end48
@@ -19811,7 +20422,7 @@ and_end67:                                        ; preds = %and_rhs66, %ifcont5
 and_rhs72:                                        ; preds = %and_end67
   %addtmp74 = add i32 %1, 1
   %calltmp75 = call i8 @_kindOperator()
-  %calltmp76 = call i1 @_tokenIs(ptr %0, i32 %addtmp74, i8 %calltmp75, ptr @1751)
+  %calltmp76 = call i1 @_tokenIs(ptr %0, i32 %addtmp74, i8 %calltmp75, ptr @1819)
   br label %and_end73
 
 and_end73:                                        ; preds = %and_rhs72, %and_end67
@@ -19820,7 +20431,7 @@ and_end73:                                        ; preds = %and_rhs72, %and_end
 
 and_rhs79:                                        ; preds = %and_end73
   %addtmp81 = add i32 %1, 1
-  %calltmp83 = call i32 @_findClosingToken(ptr %0, i32 %addtmp81, i32 %calltmp, ptr @1752, ptr @1753)
+  %calltmp83 = call i32 @_findClosingToken(ptr %0, i32 %addtmp81, i32 %calltmp, ptr @1820, ptr @1821)
   %subtmp85 = sub i32 %calltmp, 1
   %eqtmp86 = icmp eq i32 %calltmp83, %subtmp85
   br label %and_end80
@@ -19834,23 +20445,23 @@ then89:                                           ; preds = %and_end80
   %addtmp91 = add i32 %1, 2
   %subtmp93 = sub i32 %calltmp, 1
   %calltmp94 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp91, i32 %subtmp93, ptr %3)
-  %str.concat95 = call ptr @csec_string_concat(ptr %calltmp94, ptr @1754)
+  %str.concat95 = call ptr @csec_string_concat(ptr %calltmp94, ptr @1822)
   %str.concat96 = call ptr @csec_string_concat(ptr %str.concat95, ptr %3)
-  %str.concat97 = call ptr @csec_string_concat(ptr %str.concat96, ptr @1755)
+  %str.concat97 = call ptr @csec_string_concat(ptr %str.concat96, ptr @1823)
   %calltmp98 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp99 = call ptr @_llvmRuntimeCallName(ptr %calltmp98)
   %str.concat100 = call ptr @csec_string_concat(ptr %str.concat97, ptr %calltmp99)
-  %str.concat101 = call ptr @csec_string_concat(ptr %str.concat100, ptr @1756)
+  %str.concat101 = call ptr @csec_string_concat(ptr %str.concat100, ptr @1824)
   %addtmp102 = add i32 %1, 2
   %subtmp104 = sub i32 %calltmp, 1
   %calltmp105 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp102, i32 %subtmp104, ptr %3)
   %str.concat106 = call ptr @csec_string_concat(ptr %str.concat101, ptr %calltmp105)
-  %str.concat107 = call ptr @csec_string_concat(ptr %str.concat106, ptr @1757)
+  %str.concat107 = call ptr @csec_string_concat(ptr %str.concat106, ptr @1825)
   ret ptr %str.concat107
 
 ifcont90:                                         ; preds = %and_end80
-  %str.concat108 = call ptr @csec_string_concat(ptr @1758, ptr %3)
-  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @1759)
+  %str.concat108 = call ptr @csec_string_concat(ptr @1826, ptr %3)
+  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @1827)
   ret ptr %str.concat109
 }
 
@@ -19862,8 +20473,8 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat = call ptr @csec_string_concat(ptr @1760, ptr %3)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1761)
+  %str.concat = call ptr @csec_string_concat(ptr @1828, ptr %3)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1829)
   ret ptr %str.concat1
 
 ifcont:                                           ; preds = %entry
@@ -19884,7 +20495,7 @@ and_end:                                          ; preds = %and_rhs, %ifcont
 
 then7:                                            ; preds = %and_end
   %calltmp9 = call ptr @_tokenTextAt(ptr %0, i32 %1)
-  %calltmp10 = call i1 @_strEq(ptr %calltmp9, ptr @1762)
+  %calltmp10 = call i1 @_strEq(ptr %calltmp9, ptr @1830)
   %ifcond11 = icmp ne i1 %calltmp10, false
   br i1 %ifcond11, label %then12, label %ifcont13
 
@@ -19895,13 +20506,13 @@ ifcont8:                                          ; preds = %and_end
   br i1 %eqtmp20, label %and_rhs22, label %and_end23
 
 then12:                                           ; preds = %then7
-  %str.concat14 = call ptr @csec_string_concat(ptr @1763, ptr %3)
-  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1764)
+  %str.concat14 = call ptr @csec_string_concat(ptr @1831, ptr %3)
+  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1832)
   ret ptr %str.concat15
 
 ifcont13:                                         ; preds = %then7
-  %str.concat16 = call ptr @csec_string_concat(ptr @1765, ptr %3)
-  %str.concat17 = call ptr @csec_string_concat(ptr %str.concat16, ptr @1766)
+  %str.concat16 = call ptr @csec_string_concat(ptr @1833, ptr %3)
+  %str.concat17 = call ptr @csec_string_concat(ptr %str.concat16, ptr @1834)
   ret ptr %str.concat17
 
 and_rhs22:                                        ; preds = %ifcont8
@@ -19915,12 +20526,12 @@ and_end23:                                        ; preds = %and_rhs22, %ifcont8
   br i1 %ifcond28, label %then29, label %ifcont30
 
 then29:                                           ; preds = %and_end23
-  %str.concat31 = call ptr @csec_string_concat(ptr @1767, ptr %3)
-  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1768)
+  %str.concat31 = call ptr @csec_string_concat(ptr @1835, ptr %3)
+  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @1836)
   %calltmp33 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp34 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %calltmp33)
   %str.concat35 = call ptr @csec_string_concat(ptr %str.concat32, ptr %calltmp34)
-  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1769)
+  %str.concat36 = call ptr @csec_string_concat(ptr %str.concat35, ptr @1837)
   ret ptr %str.concat36
 
 ifcont30:                                         ; preds = %and_end23
@@ -19934,30 +20545,30 @@ ifcont30:                                         ; preds = %and_end23
 
 then40:                                           ; preds = %ifcont30
   %op.load42 = load i32, ptr %op, align 4
-  %str.concat43 = call ptr @csec_string_concat(ptr %3, ptr @1770)
+  %str.concat43 = call ptr @csec_string_concat(ptr %3, ptr @1838)
   %calltmp44 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %1, i32 %op.load42, ptr %str.concat43)
   %op.load45 = load i32, ptr %op, align 4
   %addtmp46 = add i32 %op.load45, 1
-  %str.concat48 = call ptr @csec_string_concat(ptr %3, ptr @1771)
+  %str.concat48 = call ptr @csec_string_concat(ptr %3, ptr @1839)
   %calltmp49 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp46, i32 %calltmp, ptr %str.concat48)
   %str.concat50 = call ptr @csec_string_concat(ptr %calltmp44, ptr %calltmp49)
-  %str.concat51 = call ptr @csec_string_concat(ptr %str.concat50, ptr @1772)
+  %str.concat51 = call ptr @csec_string_concat(ptr %str.concat50, ptr @1840)
   %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr %3)
-  %str.concat53 = call ptr @csec_string_concat(ptr %str.concat52, ptr @1773)
+  %str.concat53 = call ptr @csec_string_concat(ptr %str.concat52, ptr @1841)
   %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr %3)
-  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @1774)
+  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @1842)
   %str.concat56 = call ptr @csec_string_concat(ptr %str.concat55, ptr %3)
-  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1775)
-  %str.concat58 = call ptr @csec_string_concat(ptr %str.concat57, ptr @1776)
+  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @1843)
+  %str.concat58 = call ptr @csec_string_concat(ptr %str.concat57, ptr @1844)
   %op.load59 = load i32, ptr %op, align 4
   %calltmp60 = call ptr @_llvmI1Value(ptr %0, i32 %1, i32 %op.load59)
   %str.concat61 = call ptr @csec_string_concat(ptr %str.concat58, ptr %calltmp60)
-  %str.concat62 = call ptr @csec_string_concat(ptr %str.concat61, ptr @1777)
+  %str.concat62 = call ptr @csec_string_concat(ptr %str.concat61, ptr @1845)
   %op.load63 = load i32, ptr %op, align 4
   %addtmp64 = add i32 %op.load63, 1
   %calltmp66 = call ptr @_llvmI1Value(ptr %0, i32 %addtmp64, i32 %calltmp)
   %str.concat67 = call ptr @csec_string_concat(ptr %str.concat62, ptr %calltmp66)
-  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1778)
+  %str.concat68 = call ptr @csec_string_concat(ptr %str.concat67, ptr @1846)
   ret ptr %str.concat68
 
 ifcont41:                                         ; preds = %ifcont30
@@ -19971,30 +20582,30 @@ ifcont41:                                         ; preds = %ifcont30
 
 then75:                                           ; preds = %ifcont41
   %op.load77 = load i32, ptr %op, align 4
-  %str.concat78 = call ptr @csec_string_concat(ptr %3, ptr @1779)
+  %str.concat78 = call ptr @csec_string_concat(ptr %3, ptr @1847)
   %calltmp79 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %1, i32 %op.load77, ptr %str.concat78)
   %op.load80 = load i32, ptr %op, align 4
   %addtmp81 = add i32 %op.load80, 1
-  %str.concat83 = call ptr @csec_string_concat(ptr %3, ptr @1780)
+  %str.concat83 = call ptr @csec_string_concat(ptr %3, ptr @1848)
   %calltmp84 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp81, i32 %calltmp, ptr %str.concat83)
   %str.concat85 = call ptr @csec_string_concat(ptr %calltmp79, ptr %calltmp84)
-  %str.concat86 = call ptr @csec_string_concat(ptr %str.concat85, ptr @1781)
+  %str.concat86 = call ptr @csec_string_concat(ptr %str.concat85, ptr @1849)
   %str.concat87 = call ptr @csec_string_concat(ptr %str.concat86, ptr %3)
-  %str.concat88 = call ptr @csec_string_concat(ptr %str.concat87, ptr @1782)
+  %str.concat88 = call ptr @csec_string_concat(ptr %str.concat87, ptr @1850)
   %str.concat89 = call ptr @csec_string_concat(ptr %str.concat88, ptr %3)
-  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @1783)
+  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @1851)
   %str.concat91 = call ptr @csec_string_concat(ptr %str.concat90, ptr %3)
-  %str.concat92 = call ptr @csec_string_concat(ptr %str.concat91, ptr @1784)
-  %str.concat93 = call ptr @csec_string_concat(ptr %str.concat92, ptr @1785)
+  %str.concat92 = call ptr @csec_string_concat(ptr %str.concat91, ptr @1852)
+  %str.concat93 = call ptr @csec_string_concat(ptr %str.concat92, ptr @1853)
   %op.load94 = load i32, ptr %op, align 4
   %calltmp95 = call ptr @_llvmI1Value(ptr %0, i32 %1, i32 %op.load94)
   %str.concat96 = call ptr @csec_string_concat(ptr %str.concat93, ptr %calltmp95)
-  %str.concat97 = call ptr @csec_string_concat(ptr %str.concat96, ptr @1786)
+  %str.concat97 = call ptr @csec_string_concat(ptr %str.concat96, ptr @1854)
   %op.load98 = load i32, ptr %op, align 4
   %addtmp99 = add i32 %op.load98, 1
   %calltmp101 = call ptr @_llvmI1Value(ptr %0, i32 %addtmp99, i32 %calltmp)
   %str.concat102 = call ptr @csec_string_concat(ptr %str.concat97, ptr %calltmp101)
-  %str.concat103 = call ptr @csec_string_concat(ptr %str.concat102, ptr @1787)
+  %str.concat103 = call ptr @csec_string_concat(ptr %str.concat102, ptr @1855)
   ret ptr %str.concat103
 
 ifcont76:                                         ; preds = %ifcont41
@@ -20007,12 +20618,12 @@ entry:
   %calltmp = call i32 @_findTopLevelOperator(ptr %0, i32 %1, i32 %2, i32 1)
   %addtmp = add i32 %1, 1
   %calltmp1 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp)
-  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1788)
+  %str.concat = call ptr @csec_string_concat(ptr %calltmp1, ptr @1856)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat2 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
-  %str.concat4 = call ptr @csec_string_concat(ptr @1789, ptr %calltmp1)
-  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1790)
+  %str.concat4 = call ptr @csec_string_concat(ptr @1857, ptr %calltmp1)
+  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @1858)
   %str.sext6 = sext i32 %1 to i64
   %str.int.call7 = call ptr @csec_to_string_i64(i64 %str.sext6)
   %str.concat8 = call ptr @csec_string_concat(ptr %str.concat5, ptr %str.int.call7)
@@ -20021,24 +20632,24 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat9 = call ptr @csec_string_concat(ptr @1791, ptr %str.concat2)
-  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1792)
+  %str.concat9 = call ptr @csec_string_concat(ptr @1859, ptr %str.concat2)
+  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @1860)
   %addtmp12 = add i32 %calltmp, 1
   %calltmp13 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp12, i32 %2, ptr %str.concat8)
   %str.concat14 = call ptr @csec_string_concat(ptr %str.concat10, ptr %calltmp13)
-  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1793)
+  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @1861)
   %str.concat17 = call ptr @csec_string_concat(ptr %str.concat15, ptr %str.concat8)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1794)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1862)
   %str.concat20 = call ptr @csec_string_concat(ptr %str.concat18, ptr %str.concat2)
-  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1795)
+  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @1863)
   ret ptr %str.concat21
 
 ifcont:                                           ; preds = %entry
-  %str.concat23 = call ptr @csec_string_concat(ptr @1796, ptr %str.concat2)
-  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1797)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1798)
+  %str.concat23 = call ptr @csec_string_concat(ptr @1864, ptr %str.concat2)
+  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @1865)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1866)
   %str.concat27 = call ptr @csec_string_concat(ptr %str.concat25, ptr %str.concat2)
-  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1799)
+  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @1867)
   ret ptr %str.concat28
 }
 
@@ -20060,7 +20671,7 @@ or_end:                                           ; preds = %or_rhs, %entry
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end
-  ret ptr @1800
+  ret ptr @1868
 
 ifcont:                                           ; preds = %or_end
   %calltmp3 = call ptr @_tokenTextAt(ptr %0, i32 %1)
@@ -20074,12 +20685,12 @@ ifcont:                                           ; preds = %or_end
   %opText = alloca ptr, align 8
   store ptr %calltmp6, ptr %opText, align 8
   %opText.load = load ptr, ptr %opText, align 8
-  %calltmp7 = call i1 @_strEq(ptr %opText.load, ptr @1801)
+  %calltmp7 = call i1 @_strEq(ptr %opText.load, ptr @1869)
   br i1 %calltmp7, label %or_end10, label %or_rhs9
 
 or_rhs9:                                          ; preds = %ifcont
   %opText.load11 = load ptr, ptr %opText, align 8
-  %calltmp12 = call i1 @_strEq(ptr %opText.load11, ptr @1802)
+  %calltmp12 = call i1 @_strEq(ptr %opText.load11, ptr @1870)
   br label %or_end10
 
 or_end10:                                         ; preds = %or_rhs9, %ifcont
@@ -20089,8 +20700,8 @@ or_end10:                                         ; preds = %or_rhs9, %ifcont
 
 then15:                                           ; preds = %or_end10
   %name.load17 = load ptr, ptr %name, align 8
-  %str.concat = call ptr @csec_string_concat(ptr @1803, ptr %name.load17)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat, ptr @1804)
+  %str.concat = call ptr @csec_string_concat(ptr @1871, ptr %name.load17)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat, ptr @1872)
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat19 = call ptr @csec_string_concat(ptr %str.concat18, ptr %str.int.call)
@@ -20099,17 +20710,17 @@ then15:                                           ; preds = %or_end10
   %addtmp = add i32 %calltmp, 1
   %resultName.load = load ptr, ptr %resultName, align 8
   %calltmp21 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp, i32 %2, ptr %resultName.load)
-  %str.concat22 = call ptr @csec_string_concat(ptr %calltmp21, ptr @1805)
+  %str.concat22 = call ptr @csec_string_concat(ptr %calltmp21, ptr @1873)
   %resultName.load23 = load ptr, ptr %resultName, align 8
   %str.concat24 = call ptr @csec_string_concat(ptr %str.concat22, ptr %resultName.load23)
-  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1806)
+  %str.concat25 = call ptr @csec_string_concat(ptr %str.concat24, ptr @1874)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat26 = call ptr @csec_string_concat(ptr %str.concat25, ptr %storageName.load)
-  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1807)
+  %str.concat27 = call ptr @csec_string_concat(ptr %str.concat26, ptr @1875)
   ret ptr %str.concat27
 
 ifcont16:                                         ; preds = %or_end10
-  ret ptr @1808
+  ret ptr @1876
 }
 
 define i1 @_llvmBlockEndsWithTopLevelReturn(ptr %0, i32 %1, i32 %2) {
@@ -20128,7 +20739,7 @@ whilebody:                                        ; preds = %and_end
   %next = alloca i32, align 4
   store i32 %calltmp5, ptr %next, align 4
   %calltmp7 = call ptr @_statementKind(ptr %0, i32 %cursor.0)
-  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @1809)
+  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @1877)
   %ifcond = icmp ne i1 %calltmp8, false
   br i1 %ifcond, label %then, label %else
 
@@ -20167,8 +20778,8 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  %str.concat = call ptr @csec_string_concat(ptr @1810, ptr %3)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1811)
+  %str.concat = call ptr @csec_string_concat(ptr @1878, ptr %3)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @1879)
   ret ptr %str.concat1
 
 ifcont:                                           ; preds = %entry
@@ -20196,17 +20807,17 @@ then7:                                            ; preds = %and_end
   %addtmp10 = add i64 %str.length, 1
   %byteLength = alloca i32, align 4
   store i64 %addtmp10, ptr %byteLength, align 4
-  %str.concat11 = call ptr @csec_string_concat(ptr @1812, ptr %3)
-  %str.concat12 = call ptr @csec_string_concat(ptr %str.concat11, ptr @1813)
+  %str.concat11 = call ptr @csec_string_concat(ptr @1880, ptr %3)
+  %str.concat12 = call ptr @csec_string_concat(ptr %str.concat11, ptr @1881)
   %byteLength.load = load i32, ptr %byteLength, align 4
   %str.sext = sext i32 %byteLength.load to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr %str.int.call)
-  %str.concat14 = call ptr @csec_string_concat(ptr %str.concat13, ptr @1814)
+  %str.concat14 = call ptr @csec_string_concat(ptr %str.concat13, ptr @1882)
   %str.sext15 = sext i32 %1 to i64
   %str.int.call16 = call ptr @csec_to_string_i64(i64 %str.sext15)
   %str.concat17 = call ptr @csec_string_concat(ptr %str.concat14, ptr %str.int.call16)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1815)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @1883)
   ret ptr %str.concat18
 
 ifcont8:                                          ; preds = %and_end
@@ -20226,12 +20837,12 @@ and_end24:                                        ; preds = %and_rhs23, %ifcont8
   br i1 %ifcond29, label %then30, label %ifcont31
 
 then30:                                           ; preds = %and_end24
-  %str.concat32 = call ptr @csec_string_concat(ptr @1816, ptr %3)
-  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @1817)
+  %str.concat32 = call ptr @csec_string_concat(ptr @1884, ptr %3)
+  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @1885)
   %calltmp34 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp35 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %calltmp34)
   %str.concat36 = call ptr @csec_string_concat(ptr %str.concat33, ptr %calltmp35)
-  %str.concat37 = call ptr @csec_string_concat(ptr %str.concat36, ptr @1818)
+  %str.concat37 = call ptr @csec_string_concat(ptr %str.concat36, ptr @1886)
   ret ptr %str.concat37
 
 ifcont31:                                         ; preds = %and_end24
@@ -20252,7 +20863,7 @@ and_end43:                                        ; preds = %and_rhs42, %ifcont3
 and_rhs48:                                        ; preds = %and_end43
   %addtmp50 = add i32 %1, 1
   %calltmp51 = call i8 @_kindOperator()
-  %calltmp52 = call i1 @_tokenIs(ptr %0, i32 %addtmp50, i8 %calltmp51, ptr @1819)
+  %calltmp52 = call i1 @_tokenIs(ptr %0, i32 %addtmp50, i8 %calltmp51, ptr @1887)
   br label %and_end49
 
 and_end49:                                        ; preds = %and_rhs48, %and_end43
@@ -20261,7 +20872,7 @@ and_end49:                                        ; preds = %and_rhs48, %and_end
 
 and_rhs55:                                        ; preds = %and_end49
   %addtmp57 = add i32 %1, 1
-  %calltmp59 = call i32 @_findClosingToken(ptr %0, i32 %addtmp57, i32 %calltmp, ptr @1820, ptr @1821)
+  %calltmp59 = call i32 @_findClosingToken(ptr %0, i32 %addtmp57, i32 %calltmp, ptr @1888, ptr @1889)
   %subtmp = sub i32 %calltmp, 1
   %eqtmp61 = icmp eq i32 %calltmp59, %subtmp
   br label %and_end56
@@ -20275,18 +20886,18 @@ then64:                                           ; preds = %and_end56
   %addtmp66 = add i32 %1, 2
   %subtmp68 = sub i32 %calltmp, 1
   %calltmp69 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp66, i32 %subtmp68, ptr %3)
-  %str.concat70 = call ptr @csec_string_concat(ptr %calltmp69, ptr @1822)
+  %str.concat70 = call ptr @csec_string_concat(ptr %calltmp69, ptr @1890)
   %str.concat71 = call ptr @csec_string_concat(ptr %str.concat70, ptr %3)
-  %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr @1823)
+  %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr @1891)
   %calltmp73 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp74 = call ptr @_llvmRuntimeCallName(ptr %calltmp73)
   %str.concat75 = call ptr @csec_string_concat(ptr %str.concat72, ptr %calltmp74)
-  %str.concat76 = call ptr @csec_string_concat(ptr %str.concat75, ptr @1824)
+  %str.concat76 = call ptr @csec_string_concat(ptr %str.concat75, ptr @1892)
   %addtmp77 = add i32 %1, 2
   %subtmp79 = sub i32 %calltmp, 1
   %calltmp80 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp77, i32 %subtmp79, ptr %3)
   %str.concat81 = call ptr @csec_string_concat(ptr %str.concat76, ptr %calltmp80)
-  %str.concat82 = call ptr @csec_string_concat(ptr %str.concat81, ptr @1825)
+  %str.concat82 = call ptr @csec_string_concat(ptr %str.concat81, ptr @1893)
   ret ptr %str.concat82
 
 ifcont65:                                         ; preds = %and_end56
@@ -20307,7 +20918,7 @@ and_end88:                                        ; preds = %and_rhs87, %ifcont6
 and_rhs94:                                        ; preds = %and_end88
   %addtmp96 = add i32 %1, 1
   %calltmp97 = call i8 @_kindOperator()
-  %calltmp98 = call i1 @_tokenIs(ptr %0, i32 %addtmp96, i8 %calltmp97, ptr @1826)
+  %calltmp98 = call i1 @_tokenIs(ptr %0, i32 %addtmp96, i8 %calltmp97, ptr @1894)
   br label %and_end95
 
 and_end95:                                        ; preds = %and_rhs94, %and_end88
@@ -20317,7 +20928,7 @@ and_end95:                                        ; preds = %and_rhs94, %and_end
 and_rhs101:                                       ; preds = %and_end95
   %addtmp103 = add i32 %1, 2
   %calltmp104 = call i8 @_kindIdentifier()
-  %calltmp105 = call i1 @_tokenIs(ptr %0, i32 %addtmp103, i8 %calltmp104, ptr @1827)
+  %calltmp105 = call i1 @_tokenIs(ptr %0, i32 %addtmp103, i8 %calltmp104, ptr @1895)
   br label %and_end102
 
 and_end102:                                       ; preds = %and_rhs101, %and_end95
@@ -20327,7 +20938,7 @@ and_end102:                                       ; preds = %and_rhs101, %and_en
 and_rhs108:                                       ; preds = %and_end102
   %addtmp110 = add i32 %1, 3
   %calltmp111 = call i8 @_kindOperator()
-  %calltmp112 = call i1 @_tokenIs(ptr %0, i32 %addtmp110, i8 %calltmp111, ptr @1828)
+  %calltmp112 = call i1 @_tokenIs(ptr %0, i32 %addtmp110, i8 %calltmp111, ptr @1896)
   br label %and_end109
 
 and_end109:                                       ; preds = %and_rhs108, %and_end102
@@ -20336,7 +20947,7 @@ and_end109:                                       ; preds = %and_rhs108, %and_en
 
 and_rhs115:                                       ; preds = %and_end109
   %addtmp117 = add i32 %1, 3
-  %calltmp119 = call i32 @_findClosingToken(ptr %0, i32 %addtmp117, i32 %calltmp, ptr @1829, ptr @1830)
+  %calltmp119 = call i32 @_findClosingToken(ptr %0, i32 %addtmp117, i32 %calltmp, ptr @1897, ptr @1898)
   %subtmp121 = sub i32 %calltmp, 1
   %eqtmp122 = icmp eq i32 %calltmp119, %subtmp121
   br label %and_end116
@@ -20349,7 +20960,7 @@ and_end116:                                       ; preds = %and_rhs115, %and_en
 then125:                                          ; preds = %and_end116
   %addtmp127 = add i32 %1, 4
   %subtmp129 = sub i32 %calltmp, 1
-  %calltmp130 = call i32 @_findTokenTextInRange(ptr %0, i32 %addtmp127, i32 %subtmp129, ptr @1831)
+  %calltmp130 = call i32 @_findTokenTextInRange(ptr %0, i32 %addtmp127, i32 %subtmp129, ptr @1899)
   %comma = alloca i32, align 4
   store i32 %calltmp130, ptr %comma, align 4
   %comma.load = load i32, ptr %comma, align 4
@@ -20374,31 +20985,31 @@ then133:                                          ; preds = %then125
   %calltmp136 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %name.load)
   %storageName = alloca ptr, align 8
   store ptr %calltmp136, ptr %storageName, align 8
-  %str.concat137 = call ptr @csec_string_concat(ptr @1832, ptr %3)
-  %str.concat138 = call ptr @csec_string_concat(ptr %str.concat137, ptr @1833)
+  %str.concat137 = call ptr @csec_string_concat(ptr @1900, ptr %3)
+  %str.concat138 = call ptr @csec_string_concat(ptr %str.concat137, ptr @1901)
   %storageName.load = load ptr, ptr %storageName, align 8
   %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr %storageName.load)
-  %str.concat140 = call ptr @csec_string_concat(ptr %str.concat139, ptr @1834)
+  %str.concat140 = call ptr @csec_string_concat(ptr %str.concat139, ptr @1902)
   %addtmp141 = add i32 %1, 4
   %comma.load142 = load i32, ptr %comma, align 4
-  %str.concat143 = call ptr @csec_string_concat(ptr %3, ptr @1835)
+  %str.concat143 = call ptr @csec_string_concat(ptr %3, ptr @1903)
   %calltmp144 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp141, i32 %comma.load142, ptr %str.concat143)
   %str.concat145 = call ptr @csec_string_concat(ptr %str.concat140, ptr %calltmp144)
   %comma.load146 = load i32, ptr %comma, align 4
   %addtmp147 = add i32 %comma.load146, 1
   %subtmp149 = sub i32 %calltmp, 1
-  %str.concat150 = call ptr @csec_string_concat(ptr %3, ptr @1836)
+  %str.concat150 = call ptr @csec_string_concat(ptr %3, ptr @1904)
   %calltmp151 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp147, i32 %subtmp149, ptr %str.concat150)
   %str.concat152 = call ptr @csec_string_concat(ptr %str.concat145, ptr %calltmp151)
-  %str.concat153 = call ptr @csec_string_concat(ptr %str.concat152, ptr @1837)
+  %str.concat153 = call ptr @csec_string_concat(ptr %str.concat152, ptr @1905)
   %str.concat154 = call ptr @csec_string_concat(ptr %str.concat153, ptr %3)
-  %str.concat155 = call ptr @csec_string_concat(ptr %str.concat154, ptr @1838)
+  %str.concat155 = call ptr @csec_string_concat(ptr %str.concat154, ptr @1906)
   %str.concat156 = call ptr @csec_string_concat(ptr %str.concat155, ptr %3)
-  %str.concat157 = call ptr @csec_string_concat(ptr %str.concat156, ptr @1839)
+  %str.concat157 = call ptr @csec_string_concat(ptr %str.concat156, ptr @1907)
   %str.concat158 = call ptr @csec_string_concat(ptr %str.concat157, ptr %3)
-  %str.concat159 = call ptr @csec_string_concat(ptr %str.concat158, ptr @1840)
+  %str.concat159 = call ptr @csec_string_concat(ptr %str.concat158, ptr @1908)
   %str.concat160 = call ptr @csec_string_concat(ptr %str.concat159, ptr %3)
-  %str.concat161 = call ptr @csec_string_concat(ptr %str.concat160, ptr @1841)
+  %str.concat161 = call ptr @csec_string_concat(ptr %str.concat160, ptr @1909)
   ret ptr %str.concat161
 
 ifcont134:                                        ; preds = %then125
@@ -20418,7 +21029,7 @@ and_end167:                                       ; preds = %and_rhs166, %ifcont
 and_rhs174:                                       ; preds = %and_end167
   %op.load176 = load i32, ptr %op, align 4
   %calltmp177 = call ptr @_tokenTextAt(ptr %0, i32 %op.load176)
-  %calltmp178 = call i1 @_strEq(ptr %calltmp177, ptr @1842)
+  %calltmp178 = call i1 @_strEq(ptr %calltmp177, ptr @1910)
   br label %and_end175
 
 and_end175:                                       ; preds = %and_rhs174, %and_end167
@@ -20428,26 +21039,678 @@ and_end175:                                       ; preds = %and_rhs174, %and_en
 
 then181:                                          ; preds = %and_end175
   %op.load183 = load i32, ptr %op, align 4
-  %str.concat184 = call ptr @csec_string_concat(ptr %3, ptr @1843)
-  %calltmp185 = call ptr @_generateLLVMExpressionPtr(ptr %0, i32 %1, i32 %op.load183, ptr %str.concat184)
-  %op.load186 = load i32, ptr %op, align 4
-  %addtmp187 = add i32 %op.load186, 1
-  %str.concat189 = call ptr @csec_string_concat(ptr %3, ptr @1844)
-  %calltmp190 = call ptr @_generateLLVMExpressionPtr(ptr %0, i32 %addtmp187, i32 %calltmp, ptr %str.concat189)
-  %str.concat191 = call ptr @csec_string_concat(ptr %calltmp185, ptr %calltmp190)
-  %str.concat192 = call ptr @csec_string_concat(ptr %str.concat191, ptr @1845)
-  %str.concat193 = call ptr @csec_string_concat(ptr %str.concat192, ptr %3)
-  %str.concat194 = call ptr @csec_string_concat(ptr %str.concat193, ptr @1846)
-  %str.concat195 = call ptr @csec_string_concat(ptr %str.concat194, ptr %3)
-  %str.concat196 = call ptr @csec_string_concat(ptr %str.concat195, ptr @1847)
-  %str.concat197 = call ptr @csec_string_concat(ptr %str.concat196, ptr %3)
-  %str.concat198 = call ptr @csec_string_concat(ptr %str.concat197, ptr @1848)
-  ret ptr %str.concat198
+  %calltmp184 = call i32 @_trimExpressionEnd(ptr %0, i32 %1, i32 %op.load183)
+  %leftEnd = alloca i32, align 4
+  store i32 %calltmp184, ptr %leftEnd, align 4
+  %op.load185 = load i32, ptr %op, align 4
+  %addtmp186 = add i32 %op.load185, 1
+  %calltmp187 = call i32 @_skipTrivia(ptr %0, i32 %addtmp186)
+  %rightStart = alloca i32, align 4
+  store i32 %calltmp187, ptr %rightStart, align 4
+  %rightStart.load = load i32, ptr %rightStart, align 4
+  %calltmp189 = call i32 @_trimExpressionEnd(ptr %0, i32 %rightStart.load, i32 %calltmp)
+  %rightEnd = alloca i32, align 4
+  store i32 %calltmp189, ptr %rightEnd, align 4
+  %leftEnd.load = load i32, ptr %leftEnd, align 4
+  %calltmp190 = call i32 @_expressionTopLevelOperator(ptr %0, i32 %1, i32 %leftEnd.load)
+  %leftOp = alloca i32, align 4
+  store i32 %calltmp190, ptr %leftOp, align 4
+  %rightStart.load191 = load i32, ptr %rightStart, align 4
+  %rightEnd.load = load i32, ptr %rightEnd, align 4
+  %calltmp192 = call i32 @_expressionTopLevelOperator(ptr %0, i32 %rightStart.load191, i32 %rightEnd.load)
+  %rightOp = alloca i32, align 4
+  store i32 %calltmp192, ptr %rightOp, align 4
+  %leftCode = alloca ptr, align 8
+  store ptr @1911, ptr %leftCode, align 8
+  %rightCode = alloca ptr, align 8
+  store ptr @1912, ptr %rightCode, align 8
+  %calltmp193 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp194 = call i8 @_kindString()
+  %eqtmp195 = icmp eq i8 %calltmp193, %calltmp194
+  br i1 %eqtmp195, label %and_rhs197, label %and_end198
 
 ifcont182:                                        ; preds = %and_end175
-  %str.concat199 = call ptr @csec_string_concat(ptr @1849, ptr %3)
-  %str.concat200 = call ptr @csec_string_concat(ptr %str.concat199, ptr @1850)
-  ret ptr %str.concat200
+  %str.concat654 = call ptr @csec_string_concat(ptr @1975, ptr %3)
+  %str.concat655 = call ptr @csec_string_concat(ptr %str.concat654, ptr @1976)
+  ret ptr %str.concat655
+
+and_rhs197:                                       ; preds = %then181
+  %leftEnd.load199 = load i32, ptr %leftEnd, align 4
+  %addtmp200 = add i32 %1, 1
+  %eqtmp201 = icmp eq i32 %leftEnd.load199, %addtmp200
+  br label %and_end198
+
+and_end198:                                       ; preds = %and_rhs197, %then181
+  %and_result196.0 = phi i1 [ %eqtmp201, %and_rhs197 ], [ false, %then181 ]
+  br i1 %and_result196.0, label %or_end, label %or_rhs
+
+or_rhs:                                           ; preds = %and_end198
+  %calltmp203 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp204 = call i8 @_kindIdentifier()
+  %eqtmp205 = icmp eq i8 %calltmp203, %calltmp204
+  br i1 %eqtmp205, label %and_rhs207, label %and_end208
+
+or_end:                                           ; preds = %and_end215, %and_end198
+  %or_result.0 = phi i1 [ true, %and_end198 ], [ %and_result213.0, %and_end215 ]
+  br i1 %or_result.0, label %or_end223, label %or_rhs222
+
+and_rhs207:                                       ; preds = %or_rhs
+  %leftEnd.load209 = load i32, ptr %leftEnd, align 4
+  %addtmp210 = add i32 %1, 1
+  %eqtmp211 = icmp eq i32 %leftEnd.load209, %addtmp210
+  br label %and_end208
+
+and_end208:                                       ; preds = %and_rhs207, %or_rhs
+  %and_result206.0 = phi i1 [ %eqtmp211, %and_rhs207 ], [ false, %or_rhs ]
+  br i1 %and_result206.0, label %and_rhs214, label %and_end215
+
+and_rhs214:                                       ; preds = %and_end208
+  %calltmp216 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp217 = call ptr @_lookupVisibleValueType(ptr %0, i32 %1, ptr %calltmp216)
+  %calltmp218 = call ptr @_irTypeName(ptr %calltmp217)
+  %calltmp219 = call i1 @_strEq(ptr %calltmp218, ptr @1913)
+  br label %and_end215
+
+and_end215:                                       ; preds = %and_rhs214, %and_end208
+  %and_result213.0 = phi i1 [ %calltmp219, %and_rhs214 ], [ false, %and_end208 ]
+  br label %or_end
+
+or_rhs222:                                        ; preds = %or_end
+  %calltmp224 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp225 = call i8 @_kindIdentifier()
+  %eqtmp226 = icmp eq i8 %calltmp224, %calltmp225
+  br i1 %eqtmp226, label %and_rhs228, label %and_end229
+
+or_end223:                                        ; preds = %and_end253, %or_end
+  %or_result221.0 = phi i1 [ true, %or_end ], [ %and_result251.0, %and_end253 ]
+  br i1 %or_result221.0, label %or_end262, label %or_rhs261
+
+and_rhs228:                                       ; preds = %or_rhs222
+  %addtmp230 = add i32 %1, 1
+  %leftEnd.load231 = load i32, ptr %leftEnd, align 4
+  %lttmp232 = icmp slt i32 %addtmp230, %leftEnd.load231
+  br label %and_end229
+
+and_end229:                                       ; preds = %and_rhs228, %or_rhs222
+  %and_result227.0 = phi i1 [ %lttmp232, %and_rhs228 ], [ false, %or_rhs222 ]
+  br i1 %and_result227.0, label %and_rhs235, label %and_end236
+
+and_rhs235:                                       ; preds = %and_end229
+  %addtmp237 = add i32 %1, 1
+  %calltmp238 = call i8 @_kindOperator()
+  %calltmp239 = call i1 @_tokenIs(ptr %0, i32 %addtmp237, i8 %calltmp238, ptr @1914)
+  br label %and_end236
+
+and_end236:                                       ; preds = %and_rhs235, %and_end229
+  %and_result234.0 = phi i1 [ %calltmp239, %and_rhs235 ], [ false, %and_end229 ]
+  br i1 %and_result234.0, label %and_rhs242, label %and_end243
+
+and_rhs242:                                       ; preds = %and_end236
+  %addtmp244 = add i32 %1, 1
+  %leftEnd.load245 = load i32, ptr %leftEnd, align 4
+  %calltmp246 = call i32 @_findClosingToken(ptr %0, i32 %addtmp244, i32 %leftEnd.load245, ptr @1915, ptr @1916)
+  %leftEnd.load247 = load i32, ptr %leftEnd, align 4
+  %subtmp248 = sub i32 %leftEnd.load247, 1
+  %eqtmp249 = icmp eq i32 %calltmp246, %subtmp248
+  br label %and_end243
+
+and_end243:                                       ; preds = %and_rhs242, %and_end236
+  %and_result241.0 = phi i1 [ %eqtmp249, %and_rhs242 ], [ false, %and_end236 ]
+  br i1 %and_result241.0, label %and_rhs252, label %and_end253
+
+and_rhs252:                                       ; preds = %and_end243
+  %calltmp254 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp255 = call ptr @_lookupFunctionReturnType(ptr %0, ptr %calltmp254)
+  %calltmp256 = call ptr @_irTypeName(ptr %calltmp255)
+  %calltmp257 = call i1 @_strEq(ptr %calltmp256, ptr @1917)
+  br label %and_end253
+
+and_end253:                                       ; preds = %and_rhs252, %and_end243
+  %and_result251.0 = phi i1 [ %calltmp257, %and_rhs252 ], [ false, %and_end243 ]
+  br label %or_end223
+
+or_rhs261:                                        ; preds = %or_end223
+  %calltmp263 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp264 = call i8 @_kindIdentifier()
+  %eqtmp265 = icmp eq i8 %calltmp263, %calltmp264
+  br i1 %eqtmp265, label %and_rhs267, label %and_end268
+
+or_end262:                                        ; preds = %and_end296, %or_end223
+  %or_result260.0 = phi i1 [ true, %or_end223 ], [ %and_result294.0, %and_end296 ]
+  br i1 %or_result260.0, label %or_end307, label %or_rhs306
+
+and_rhs267:                                       ; preds = %or_rhs261
+  %addtmp269 = add i32 %1, 6
+  %leftEnd.load270 = load i32, ptr %leftEnd, align 4
+  %lttmp271 = icmp slt i32 %addtmp269, %leftEnd.load270
+  br label %and_end268
+
+and_end268:                                       ; preds = %and_rhs267, %or_rhs261
+  %and_result266.0 = phi i1 [ %lttmp271, %and_rhs267 ], [ false, %or_rhs261 ]
+  br i1 %and_result266.0, label %and_rhs274, label %and_end275
+
+and_rhs274:                                       ; preds = %and_end268
+  %addtmp276 = add i32 %1, 1
+  %calltmp277 = call i8 @_kindOperator()
+  %calltmp278 = call i1 @_tokenIs(ptr %0, i32 %addtmp276, i8 %calltmp277, ptr @1918)
+  br label %and_end275
+
+and_end275:                                       ; preds = %and_rhs274, %and_end268
+  %and_result273.0 = phi i1 [ %calltmp278, %and_rhs274 ], [ false, %and_end268 ]
+  br i1 %and_result273.0, label %and_rhs281, label %and_end282
+
+and_rhs281:                                       ; preds = %and_end275
+  %addtmp283 = add i32 %1, 2
+  %calltmp284 = call i8 @_kindIdentifier()
+  %calltmp285 = call i1 @_tokenIs(ptr %0, i32 %addtmp283, i8 %calltmp284, ptr @1919)
+  br label %and_end282
+
+and_end282:                                       ; preds = %and_rhs281, %and_end275
+  %and_result280.0 = phi i1 [ %calltmp285, %and_rhs281 ], [ false, %and_end275 ]
+  br i1 %and_result280.0, label %and_rhs288, label %and_end289
+
+and_rhs288:                                       ; preds = %and_end282
+  %addtmp290 = add i32 %1, 3
+  %calltmp291 = call i8 @_kindOperator()
+  %calltmp292 = call i1 @_tokenIs(ptr %0, i32 %addtmp290, i8 %calltmp291, ptr @1920)
+  br label %and_end289
+
+and_end289:                                       ; preds = %and_rhs288, %and_end282
+  %and_result287.0 = phi i1 [ %calltmp292, %and_rhs288 ], [ false, %and_end282 ]
+  br i1 %and_result287.0, label %and_rhs295, label %and_end296
+
+and_rhs295:                                       ; preds = %and_end289
+  %addtmp297 = add i32 %1, 3
+  %leftEnd.load298 = load i32, ptr %leftEnd, align 4
+  %calltmp299 = call i32 @_findClosingToken(ptr %0, i32 %addtmp297, i32 %leftEnd.load298, ptr @1921, ptr @1922)
+  %leftEnd.load300 = load i32, ptr %leftEnd, align 4
+  %subtmp301 = sub i32 %leftEnd.load300, 1
+  %eqtmp302 = icmp eq i32 %calltmp299, %subtmp301
+  br label %and_end296
+
+and_end296:                                       ; preds = %and_rhs295, %and_end289
+  %and_result294.0 = phi i1 [ %eqtmp302, %and_rhs295 ], [ false, %and_end289 ]
+  br label %or_end262
+
+or_rhs306:                                        ; preds = %or_end262
+  %leftOp.load = load i32, ptr %leftOp, align 4
+  %gttmp308 = icmp sgt i32 %leftOp.load, %1
+  br i1 %gttmp308, label %and_rhs310, label %and_end311
+
+or_end307:                                        ; preds = %and_end319, %or_end262
+  %or_result305.0 = phi i1 [ true, %or_end262 ], [ %and_result317.0, %and_end319 ]
+  %ifcond325 = icmp ne i1 %or_result305.0, false
+  br i1 %ifcond325, label %then326, label %else
+
+and_rhs310:                                       ; preds = %or_rhs306
+  %leftOp.load312 = load i32, ptr %leftOp, align 4
+  %calltmp313 = call i8 @_tokenKindAt(ptr %0, i32 %leftOp.load312)
+  %calltmp314 = call i8 @_kindOperator()
+  %eqtmp315 = icmp eq i8 %calltmp313, %calltmp314
+  br label %and_end311
+
+and_end311:                                       ; preds = %and_rhs310, %or_rhs306
+  %and_result309.0 = phi i1 [ %eqtmp315, %and_rhs310 ], [ false, %or_rhs306 ]
+  br i1 %and_result309.0, label %and_rhs318, label %and_end319
+
+and_rhs318:                                       ; preds = %and_end311
+  %leftOp.load320 = load i32, ptr %leftOp, align 4
+  %calltmp321 = call ptr @_tokenTextAt(ptr %0, i32 %leftOp.load320)
+  %calltmp322 = call i1 @_strEq(ptr %calltmp321, ptr @1923)
+  br label %and_end319
+
+and_end319:                                       ; preds = %and_rhs318, %and_end311
+  %and_result317.0 = phi i1 [ %calltmp322, %and_rhs318 ], [ false, %and_end311 ]
+  br label %or_end307
+
+then326:                                          ; preds = %or_end307
+  %leftCode.load = load ptr, ptr %leftCode, align 8
+  %leftEnd.load328 = load i32, ptr %leftEnd, align 4
+  %str.concat329 = call ptr @csec_string_concat(ptr %3, ptr @1924)
+  %calltmp330 = call ptr @_generateLLVMExpressionPtr(ptr %0, i32 %1, i32 %leftEnd.load328, ptr %str.concat329)
+  store ptr %calltmp330, ptr %leftCode, align 8
+  br label %ifcont327
+
+else:                                             ; preds = %or_end307
+  %calltmp331 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp332 = call i8 @_kindChar()
+  %eqtmp333 = icmp eq i8 %calltmp331, %calltmp332
+  br i1 %eqtmp333, label %and_rhs335, label %and_end336
+
+ifcont327:                                        ; preds = %ifcont344, %then326
+  %result400 = phi ptr [ %calltmp330, %then326 ], [ %result399, %ifcont344 ]
+  %rightStart.load401 = load i32, ptr %rightStart, align 4
+  %calltmp402 = call i8 @_tokenKindAt(ptr %0, i32 %rightStart.load401)
+  %calltmp403 = call i8 @_kindString()
+  %eqtmp404 = icmp eq i8 %calltmp402, %calltmp403
+  br i1 %eqtmp404, label %and_rhs406, label %and_end407
+
+and_rhs335:                                       ; preds = %else
+  %leftEnd.load337 = load i32, ptr %leftEnd, align 4
+  %addtmp338 = add i32 %1, 1
+  %eqtmp339 = icmp eq i32 %leftEnd.load337, %addtmp338
+  br label %and_end336
+
+and_end336:                                       ; preds = %and_rhs335, %else
+  %and_result334.0 = phi i1 [ %eqtmp339, %and_rhs335 ], [ false, %else ]
+  %ifcond341 = icmp ne i1 %and_result334.0, false
+  br i1 %ifcond341, label %then342, label %else343
+
+then342:                                          ; preds = %and_end336
+  %leftCode.load345 = load ptr, ptr %leftCode, align 8
+  %str.concat346 = call ptr @csec_string_concat(ptr @1925, ptr %3)
+  %str.concat347 = call ptr @csec_string_concat(ptr %str.concat346, ptr @1926)
+  %calltmp348 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp349 = call ptr @_llvmCharI8Value(ptr %calltmp348)
+  %str.concat350 = call ptr @csec_string_concat(ptr %str.concat347, ptr %calltmp349)
+  %str.concat351 = call ptr @csec_string_concat(ptr %str.concat350, ptr @1927)
+  store ptr %str.concat351, ptr %leftCode, align 8
+  br label %ifcont344
+
+else343:                                          ; preds = %and_end336
+  %calltmp352 = call i8 @_tokenKindAt(ptr %0, i32 %1)
+  %calltmp353 = call i8 @_kindIdentifier()
+  %eqtmp354 = icmp eq i8 %calltmp352, %calltmp353
+  br i1 %eqtmp354, label %and_rhs356, label %and_end357
+
+ifcont344:                                        ; preds = %ifcont372, %then342
+  %result399 = phi ptr [ %str.concat351, %then342 ], [ %result, %ifcont372 ]
+  br label %ifcont327
+
+and_rhs356:                                       ; preds = %else343
+  %leftEnd.load358 = load i32, ptr %leftEnd, align 4
+  %addtmp359 = add i32 %1, 1
+  %eqtmp360 = icmp eq i32 %leftEnd.load358, %addtmp359
+  br label %and_end357
+
+and_end357:                                       ; preds = %and_rhs356, %else343
+  %and_result355.0 = phi i1 [ %eqtmp360, %and_rhs356 ], [ false, %else343 ]
+  br i1 %and_result355.0, label %and_rhs363, label %and_end364
+
+and_rhs363:                                       ; preds = %and_end357
+  %calltmp365 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp366 = call ptr @_lookupVisibleValueType(ptr %0, i32 %1, ptr %calltmp365)
+  %calltmp367 = call i1 @_strEq(ptr %calltmp366, ptr @1928)
+  br label %and_end364
+
+and_end364:                                       ; preds = %and_rhs363, %and_end357
+  %and_result362.0 = phi i1 [ %calltmp367, %and_rhs363 ], [ false, %and_end357 ]
+  %ifcond369 = icmp ne i1 %and_result362.0, false
+  br i1 %ifcond369, label %then370, label %else371
+
+then370:                                          ; preds = %and_end364
+  %leftCode.load373 = load ptr, ptr %leftCode, align 8
+  %str.concat374 = call ptr @csec_string_concat(ptr @1929, ptr %3)
+  %str.concat375 = call ptr @csec_string_concat(ptr %str.concat374, ptr @1930)
+  %calltmp376 = call ptr @_tokenTextAt(ptr %0, i32 %1)
+  %calltmp377 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %1, ptr %calltmp376)
+  %str.concat378 = call ptr @csec_string_concat(ptr %str.concat375, ptr %calltmp377)
+  %str.concat379 = call ptr @csec_string_concat(ptr %str.concat378, ptr @1931)
+  %str.concat380 = call ptr @csec_string_concat(ptr %str.concat379, ptr @1932)
+  %str.concat381 = call ptr @csec_string_concat(ptr %str.concat380, ptr %3)
+  %str.concat382 = call ptr @csec_string_concat(ptr %str.concat381, ptr @1933)
+  %str.concat383 = call ptr @csec_string_concat(ptr %str.concat382, ptr %3)
+  %str.concat384 = call ptr @csec_string_concat(ptr %str.concat383, ptr @1934)
+  store ptr %str.concat384, ptr %leftCode, align 8
+  br label %ifcont372
+
+else371:                                          ; preds = %and_end364
+  %leftCode.load385 = load ptr, ptr %leftCode, align 8
+  %leftEnd.load386 = load i32, ptr %leftEnd, align 4
+  %str.concat387 = call ptr @csec_string_concat(ptr %3, ptr @1935)
+  %calltmp388 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %1, i32 %leftEnd.load386, ptr %str.concat387)
+  %str.concat389 = call ptr @csec_string_concat(ptr %calltmp388, ptr @1936)
+  %str.concat390 = call ptr @csec_string_concat(ptr %str.concat389, ptr %3)
+  %str.concat391 = call ptr @csec_string_concat(ptr %str.concat390, ptr @1937)
+  %str.concat392 = call ptr @csec_string_concat(ptr %str.concat391, ptr %3)
+  %str.concat393 = call ptr @csec_string_concat(ptr %str.concat392, ptr @1938)
+  %str.concat394 = call ptr @csec_string_concat(ptr %str.concat393, ptr @1939)
+  %str.concat395 = call ptr @csec_string_concat(ptr %str.concat394, ptr %3)
+  %str.concat396 = call ptr @csec_string_concat(ptr %str.concat395, ptr @1940)
+  %str.concat397 = call ptr @csec_string_concat(ptr %str.concat396, ptr %3)
+  %str.concat398 = call ptr @csec_string_concat(ptr %str.concat397, ptr @1941)
+  store ptr %str.concat398, ptr %leftCode, align 8
+  br label %ifcont372
+
+ifcont372:                                        ; preds = %else371, %then370
+  %result = phi ptr [ %str.concat384, %then370 ], [ %str.concat398, %else371 ]
+  br label %ifcont344
+
+and_rhs406:                                       ; preds = %ifcont327
+  %rightEnd.load408 = load i32, ptr %rightEnd, align 4
+  %rightStart.load409 = load i32, ptr %rightStart, align 4
+  %addtmp410 = add i32 %rightStart.load409, 1
+  %eqtmp411 = icmp eq i32 %rightEnd.load408, %addtmp410
+  br label %and_end407
+
+and_end407:                                       ; preds = %and_rhs406, %ifcont327
+  %and_result405.0 = phi i1 [ %eqtmp411, %and_rhs406 ], [ false, %ifcont327 ]
+  br i1 %and_result405.0, label %or_end415, label %or_rhs414
+
+or_rhs414:                                        ; preds = %and_end407
+  %rightStart.load416 = load i32, ptr %rightStart, align 4
+  %calltmp417 = call i8 @_tokenKindAt(ptr %0, i32 %rightStart.load416)
+  %calltmp418 = call i8 @_kindIdentifier()
+  %eqtmp419 = icmp eq i8 %calltmp417, %calltmp418
+  br i1 %eqtmp419, label %and_rhs421, label %and_end422
+
+or_end415:                                        ; preds = %and_end430, %and_end407
+  %or_result413.0 = phi i1 [ true, %and_end407 ], [ %and_result428.0, %and_end430 ]
+  br i1 %or_result413.0, label %or_end441, label %or_rhs440
+
+and_rhs421:                                       ; preds = %or_rhs414
+  %rightEnd.load423 = load i32, ptr %rightEnd, align 4
+  %rightStart.load424 = load i32, ptr %rightStart, align 4
+  %addtmp425 = add i32 %rightStart.load424, 1
+  %eqtmp426 = icmp eq i32 %rightEnd.load423, %addtmp425
+  br label %and_end422
+
+and_end422:                                       ; preds = %and_rhs421, %or_rhs414
+  %and_result420.0 = phi i1 [ %eqtmp426, %and_rhs421 ], [ false, %or_rhs414 ]
+  br i1 %and_result420.0, label %and_rhs429, label %and_end430
+
+and_rhs429:                                       ; preds = %and_end422
+  %rightStart.load431 = load i32, ptr %rightStart, align 4
+  %rightStart.load432 = load i32, ptr %rightStart, align 4
+  %calltmp433 = call ptr @_tokenTextAt(ptr %0, i32 %rightStart.load432)
+  %calltmp434 = call ptr @_lookupVisibleValueType(ptr %0, i32 %rightStart.load431, ptr %calltmp433)
+  %calltmp435 = call ptr @_irTypeName(ptr %calltmp434)
+  %calltmp436 = call i1 @_strEq(ptr %calltmp435, ptr @1942)
+  br label %and_end430
+
+and_end430:                                       ; preds = %and_rhs429, %and_end422
+  %and_result428.0 = phi i1 [ %calltmp436, %and_rhs429 ], [ false, %and_end422 ]
+  br label %or_end415
+
+or_rhs440:                                        ; preds = %or_end415
+  %rightStart.load442 = load i32, ptr %rightStart, align 4
+  %calltmp443 = call i8 @_tokenKindAt(ptr %0, i32 %rightStart.load442)
+  %calltmp444 = call i8 @_kindIdentifier()
+  %eqtmp445 = icmp eq i8 %calltmp443, %calltmp444
+  br i1 %eqtmp445, label %and_rhs447, label %and_end448
+
+or_end441:                                        ; preds = %and_end475, %or_end415
+  %or_result439.0 = phi i1 [ true, %or_end415 ], [ %and_result473.0, %and_end475 ]
+  br i1 %or_result439.0, label %or_end485, label %or_rhs484
+
+and_rhs447:                                       ; preds = %or_rhs440
+  %rightStart.load449 = load i32, ptr %rightStart, align 4
+  %addtmp450 = add i32 %rightStart.load449, 1
+  %rightEnd.load451 = load i32, ptr %rightEnd, align 4
+  %lttmp452 = icmp slt i32 %addtmp450, %rightEnd.load451
+  br label %and_end448
+
+and_end448:                                       ; preds = %and_rhs447, %or_rhs440
+  %and_result446.0 = phi i1 [ %lttmp452, %and_rhs447 ], [ false, %or_rhs440 ]
+  br i1 %and_result446.0, label %and_rhs455, label %and_end456
+
+and_rhs455:                                       ; preds = %and_end448
+  %rightStart.load457 = load i32, ptr %rightStart, align 4
+  %addtmp458 = add i32 %rightStart.load457, 1
+  %calltmp459 = call i8 @_kindOperator()
+  %calltmp460 = call i1 @_tokenIs(ptr %0, i32 %addtmp458, i8 %calltmp459, ptr @1943)
+  br label %and_end456
+
+and_end456:                                       ; preds = %and_rhs455, %and_end448
+  %and_result454.0 = phi i1 [ %calltmp460, %and_rhs455 ], [ false, %and_end448 ]
+  br i1 %and_result454.0, label %and_rhs463, label %and_end464
+
+and_rhs463:                                       ; preds = %and_end456
+  %rightStart.load465 = load i32, ptr %rightStart, align 4
+  %addtmp466 = add i32 %rightStart.load465, 1
+  %rightEnd.load467 = load i32, ptr %rightEnd, align 4
+  %calltmp468 = call i32 @_findClosingToken(ptr %0, i32 %addtmp466, i32 %rightEnd.load467, ptr @1944, ptr @1945)
+  %rightEnd.load469 = load i32, ptr %rightEnd, align 4
+  %subtmp470 = sub i32 %rightEnd.load469, 1
+  %eqtmp471 = icmp eq i32 %calltmp468, %subtmp470
+  br label %and_end464
+
+and_end464:                                       ; preds = %and_rhs463, %and_end456
+  %and_result462.0 = phi i1 [ %eqtmp471, %and_rhs463 ], [ false, %and_end456 ]
+  br i1 %and_result462.0, label %and_rhs474, label %and_end475
+
+and_rhs474:                                       ; preds = %and_end464
+  %rightStart.load476 = load i32, ptr %rightStart, align 4
+  %calltmp477 = call ptr @_tokenTextAt(ptr %0, i32 %rightStart.load476)
+  %calltmp478 = call ptr @_lookupFunctionReturnType(ptr %0, ptr %calltmp477)
+  %calltmp479 = call ptr @_irTypeName(ptr %calltmp478)
+  %calltmp480 = call i1 @_strEq(ptr %calltmp479, ptr @1946)
+  br label %and_end475
+
+and_end475:                                       ; preds = %and_rhs474, %and_end464
+  %and_result473.0 = phi i1 [ %calltmp480, %and_rhs474 ], [ false, %and_end464 ]
+  br label %or_end441
+
+or_rhs484:                                        ; preds = %or_end441
+  %rightStart.load486 = load i32, ptr %rightStart, align 4
+  %calltmp487 = call i8 @_tokenKindAt(ptr %0, i32 %rightStart.load486)
+  %calltmp488 = call i8 @_kindIdentifier()
+  %eqtmp489 = icmp eq i8 %calltmp487, %calltmp488
+  br i1 %eqtmp489, label %and_rhs491, label %and_end492
+
+or_end485:                                        ; preds = %and_end524, %or_end441
+  %or_result483.0 = phi i1 [ true, %or_end441 ], [ %and_result522.0, %and_end524 ]
+  br i1 %or_result483.0, label %or_end536, label %or_rhs535
+
+and_rhs491:                                       ; preds = %or_rhs484
+  %rightStart.load493 = load i32, ptr %rightStart, align 4
+  %addtmp494 = add i32 %rightStart.load493, 6
+  %rightEnd.load495 = load i32, ptr %rightEnd, align 4
+  %lttmp496 = icmp slt i32 %addtmp494, %rightEnd.load495
+  br label %and_end492
+
+and_end492:                                       ; preds = %and_rhs491, %or_rhs484
+  %and_result490.0 = phi i1 [ %lttmp496, %and_rhs491 ], [ false, %or_rhs484 ]
+  br i1 %and_result490.0, label %and_rhs499, label %and_end500
+
+and_rhs499:                                       ; preds = %and_end492
+  %rightStart.load501 = load i32, ptr %rightStart, align 4
+  %addtmp502 = add i32 %rightStart.load501, 1
+  %calltmp503 = call i8 @_kindOperator()
+  %calltmp504 = call i1 @_tokenIs(ptr %0, i32 %addtmp502, i8 %calltmp503, ptr @1947)
+  br label %and_end500
+
+and_end500:                                       ; preds = %and_rhs499, %and_end492
+  %and_result498.0 = phi i1 [ %calltmp504, %and_rhs499 ], [ false, %and_end492 ]
+  br i1 %and_result498.0, label %and_rhs507, label %and_end508
+
+and_rhs507:                                       ; preds = %and_end500
+  %rightStart.load509 = load i32, ptr %rightStart, align 4
+  %addtmp510 = add i32 %rightStart.load509, 2
+  %calltmp511 = call i8 @_kindIdentifier()
+  %calltmp512 = call i1 @_tokenIs(ptr %0, i32 %addtmp510, i8 %calltmp511, ptr @1948)
+  br label %and_end508
+
+and_end508:                                       ; preds = %and_rhs507, %and_end500
+  %and_result506.0 = phi i1 [ %calltmp512, %and_rhs507 ], [ false, %and_end500 ]
+  br i1 %and_result506.0, label %and_rhs515, label %and_end516
+
+and_rhs515:                                       ; preds = %and_end508
+  %rightStart.load517 = load i32, ptr %rightStart, align 4
+  %addtmp518 = add i32 %rightStart.load517, 3
+  %calltmp519 = call i8 @_kindOperator()
+  %calltmp520 = call i1 @_tokenIs(ptr %0, i32 %addtmp518, i8 %calltmp519, ptr @1949)
+  br label %and_end516
+
+and_end516:                                       ; preds = %and_rhs515, %and_end508
+  %and_result514.0 = phi i1 [ %calltmp520, %and_rhs515 ], [ false, %and_end508 ]
+  br i1 %and_result514.0, label %and_rhs523, label %and_end524
+
+and_rhs523:                                       ; preds = %and_end516
+  %rightStart.load525 = load i32, ptr %rightStart, align 4
+  %addtmp526 = add i32 %rightStart.load525, 3
+  %rightEnd.load527 = load i32, ptr %rightEnd, align 4
+  %calltmp528 = call i32 @_findClosingToken(ptr %0, i32 %addtmp526, i32 %rightEnd.load527, ptr @1950, ptr @1951)
+  %rightEnd.load529 = load i32, ptr %rightEnd, align 4
+  %subtmp530 = sub i32 %rightEnd.load529, 1
+  %eqtmp531 = icmp eq i32 %calltmp528, %subtmp530
+  br label %and_end524
+
+and_end524:                                       ; preds = %and_rhs523, %and_end516
+  %and_result522.0 = phi i1 [ %eqtmp531, %and_rhs523 ], [ false, %and_end516 ]
+  br label %or_end485
+
+or_rhs535:                                        ; preds = %or_end485
+  %rightOp.load = load i32, ptr %rightOp, align 4
+  %rightStart.load537 = load i32, ptr %rightStart, align 4
+  %gttmp538 = icmp sgt i32 %rightOp.load, %rightStart.load537
+  br i1 %gttmp538, label %and_rhs540, label %and_end541
+
+or_end536:                                        ; preds = %and_end549, %or_end485
+  %or_result534.0 = phi i1 [ true, %or_end485 ], [ %and_result547.0, %and_end549 ]
+  %ifcond555 = icmp ne i1 %or_result534.0, false
+  br i1 %ifcond555, label %then556, label %else557
+
+and_rhs540:                                       ; preds = %or_rhs535
+  %rightOp.load542 = load i32, ptr %rightOp, align 4
+  %calltmp543 = call i8 @_tokenKindAt(ptr %0, i32 %rightOp.load542)
+  %calltmp544 = call i8 @_kindOperator()
+  %eqtmp545 = icmp eq i8 %calltmp543, %calltmp544
+  br label %and_end541
+
+and_end541:                                       ; preds = %and_rhs540, %or_rhs535
+  %and_result539.0 = phi i1 [ %eqtmp545, %and_rhs540 ], [ false, %or_rhs535 ]
+  br i1 %and_result539.0, label %and_rhs548, label %and_end549
+
+and_rhs548:                                       ; preds = %and_end541
+  %rightOp.load550 = load i32, ptr %rightOp, align 4
+  %calltmp551 = call ptr @_tokenTextAt(ptr %0, i32 %rightOp.load550)
+  %calltmp552 = call i1 @_strEq(ptr %calltmp551, ptr @1952)
+  br label %and_end549
+
+and_end549:                                       ; preds = %and_rhs548, %and_end541
+  %and_result547.0 = phi i1 [ %calltmp552, %and_rhs548 ], [ false, %and_end541 ]
+  br label %or_end536
+
+then556:                                          ; preds = %or_end536
+  %rightCode.load = load ptr, ptr %rightCode, align 8
+  %rightStart.load559 = load i32, ptr %rightStart, align 4
+  %rightEnd.load560 = load i32, ptr %rightEnd, align 4
+  %str.concat561 = call ptr @csec_string_concat(ptr %3, ptr @1953)
+  %calltmp562 = call ptr @_generateLLVMExpressionPtr(ptr %0, i32 %rightStart.load559, i32 %rightEnd.load560, ptr %str.concat561)
+  store ptr %calltmp562, ptr %rightCode, align 8
+  br label %ifcont558
+
+else557:                                          ; preds = %or_end536
+  %rightStart.load563 = load i32, ptr %rightStart, align 4
+  %calltmp564 = call i8 @_tokenKindAt(ptr %0, i32 %rightStart.load563)
+  %calltmp565 = call i8 @_kindChar()
+  %eqtmp566 = icmp eq i8 %calltmp564, %calltmp565
+  br i1 %eqtmp566, label %and_rhs568, label %and_end569
+
+ifcont558:                                        ; preds = %ifcont578, %then556
+  %result643 = phi ptr [ %calltmp562, %then556 ], [ %result642, %ifcont578 ]
+  %leftCode.load644 = load ptr, ptr %leftCode, align 8
+  %rightCode.load645 = load ptr, ptr %rightCode, align 8
+  %str.concat646 = call ptr @csec_string_concat(ptr %leftCode.load644, ptr %rightCode.load645)
+  %str.concat647 = call ptr @csec_string_concat(ptr %str.concat646, ptr @1971)
+  %str.concat648 = call ptr @csec_string_concat(ptr %str.concat647, ptr %3)
+  %str.concat649 = call ptr @csec_string_concat(ptr %str.concat648, ptr @1972)
+  %str.concat650 = call ptr @csec_string_concat(ptr %str.concat649, ptr %3)
+  %str.concat651 = call ptr @csec_string_concat(ptr %str.concat650, ptr @1973)
+  %str.concat652 = call ptr @csec_string_concat(ptr %str.concat651, ptr %3)
+  %str.concat653 = call ptr @csec_string_concat(ptr %str.concat652, ptr @1974)
+  ret ptr %str.concat653
+
+and_rhs568:                                       ; preds = %else557
+  %rightEnd.load570 = load i32, ptr %rightEnd, align 4
+  %rightStart.load571 = load i32, ptr %rightStart, align 4
+  %addtmp572 = add i32 %rightStart.load571, 1
+  %eqtmp573 = icmp eq i32 %rightEnd.load570, %addtmp572
+  br label %and_end569
+
+and_end569:                                       ; preds = %and_rhs568, %else557
+  %and_result567.0 = phi i1 [ %eqtmp573, %and_rhs568 ], [ false, %else557 ]
+  %ifcond575 = icmp ne i1 %and_result567.0, false
+  br i1 %ifcond575, label %then576, label %else577
+
+then576:                                          ; preds = %and_end569
+  %rightCode.load579 = load ptr, ptr %rightCode, align 8
+  %str.concat580 = call ptr @csec_string_concat(ptr @1954, ptr %3)
+  %str.concat581 = call ptr @csec_string_concat(ptr %str.concat580, ptr @1955)
+  %rightStart.load582 = load i32, ptr %rightStart, align 4
+  %calltmp583 = call ptr @_tokenTextAt(ptr %0, i32 %rightStart.load582)
+  %calltmp584 = call ptr @_llvmCharI8Value(ptr %calltmp583)
+  %str.concat585 = call ptr @csec_string_concat(ptr %str.concat581, ptr %calltmp584)
+  %str.concat586 = call ptr @csec_string_concat(ptr %str.concat585, ptr @1956)
+  store ptr %str.concat586, ptr %rightCode, align 8
+  br label %ifcont578
+
+else577:                                          ; preds = %and_end569
+  %rightStart.load587 = load i32, ptr %rightStart, align 4
+  %calltmp588 = call i8 @_tokenKindAt(ptr %0, i32 %rightStart.load587)
+  %calltmp589 = call i8 @_kindIdentifier()
+  %eqtmp590 = icmp eq i8 %calltmp588, %calltmp589
+  br i1 %eqtmp590, label %and_rhs592, label %and_end593
+
+ifcont578:                                        ; preds = %ifcont611, %then576
+  %result642 = phi ptr [ %str.concat586, %then576 ], [ %result641, %ifcont611 ]
+  br label %ifcont558
+
+and_rhs592:                                       ; preds = %else577
+  %rightEnd.load594 = load i32, ptr %rightEnd, align 4
+  %rightStart.load595 = load i32, ptr %rightStart, align 4
+  %addtmp596 = add i32 %rightStart.load595, 1
+  %eqtmp597 = icmp eq i32 %rightEnd.load594, %addtmp596
+  br label %and_end593
+
+and_end593:                                       ; preds = %and_rhs592, %else577
+  %and_result591.0 = phi i1 [ %eqtmp597, %and_rhs592 ], [ false, %else577 ]
+  br i1 %and_result591.0, label %and_rhs600, label %and_end601
+
+and_rhs600:                                       ; preds = %and_end593
+  %rightStart.load602 = load i32, ptr %rightStart, align 4
+  %rightStart.load603 = load i32, ptr %rightStart, align 4
+  %calltmp604 = call ptr @_tokenTextAt(ptr %0, i32 %rightStart.load603)
+  %calltmp605 = call ptr @_lookupVisibleValueType(ptr %0, i32 %rightStart.load602, ptr %calltmp604)
+  %calltmp606 = call i1 @_strEq(ptr %calltmp605, ptr @1957)
+  br label %and_end601
+
+and_end601:                                       ; preds = %and_rhs600, %and_end593
+  %and_result599.0 = phi i1 [ %calltmp606, %and_rhs600 ], [ false, %and_end593 ]
+  %ifcond608 = icmp ne i1 %and_result599.0, false
+  br i1 %ifcond608, label %then609, label %else610
+
+then609:                                          ; preds = %and_end601
+  %rightCode.load612 = load ptr, ptr %rightCode, align 8
+  %str.concat613 = call ptr @csec_string_concat(ptr @1958, ptr %3)
+  %str.concat614 = call ptr @csec_string_concat(ptr %str.concat613, ptr @1959)
+  %rightStart.load615 = load i32, ptr %rightStart, align 4
+  %rightStart.load616 = load i32, ptr %rightStart, align 4
+  %calltmp617 = call ptr @_tokenTextAt(ptr %0, i32 %rightStart.load616)
+  %calltmp618 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %rightStart.load615, ptr %calltmp617)
+  %str.concat619 = call ptr @csec_string_concat(ptr %str.concat614, ptr %calltmp618)
+  %str.concat620 = call ptr @csec_string_concat(ptr %str.concat619, ptr @1960)
+  %str.concat621 = call ptr @csec_string_concat(ptr %str.concat620, ptr @1961)
+  %str.concat622 = call ptr @csec_string_concat(ptr %str.concat621, ptr %3)
+  %str.concat623 = call ptr @csec_string_concat(ptr %str.concat622, ptr @1962)
+  %str.concat624 = call ptr @csec_string_concat(ptr %str.concat623, ptr %3)
+  %str.concat625 = call ptr @csec_string_concat(ptr %str.concat624, ptr @1963)
+  store ptr %str.concat625, ptr %rightCode, align 8
+  br label %ifcont611
+
+else610:                                          ; preds = %and_end601
+  %rightCode.load626 = load ptr, ptr %rightCode, align 8
+  %rightStart.load627 = load i32, ptr %rightStart, align 4
+  %rightEnd.load628 = load i32, ptr %rightEnd, align 4
+  %str.concat629 = call ptr @csec_string_concat(ptr %3, ptr @1964)
+  %calltmp630 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %rightStart.load627, i32 %rightEnd.load628, ptr %str.concat629)
+  %str.concat631 = call ptr @csec_string_concat(ptr %calltmp630, ptr @1965)
+  %str.concat632 = call ptr @csec_string_concat(ptr %str.concat631, ptr %3)
+  %str.concat633 = call ptr @csec_string_concat(ptr %str.concat632, ptr @1966)
+  %str.concat634 = call ptr @csec_string_concat(ptr %str.concat633, ptr %3)
+  %str.concat635 = call ptr @csec_string_concat(ptr %str.concat634, ptr @1967)
+  %str.concat636 = call ptr @csec_string_concat(ptr %str.concat635, ptr @1968)
+  %str.concat637 = call ptr @csec_string_concat(ptr %str.concat636, ptr %3)
+  %str.concat638 = call ptr @csec_string_concat(ptr %str.concat637, ptr @1969)
+  %str.concat639 = call ptr @csec_string_concat(ptr %str.concat638, ptr %3)
+  %str.concat640 = call ptr @csec_string_concat(ptr %str.concat639, ptr @1970)
+  store ptr %str.concat640, ptr %rightCode, align 8
+  br label %ifcont611
+
+ifcont611:                                        ; preds = %else610, %then609
+  %result641 = phi ptr [ %str.concat625, %then609 ], [ %str.concat640, %else610 ]
+  br label %ifcont578
 }
 
 define i1 @_llvmExpressionLooksPtr(ptr %0, i32 %1, i32 %2) {
@@ -20499,7 +21762,7 @@ then19:                                           ; preds = %and_end13
   %calltmp21 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp22 = call ptr @_lookupVisibleValueType(ptr %0, i32 %1, ptr %calltmp21)
   %calltmp23 = call ptr @_irTypeName(ptr %calltmp22)
-  %calltmp24 = call i1 @_strEq(ptr %calltmp23, ptr @1851)
+  %calltmp24 = call i1 @_strEq(ptr %calltmp23, ptr @1977)
   ret i1 %calltmp24
 
 ifcont20:                                         ; preds = %and_end13
@@ -20520,7 +21783,7 @@ and_end30:                                        ; preds = %and_rhs29, %ifcont2
 and_rhs35:                                        ; preds = %and_end30
   %addtmp37 = add i32 %1, 1
   %calltmp38 = call i8 @_kindOperator()
-  %calltmp39 = call i1 @_tokenIs(ptr %0, i32 %addtmp37, i8 %calltmp38, ptr @1852)
+  %calltmp39 = call i1 @_tokenIs(ptr %0, i32 %addtmp37, i8 %calltmp38, ptr @1978)
   br label %and_end36
 
 and_end36:                                        ; preds = %and_rhs35, %and_end30
@@ -20529,7 +21792,7 @@ and_end36:                                        ; preds = %and_rhs35, %and_end
 
 and_rhs42:                                        ; preds = %and_end36
   %addtmp44 = add i32 %1, 1
-  %calltmp46 = call i32 @_findClosingToken(ptr %0, i32 %addtmp44, i32 %calltmp, ptr @1853, ptr @1854)
+  %calltmp46 = call i32 @_findClosingToken(ptr %0, i32 %addtmp44, i32 %calltmp, ptr @1979, ptr @1980)
   %subtmp = sub i32 %calltmp, 1
   %eqtmp48 = icmp eq i32 %calltmp46, %subtmp
   br label %and_end43
@@ -20543,7 +21806,7 @@ then51:                                           ; preds = %and_end43
   %calltmp53 = call ptr @_tokenTextAt(ptr %0, i32 %1)
   %calltmp54 = call ptr @_lookupFunctionReturnType(ptr %0, ptr %calltmp53)
   %calltmp55 = call ptr @_irTypeName(ptr %calltmp54)
-  %calltmp56 = call i1 @_strEq(ptr %calltmp55, ptr @1855)
+  %calltmp56 = call i1 @_strEq(ptr %calltmp55, ptr @1981)
   ret i1 %calltmp56
 
 ifcont52:                                         ; preds = %and_end43
@@ -20564,7 +21827,7 @@ and_end62:                                        ; preds = %and_rhs61, %ifcont5
 and_rhs68:                                        ; preds = %and_end62
   %addtmp70 = add i32 %1, 1
   %calltmp71 = call i8 @_kindOperator()
-  %calltmp72 = call i1 @_tokenIs(ptr %0, i32 %addtmp70, i8 %calltmp71, ptr @1856)
+  %calltmp72 = call i1 @_tokenIs(ptr %0, i32 %addtmp70, i8 %calltmp71, ptr @1982)
   br label %and_end69
 
 and_end69:                                        ; preds = %and_rhs68, %and_end62
@@ -20574,7 +21837,7 @@ and_end69:                                        ; preds = %and_rhs68, %and_end
 and_rhs75:                                        ; preds = %and_end69
   %addtmp77 = add i32 %1, 2
   %calltmp78 = call i8 @_kindIdentifier()
-  %calltmp79 = call i1 @_tokenIs(ptr %0, i32 %addtmp77, i8 %calltmp78, ptr @1857)
+  %calltmp79 = call i1 @_tokenIs(ptr %0, i32 %addtmp77, i8 %calltmp78, ptr @1983)
   br label %and_end76
 
 and_end76:                                        ; preds = %and_rhs75, %and_end69
@@ -20584,7 +21847,7 @@ and_end76:                                        ; preds = %and_rhs75, %and_end
 and_rhs82:                                        ; preds = %and_end76
   %addtmp84 = add i32 %1, 3
   %calltmp85 = call i8 @_kindOperator()
-  %calltmp86 = call i1 @_tokenIs(ptr %0, i32 %addtmp84, i8 %calltmp85, ptr @1858)
+  %calltmp86 = call i1 @_tokenIs(ptr %0, i32 %addtmp84, i8 %calltmp85, ptr @1984)
   br label %and_end83
 
 and_end83:                                        ; preds = %and_rhs82, %and_end76
@@ -20593,7 +21856,7 @@ and_end83:                                        ; preds = %and_rhs82, %and_end
 
 and_rhs89:                                        ; preds = %and_end83
   %addtmp91 = add i32 %1, 3
-  %calltmp93 = call i32 @_findClosingToken(ptr %0, i32 %addtmp91, i32 %calltmp, ptr @1859, ptr @1860)
+  %calltmp93 = call i32 @_findClosingToken(ptr %0, i32 %addtmp91, i32 %calltmp, ptr @1985, ptr @1986)
   %subtmp95 = sub i32 %calltmp, 1
   %eqtmp96 = icmp eq i32 %calltmp93, %subtmp95
   br label %and_end90
@@ -20628,7 +21891,7 @@ and_end105:                                       ; preds = %and_rhs104, %ifcont
 and_rhs112:                                       ; preds = %and_end105
   %op.load114 = load i32, ptr %op, align 4
   %calltmp115 = call ptr @_tokenTextAt(ptr %0, i32 %op.load114)
-  %calltmp116 = call i1 @_strEq(ptr %calltmp115, ptr @1861)
+  %calltmp116 = call i1 @_strEq(ptr %calltmp115, ptr @1987)
   br label %and_end113
 
 and_end113:                                       ; preds = %and_rhs112, %and_end105
@@ -20662,7 +21925,7 @@ entry:
 
 whilecond:                                        ; preds = %ifcont, %entry
   %cursor.0 = phi i32 [ %calltmp, %entry ], [ %calltmp1018, %ifcont ]
-  %output.0 = phi ptr [ @1862, %entry ], [ %output.1, %ifcont ]
+  %output.0 = phi ptr [ @1988, %entry ], [ %output.1, %ifcont ]
   %lttmp = icmp slt i32 %cursor.0, %2
   br i1 %lttmp, label %and_rhs, label %and_end
 
@@ -20674,7 +21937,7 @@ whilebody:                                        ; preds = %and_end
   %kind = alloca ptr, align 8
   store ptr %calltmp7, ptr %kind, align 8
   %kind.load = load ptr, ptr %kind, align 8
-  %calltmp8 = call i1 @_strEq(ptr %kind.load, ptr @1863)
+  %calltmp8 = call i1 @_strEq(ptr %kind.load, ptr @1989)
   br i1 %calltmp8, label %or_end, label %or_rhs
 
 afterwhile:                                       ; preds = %and_end
@@ -20692,7 +21955,7 @@ and_end:                                          ; preds = %and_rhs, %whilecond
 
 or_rhs:                                           ; preds = %whilebody
   %kind.load9 = load ptr, ptr %kind, align 8
-  %calltmp10 = call i1 @_strEq(ptr %kind.load9, ptr @1864)
+  %calltmp10 = call i1 @_strEq(ptr %kind.load9, ptr @1990)
   br label %or_end
 
 or_end:                                           ; preds = %or_rhs, %whilebody
@@ -20703,12 +21966,12 @@ or_end:                                           ; preds = %or_rhs, %whilebody
 then:                                             ; preds = %or_end
   %next.load = load i32, ptr %next, align 4
   %calltmp12 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load)
-  %calltmp13 = call i1 @_strEq(ptr %calltmp12, ptr @1865)
+  %calltmp13 = call i1 @_strEq(ptr %calltmp12, ptr @1991)
   br i1 %calltmp13, label %or_end16, label %or_rhs15
 
 else:                                             ; preds = %or_end
   %kind.load100 = load ptr, ptr %kind, align 8
-  %calltmp101 = call i1 @_strEq(ptr %kind.load100, ptr @1872)
+  %calltmp101 = call i1 @_strEq(ptr %kind.load100, ptr @1998)
   %ifcond102 = icmp ne i1 %calltmp101, false
   br i1 %ifcond102, label %then103, label %else104
 
@@ -20721,7 +21984,7 @@ ifcont:                                           ; preds = %ifcont105, %ifcont2
 or_rhs15:                                         ; preds = %then
   %next.load18 = load i32, ptr %next, align 4
   %calltmp19 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load18)
-  %calltmp20 = call i1 @_strEq(ptr %calltmp19, ptr @1866)
+  %calltmp20 = call i1 @_strEq(ptr %calltmp19, ptr @1992)
   br label %or_end16
 
 or_end16:                                         ; preds = %or_rhs15, %then
@@ -20738,7 +22001,7 @@ then23:                                           ; preds = %or_end16
 else24:                                           ; preds = %or_end16
   %next.load31 = load i32, ptr %next, align 4
   %calltmp32 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load31)
-  %calltmp33 = call i1 @_strEq(ptr %calltmp32, ptr @1867)
+  %calltmp33 = call i1 @_strEq(ptr %calltmp32, ptr @1993)
   %ifcond34 = icmp ne i1 %calltmp33, false
   br i1 %ifcond34, label %then35, label %else36
 
@@ -20755,7 +22018,7 @@ then35:                                           ; preds = %else24
 else36:                                           ; preds = %else24
   %next.load45 = load i32, ptr %next, align 4
   %calltmp46 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load45)
-  %calltmp47 = call i1 @_strEq(ptr %calltmp46, ptr @1868)
+  %calltmp47 = call i1 @_strEq(ptr %calltmp46, ptr @1994)
   %ifcond48 = icmp ne i1 %calltmp47, false
   br i1 %ifcond48, label %then49, label %else50
 
@@ -20772,7 +22035,7 @@ then49:                                           ; preds = %else36
 else50:                                           ; preds = %else36
   %next.load59 = load i32, ptr %next, align 4
   %calltmp60 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load59)
-  %calltmp61 = call i1 @_strEq(ptr %calltmp60, ptr @1869)
+  %calltmp61 = call i1 @_strEq(ptr %calltmp60, ptr @1995)
   %ifcond62 = icmp ne i1 %calltmp61, false
   br i1 %ifcond62, label %then63, label %else64
 
@@ -20789,7 +22052,7 @@ then63:                                           ; preds = %else50
 else64:                                           ; preds = %else50
   %next.load73 = load i32, ptr %next, align 4
   %calltmp74 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load73)
-  %calltmp75 = call i1 @_strEq(ptr %calltmp74, ptr @1870)
+  %calltmp75 = call i1 @_strEq(ptr %calltmp74, ptr @1996)
   %ifcond76 = icmp ne i1 %calltmp75, false
   br i1 %ifcond76, label %then77, label %else78
 
@@ -20807,7 +22070,7 @@ else78:                                           ; preds = %else64
   %next.load87 = load i32, ptr %next, align 4
   %calltmp88 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load87)
   %calltmp89 = call ptr @_irTypeName(ptr %calltmp88)
-  %calltmp90 = call i1 @_strEq(ptr %calltmp89, ptr @1871)
+  %calltmp90 = call i1 @_strEq(ptr %calltmp89, ptr @1997)
   %ifcond91 = icmp ne i1 %calltmp90, false
   br i1 %ifcond91, label %then92, label %ifcont93
 
@@ -20834,7 +22097,7 @@ then103:                                          ; preds = %else
 
 else104:                                          ; preds = %else
   %kind.load435 = load ptr, ptr %kind, align 8
-  %calltmp436 = call i1 @_strEq(ptr %kind.load435, ptr @1925)
+  %calltmp436 = call i1 @_strEq(ptr %kind.load435, ptr @2051)
   %ifcond437 = icmp ne i1 %calltmp436, false
   br i1 %ifcond437, label %then438, label %else439
 
@@ -20846,7 +22109,7 @@ ifcont105:                                        ; preds = %ifcont440, %ifcont1
 and_rhs110:                                       ; preds = %then103
   %addtmp113 = add i32 %cursor.0, 2
   %calltmp114 = call i8 @_kindOperator()
-  %calltmp115 = call i1 @_tokenIs(ptr %0, i32 %addtmp113, i8 %calltmp114, ptr @1873)
+  %calltmp115 = call i1 @_tokenIs(ptr %0, i32 %addtmp113, i8 %calltmp114, ptr @1999)
   br label %and_end111
 
 and_end111:                                       ; preds = %and_rhs110, %then103
@@ -20855,11 +22118,11 @@ and_end111:                                       ; preds = %and_rhs110, %then10
   br i1 %ifcond117, label %then118, label %else119
 
 then118:                                          ; preds = %and_end111
-  %str.concat123 = call ptr @csec_string_concat(ptr %output.0, ptr @1874)
+  %str.concat123 = call ptr @csec_string_concat(ptr %output.0, ptr @2000)
   %addtmp125 = add i32 %cursor.0, 1
   %calltmp126 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp125)
   %str.concat127 = call ptr @csec_string_concat(ptr %str.concat123, ptr %calltmp126)
-  %str.concat128 = call ptr @csec_string_concat(ptr %str.concat127, ptr @1875)
+  %str.concat128 = call ptr @csec_string_concat(ptr %str.concat127, ptr @2001)
   br label %ifcont120
 
 else119:                                          ; preds = %and_end111
@@ -20877,7 +22140,7 @@ ifcont120:                                        ; preds = %ifcont145, %then118
 and_rhs135:                                       ; preds = %else119
   %addtmp138 = add i32 %cursor.0, 2
   %calltmp139 = call i8 @_kindOperator()
-  %calltmp140 = call i1 @_tokenIs(ptr %0, i32 %addtmp138, i8 %calltmp139, ptr @1876)
+  %calltmp140 = call i1 @_tokenIs(ptr %0, i32 %addtmp138, i8 %calltmp139, ptr @2002)
   br label %and_end136
 
 and_end136:                                       ; preds = %and_rhs135, %else119
@@ -20897,27 +22160,27 @@ then143:                                          ; preds = %and_end136
   store i64 %addtmp149, ptr %byteLength, align 4
   %str.sext = sext i32 %cursor.0 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
-  %str.concat151 = call ptr @csec_string_concat(ptr @1877, ptr %str.int.call)
+  %str.concat151 = call ptr @csec_string_concat(ptr @2003, ptr %str.int.call)
   %resultName = alloca ptr, align 8
   store ptr %str.concat151, ptr %resultName, align 8
-  %str.concat154 = call ptr @csec_string_concat(ptr %output.0, ptr @1878)
+  %str.concat154 = call ptr @csec_string_concat(ptr %output.0, ptr @2004)
   %resultName.load = load ptr, ptr %resultName, align 8
   %str.concat155 = call ptr @csec_string_concat(ptr %str.concat154, ptr %resultName.load)
-  %str.concat156 = call ptr @csec_string_concat(ptr %str.concat155, ptr @1879)
+  %str.concat156 = call ptr @csec_string_concat(ptr %str.concat155, ptr @2005)
   %byteLength.load = load i32, ptr %byteLength, align 4
   %str.sext157 = sext i32 %byteLength.load to i64
   %str.int.call158 = call ptr @csec_to_string_i64(i64 %str.sext157)
   %str.concat159 = call ptr @csec_string_concat(ptr %str.concat156, ptr %str.int.call158)
-  %str.concat160 = call ptr @csec_string_concat(ptr %str.concat159, ptr @1880)
+  %str.concat160 = call ptr @csec_string_concat(ptr %str.concat159, ptr @2006)
   %addtmp162 = add i32 %cursor.0, 1
   %str.sext163 = sext i32 %addtmp162 to i64
   %str.int.call164 = call ptr @csec_to_string_i64(i64 %str.sext163)
   %str.concat165 = call ptr @csec_string_concat(ptr %str.concat160, ptr %str.int.call164)
-  %str.concat166 = call ptr @csec_string_concat(ptr %str.concat165, ptr @1881)
-  %str.concat167 = call ptr @csec_string_concat(ptr %str.concat166, ptr @1882)
+  %str.concat166 = call ptr @csec_string_concat(ptr %str.concat165, ptr @2007)
+  %str.concat167 = call ptr @csec_string_concat(ptr %str.concat166, ptr @2008)
   %resultName.load168 = load ptr, ptr %resultName, align 8
   %str.concat169 = call ptr @csec_string_concat(ptr %str.concat167, ptr %resultName.load168)
-  %str.concat170 = call ptr @csec_string_concat(ptr %str.concat169, ptr @1883)
+  %str.concat170 = call ptr @csec_string_concat(ptr %str.concat169, ptr @2009)
   br label %ifcont145
 
 else144:                                          ; preds = %and_end136
@@ -20935,7 +22198,7 @@ ifcont145:                                        ; preds = %ifcont187, %then143
 and_rhs177:                                       ; preds = %else144
   %addtmp180 = add i32 %cursor.0, 2
   %calltmp181 = call i8 @_kindOperator()
-  %calltmp182 = call i1 @_tokenIs(ptr %0, i32 %addtmp180, i8 %calltmp181, ptr @1884)
+  %calltmp182 = call i1 @_tokenIs(ptr %0, i32 %addtmp180, i8 %calltmp181, ptr @2010)
   br label %and_end178
 
 and_end178:                                       ; preds = %and_rhs177, %else144
@@ -20958,11 +22221,11 @@ then185:                                          ; preds = %and_end178
   store ptr %calltmp193, ptr %llvmType, align 8
   %str.sext195 = sext i32 %cursor.0 to i64
   %str.int.call196 = call ptr @csec_to_string_i64(i64 %str.sext195)
-  %str.concat197 = call ptr @csec_string_concat(ptr @1885, ptr %str.int.call196)
+  %str.concat197 = call ptr @csec_string_concat(ptr @2011, ptr %str.int.call196)
   %resultName198 = alloca ptr, align 8
   store ptr %str.concat197, ptr %resultName198, align 8
   %llvmType.load = load ptr, ptr %llvmType, align 8
-  %calltmp199 = call i1 @_strEq(ptr %llvmType.load, ptr @1886)
+  %calltmp199 = call i1 @_strEq(ptr %llvmType.load, ptr @2012)
   br i1 %calltmp199, label %or_end202, label %or_rhs201
 
 else186:                                          ; preds = %and_end178
@@ -20979,7 +22242,7 @@ ifcont187:                                        ; preds = %ifcont286, %ifcont2
 
 or_rhs201:                                        ; preds = %then185
   %llvmType.load203 = load ptr, ptr %llvmType, align 8
-  %calltmp204 = call i1 @_strEq(ptr %llvmType.load203, ptr @1887)
+  %calltmp204 = call i1 @_strEq(ptr %llvmType.load203, ptr @2013)
   br label %or_end202
 
 or_end202:                                        ; preds = %or_rhs201, %then185
@@ -20988,7 +22251,7 @@ or_end202:                                        ; preds = %or_rhs201, %then185
 
 or_rhs207:                                        ; preds = %or_end202
   %llvmType.load209 = load ptr, ptr %llvmType, align 8
-  %calltmp210 = call i1 @_strEq(ptr %llvmType.load209, ptr @1888)
+  %calltmp210 = call i1 @_strEq(ptr %llvmType.load209, ptr @2014)
   br label %or_end208
 
 or_end208:                                        ; preds = %or_rhs207, %or_end202
@@ -20997,7 +22260,7 @@ or_end208:                                        ; preds = %or_rhs207, %or_end2
 
 or_rhs213:                                        ; preds = %or_end208
   %llvmType.load215 = load ptr, ptr %llvmType, align 8
-  %calltmp216 = call i1 @_strEq(ptr %llvmType.load215, ptr @1889)
+  %calltmp216 = call i1 @_strEq(ptr %llvmType.load215, ptr @2015)
   br label %or_end214
 
 or_end214:                                        ; preds = %or_rhs213, %or_end208
@@ -21006,7 +22269,7 @@ or_end214:                                        ; preds = %or_rhs213, %or_end2
 
 or_rhs219:                                        ; preds = %or_end214
   %llvmType.load221 = load ptr, ptr %llvmType, align 8
-  %calltmp222 = call i1 @_strEq(ptr %llvmType.load221, ptr @1890)
+  %calltmp222 = call i1 @_strEq(ptr %llvmType.load221, ptr @2016)
   br label %or_end220
 
 or_end220:                                        ; preds = %or_rhs219, %or_end214
@@ -21015,25 +22278,25 @@ or_end220:                                        ; preds = %or_rhs219, %or_end2
   br i1 %ifcond224, label %then225, label %else226
 
 then225:                                          ; preds = %or_end220
-  %str.concat230 = call ptr @csec_string_concat(ptr %output.0, ptr @1891)
+  %str.concat230 = call ptr @csec_string_concat(ptr %output.0, ptr @2017)
   %resultName.load231 = load ptr, ptr %resultName198, align 8
   %str.concat232 = call ptr @csec_string_concat(ptr %str.concat230, ptr %resultName.load231)
-  %str.concat233 = call ptr @csec_string_concat(ptr %str.concat232, ptr @1892)
+  %str.concat233 = call ptr @csec_string_concat(ptr %str.concat232, ptr @2018)
   %llvmType.load234 = load ptr, ptr %llvmType, align 8
   %str.concat235 = call ptr @csec_string_concat(ptr %str.concat233, ptr %llvmType.load234)
-  %str.concat236 = call ptr @csec_string_concat(ptr %str.concat235, ptr @1893)
+  %str.concat236 = call ptr @csec_string_concat(ptr %str.concat235, ptr @2019)
   %addtmp238 = add i32 %cursor.0, 1
   %returnName.load239 = load ptr, ptr %returnName, align 8
   %calltmp240 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %addtmp238, ptr %returnName.load239)
   %str.concat241 = call ptr @csec_string_concat(ptr %str.concat236, ptr %calltmp240)
-  %str.concat242 = call ptr @csec_string_concat(ptr %str.concat241, ptr @1894)
-  %str.concat243 = call ptr @csec_string_concat(ptr %str.concat242, ptr @1895)
+  %str.concat242 = call ptr @csec_string_concat(ptr %str.concat241, ptr @2020)
+  %str.concat243 = call ptr @csec_string_concat(ptr %str.concat242, ptr @2021)
   %llvmType.load244 = load ptr, ptr %llvmType, align 8
   %str.concat245 = call ptr @csec_string_concat(ptr %str.concat243, ptr %llvmType.load244)
-  %str.concat246 = call ptr @csec_string_concat(ptr %str.concat245, ptr @1896)
+  %str.concat246 = call ptr @csec_string_concat(ptr %str.concat245, ptr @2022)
   %resultName.load247 = load ptr, ptr %resultName198, align 8
   %str.concat248 = call ptr @csec_string_concat(ptr %str.concat246, ptr %resultName.load247)
-  %str.concat249 = call ptr @csec_string_concat(ptr %str.concat248, ptr @1897)
+  %str.concat249 = call ptr @csec_string_concat(ptr %str.concat248, ptr @2023)
   br label %ifcont227
 
 else226:                                          ; preds = %or_end220
@@ -21042,10 +22305,10 @@ else226:                                          ; preds = %or_end220
   %resultName.load255 = load ptr, ptr %resultName198, align 8
   %calltmp256 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp253, i32 %next.load254, ptr %resultName.load255)
   %str.concat257 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp256)
-  %str.concat258 = call ptr @csec_string_concat(ptr %str.concat257, ptr @1898)
+  %str.concat258 = call ptr @csec_string_concat(ptr %str.concat257, ptr @2024)
   %resultName.load259 = load ptr, ptr %resultName198, align 8
   %str.concat260 = call ptr @csec_string_concat(ptr %str.concat258, ptr %resultName.load259)
-  %str.concat261 = call ptr @csec_string_concat(ptr %str.concat260, ptr @1899)
+  %str.concat261 = call ptr @csec_string_concat(ptr %str.concat260, ptr @2025)
   br label %ifcont227
 
 ifcont227:                                        ; preds = %else226, %then225
@@ -21066,7 +22329,7 @@ and_end269:                                       ; preds = %and_rhs268, %else18
 and_rhs276:                                       ; preds = %and_end269
   %addtmp279 = add i32 %cursor.0, 2
   %calltmp280 = call i8 @_kindOperator()
-  %calltmp281 = call i1 @_tokenIs(ptr %0, i32 %addtmp279, i8 %calltmp280, ptr @1900)
+  %calltmp281 = call i1 @_tokenIs(ptr %0, i32 %addtmp279, i8 %calltmp280, ptr @2026)
   br label %and_end277
 
 and_end277:                                       ; preds = %and_rhs276, %and_end269
@@ -21077,7 +22340,7 @@ and_end277:                                       ; preds = %and_rhs276, %and_en
 then284:                                          ; preds = %and_end277
   %addtmp288 = add i32 %cursor.0, 2
   %next.load289 = load i32, ptr %next, align 4
-  %calltmp290 = call i32 @_findClosingToken(ptr %0, i32 %addtmp288, i32 %next.load289, ptr @1901, ptr @1902)
+  %calltmp290 = call i32 @_findClosingToken(ptr %0, i32 %addtmp288, i32 %next.load289, ptr @2027, ptr @2028)
   %callEnd = alloca i32, align 4
   store i32 %calltmp290, ptr %callEnd, align 4
   %addtmp292 = add i32 %cursor.0, 1
@@ -21091,7 +22354,7 @@ then284:                                          ; preds = %and_end277
   store ptr %calltmp297, ptr %llvmType298, align 8
   %str.sext300 = sext i32 %cursor.0 to i64
   %str.int.call301 = call ptr @csec_to_string_i64(i64 %str.sext300)
-  %str.concat302 = call ptr @csec_string_concat(ptr @1903, ptr %str.int.call301)
+  %str.concat302 = call ptr @csec_string_concat(ptr @2029, ptr %str.int.call301)
   %resultName303 = alloca ptr, align 8
   store ptr %str.concat302, ptr %resultName303, align 8
   %callEnd.load = load i32, ptr %callEnd, align 4
@@ -21113,7 +22376,7 @@ ifcont286:                                        ; preds = %ifcont395, %ifcont3
 
 and_rhs307:                                       ; preds = %then284
   %llvmType.load309 = load ptr, ptr %llvmType298, align 8
-  %calltmp310 = call i1 @_strEq(ptr %llvmType.load309, ptr @1904)
+  %calltmp310 = call i1 @_strEq(ptr %llvmType.load309, ptr @2030)
   br i1 %calltmp310, label %or_end313, label %or_rhs312
 
 and_end308:                                       ; preds = %or_end331, %then284
@@ -21123,7 +22386,7 @@ and_end308:                                       ; preds = %or_end331, %then284
 
 or_rhs312:                                        ; preds = %and_rhs307
   %llvmType.load314 = load ptr, ptr %llvmType298, align 8
-  %calltmp315 = call i1 @_strEq(ptr %llvmType.load314, ptr @1905)
+  %calltmp315 = call i1 @_strEq(ptr %llvmType.load314, ptr @2031)
   br label %or_end313
 
 or_end313:                                        ; preds = %or_rhs312, %and_rhs307
@@ -21132,7 +22395,7 @@ or_end313:                                        ; preds = %or_rhs312, %and_rhs
 
 or_rhs318:                                        ; preds = %or_end313
   %llvmType.load320 = load ptr, ptr %llvmType298, align 8
-  %calltmp321 = call i1 @_strEq(ptr %llvmType.load320, ptr @1906)
+  %calltmp321 = call i1 @_strEq(ptr %llvmType.load320, ptr @2032)
   br label %or_end319
 
 or_end319:                                        ; preds = %or_rhs318, %or_end313
@@ -21141,7 +22404,7 @@ or_end319:                                        ; preds = %or_rhs318, %or_end3
 
 or_rhs324:                                        ; preds = %or_end319
   %llvmType.load326 = load ptr, ptr %llvmType298, align 8
-  %calltmp327 = call i1 @_strEq(ptr %llvmType.load326, ptr @1907)
+  %calltmp327 = call i1 @_strEq(ptr %llvmType.load326, ptr @2033)
   br label %or_end325
 
 or_end325:                                        ; preds = %or_rhs324, %or_end319
@@ -21150,7 +22413,7 @@ or_end325:                                        ; preds = %or_rhs324, %or_end3
 
 or_rhs330:                                        ; preds = %or_end325
   %llvmType.load332 = load ptr, ptr %llvmType298, align 8
-  %calltmp333 = call i1 @_strEq(ptr %llvmType.load332, ptr @1908)
+  %calltmp333 = call i1 @_strEq(ptr %llvmType.load332, ptr @2034)
   br label %or_end331
 
 or_end331:                                        ; preds = %or_rhs330, %or_end325
@@ -21163,31 +22426,31 @@ then337:                                          ; preds = %and_end308
   %resultName.load345 = load ptr, ptr %resultName303, align 8
   %calltmp346 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp343, i32 %callEnd.load344, ptr %resultName.load345)
   %str.concat347 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp346)
-  %str.concat348 = call ptr @csec_string_concat(ptr %str.concat347, ptr @1909)
+  %str.concat348 = call ptr @csec_string_concat(ptr %str.concat347, ptr @2035)
   %resultName.load349 = load ptr, ptr %resultName303, align 8
   %str.concat350 = call ptr @csec_string_concat(ptr %str.concat348, ptr %resultName.load349)
-  %str.concat351 = call ptr @csec_string_concat(ptr %str.concat350, ptr @1910)
+  %str.concat351 = call ptr @csec_string_concat(ptr %str.concat350, ptr @2036)
   %llvmType.load352 = load ptr, ptr %llvmType298, align 8
   %str.concat353 = call ptr @csec_string_concat(ptr %str.concat351, ptr %llvmType.load352)
-  %str.concat354 = call ptr @csec_string_concat(ptr %str.concat353, ptr @1911)
+  %str.concat354 = call ptr @csec_string_concat(ptr %str.concat353, ptr @2037)
   %addtmp356 = add i32 %cursor.0, 1
   %calltmp357 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp356)
   %calltmp358 = call ptr @_llvmRuntimeCallName(ptr %calltmp357)
   %str.concat359 = call ptr @csec_string_concat(ptr %str.concat354, ptr %calltmp358)
-  %str.concat360 = call ptr @csec_string_concat(ptr %str.concat359, ptr @1912)
+  %str.concat360 = call ptr @csec_string_concat(ptr %str.concat359, ptr @2038)
   %addtmp362 = add i32 %cursor.0, 3
   %callEnd.load363 = load i32, ptr %callEnd, align 4
   %resultName.load364 = load ptr, ptr %resultName303, align 8
   %calltmp365 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp362, i32 %callEnd.load363, ptr %resultName.load364)
   %str.concat366 = call ptr @csec_string_concat(ptr %str.concat360, ptr %calltmp365)
-  %str.concat367 = call ptr @csec_string_concat(ptr %str.concat366, ptr @1913)
-  %str.concat368 = call ptr @csec_string_concat(ptr %str.concat367, ptr @1914)
+  %str.concat367 = call ptr @csec_string_concat(ptr %str.concat366, ptr @2039)
+  %str.concat368 = call ptr @csec_string_concat(ptr %str.concat367, ptr @2040)
   %llvmType.load369 = load ptr, ptr %llvmType298, align 8
   %str.concat370 = call ptr @csec_string_concat(ptr %str.concat368, ptr %llvmType.load369)
-  %str.concat371 = call ptr @csec_string_concat(ptr %str.concat370, ptr @1915)
+  %str.concat371 = call ptr @csec_string_concat(ptr %str.concat370, ptr @2041)
   %resultName.load372 = load ptr, ptr %resultName303, align 8
   %str.concat373 = call ptr @csec_string_concat(ptr %str.concat371, ptr %resultName.load372)
-  %str.concat374 = call ptr @csec_string_concat(ptr %str.concat373, ptr @1916)
+  %str.concat374 = call ptr @csec_string_concat(ptr %str.concat373, ptr @2042)
   br label %ifcont339
 
 else338:                                          ; preds = %and_end308
@@ -21196,10 +22459,10 @@ else338:                                          ; preds = %and_end308
   %resultName.load380 = load ptr, ptr %resultName303, align 8
   %calltmp381 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp378, i32 %next.load379, ptr %resultName.load380)
   %str.concat382 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp381)
-  %str.concat383 = call ptr @csec_string_concat(ptr %str.concat382, ptr @1917)
+  %str.concat383 = call ptr @csec_string_concat(ptr %str.concat382, ptr @2043)
   %resultName.load384 = load ptr, ptr %resultName303, align 8
   %str.concat385 = call ptr @csec_string_concat(ptr %str.concat383, ptr %resultName.load384)
-  %str.concat386 = call ptr @csec_string_concat(ptr %str.concat385, ptr @1918)
+  %str.concat386 = call ptr @csec_string_concat(ptr %str.concat385, ptr @2044)
   br label %ifcont339
 
 ifcont339:                                        ; preds = %else338, %then337
@@ -21210,7 +22473,7 @@ ifcont339:                                        ; preds = %else338, %then337
 then393:                                          ; preds = %else285
   %str.sext397 = sext i32 %cursor.0 to i64
   %str.int.call398 = call ptr @csec_to_string_i64(i64 %str.sext397)
-  %str.concat399 = call ptr @csec_string_concat(ptr @1919, ptr %str.int.call398)
+  %str.concat399 = call ptr @csec_string_concat(ptr @2045, ptr %str.int.call398)
   %resultName400 = alloca ptr, align 8
   store ptr %str.concat399, ptr %resultName400, align 8
   %addtmp404 = add i32 %cursor.0, 1
@@ -21218,16 +22481,16 @@ then393:                                          ; preds = %else285
   %resultName.load406 = load ptr, ptr %resultName400, align 8
   %calltmp407 = call ptr @_generateLLVMExpressionPtr(ptr %0, i32 %addtmp404, i32 %next.load405, ptr %resultName.load406)
   %str.concat408 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp407)
-  %str.concat409 = call ptr @csec_string_concat(ptr %str.concat408, ptr @1920)
+  %str.concat409 = call ptr @csec_string_concat(ptr %str.concat408, ptr @2046)
   %resultName.load410 = load ptr, ptr %resultName400, align 8
   %str.concat411 = call ptr @csec_string_concat(ptr %str.concat409, ptr %resultName.load410)
-  %str.concat412 = call ptr @csec_string_concat(ptr %str.concat411, ptr @1921)
+  %str.concat412 = call ptr @csec_string_concat(ptr %str.concat411, ptr @2047)
   br label %ifcont395
 
 else394:                                          ; preds = %else285
   %str.sext414 = sext i32 %cursor.0 to i64
   %str.int.call415 = call ptr @csec_to_string_i64(i64 %str.sext414)
-  %str.concat416 = call ptr @csec_string_concat(ptr @1922, ptr %str.int.call415)
+  %str.concat416 = call ptr @csec_string_concat(ptr @2048, ptr %str.int.call415)
   %resultName417 = alloca ptr, align 8
   store ptr %str.concat416, ptr %resultName417, align 8
   %addtmp421 = add i32 %cursor.0, 1
@@ -21235,10 +22498,10 @@ else394:                                          ; preds = %else285
   %resultName.load423 = load ptr, ptr %resultName417, align 8
   %calltmp424 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp421, i32 %next.load422, ptr %resultName.load423)
   %str.concat425 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp424)
-  %str.concat426 = call ptr @csec_string_concat(ptr %str.concat425, ptr @1923)
+  %str.concat426 = call ptr @csec_string_concat(ptr %str.concat425, ptr @2049)
   %resultName.load427 = load ptr, ptr %resultName417, align 8
   %str.concat428 = call ptr @csec_string_concat(ptr %str.concat426, ptr %resultName.load427)
-  %str.concat429 = call ptr @csec_string_concat(ptr %str.concat428, ptr @1924)
+  %str.concat429 = call ptr @csec_string_concat(ptr %str.concat428, ptr @2050)
   br label %ifcont395
 
 ifcont395:                                        ; preds = %else394, %then393
@@ -21261,7 +22524,7 @@ then438:                                          ; preds = %else104
   store i32 %calltmp449, ptr %thenStart, align 4
   %thenStart.load = load i32, ptr %thenStart, align 4
   %next.load450 = load i32, ptr %next, align 4
-  %calltmp451 = call i32 @_findClosingToken(ptr %0, i32 %thenStart.load, i32 %next.load450, ptr @1926, ptr @1927)
+  %calltmp451 = call i32 @_findClosingToken(ptr %0, i32 %thenStart.load, i32 %next.load450, ptr @2052, ptr @2053)
   %thenEnd = alloca i32, align 4
   store i32 %calltmp451, ptr %thenEnd, align 4
   %openParen.load = load i32, ptr %openParen, align 4
@@ -21270,7 +22533,7 @@ then438:                                          ; preds = %else104
 
 else439:                                          ; preds = %else104
   %kind.load578 = load ptr, ptr %kind, align 8
-  %calltmp579 = call i1 @_strEq(ptr %kind.load578, ptr @1952)
+  %calltmp579 = call i1 @_strEq(ptr %kind.load578, ptr @2078)
   %ifcond580 = icmp ne i1 %calltmp579, false
   br i1 %ifcond580, label %then581, label %else582
 
@@ -21310,13 +22573,13 @@ or_end466:                                        ; preds = %or_rhs465, %or_end4
   br i1 %ifcond470, label %then471, label %else472
 
 then471:                                          ; preds = %or_end466
-  %str.concat476 = call ptr @csec_string_concat(ptr %output.0, ptr @1928)
+  %str.concat476 = call ptr @csec_string_concat(ptr %output.0, ptr @2054)
   br label %ifcont473
 
 else472:                                          ; preds = %or_end466
   %str.sext478 = sext i32 %cursor.0 to i64
   %str.int.call479 = call ptr @csec_to_string_i64(i64 %str.sext478)
-  %str.concat480 = call ptr @csec_string_concat(ptr @1929, ptr %str.int.call479)
+  %str.concat480 = call ptr @csec_string_concat(ptr @2055, ptr %str.int.call479)
   %labelSeed = alloca ptr, align 8
   store ptr %str.concat480, ptr %labelSeed, align 8
   %thenEnd.load481 = load i32, ptr %thenEnd, align 4
@@ -21331,8 +22594,8 @@ else472:                                          ; preds = %or_end466
   %thenBody = alloca ptr, align 8
   store ptr %calltmp487, ptr %thenBody, align 8
   %labelSeed.load = load ptr, ptr %labelSeed, align 8
-  %str.concat488 = call ptr @csec_string_concat(ptr @1930, ptr %labelSeed.load)
-  %str.concat489 = call ptr @csec_string_concat(ptr %str.concat488, ptr @1931)
+  %str.concat488 = call ptr @csec_string_concat(ptr @2056, ptr %labelSeed.load)
+  %str.concat489 = call ptr @csec_string_concat(ptr %str.concat488, ptr @2057)
   %thenBranch = alloca ptr, align 8
   store ptr %str.concat489, ptr %thenBranch, align 8
   %thenStart.load490 = load i32, ptr %thenStart, align 4
@@ -21349,15 +22612,15 @@ ifcont473:                                        ; preds = %ifcont511, %then471
 
 then495:                                          ; preds = %else472
   %thenBranch.load = load ptr, ptr %thenBranch, align 8
-  store ptr @1932, ptr %thenBranch, align 8
+  store ptr @2058, ptr %thenBranch, align 8
   br label %ifcont496
 
 ifcont496:                                        ; preds = %then495, %else472
   %elseBody = alloca ptr, align 8
-  store ptr @1933, ptr %elseBody, align 8
+  store ptr @2059, ptr %elseBody, align 8
   %labelSeed.load497 = load ptr, ptr %labelSeed, align 8
-  %str.concat498 = call ptr @csec_string_concat(ptr @1934, ptr %labelSeed.load497)
-  %str.concat499 = call ptr @csec_string_concat(ptr %str.concat498, ptr @1935)
+  %str.concat498 = call ptr @csec_string_concat(ptr @2060, ptr %labelSeed.load497)
+  %str.concat499 = call ptr @csec_string_concat(ptr %str.concat498, ptr @2061)
   %elseBranch = alloca ptr, align 8
   store ptr %str.concat499, ptr %elseBranch, align 8
   %possibleElse.load = load i32, ptr %possibleElse, align 4
@@ -21368,7 +22631,7 @@ ifcont496:                                        ; preds = %then495, %else472
 and_rhs503:                                       ; preds = %ifcont496
   %possibleElse.load505 = load i32, ptr %possibleElse, align 4
   %calltmp506 = call i8 @_kindKeyword()
-  %calltmp507 = call i1 @_tokenIs(ptr %0, i32 %possibleElse.load505, i8 %calltmp506, ptr @1936)
+  %calltmp507 = call i1 @_tokenIs(ptr %0, i32 %possibleElse.load505, i8 %calltmp506, ptr @2062)
   br label %and_end504
 
 and_end504:                                       ; preds = %and_rhs503, %ifcont496
@@ -21384,7 +22647,7 @@ then510:                                          ; preds = %and_end504
   store i32 %calltmp514, ptr %elseStart, align 4
   %elseStart.load = load i32, ptr %elseStart, align 4
   %calltmp515 = call i8 @_kindOperator()
-  %calltmp516 = call i1 @_tokenIs(ptr %0, i32 %elseStart.load, i8 %calltmp515, ptr @1937)
+  %calltmp516 = call i1 @_tokenIs(ptr %0, i32 %elseStart.load, i8 %calltmp515, ptr @2063)
   %ifcond517 = icmp ne i1 %calltmp516, false
   br i1 %ifcond517, label %then518, label %ifcont519
 
@@ -21393,45 +22656,45 @@ ifcont511:                                        ; preds = %ifcont519, %and_end
   %addtmp542 = add i32 %openParen.load541, 1
   %closeParen.load543 = load i32, ptr %closeParen, align 4
   %labelSeed.load544 = load ptr, ptr %labelSeed, align 8
-  %str.concat545 = call ptr @csec_string_concat(ptr @1941, ptr %labelSeed.load544)
+  %str.concat545 = call ptr @csec_string_concat(ptr @2067, ptr %labelSeed.load544)
   %calltmp546 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp542, i32 %closeParen.load543, ptr %str.concat545)
   %str.concat547 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp546)
-  %str.concat548 = call ptr @csec_string_concat(ptr %str.concat547, ptr @1942)
+  %str.concat548 = call ptr @csec_string_concat(ptr %str.concat547, ptr @2068)
   %labelSeed.load549 = load ptr, ptr %labelSeed, align 8
   %str.concat550 = call ptr @csec_string_concat(ptr %str.concat548, ptr %labelSeed.load549)
-  %str.concat551 = call ptr @csec_string_concat(ptr %str.concat550, ptr @1943)
+  %str.concat551 = call ptr @csec_string_concat(ptr %str.concat550, ptr @2069)
   %labelSeed.load552 = load ptr, ptr %labelSeed, align 8
   %str.concat553 = call ptr @csec_string_concat(ptr %str.concat551, ptr %labelSeed.load552)
-  %str.concat554 = call ptr @csec_string_concat(ptr %str.concat553, ptr @1944)
+  %str.concat554 = call ptr @csec_string_concat(ptr %str.concat553, ptr @2070)
   %labelSeed.load555 = load ptr, ptr %labelSeed, align 8
   %str.concat556 = call ptr @csec_string_concat(ptr %str.concat554, ptr %labelSeed.load555)
-  %str.concat557 = call ptr @csec_string_concat(ptr %str.concat556, ptr @1945)
-  %str.concat558 = call ptr @csec_string_concat(ptr %str.concat557, ptr @1946)
+  %str.concat557 = call ptr @csec_string_concat(ptr %str.concat556, ptr @2071)
+  %str.concat558 = call ptr @csec_string_concat(ptr %str.concat557, ptr @2072)
   %labelSeed.load559 = load ptr, ptr %labelSeed, align 8
   %str.concat560 = call ptr @csec_string_concat(ptr %str.concat558, ptr %labelSeed.load559)
-  %str.concat561 = call ptr @csec_string_concat(ptr %str.concat560, ptr @1947)
+  %str.concat561 = call ptr @csec_string_concat(ptr %str.concat560, ptr @2073)
   %thenBody.load = load ptr, ptr %thenBody, align 8
   %str.concat562 = call ptr @csec_string_concat(ptr %str.concat561, ptr %thenBody.load)
   %thenBranch.load563 = load ptr, ptr %thenBranch, align 8
   %str.concat564 = call ptr @csec_string_concat(ptr %str.concat562, ptr %thenBranch.load563)
-  %str.concat565 = call ptr @csec_string_concat(ptr %str.concat564, ptr @1948)
+  %str.concat565 = call ptr @csec_string_concat(ptr %str.concat564, ptr @2074)
   %labelSeed.load566 = load ptr, ptr %labelSeed, align 8
   %str.concat567 = call ptr @csec_string_concat(ptr %str.concat565, ptr %labelSeed.load566)
-  %str.concat568 = call ptr @csec_string_concat(ptr %str.concat567, ptr @1949)
+  %str.concat568 = call ptr @csec_string_concat(ptr %str.concat567, ptr @2075)
   %elseBody.load569 = load ptr, ptr %elseBody, align 8
   %str.concat570 = call ptr @csec_string_concat(ptr %str.concat568, ptr %elseBody.load569)
   %elseBranch.load571 = load ptr, ptr %elseBranch, align 8
   %str.concat572 = call ptr @csec_string_concat(ptr %str.concat570, ptr %elseBranch.load571)
-  %str.concat573 = call ptr @csec_string_concat(ptr %str.concat572, ptr @1950)
+  %str.concat573 = call ptr @csec_string_concat(ptr %str.concat572, ptr @2076)
   %labelSeed.load574 = load ptr, ptr %labelSeed, align 8
   %str.concat575 = call ptr @csec_string_concat(ptr %str.concat573, ptr %labelSeed.load574)
-  %str.concat576 = call ptr @csec_string_concat(ptr %str.concat575, ptr @1951)
+  %str.concat576 = call ptr @csec_string_concat(ptr %str.concat575, ptr @2077)
   br label %ifcont473
 
 then518:                                          ; preds = %then510
   %elseStart.load520 = load i32, ptr %elseStart, align 4
   %next.load521 = load i32, ptr %next, align 4
-  %calltmp522 = call i32 @_findClosingToken(ptr %0, i32 %elseStart.load520, i32 %next.load521, ptr @1938, ptr @1939)
+  %calltmp522 = call i32 @_findClosingToken(ptr %0, i32 %elseStart.load520, i32 %next.load521, ptr @2064, ptr @2065)
   %elseEnd = alloca i32, align 4
   store i32 %calltmp522, ptr %elseEnd, align 4
   %elseEnd.load = load i32, ptr %elseEnd, align 4
@@ -21462,7 +22725,7 @@ ifcont527:                                        ; preds = %ifcont538, %then518
 
 then537:                                          ; preds = %then526
   %elseBranch.load = load ptr, ptr %elseBranch, align 8
-  store ptr @1940, ptr %elseBranch, align 8
+  store ptr @2066, ptr %elseBranch, align 8
   br label %ifcont538
 
 ifcont538:                                        ; preds = %then537, %then526
@@ -21483,7 +22746,7 @@ then581:                                          ; preds = %else439
   store i32 %calltmp594, ptr %bodyStart, align 4
   %bodyStart.load = load i32, ptr %bodyStart, align 4
   %next.load595 = load i32, ptr %next, align 4
-  %calltmp596 = call i32 @_findClosingToken(ptr %0, i32 %bodyStart.load, i32 %next.load595, ptr @1953, ptr @1954)
+  %calltmp596 = call i32 @_findClosingToken(ptr %0, i32 %bodyStart.load, i32 %next.load595, ptr @2079, ptr @2080)
   %bodyEnd = alloca i32, align 4
   store i32 %calltmp596, ptr %bodyEnd, align 4
   %openParen.load597 = load i32, ptr %openParen587, align 4
@@ -21492,7 +22755,7 @@ then581:                                          ; preds = %else439
 
 else582:                                          ; preds = %else439
   %kind.load683 = load ptr, ptr %kind, align 8
-  %calltmp684 = call i1 @_strEq(ptr %kind.load683, ptr @1973)
+  %calltmp684 = call i1 @_strEq(ptr %kind.load683, ptr @2099)
   %ifcond685 = icmp ne i1 %calltmp684, false
   br i1 %ifcond685, label %then686, label %else687
 
@@ -21532,13 +22795,13 @@ or_end614:                                        ; preds = %or_rhs613, %or_end6
   br i1 %ifcond618, label %then619, label %else620
 
 then619:                                          ; preds = %or_end614
-  %str.concat624 = call ptr @csec_string_concat(ptr %output.0, ptr @1955)
+  %str.concat624 = call ptr @csec_string_concat(ptr %output.0, ptr @2081)
   br label %ifcont621
 
 else620:                                          ; preds = %or_end614
   %str.sext626 = sext i32 %cursor.0 to i64
   %str.int.call627 = call ptr @csec_to_string_i64(i64 %str.sext626)
-  %str.concat628 = call ptr @csec_string_concat(ptr @1956, ptr %str.int.call627)
+  %str.concat628 = call ptr @csec_string_concat(ptr @2082, ptr %str.int.call627)
   %labelSeed629 = alloca ptr, align 8
   store ptr %str.concat628, ptr %labelSeed629, align 8
   %bodyStart.load630 = load i32, ptr %bodyStart, align 4
@@ -21548,8 +22811,8 @@ else620:                                          ; preds = %or_end614
   %body = alloca ptr, align 8
   store ptr %calltmp633, ptr %body, align 8
   %labelSeed.load634 = load ptr, ptr %labelSeed629, align 8
-  %str.concat635 = call ptr @csec_string_concat(ptr @1957, ptr %labelSeed.load634)
-  %str.concat636 = call ptr @csec_string_concat(ptr %str.concat635, ptr @1958)
+  %str.concat635 = call ptr @csec_string_concat(ptr @2083, ptr %labelSeed.load634)
+  %str.concat636 = call ptr @csec_string_concat(ptr %str.concat635, ptr @2084)
   %continueBranch = alloca ptr, align 8
   store ptr %str.concat636, ptr %continueBranch, align 8
   %bodyStart.load637 = load i32, ptr %bodyStart, align 4
@@ -21566,47 +22829,47 @@ ifcont621:                                        ; preds = %ifcont643, %then619
 
 then642:                                          ; preds = %else620
   %continueBranch.load = load ptr, ptr %continueBranch, align 8
-  store ptr @1959, ptr %continueBranch, align 8
+  store ptr @2085, ptr %continueBranch, align 8
   br label %ifcont643
 
 ifcont643:                                        ; preds = %then642, %else620
-  %str.concat646 = call ptr @csec_string_concat(ptr %output.0, ptr @1960)
+  %str.concat646 = call ptr @csec_string_concat(ptr %output.0, ptr @2086)
   %labelSeed.load647 = load ptr, ptr %labelSeed629, align 8
   %str.concat648 = call ptr @csec_string_concat(ptr %str.concat646, ptr %labelSeed.load647)
-  %str.concat649 = call ptr @csec_string_concat(ptr %str.concat648, ptr @1961)
-  %str.concat650 = call ptr @csec_string_concat(ptr %str.concat649, ptr @1962)
+  %str.concat649 = call ptr @csec_string_concat(ptr %str.concat648, ptr @2087)
+  %str.concat650 = call ptr @csec_string_concat(ptr %str.concat649, ptr @2088)
   %labelSeed.load651 = load ptr, ptr %labelSeed629, align 8
   %str.concat652 = call ptr @csec_string_concat(ptr %str.concat650, ptr %labelSeed.load651)
-  %str.concat653 = call ptr @csec_string_concat(ptr %str.concat652, ptr @1963)
+  %str.concat653 = call ptr @csec_string_concat(ptr %str.concat652, ptr @2089)
   %openParen.load654 = load i32, ptr %openParen587, align 4
   %addtmp655 = add i32 %openParen.load654, 1
   %closeParen.load656 = load i32, ptr %closeParen591, align 4
   %labelSeed.load657 = load ptr, ptr %labelSeed629, align 8
-  %str.concat658 = call ptr @csec_string_concat(ptr @1964, ptr %labelSeed.load657)
+  %str.concat658 = call ptr @csec_string_concat(ptr @2090, ptr %labelSeed.load657)
   %calltmp659 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp655, i32 %closeParen.load656, ptr %str.concat658)
   %str.concat660 = call ptr @csec_string_concat(ptr %str.concat653, ptr %calltmp659)
-  %str.concat661 = call ptr @csec_string_concat(ptr %str.concat660, ptr @1965)
+  %str.concat661 = call ptr @csec_string_concat(ptr %str.concat660, ptr @2091)
   %labelSeed.load662 = load ptr, ptr %labelSeed629, align 8
   %str.concat663 = call ptr @csec_string_concat(ptr %str.concat661, ptr %labelSeed.load662)
-  %str.concat664 = call ptr @csec_string_concat(ptr %str.concat663, ptr @1966)
+  %str.concat664 = call ptr @csec_string_concat(ptr %str.concat663, ptr @2092)
   %labelSeed.load665 = load ptr, ptr %labelSeed629, align 8
   %str.concat666 = call ptr @csec_string_concat(ptr %str.concat664, ptr %labelSeed.load665)
-  %str.concat667 = call ptr @csec_string_concat(ptr %str.concat666, ptr @1967)
+  %str.concat667 = call ptr @csec_string_concat(ptr %str.concat666, ptr @2093)
   %labelSeed.load668 = load ptr, ptr %labelSeed629, align 8
   %str.concat669 = call ptr @csec_string_concat(ptr %str.concat667, ptr %labelSeed.load668)
-  %str.concat670 = call ptr @csec_string_concat(ptr %str.concat669, ptr @1968)
-  %str.concat671 = call ptr @csec_string_concat(ptr %str.concat670, ptr @1969)
+  %str.concat670 = call ptr @csec_string_concat(ptr %str.concat669, ptr @2094)
+  %str.concat671 = call ptr @csec_string_concat(ptr %str.concat670, ptr @2095)
   %labelSeed.load672 = load ptr, ptr %labelSeed629, align 8
   %str.concat673 = call ptr @csec_string_concat(ptr %str.concat671, ptr %labelSeed.load672)
-  %str.concat674 = call ptr @csec_string_concat(ptr %str.concat673, ptr @1970)
+  %str.concat674 = call ptr @csec_string_concat(ptr %str.concat673, ptr @2096)
   %body.load = load ptr, ptr %body, align 8
   %str.concat675 = call ptr @csec_string_concat(ptr %str.concat674, ptr %body.load)
   %continueBranch.load676 = load ptr, ptr %continueBranch, align 8
   %str.concat677 = call ptr @csec_string_concat(ptr %str.concat675, ptr %continueBranch.load676)
-  %str.concat678 = call ptr @csec_string_concat(ptr %str.concat677, ptr @1971)
+  %str.concat678 = call ptr @csec_string_concat(ptr %str.concat677, ptr @2097)
   %labelSeed.load679 = load ptr, ptr %labelSeed629, align 8
   %str.concat680 = call ptr @csec_string_concat(ptr %str.concat678, ptr %labelSeed.load679)
-  %str.concat681 = call ptr @csec_string_concat(ptr %str.concat680, ptr @1972)
+  %str.concat681 = call ptr @csec_string_concat(ptr %str.concat680, ptr @2098)
   br label %ifcont621
 
 then686:                                          ; preds = %else582
@@ -21624,7 +22887,7 @@ then686:                                          ; preds = %else582
   store i32 %calltmp699, ptr %bodyStart700, align 4
   %bodyStart.load701 = load i32, ptr %bodyStart700, align 4
   %next.load702 = load i32, ptr %next, align 4
-  %calltmp703 = call i32 @_findClosingToken(ptr %0, i32 %bodyStart.load701, i32 %next.load702, ptr @1974, ptr @1975)
+  %calltmp703 = call i32 @_findClosingToken(ptr %0, i32 %bodyStart.load701, i32 %next.load702, ptr @2100, ptr @2101)
   %bodyEnd704 = alloca i32, align 4
   store i32 %calltmp703, ptr %bodyEnd704, align 4
   %openParen.load705 = load i32, ptr %openParen692, align 4
@@ -21674,7 +22937,7 @@ or_end722:                                        ; preds = %or_rhs721, %or_end7
   br i1 %ifcond727, label %then728, label %else729
 
 then728:                                          ; preds = %or_end722
-  %str.concat733 = call ptr @csec_string_concat(ptr %output.0, ptr @1976)
+  %str.concat733 = call ptr @csec_string_concat(ptr %output.0, ptr @2102)
   br label %ifcont730
 
 else729:                                          ; preds = %or_end722
@@ -21692,7 +22955,7 @@ ifcont730:                                        ; preds = %ifcont742, %then728
   br label %ifcont688
 
 then740:                                          ; preds = %else729
-  %str.concat745 = call ptr @csec_string_concat(ptr %output.0, ptr @1977)
+  %str.concat745 = call ptr @csec_string_concat(ptr %output.0, ptr @2103)
   br label %ifcont742
 
 else741:                                          ; preds = %else729
@@ -21704,7 +22967,7 @@ else741:                                          ; preds = %else729
   %openParen.load749 = load i32, ptr %openParen692, align 4
   %addtmp750 = add i32 %openParen.load749, 1
   %closeParen.load751 = load i32, ptr %closeParen696, align 4
-  %calltmp752 = call i32 @_findTokenTextInRange(ptr %0, i32 %addtmp750, i32 %closeParen.load751, ptr @1978)
+  %calltmp752 = call i32 @_findTokenTextInRange(ptr %0, i32 %addtmp750, i32 %closeParen.load751, ptr @2104)
   %sourceArrow = alloca i32, align 4
   store i32 %calltmp752, ptr %sourceArrow, align 4
   %sourceArrow.load = load i32, ptr %sourceArrow, align 4
@@ -21718,7 +22981,7 @@ ifcont742:                                        ; preds = %ifcont757, %then740
   br label %ifcont730
 
 then755:                                          ; preds = %else741
-  %str.concat760 = call ptr @csec_string_concat(ptr %output.0, ptr @1979)
+  %str.concat760 = call ptr @csec_string_concat(ptr %output.0, ptr @2105)
   br label %ifcont757
 
 else756:                                          ; preds = %else741
@@ -21740,20 +23003,20 @@ ifcont757:                                        ; preds = %ifcont770, %then755
   br label %ifcont742
 
 then768:                                          ; preds = %else756
-  %str.concat773 = call ptr @csec_string_concat(ptr %output.0, ptr @1980)
+  %str.concat773 = call ptr @csec_string_concat(ptr %output.0, ptr @2106)
   br label %ifcont770
 
 else769:                                          ; preds = %else756
   %str.sext775 = sext i32 %cursor.0 to i64
   %str.int.call776 = call ptr @csec_to_string_i64(i64 %str.sext775)
-  %str.concat777 = call ptr @csec_string_concat(ptr @1981, ptr %str.int.call776)
+  %str.concat777 = call ptr @csec_string_concat(ptr @2107, ptr %str.int.call776)
   %labelSeed778 = alloca ptr, align 8
   store ptr %str.concat777, ptr %labelSeed778, align 8
   %compareOp = alloca ptr, align 8
-  store ptr @1982, ptr %compareOp, align 8
+  store ptr @2108, ptr %compareOp, align 8
   %rangeOp.load779 = load i32, ptr %rangeOp, align 4
   %calltmp780 = call ptr @_tokenTextAt(ptr %0, i32 %rangeOp.load779)
-  %calltmp781 = call i1 @_strEq(ptr %calltmp780, ptr @1983)
+  %calltmp781 = call i1 @_strEq(ptr %calltmp780, ptr @2109)
   br i1 %calltmp781, label %or_end784, label %or_rhs783
 
 ifcont770:                                        ; preds = %ifcont838, %then768
@@ -21764,7 +23027,7 @@ ifcont770:                                        ; preds = %ifcont838, %then768
 or_rhs783:                                        ; preds = %else769
   %rangeOp.load785 = load i32, ptr %rangeOp, align 4
   %calltmp786 = call ptr @_tokenTextAt(ptr %0, i32 %rangeOp.load785)
-  %calltmp787 = call i1 @_strEq(ptr %calltmp786, ptr @1984)
+  %calltmp787 = call i1 @_strEq(ptr %calltmp786, ptr @2110)
   br label %or_end784
 
 or_end784:                                        ; preds = %or_rhs783, %else769
@@ -21774,7 +23037,7 @@ or_end784:                                        ; preds = %or_rhs783, %else769
 
 then790:                                          ; preds = %or_end784
   %compareOp.load = load ptr, ptr %compareOp, align 8
-  store ptr @1985, ptr %compareOp, align 8
+  store ptr @2111, ptr %compareOp, align 8
   br label %ifcont791
 
 ifcont791:                                        ; preds = %then790, %or_end784
@@ -21785,41 +23048,41 @@ ifcont791:                                        ; preds = %then790, %or_end784
   %body796 = alloca ptr, align 8
   store ptr %calltmp795, ptr %body796, align 8
   %iteratorName.load = load ptr, ptr %iteratorName, align 8
-  %str.concat797 = call ptr @csec_string_concat(ptr @1986, ptr %iteratorName.load)
-  %str.concat798 = call ptr @csec_string_concat(ptr %str.concat797, ptr @1987)
+  %str.concat797 = call ptr @csec_string_concat(ptr @2112, ptr %iteratorName.load)
+  %str.concat798 = call ptr @csec_string_concat(ptr %str.concat797, ptr @2113)
   %labelSeed.load799 = load ptr, ptr %labelSeed778, align 8
   %str.concat800 = call ptr @csec_string_concat(ptr %str.concat798, ptr %labelSeed.load799)
-  %str.concat801 = call ptr @csec_string_concat(ptr %str.concat800, ptr @1988)
+  %str.concat801 = call ptr @csec_string_concat(ptr %str.concat800, ptr @2114)
   %iteratorName.load802 = load ptr, ptr %iteratorName, align 8
   %str.concat803 = call ptr @csec_string_concat(ptr %str.concat801, ptr %iteratorName.load802)
-  %str.concat804 = call ptr @csec_string_concat(ptr %str.concat803, ptr @1989)
-  %str.concat805 = call ptr @csec_string_concat(ptr %str.concat804, ptr @1990)
+  %str.concat804 = call ptr @csec_string_concat(ptr %str.concat803, ptr @2115)
+  %str.concat805 = call ptr @csec_string_concat(ptr %str.concat804, ptr @2116)
   %iteratorName.load806 = load ptr, ptr %iteratorName, align 8
   %str.concat807 = call ptr @csec_string_concat(ptr %str.concat805, ptr %iteratorName.load806)
-  %str.concat808 = call ptr @csec_string_concat(ptr %str.concat807, ptr @1991)
+  %str.concat808 = call ptr @csec_string_concat(ptr %str.concat807, ptr @2117)
   %labelSeed.load809 = load ptr, ptr %labelSeed778, align 8
   %str.concat810 = call ptr @csec_string_concat(ptr %str.concat808, ptr %labelSeed.load809)
-  %str.concat811 = call ptr @csec_string_concat(ptr %str.concat810, ptr @1992)
+  %str.concat811 = call ptr @csec_string_concat(ptr %str.concat810, ptr @2118)
   %iteratorName.load812 = load ptr, ptr %iteratorName, align 8
   %str.concat813 = call ptr @csec_string_concat(ptr %str.concat811, ptr %iteratorName.load812)
-  %str.concat814 = call ptr @csec_string_concat(ptr %str.concat813, ptr @1993)
+  %str.concat814 = call ptr @csec_string_concat(ptr %str.concat813, ptr @2119)
   %labelSeed.load815 = load ptr, ptr %labelSeed778, align 8
   %str.concat816 = call ptr @csec_string_concat(ptr %str.concat814, ptr %labelSeed.load815)
-  %str.concat817 = call ptr @csec_string_concat(ptr %str.concat816, ptr @1994)
-  %str.concat818 = call ptr @csec_string_concat(ptr %str.concat817, ptr @1995)
+  %str.concat817 = call ptr @csec_string_concat(ptr %str.concat816, ptr @2120)
+  %str.concat818 = call ptr @csec_string_concat(ptr %str.concat817, ptr @2121)
   %iteratorName.load819 = load ptr, ptr %iteratorName, align 8
   %str.concat820 = call ptr @csec_string_concat(ptr %str.concat818, ptr %iteratorName.load819)
-  %str.concat821 = call ptr @csec_string_concat(ptr %str.concat820, ptr @1996)
+  %str.concat821 = call ptr @csec_string_concat(ptr %str.concat820, ptr @2122)
   %labelSeed.load822 = load ptr, ptr %labelSeed778, align 8
   %str.concat823 = call ptr @csec_string_concat(ptr %str.concat821, ptr %labelSeed.load822)
-  %str.concat824 = call ptr @csec_string_concat(ptr %str.concat823, ptr @1997)
+  %str.concat824 = call ptr @csec_string_concat(ptr %str.concat823, ptr @2123)
   %iteratorName.load825 = load ptr, ptr %iteratorName, align 8
   %str.concat826 = call ptr @csec_string_concat(ptr %str.concat824, ptr %iteratorName.load825)
-  %str.concat827 = call ptr @csec_string_concat(ptr %str.concat826, ptr @1998)
-  %str.concat828 = call ptr @csec_string_concat(ptr %str.concat827, ptr @1999)
+  %str.concat827 = call ptr @csec_string_concat(ptr %str.concat826, ptr @2124)
+  %str.concat828 = call ptr @csec_string_concat(ptr %str.concat827, ptr @2125)
   %labelSeed.load829 = load ptr, ptr %labelSeed778, align 8
   %str.concat830 = call ptr @csec_string_concat(ptr %str.concat828, ptr %labelSeed.load829)
-  %str.concat831 = call ptr @csec_string_concat(ptr %str.concat830, ptr @2000)
+  %str.concat831 = call ptr @csec_string_concat(ptr %str.concat830, ptr @2126)
   %stepBranch = alloca ptr, align 8
   store ptr %str.concat831, ptr %stepBranch, align 8
   %bodyStart.load832 = load i32, ptr %bodyStart700, align 4
@@ -21831,87 +23094,87 @@ ifcont791:                                        ; preds = %then790, %or_end784
 
 then837:                                          ; preds = %ifcont791
   %stepBranch.load = load ptr, ptr %stepBranch, align 8
-  store ptr @2001, ptr %stepBranch, align 8
+  store ptr @2127, ptr %stepBranch, align 8
   br label %ifcont838
 
 ifcont838:                                        ; preds = %then837, %ifcont791
-  %str.concat841 = call ptr @csec_string_concat(ptr %output.0, ptr @2002)
+  %str.concat841 = call ptr @csec_string_concat(ptr %output.0, ptr @2128)
   %iteratorName.load842 = load ptr, ptr %iteratorName, align 8
   %str.concat843 = call ptr @csec_string_concat(ptr %str.concat841, ptr %iteratorName.load842)
-  %str.concat844 = call ptr @csec_string_concat(ptr %str.concat843, ptr @2003)
+  %str.concat844 = call ptr @csec_string_concat(ptr %str.concat843, ptr @2129)
   %sourceArrow.load845 = load i32, ptr %sourceArrow, align 4
   %addtmp846 = add i32 %sourceArrow.load845, 1
   %rangeOp.load847 = load i32, ptr %rangeOp, align 4
   %iteratorName.load848 = load ptr, ptr %iteratorName, align 8
-  %str.concat849 = call ptr @csec_string_concat(ptr @2004, ptr %iteratorName.load848)
-  %str.concat850 = call ptr @csec_string_concat(ptr %str.concat849, ptr @2005)
+  %str.concat849 = call ptr @csec_string_concat(ptr @2130, ptr %iteratorName.load848)
+  %str.concat850 = call ptr @csec_string_concat(ptr %str.concat849, ptr @2131)
   %calltmp851 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp846, i32 %rangeOp.load847, ptr %str.concat850)
   %str.concat852 = call ptr @csec_string_concat(ptr %str.concat844, ptr %calltmp851)
-  %str.concat853 = call ptr @csec_string_concat(ptr %str.concat852, ptr @2006)
+  %str.concat853 = call ptr @csec_string_concat(ptr %str.concat852, ptr @2132)
   %iteratorName.load854 = load ptr, ptr %iteratorName, align 8
   %str.concat855 = call ptr @csec_string_concat(ptr %str.concat853, ptr %iteratorName.load854)
-  %str.concat856 = call ptr @csec_string_concat(ptr %str.concat855, ptr @2007)
+  %str.concat856 = call ptr @csec_string_concat(ptr %str.concat855, ptr @2133)
   %iteratorName.load857 = load ptr, ptr %iteratorName, align 8
   %str.concat858 = call ptr @csec_string_concat(ptr %str.concat856, ptr %iteratorName.load857)
-  %str.concat859 = call ptr @csec_string_concat(ptr %str.concat858, ptr @2008)
-  %str.concat860 = call ptr @csec_string_concat(ptr %str.concat859, ptr @2009)
+  %str.concat859 = call ptr @csec_string_concat(ptr %str.concat858, ptr @2134)
+  %str.concat860 = call ptr @csec_string_concat(ptr %str.concat859, ptr @2135)
   %labelSeed.load861 = load ptr, ptr %labelSeed778, align 8
   %str.concat862 = call ptr @csec_string_concat(ptr %str.concat860, ptr %labelSeed.load861)
-  %str.concat863 = call ptr @csec_string_concat(ptr %str.concat862, ptr @2010)
-  %str.concat864 = call ptr @csec_string_concat(ptr %str.concat863, ptr @2011)
+  %str.concat863 = call ptr @csec_string_concat(ptr %str.concat862, ptr @2136)
+  %str.concat864 = call ptr @csec_string_concat(ptr %str.concat863, ptr @2137)
   %labelSeed.load865 = load ptr, ptr %labelSeed778, align 8
   %str.concat866 = call ptr @csec_string_concat(ptr %str.concat864, ptr %labelSeed.load865)
-  %str.concat867 = call ptr @csec_string_concat(ptr %str.concat866, ptr @2012)
-  %str.concat868 = call ptr @csec_string_concat(ptr %str.concat867, ptr @2013)
+  %str.concat867 = call ptr @csec_string_concat(ptr %str.concat866, ptr @2138)
+  %str.concat868 = call ptr @csec_string_concat(ptr %str.concat867, ptr @2139)
   %iteratorName.load869 = load ptr, ptr %iteratorName, align 8
   %str.concat870 = call ptr @csec_string_concat(ptr %str.concat868, ptr %iteratorName.load869)
-  %str.concat871 = call ptr @csec_string_concat(ptr %str.concat870, ptr @2014)
+  %str.concat871 = call ptr @csec_string_concat(ptr %str.concat870, ptr @2140)
   %iteratorName.load872 = load ptr, ptr %iteratorName, align 8
   %str.concat873 = call ptr @csec_string_concat(ptr %str.concat871, ptr %iteratorName.load872)
-  %str.concat874 = call ptr @csec_string_concat(ptr %str.concat873, ptr @2015)
+  %str.concat874 = call ptr @csec_string_concat(ptr %str.concat873, ptr @2141)
   %rangeOp.load875 = load i32, ptr %rangeOp, align 4
   %addtmp876 = add i32 %rangeOp.load875, 1
   %closeParen.load877 = load i32, ptr %closeParen696, align 4
   %iteratorName.load878 = load ptr, ptr %iteratorName, align 8
-  %str.concat879 = call ptr @csec_string_concat(ptr @2016, ptr %iteratorName.load878)
-  %str.concat880 = call ptr @csec_string_concat(ptr %str.concat879, ptr @2017)
+  %str.concat879 = call ptr @csec_string_concat(ptr @2142, ptr %iteratorName.load878)
+  %str.concat880 = call ptr @csec_string_concat(ptr %str.concat879, ptr @2143)
   %calltmp881 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp876, i32 %closeParen.load877, ptr %str.concat880)
   %str.concat882 = call ptr @csec_string_concat(ptr %str.concat874, ptr %calltmp881)
-  %str.concat883 = call ptr @csec_string_concat(ptr %str.concat882, ptr @2018)
+  %str.concat883 = call ptr @csec_string_concat(ptr %str.concat882, ptr @2144)
   %labelSeed.load884 = load ptr, ptr %labelSeed778, align 8
   %str.concat885 = call ptr @csec_string_concat(ptr %str.concat883, ptr %labelSeed.load884)
-  %str.concat886 = call ptr @csec_string_concat(ptr %str.concat885, ptr @2019)
+  %str.concat886 = call ptr @csec_string_concat(ptr %str.concat885, ptr @2145)
   %compareOp.load887 = load ptr, ptr %compareOp, align 8
   %str.concat888 = call ptr @csec_string_concat(ptr %str.concat886, ptr %compareOp.load887)
-  %str.concat889 = call ptr @csec_string_concat(ptr %str.concat888, ptr @2020)
+  %str.concat889 = call ptr @csec_string_concat(ptr %str.concat888, ptr @2146)
   %iteratorName.load890 = load ptr, ptr %iteratorName, align 8
   %str.concat891 = call ptr @csec_string_concat(ptr %str.concat889, ptr %iteratorName.load890)
-  %str.concat892 = call ptr @csec_string_concat(ptr %str.concat891, ptr @2021)
+  %str.concat892 = call ptr @csec_string_concat(ptr %str.concat891, ptr @2147)
   %iteratorName.load893 = load ptr, ptr %iteratorName, align 8
   %str.concat894 = call ptr @csec_string_concat(ptr %str.concat892, ptr %iteratorName.load893)
-  %str.concat895 = call ptr @csec_string_concat(ptr %str.concat894, ptr @2022)
-  %str.concat896 = call ptr @csec_string_concat(ptr %str.concat895, ptr @2023)
+  %str.concat895 = call ptr @csec_string_concat(ptr %str.concat894, ptr @2148)
+  %str.concat896 = call ptr @csec_string_concat(ptr %str.concat895, ptr @2149)
   %labelSeed.load897 = load ptr, ptr %labelSeed778, align 8
   %str.concat898 = call ptr @csec_string_concat(ptr %str.concat896, ptr %labelSeed.load897)
-  %str.concat899 = call ptr @csec_string_concat(ptr %str.concat898, ptr @2024)
+  %str.concat899 = call ptr @csec_string_concat(ptr %str.concat898, ptr @2150)
   %labelSeed.load900 = load ptr, ptr %labelSeed778, align 8
   %str.concat901 = call ptr @csec_string_concat(ptr %str.concat899, ptr %labelSeed.load900)
-  %str.concat902 = call ptr @csec_string_concat(ptr %str.concat901, ptr @2025)
+  %str.concat902 = call ptr @csec_string_concat(ptr %str.concat901, ptr @2151)
   %labelSeed.load903 = load ptr, ptr %labelSeed778, align 8
   %str.concat904 = call ptr @csec_string_concat(ptr %str.concat902, ptr %labelSeed.load903)
-  %str.concat905 = call ptr @csec_string_concat(ptr %str.concat904, ptr @2026)
-  %str.concat906 = call ptr @csec_string_concat(ptr %str.concat905, ptr @2027)
+  %str.concat905 = call ptr @csec_string_concat(ptr %str.concat904, ptr @2152)
+  %str.concat906 = call ptr @csec_string_concat(ptr %str.concat905, ptr @2153)
   %labelSeed.load907 = load ptr, ptr %labelSeed778, align 8
   %str.concat908 = call ptr @csec_string_concat(ptr %str.concat906, ptr %labelSeed.load907)
-  %str.concat909 = call ptr @csec_string_concat(ptr %str.concat908, ptr @2028)
+  %str.concat909 = call ptr @csec_string_concat(ptr %str.concat908, ptr @2154)
   %body.load910 = load ptr, ptr %body796, align 8
   %str.concat911 = call ptr @csec_string_concat(ptr %str.concat909, ptr %body.load910)
   %stepBranch.load912 = load ptr, ptr %stepBranch, align 8
   %str.concat913 = call ptr @csec_string_concat(ptr %str.concat911, ptr %stepBranch.load912)
-  %str.concat914 = call ptr @csec_string_concat(ptr %str.concat913, ptr @2029)
+  %str.concat914 = call ptr @csec_string_concat(ptr %str.concat913, ptr @2155)
   %labelSeed.load915 = load ptr, ptr %labelSeed778, align 8
   %str.concat916 = call ptr @csec_string_concat(ptr %str.concat914, ptr %labelSeed.load915)
-  %str.concat917 = call ptr @csec_string_concat(ptr %str.concat916, ptr @2030)
+  %str.concat917 = call ptr @csec_string_concat(ptr %str.concat916, ptr @2156)
   br label %ifcont770
 
 then927:                                          ; preds = %else687
@@ -21920,7 +23183,7 @@ then927:                                          ; preds = %else687
   %targetType = alloca ptr, align 8
   store ptr %calltmp933, ptr %targetType, align 8
   %targetType.load = load ptr, ptr %targetType, align 8
-  %calltmp934 = call i1 @_strEq(ptr %targetType.load, ptr @2031)
+  %calltmp934 = call i1 @_strEq(ptr %targetType.load, ptr @2157)
   %ifcond935 = icmp ne i1 %calltmp934, false
   br i1 %ifcond935, label %then936, label %else937
 
@@ -21943,7 +23206,7 @@ then936:                                          ; preds = %then927
 
 else937:                                          ; preds = %then927
   %targetType.load945 = load ptr, ptr %targetType, align 8
-  %calltmp946 = call i1 @_strEq(ptr %targetType.load945, ptr @2032)
+  %calltmp946 = call i1 @_strEq(ptr %targetType.load945, ptr @2158)
   %ifcond947 = icmp ne i1 %calltmp946, false
   br i1 %ifcond947, label %then948, label %else949
 
@@ -21960,7 +23223,7 @@ then948:                                          ; preds = %else937
 
 else949:                                          ; preds = %else937
   %targetType.load957 = load ptr, ptr %targetType, align 8
-  %calltmp958 = call i1 @_strEq(ptr %targetType.load957, ptr @2033)
+  %calltmp958 = call i1 @_strEq(ptr %targetType.load957, ptr @2159)
   %ifcond959 = icmp ne i1 %calltmp958, false
   br i1 %ifcond959, label %then960, label %else961
 
@@ -21977,7 +23240,7 @@ then960:                                          ; preds = %else949
 
 else961:                                          ; preds = %else949
   %targetType.load969 = load ptr, ptr %targetType, align 8
-  %calltmp970 = call i1 @_strEq(ptr %targetType.load969, ptr @2034)
+  %calltmp970 = call i1 @_strEq(ptr %targetType.load969, ptr @2160)
   %ifcond971 = icmp ne i1 %calltmp970, false
   br i1 %ifcond971, label %then972, label %else973
 
@@ -21995,7 +23258,7 @@ then972:                                          ; preds = %else961
 else973:                                          ; preds = %else961
   %targetType.load981 = load ptr, ptr %targetType, align 8
   %calltmp982 = call ptr @_irTypeName(ptr %targetType.load981)
-  %calltmp983 = call i1 @_strEq(ptr %calltmp982, ptr @2035)
+  %calltmp983 = call i1 @_strEq(ptr %calltmp982, ptr @2161)
   %ifcond984 = icmp ne i1 %calltmp983, false
   br i1 %ifcond984, label %then985, label %else986
 
@@ -22027,7 +23290,7 @@ entry:
   %calltmp = call i32 @_findStatementParenStart(ptr %0, i32 %1, i32 %2)
   %calltmp1 = call i32 @_findStatementParenEnd(ptr %0, i32 %1, i32 %2)
   %calltmp2 = call i32 @_findStatementBlockStart(ptr %0, i32 %1, i32 %2)
-  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp2, i32 %2, ptr @2036, ptr @2037)
+  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp2, i32 %2, ptr @2162, ptr @2163)
   %lttmp = icmp slt i32 %calltmp, 0
   br i1 %lttmp, label %or_end, label %or_rhs
 
@@ -22057,12 +23320,12 @@ or_end13:                                         ; preds = %or_rhs12, %or_end7
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end13
-  ret ptr @2038
+  ret ptr @2164
 
 ifcont:                                           ; preds = %or_end13
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
-  %str.concat = call ptr @csec_string_concat(ptr @2039, ptr %str.int.call)
+  %str.concat = call ptr @csec_string_concat(ptr @2165, ptr %str.int.call)
   %labelSeed = alloca ptr, align 8
   store ptr %str.concat, ptr %labelSeed, align 8
   %addtmp = add i32 %calltmp3, 1
@@ -22074,8 +23337,8 @@ ifcont:                                           ; preds = %or_end13
   %thenBody = alloca ptr, align 8
   store ptr %calltmp22, ptr %thenBody, align 8
   %labelSeed.load = load ptr, ptr %labelSeed, align 8
-  %str.concat23 = call ptr @csec_string_concat(ptr @2040, ptr %labelSeed.load)
-  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @2041)
+  %str.concat23 = call ptr @csec_string_concat(ptr @2166, ptr %labelSeed.load)
+  %str.concat24 = call ptr @csec_string_concat(ptr %str.concat23, ptr @2167)
   %thenBranch = alloca ptr, align 8
   store ptr %str.concat24, ptr %thenBranch, align 8
   %addtmp26 = add i32 %calltmp2, 1
@@ -22085,15 +23348,15 @@ ifcont:                                           ; preds = %or_end13
 
 then30:                                           ; preds = %ifcont
   %thenBranch.load = load ptr, ptr %thenBranch, align 8
-  store ptr @2042, ptr %thenBranch, align 8
+  store ptr @2168, ptr %thenBranch, align 8
   br label %ifcont31
 
 ifcont31:                                         ; preds = %then30, %ifcont
   %elseBody = alloca ptr, align 8
-  store ptr @2043, ptr %elseBody, align 8
+  store ptr @2169, ptr %elseBody, align 8
   %labelSeed.load32 = load ptr, ptr %labelSeed, align 8
-  %str.concat33 = call ptr @csec_string_concat(ptr @2044, ptr %labelSeed.load32)
-  %str.concat34 = call ptr @csec_string_concat(ptr %str.concat33, ptr @2045)
+  %str.concat33 = call ptr @csec_string_concat(ptr @2170, ptr %labelSeed.load32)
+  %str.concat34 = call ptr @csec_string_concat(ptr %str.concat33, ptr @2171)
   %elseBranch = alloca ptr, align 8
   store ptr %str.concat34, ptr %elseBranch, align 8
   %possibleElse.load = load i32, ptr %possibleElse, align 4
@@ -22103,7 +23366,7 @@ ifcont31:                                         ; preds = %then30, %ifcont
 and_rhs:                                          ; preds = %ifcont31
   %possibleElse.load36 = load i32, ptr %possibleElse, align 4
   %calltmp37 = call i8 @_kindKeyword()
-  %calltmp38 = call i1 @_tokenIs(ptr %0, i32 %possibleElse.load36, i8 %calltmp37, ptr @2046)
+  %calltmp38 = call i1 @_tokenIs(ptr %0, i32 %possibleElse.load36, i8 %calltmp37, ptr @2172)
   br label %and_end
 
 and_end:                                          ; preds = %and_rhs, %ifcont31
@@ -22119,50 +23382,50 @@ then40:                                           ; preds = %and_end
   store i32 %calltmp44, ptr %elseStart, align 4
   %elseStart.load = load i32, ptr %elseStart, align 4
   %calltmp45 = call i8 @_kindOperator()
-  %calltmp46 = call i1 @_tokenIs(ptr %0, i32 %elseStart.load, i8 %calltmp45, ptr @2047)
+  %calltmp46 = call i1 @_tokenIs(ptr %0, i32 %elseStart.load, i8 %calltmp45, ptr @2173)
   %ifcond47 = icmp ne i1 %calltmp46, false
   br i1 %ifcond47, label %then48, label %ifcont49
 
 ifcont41:                                         ; preds = %ifcont49, %and_end
   %addtmp68 = add i32 %calltmp, 1
   %labelSeed.load70 = load ptr, ptr %labelSeed, align 8
-  %str.concat71 = call ptr @csec_string_concat(ptr @2051, ptr %labelSeed.load70)
+  %str.concat71 = call ptr @csec_string_concat(ptr @2177, ptr %labelSeed.load70)
   %calltmp72 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp68, i32 %calltmp1, ptr %str.concat71)
-  %str.concat73 = call ptr @csec_string_concat(ptr %calltmp72, ptr @2052)
+  %str.concat73 = call ptr @csec_string_concat(ptr %calltmp72, ptr @2178)
   %labelSeed.load74 = load ptr, ptr %labelSeed, align 8
   %str.concat75 = call ptr @csec_string_concat(ptr %str.concat73, ptr %labelSeed.load74)
-  %str.concat76 = call ptr @csec_string_concat(ptr %str.concat75, ptr @2053)
+  %str.concat76 = call ptr @csec_string_concat(ptr %str.concat75, ptr @2179)
   %labelSeed.load77 = load ptr, ptr %labelSeed, align 8
   %str.concat78 = call ptr @csec_string_concat(ptr %str.concat76, ptr %labelSeed.load77)
-  %str.concat79 = call ptr @csec_string_concat(ptr %str.concat78, ptr @2054)
+  %str.concat79 = call ptr @csec_string_concat(ptr %str.concat78, ptr @2180)
   %labelSeed.load80 = load ptr, ptr %labelSeed, align 8
   %str.concat81 = call ptr @csec_string_concat(ptr %str.concat79, ptr %labelSeed.load80)
-  %str.concat82 = call ptr @csec_string_concat(ptr %str.concat81, ptr @2055)
-  %str.concat83 = call ptr @csec_string_concat(ptr %str.concat82, ptr @2056)
+  %str.concat82 = call ptr @csec_string_concat(ptr %str.concat81, ptr @2181)
+  %str.concat83 = call ptr @csec_string_concat(ptr %str.concat82, ptr @2182)
   %labelSeed.load84 = load ptr, ptr %labelSeed, align 8
   %str.concat85 = call ptr @csec_string_concat(ptr %str.concat83, ptr %labelSeed.load84)
-  %str.concat86 = call ptr @csec_string_concat(ptr %str.concat85, ptr @2057)
+  %str.concat86 = call ptr @csec_string_concat(ptr %str.concat85, ptr @2183)
   %thenBody.load = load ptr, ptr %thenBody, align 8
   %str.concat87 = call ptr @csec_string_concat(ptr %str.concat86, ptr %thenBody.load)
   %thenBranch.load88 = load ptr, ptr %thenBranch, align 8
   %str.concat89 = call ptr @csec_string_concat(ptr %str.concat87, ptr %thenBranch.load88)
-  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @2058)
+  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @2184)
   %labelSeed.load91 = load ptr, ptr %labelSeed, align 8
   %str.concat92 = call ptr @csec_string_concat(ptr %str.concat90, ptr %labelSeed.load91)
-  %str.concat93 = call ptr @csec_string_concat(ptr %str.concat92, ptr @2059)
+  %str.concat93 = call ptr @csec_string_concat(ptr %str.concat92, ptr @2185)
   %elseBody.load94 = load ptr, ptr %elseBody, align 8
   %str.concat95 = call ptr @csec_string_concat(ptr %str.concat93, ptr %elseBody.load94)
   %elseBranch.load96 = load ptr, ptr %elseBranch, align 8
   %str.concat97 = call ptr @csec_string_concat(ptr %str.concat95, ptr %elseBranch.load96)
-  %str.concat98 = call ptr @csec_string_concat(ptr %str.concat97, ptr @2060)
+  %str.concat98 = call ptr @csec_string_concat(ptr %str.concat97, ptr @2186)
   %labelSeed.load99 = load ptr, ptr %labelSeed, align 8
   %str.concat100 = call ptr @csec_string_concat(ptr %str.concat98, ptr %labelSeed.load99)
-  %str.concat101 = call ptr @csec_string_concat(ptr %str.concat100, ptr @2061)
+  %str.concat101 = call ptr @csec_string_concat(ptr %str.concat100, ptr @2187)
   ret ptr %str.concat101
 
 then48:                                           ; preds = %then40
   %elseStart.load50 = load i32, ptr %elseStart, align 4
-  %calltmp51 = call i32 @_findClosingToken(ptr %0, i32 %elseStart.load50, i32 %2, ptr @2048, ptr @2049)
+  %calltmp51 = call i32 @_findClosingToken(ptr %0, i32 %elseStart.load50, i32 %2, ptr @2174, ptr @2175)
   %elseEnd = alloca i32, align 4
   store i32 %calltmp51, ptr %elseEnd, align 4
   %elseEnd.load = load i32, ptr %elseEnd, align 4
@@ -22193,7 +23456,7 @@ ifcont55:                                         ; preds = %ifcont66, %then48
 
 then65:                                           ; preds = %then54
   %elseBranch.load = load ptr, ptr %elseBranch, align 8
-  store ptr @2050, ptr %elseBranch, align 8
+  store ptr @2176, ptr %elseBranch, align 8
   br label %ifcont66
 
 ifcont66:                                         ; preds = %then65, %then54
@@ -22205,7 +23468,7 @@ entry:
   %calltmp = call i32 @_findStatementParenStart(ptr %0, i32 %1, i32 %2)
   %calltmp1 = call i32 @_findStatementParenEnd(ptr %0, i32 %1, i32 %2)
   %calltmp2 = call i32 @_findStatementBlockStart(ptr %0, i32 %1, i32 %2)
-  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp2, i32 %2, ptr @2062, ptr @2063)
+  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp2, i32 %2, ptr @2188, ptr @2189)
   %lttmp = icmp slt i32 %calltmp, 0
   br i1 %lttmp, label %or_end, label %or_rhs
 
@@ -22235,12 +23498,12 @@ or_end13:                                         ; preds = %or_rhs12, %or_end7
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end13
-  ret ptr @2064
+  ret ptr @2190
 
 ifcont:                                           ; preds = %or_end13
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
-  %str.concat = call ptr @csec_string_concat(ptr @2065, ptr %str.int.call)
+  %str.concat = call ptr @csec_string_concat(ptr @2191, ptr %str.int.call)
   %labelSeed = alloca ptr, align 8
   store ptr %str.concat, ptr %labelSeed, align 8
   %addtmp = add i32 %calltmp2, 1
@@ -22248,8 +23511,8 @@ ifcont:                                           ; preds = %or_end13
   %body = alloca ptr, align 8
   store ptr %calltmp19, ptr %body, align 8
   %labelSeed.load = load ptr, ptr %labelSeed, align 8
-  %str.concat20 = call ptr @csec_string_concat(ptr @2066, ptr %labelSeed.load)
-  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @2067)
+  %str.concat20 = call ptr @csec_string_concat(ptr @2192, ptr %labelSeed.load)
+  %str.concat21 = call ptr @csec_string_concat(ptr %str.concat20, ptr @2193)
   %continueBranch = alloca ptr, align 8
   store ptr %str.concat21, ptr %continueBranch, align 8
   %addtmp23 = add i32 %calltmp2, 1
@@ -22259,44 +23522,44 @@ ifcont:                                           ; preds = %or_end13
 
 then27:                                           ; preds = %ifcont
   %continueBranch.load = load ptr, ptr %continueBranch, align 8
-  store ptr @2068, ptr %continueBranch, align 8
+  store ptr @2194, ptr %continueBranch, align 8
   br label %ifcont28
 
 ifcont28:                                         ; preds = %then27, %ifcont
   %labelSeed.load29 = load ptr, ptr %labelSeed, align 8
-  %str.concat30 = call ptr @csec_string_concat(ptr @2069, ptr %labelSeed.load29)
-  %str.concat31 = call ptr @csec_string_concat(ptr %str.concat30, ptr @2070)
-  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @2071)
+  %str.concat30 = call ptr @csec_string_concat(ptr @2195, ptr %labelSeed.load29)
+  %str.concat31 = call ptr @csec_string_concat(ptr %str.concat30, ptr @2196)
+  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat31, ptr @2197)
   %labelSeed.load33 = load ptr, ptr %labelSeed, align 8
   %str.concat34 = call ptr @csec_string_concat(ptr %str.concat32, ptr %labelSeed.load33)
-  %str.concat35 = call ptr @csec_string_concat(ptr %str.concat34, ptr @2072)
+  %str.concat35 = call ptr @csec_string_concat(ptr %str.concat34, ptr @2198)
   %addtmp37 = add i32 %calltmp, 1
   %labelSeed.load39 = load ptr, ptr %labelSeed, align 8
-  %str.concat40 = call ptr @csec_string_concat(ptr @2073, ptr %labelSeed.load39)
+  %str.concat40 = call ptr @csec_string_concat(ptr @2199, ptr %labelSeed.load39)
   %calltmp41 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp37, i32 %calltmp1, ptr %str.concat40)
   %str.concat42 = call ptr @csec_string_concat(ptr %str.concat35, ptr %calltmp41)
-  %str.concat43 = call ptr @csec_string_concat(ptr %str.concat42, ptr @2074)
+  %str.concat43 = call ptr @csec_string_concat(ptr %str.concat42, ptr @2200)
   %labelSeed.load44 = load ptr, ptr %labelSeed, align 8
   %str.concat45 = call ptr @csec_string_concat(ptr %str.concat43, ptr %labelSeed.load44)
-  %str.concat46 = call ptr @csec_string_concat(ptr %str.concat45, ptr @2075)
+  %str.concat46 = call ptr @csec_string_concat(ptr %str.concat45, ptr @2201)
   %labelSeed.load47 = load ptr, ptr %labelSeed, align 8
   %str.concat48 = call ptr @csec_string_concat(ptr %str.concat46, ptr %labelSeed.load47)
-  %str.concat49 = call ptr @csec_string_concat(ptr %str.concat48, ptr @2076)
+  %str.concat49 = call ptr @csec_string_concat(ptr %str.concat48, ptr @2202)
   %labelSeed.load50 = load ptr, ptr %labelSeed, align 8
   %str.concat51 = call ptr @csec_string_concat(ptr %str.concat49, ptr %labelSeed.load50)
-  %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr @2077)
-  %str.concat53 = call ptr @csec_string_concat(ptr %str.concat52, ptr @2078)
+  %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr @2203)
+  %str.concat53 = call ptr @csec_string_concat(ptr %str.concat52, ptr @2204)
   %labelSeed.load54 = load ptr, ptr %labelSeed, align 8
   %str.concat55 = call ptr @csec_string_concat(ptr %str.concat53, ptr %labelSeed.load54)
-  %str.concat56 = call ptr @csec_string_concat(ptr %str.concat55, ptr @2079)
+  %str.concat56 = call ptr @csec_string_concat(ptr %str.concat55, ptr @2205)
   %body.load = load ptr, ptr %body, align 8
   %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr %body.load)
   %continueBranch.load58 = load ptr, ptr %continueBranch, align 8
   %str.concat59 = call ptr @csec_string_concat(ptr %str.concat57, ptr %continueBranch.load58)
-  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @2080)
+  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @2206)
   %labelSeed.load61 = load ptr, ptr %labelSeed, align 8
   %str.concat62 = call ptr @csec_string_concat(ptr %str.concat60, ptr %labelSeed.load61)
-  %str.concat63 = call ptr @csec_string_concat(ptr %str.concat62, ptr @2081)
+  %str.concat63 = call ptr @csec_string_concat(ptr %str.concat62, ptr @2207)
   ret ptr %str.concat63
 }
 
@@ -22305,7 +23568,7 @@ entry:
   %calltmp = call i32 @_findStatementParenStart(ptr %0, i32 %1, i32 %2)
   %calltmp1 = call i32 @_findStatementParenEnd(ptr %0, i32 %1, i32 %2)
   %calltmp2 = call i32 @_findStatementBlockStart(ptr %0, i32 %1, i32 %2)
-  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp2, i32 %2, ptr @2082, ptr @2083)
+  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp2, i32 %2, ptr @2208, ptr @2209)
   %lttmp = icmp slt i32 %calltmp, 0
   br i1 %lttmp, label %or_end, label %or_rhs
 
@@ -22335,7 +23598,7 @@ or_end13:                                         ; preds = %or_rhs12, %or_end7
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end13
-  ret ptr @2084
+  ret ptr @2210
 
 ifcont:                                           ; preds = %or_end13
   %addtmp = add i32 %calltmp, 1
@@ -22346,7 +23609,7 @@ ifcont:                                           ; preds = %or_end13
   br i1 %ifcond20, label %then21, label %ifcont22
 
 then21:                                           ; preds = %ifcont
-  ret ptr @2085
+  ret ptr @2211
 
 ifcont22:                                         ; preds = %ifcont
   %addtmp24 = add i32 %calltmp, 1
@@ -22354,7 +23617,7 @@ ifcont22:                                         ; preds = %ifcont
   %iteratorName = alloca ptr, align 8
   store ptr %calltmp25, ptr %iteratorName, align 8
   %addtmp27 = add i32 %calltmp, 1
-  %calltmp29 = call i32 @_findTokenTextInRange(ptr %0, i32 %addtmp27, i32 %calltmp1, ptr @2086)
+  %calltmp29 = call i32 @_findTokenTextInRange(ptr %0, i32 %addtmp27, i32 %calltmp1, ptr @2212)
   %sourceArrow = alloca i32, align 4
   store i32 %calltmp29, ptr %sourceArrow, align 4
   %sourceArrow.load = load i32, ptr %sourceArrow, align 4
@@ -22363,7 +23626,7 @@ ifcont22:                                         ; preds = %ifcont
   br i1 %ifcond31, label %then32, label %ifcont33
 
 then32:                                           ; preds = %ifcont22
-  ret ptr @2087
+  ret ptr @2213
 
 ifcont33:                                         ; preds = %ifcont22
   %sourceArrow.load34 = load i32, ptr %sourceArrow, align 4
@@ -22378,25 +23641,25 @@ ifcont33:                                         ; preds = %ifcont22
   br i1 %ifcond40, label %then41, label %ifcont42
 
 then41:                                           ; preds = %ifcont33
-  ret ptr @2088
+  ret ptr @2214
 
 ifcont42:                                         ; preds = %ifcont33
   %str.sext = sext i32 %1 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
-  %str.concat = call ptr @csec_string_concat(ptr @2089, ptr %str.int.call)
+  %str.concat = call ptr @csec_string_concat(ptr @2215, ptr %str.int.call)
   %labelSeed = alloca ptr, align 8
   store ptr %str.concat, ptr %labelSeed, align 8
   %compareOp = alloca ptr, align 8
-  store ptr @2090, ptr %compareOp, align 8
+  store ptr @2216, ptr %compareOp, align 8
   %rangeOp.load43 = load i32, ptr %rangeOp, align 4
   %calltmp44 = call ptr @_tokenTextAt(ptr %0, i32 %rangeOp.load43)
-  %calltmp45 = call i1 @_strEq(ptr %calltmp44, ptr @2091)
+  %calltmp45 = call i1 @_strEq(ptr %calltmp44, ptr @2217)
   br i1 %calltmp45, label %or_end48, label %or_rhs47
 
 or_rhs47:                                         ; preds = %ifcont42
   %rangeOp.load49 = load i32, ptr %rangeOp, align 4
   %calltmp50 = call ptr @_tokenTextAt(ptr %0, i32 %rangeOp.load49)
-  %calltmp51 = call i1 @_strEq(ptr %calltmp50, ptr @2092)
+  %calltmp51 = call i1 @_strEq(ptr %calltmp50, ptr @2218)
   br label %or_end48
 
 or_end48:                                         ; preds = %or_rhs47, %ifcont42
@@ -22406,7 +23669,7 @@ or_end48:                                         ; preds = %or_rhs47, %ifcont42
 
 then54:                                           ; preds = %or_end48
   %compareOp.load = load ptr, ptr %compareOp, align 8
-  store ptr @2093, ptr %compareOp, align 8
+  store ptr @2219, ptr %compareOp, align 8
   br label %ifcont55
 
 ifcont55:                                         ; preds = %then54, %or_end48
@@ -22415,41 +23678,41 @@ ifcont55:                                         ; preds = %then54, %or_end48
   %body = alloca ptr, align 8
   store ptr %calltmp59, ptr %body, align 8
   %iteratorName.load = load ptr, ptr %iteratorName, align 8
-  %str.concat60 = call ptr @csec_string_concat(ptr @2094, ptr %iteratorName.load)
-  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @2095)
+  %str.concat60 = call ptr @csec_string_concat(ptr @2220, ptr %iteratorName.load)
+  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @2221)
   %labelSeed.load = load ptr, ptr %labelSeed, align 8
   %str.concat62 = call ptr @csec_string_concat(ptr %str.concat61, ptr %labelSeed.load)
-  %str.concat63 = call ptr @csec_string_concat(ptr %str.concat62, ptr @2096)
+  %str.concat63 = call ptr @csec_string_concat(ptr %str.concat62, ptr @2222)
   %iteratorName.load64 = load ptr, ptr %iteratorName, align 8
   %str.concat65 = call ptr @csec_string_concat(ptr %str.concat63, ptr %iteratorName.load64)
-  %str.concat66 = call ptr @csec_string_concat(ptr %str.concat65, ptr @2097)
-  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @2098)
+  %str.concat66 = call ptr @csec_string_concat(ptr %str.concat65, ptr @2223)
+  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @2224)
   %iteratorName.load68 = load ptr, ptr %iteratorName, align 8
   %str.concat69 = call ptr @csec_string_concat(ptr %str.concat67, ptr %iteratorName.load68)
-  %str.concat70 = call ptr @csec_string_concat(ptr %str.concat69, ptr @2099)
+  %str.concat70 = call ptr @csec_string_concat(ptr %str.concat69, ptr @2225)
   %labelSeed.load71 = load ptr, ptr %labelSeed, align 8
   %str.concat72 = call ptr @csec_string_concat(ptr %str.concat70, ptr %labelSeed.load71)
-  %str.concat73 = call ptr @csec_string_concat(ptr %str.concat72, ptr @2100)
+  %str.concat73 = call ptr @csec_string_concat(ptr %str.concat72, ptr @2226)
   %iteratorName.load74 = load ptr, ptr %iteratorName, align 8
   %str.concat75 = call ptr @csec_string_concat(ptr %str.concat73, ptr %iteratorName.load74)
-  %str.concat76 = call ptr @csec_string_concat(ptr %str.concat75, ptr @2101)
+  %str.concat76 = call ptr @csec_string_concat(ptr %str.concat75, ptr @2227)
   %labelSeed.load77 = load ptr, ptr %labelSeed, align 8
   %str.concat78 = call ptr @csec_string_concat(ptr %str.concat76, ptr %labelSeed.load77)
-  %str.concat79 = call ptr @csec_string_concat(ptr %str.concat78, ptr @2102)
-  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @2103)
+  %str.concat79 = call ptr @csec_string_concat(ptr %str.concat78, ptr @2228)
+  %str.concat80 = call ptr @csec_string_concat(ptr %str.concat79, ptr @2229)
   %iteratorName.load81 = load ptr, ptr %iteratorName, align 8
   %str.concat82 = call ptr @csec_string_concat(ptr %str.concat80, ptr %iteratorName.load81)
-  %str.concat83 = call ptr @csec_string_concat(ptr %str.concat82, ptr @2104)
+  %str.concat83 = call ptr @csec_string_concat(ptr %str.concat82, ptr @2230)
   %labelSeed.load84 = load ptr, ptr %labelSeed, align 8
   %str.concat85 = call ptr @csec_string_concat(ptr %str.concat83, ptr %labelSeed.load84)
-  %str.concat86 = call ptr @csec_string_concat(ptr %str.concat85, ptr @2105)
+  %str.concat86 = call ptr @csec_string_concat(ptr %str.concat85, ptr @2231)
   %iteratorName.load87 = load ptr, ptr %iteratorName, align 8
   %str.concat88 = call ptr @csec_string_concat(ptr %str.concat86, ptr %iteratorName.load87)
-  %str.concat89 = call ptr @csec_string_concat(ptr %str.concat88, ptr @2106)
-  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @2107)
+  %str.concat89 = call ptr @csec_string_concat(ptr %str.concat88, ptr @2232)
+  %str.concat90 = call ptr @csec_string_concat(ptr %str.concat89, ptr @2233)
   %labelSeed.load91 = load ptr, ptr %labelSeed, align 8
   %str.concat92 = call ptr @csec_string_concat(ptr %str.concat90, ptr %labelSeed.load91)
-  %str.concat93 = call ptr @csec_string_concat(ptr %str.concat92, ptr @2108)
+  %str.concat93 = call ptr @csec_string_concat(ptr %str.concat92, ptr @2234)
   %stepBranch = alloca ptr, align 8
   store ptr %str.concat93, ptr %stepBranch, align 8
   %addtmp95 = add i32 %calltmp2, 1
@@ -22459,85 +23722,85 @@ ifcont55:                                         ; preds = %then54, %or_end48
 
 then99:                                           ; preds = %ifcont55
   %stepBranch.load = load ptr, ptr %stepBranch, align 8
-  store ptr @2109, ptr %stepBranch, align 8
+  store ptr @2235, ptr %stepBranch, align 8
   br label %ifcont100
 
 ifcont100:                                        ; preds = %then99, %ifcont55
   %iteratorName.load101 = load ptr, ptr %iteratorName, align 8
-  %str.concat102 = call ptr @csec_string_concat(ptr @2110, ptr %iteratorName.load101)
-  %str.concat103 = call ptr @csec_string_concat(ptr %str.concat102, ptr @2111)
+  %str.concat102 = call ptr @csec_string_concat(ptr @2236, ptr %iteratorName.load101)
+  %str.concat103 = call ptr @csec_string_concat(ptr %str.concat102, ptr @2237)
   %sourceArrow.load104 = load i32, ptr %sourceArrow, align 4
   %addtmp105 = add i32 %sourceArrow.load104, 1
   %rangeOp.load106 = load i32, ptr %rangeOp, align 4
   %iteratorName.load107 = load ptr, ptr %iteratorName, align 8
-  %str.concat108 = call ptr @csec_string_concat(ptr @2112, ptr %iteratorName.load107)
-  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @2113)
+  %str.concat108 = call ptr @csec_string_concat(ptr @2238, ptr %iteratorName.load107)
+  %str.concat109 = call ptr @csec_string_concat(ptr %str.concat108, ptr @2239)
   %calltmp110 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp105, i32 %rangeOp.load106, ptr %str.concat109)
   %str.concat111 = call ptr @csec_string_concat(ptr %str.concat103, ptr %calltmp110)
-  %str.concat112 = call ptr @csec_string_concat(ptr %str.concat111, ptr @2114)
+  %str.concat112 = call ptr @csec_string_concat(ptr %str.concat111, ptr @2240)
   %iteratorName.load113 = load ptr, ptr %iteratorName, align 8
   %str.concat114 = call ptr @csec_string_concat(ptr %str.concat112, ptr %iteratorName.load113)
-  %str.concat115 = call ptr @csec_string_concat(ptr %str.concat114, ptr @2115)
+  %str.concat115 = call ptr @csec_string_concat(ptr %str.concat114, ptr @2241)
   %iteratorName.load116 = load ptr, ptr %iteratorName, align 8
   %str.concat117 = call ptr @csec_string_concat(ptr %str.concat115, ptr %iteratorName.load116)
-  %str.concat118 = call ptr @csec_string_concat(ptr %str.concat117, ptr @2116)
-  %str.concat119 = call ptr @csec_string_concat(ptr %str.concat118, ptr @2117)
+  %str.concat118 = call ptr @csec_string_concat(ptr %str.concat117, ptr @2242)
+  %str.concat119 = call ptr @csec_string_concat(ptr %str.concat118, ptr @2243)
   %labelSeed.load120 = load ptr, ptr %labelSeed, align 8
   %str.concat121 = call ptr @csec_string_concat(ptr %str.concat119, ptr %labelSeed.load120)
-  %str.concat122 = call ptr @csec_string_concat(ptr %str.concat121, ptr @2118)
-  %str.concat123 = call ptr @csec_string_concat(ptr %str.concat122, ptr @2119)
+  %str.concat122 = call ptr @csec_string_concat(ptr %str.concat121, ptr @2244)
+  %str.concat123 = call ptr @csec_string_concat(ptr %str.concat122, ptr @2245)
   %labelSeed.load124 = load ptr, ptr %labelSeed, align 8
   %str.concat125 = call ptr @csec_string_concat(ptr %str.concat123, ptr %labelSeed.load124)
-  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @2120)
-  %str.concat127 = call ptr @csec_string_concat(ptr %str.concat126, ptr @2121)
+  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @2246)
+  %str.concat127 = call ptr @csec_string_concat(ptr %str.concat126, ptr @2247)
   %iteratorName.load128 = load ptr, ptr %iteratorName, align 8
   %str.concat129 = call ptr @csec_string_concat(ptr %str.concat127, ptr %iteratorName.load128)
-  %str.concat130 = call ptr @csec_string_concat(ptr %str.concat129, ptr @2122)
+  %str.concat130 = call ptr @csec_string_concat(ptr %str.concat129, ptr @2248)
   %iteratorName.load131 = load ptr, ptr %iteratorName, align 8
   %str.concat132 = call ptr @csec_string_concat(ptr %str.concat130, ptr %iteratorName.load131)
-  %str.concat133 = call ptr @csec_string_concat(ptr %str.concat132, ptr @2123)
+  %str.concat133 = call ptr @csec_string_concat(ptr %str.concat132, ptr @2249)
   %rangeOp.load134 = load i32, ptr %rangeOp, align 4
   %addtmp135 = add i32 %rangeOp.load134, 1
   %iteratorName.load137 = load ptr, ptr %iteratorName, align 8
-  %str.concat138 = call ptr @csec_string_concat(ptr @2124, ptr %iteratorName.load137)
-  %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr @2125)
+  %str.concat138 = call ptr @csec_string_concat(ptr @2250, ptr %iteratorName.load137)
+  %str.concat139 = call ptr @csec_string_concat(ptr %str.concat138, ptr @2251)
   %calltmp140 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp135, i32 %calltmp1, ptr %str.concat139)
   %str.concat141 = call ptr @csec_string_concat(ptr %str.concat133, ptr %calltmp140)
-  %str.concat142 = call ptr @csec_string_concat(ptr %str.concat141, ptr @2126)
+  %str.concat142 = call ptr @csec_string_concat(ptr %str.concat141, ptr @2252)
   %labelSeed.load143 = load ptr, ptr %labelSeed, align 8
   %str.concat144 = call ptr @csec_string_concat(ptr %str.concat142, ptr %labelSeed.load143)
-  %str.concat145 = call ptr @csec_string_concat(ptr %str.concat144, ptr @2127)
+  %str.concat145 = call ptr @csec_string_concat(ptr %str.concat144, ptr @2253)
   %compareOp.load146 = load ptr, ptr %compareOp, align 8
   %str.concat147 = call ptr @csec_string_concat(ptr %str.concat145, ptr %compareOp.load146)
-  %str.concat148 = call ptr @csec_string_concat(ptr %str.concat147, ptr @2128)
+  %str.concat148 = call ptr @csec_string_concat(ptr %str.concat147, ptr @2254)
   %iteratorName.load149 = load ptr, ptr %iteratorName, align 8
   %str.concat150 = call ptr @csec_string_concat(ptr %str.concat148, ptr %iteratorName.load149)
-  %str.concat151 = call ptr @csec_string_concat(ptr %str.concat150, ptr @2129)
+  %str.concat151 = call ptr @csec_string_concat(ptr %str.concat150, ptr @2255)
   %iteratorName.load152 = load ptr, ptr %iteratorName, align 8
   %str.concat153 = call ptr @csec_string_concat(ptr %str.concat151, ptr %iteratorName.load152)
-  %str.concat154 = call ptr @csec_string_concat(ptr %str.concat153, ptr @2130)
-  %str.concat155 = call ptr @csec_string_concat(ptr %str.concat154, ptr @2131)
+  %str.concat154 = call ptr @csec_string_concat(ptr %str.concat153, ptr @2256)
+  %str.concat155 = call ptr @csec_string_concat(ptr %str.concat154, ptr @2257)
   %labelSeed.load156 = load ptr, ptr %labelSeed, align 8
   %str.concat157 = call ptr @csec_string_concat(ptr %str.concat155, ptr %labelSeed.load156)
-  %str.concat158 = call ptr @csec_string_concat(ptr %str.concat157, ptr @2132)
+  %str.concat158 = call ptr @csec_string_concat(ptr %str.concat157, ptr @2258)
   %labelSeed.load159 = load ptr, ptr %labelSeed, align 8
   %str.concat160 = call ptr @csec_string_concat(ptr %str.concat158, ptr %labelSeed.load159)
-  %str.concat161 = call ptr @csec_string_concat(ptr %str.concat160, ptr @2133)
+  %str.concat161 = call ptr @csec_string_concat(ptr %str.concat160, ptr @2259)
   %labelSeed.load162 = load ptr, ptr %labelSeed, align 8
   %str.concat163 = call ptr @csec_string_concat(ptr %str.concat161, ptr %labelSeed.load162)
-  %str.concat164 = call ptr @csec_string_concat(ptr %str.concat163, ptr @2134)
-  %str.concat165 = call ptr @csec_string_concat(ptr %str.concat164, ptr @2135)
+  %str.concat164 = call ptr @csec_string_concat(ptr %str.concat163, ptr @2260)
+  %str.concat165 = call ptr @csec_string_concat(ptr %str.concat164, ptr @2261)
   %labelSeed.load166 = load ptr, ptr %labelSeed, align 8
   %str.concat167 = call ptr @csec_string_concat(ptr %str.concat165, ptr %labelSeed.load166)
-  %str.concat168 = call ptr @csec_string_concat(ptr %str.concat167, ptr @2136)
+  %str.concat168 = call ptr @csec_string_concat(ptr %str.concat167, ptr @2262)
   %body.load = load ptr, ptr %body, align 8
   %str.concat169 = call ptr @csec_string_concat(ptr %str.concat168, ptr %body.load)
   %stepBranch.load170 = load ptr, ptr %stepBranch, align 8
   %str.concat171 = call ptr @csec_string_concat(ptr %str.concat169, ptr %stepBranch.load170)
-  %str.concat172 = call ptr @csec_string_concat(ptr %str.concat171, ptr @2137)
+  %str.concat172 = call ptr @csec_string_concat(ptr %str.concat171, ptr @2263)
   %labelSeed.load173 = load ptr, ptr %labelSeed, align 8
   %str.concat174 = call ptr @csec_string_concat(ptr %str.concat172, ptr %labelSeed.load173)
-  %str.concat175 = call ptr @csec_string_concat(ptr %str.concat174, ptr @2138)
+  %str.concat175 = call ptr @csec_string_concat(ptr %str.concat174, ptr @2264)
   ret ptr %str.concat175
 }
 
@@ -22552,12 +23815,12 @@ whilecond:                                        ; preds = %ifcont, %entry
 
 whilebody:                                        ; preds = %and_end
   %calltmp4 = call i8 @_kindKeyword()
-  %calltmp5 = call i1 @_tokenIs(ptr %0, i32 %cursor.0, i8 %calltmp4, ptr @2139)
+  %calltmp5 = call i1 @_tokenIs(ptr %0, i32 %cursor.0, i8 %calltmp4, ptr @2265)
   %ifcond = icmp ne i1 %calltmp5, false
   br i1 %ifcond, label %then, label %ifcont
 
 afterwhile:                                       ; preds = %and_end
-  ret ptr @2145
+  ret ptr @2271
 
 and_rhs:                                          ; preds = %whilecond
   %calltmp = call i8 @_tokenKindAt(ptr %0, i32 %cursor.0)
@@ -22583,7 +23846,7 @@ ifcont:                                           ; preds = %whilebody
 and_rhs10:                                        ; preds = %then
   %addtmp13 = add i32 %cursor.0, 2
   %calltmp14 = call i8 @_kindOperator()
-  %calltmp15 = call i1 @_tokenIs(ptr %0, i32 %addtmp13, i8 %calltmp14, ptr @2140)
+  %calltmp15 = call i1 @_tokenIs(ptr %0, i32 %addtmp13, i8 %calltmp14, ptr @2266)
   br label %and_end11
 
 and_end11:                                        ; preds = %and_rhs10, %then
@@ -22594,15 +23857,15 @@ and_end11:                                        ; preds = %and_rhs10, %then
 then18:                                           ; preds = %and_end11
   %addtmp21 = add i32 %cursor.0, 1
   %calltmp22 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp21)
-  %str.concat = call ptr @csec_string_concat(ptr @2141, ptr %calltmp22)
-  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat, ptr @2142)
+  %str.concat = call ptr @csec_string_concat(ptr @2267, ptr %calltmp22)
+  %str.concat23 = call ptr @csec_string_concat(ptr %str.concat, ptr @2268)
   ret ptr %str.concat23
 
 ifcont19:                                         ; preds = %and_end11
   %addtmp25 = add i32 %cursor.0, 1
   %calltmp27 = call i32 @_advanceStatement(ptr %0, i32 %cursor.0, i32 %2)
-  %calltmp28 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp25, i32 %calltmp27, ptr @2143)
-  %str.concat29 = call ptr @csec_string_concat(ptr %calltmp28, ptr @2144)
+  %calltmp28 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp25, i32 %calltmp27, ptr @2269)
+  %str.concat29 = call ptr @csec_string_concat(ptr %calltmp28, ptr @2270)
   ret ptr %str.concat29
 }
 
@@ -22613,7 +23876,7 @@ entry:
 
 whilecond:                                        ; preds = %ifcont, %entry
   %cursor.0 = phi i32 [ %calltmp, %entry ], [ %calltmp338, %ifcont ]
-  %output.0 = phi ptr [ @2146, %entry ], [ %output.1, %ifcont ]
+  %output.0 = phi ptr [ @2272, %entry ], [ %output.1, %ifcont ]
   %lttmp = icmp slt i32 %cursor.0, %2
   br i1 %lttmp, label %and_rhs, label %and_end
 
@@ -22625,11 +23888,11 @@ whilebody:                                        ; preds = %and_end
   %kind = alloca ptr, align 8
   store ptr %calltmp7, ptr %kind, align 8
   %kind.load = load ptr, ptr %kind, align 8
-  %calltmp8 = call i1 @_strEq(ptr %kind.load, ptr @2147)
+  %calltmp8 = call i1 @_strEq(ptr %kind.load, ptr @2273)
   br i1 %calltmp8, label %or_end, label %or_rhs
 
 afterwhile:                                       ; preds = %and_end
-  %str.concat340 = call ptr @csec_string_concat(ptr %output.0, ptr @2187)
+  %str.concat340 = call ptr @csec_string_concat(ptr %output.0, ptr @2313)
   ret ptr %str.concat340
 
 and_rhs:                                          ; preds = %whilecond
@@ -22644,7 +23907,7 @@ and_end:                                          ; preds = %and_rhs, %whilecond
 
 or_rhs:                                           ; preds = %whilebody
   %kind.load9 = load ptr, ptr %kind, align 8
-  %calltmp10 = call i1 @_strEq(ptr %kind.load9, ptr @2148)
+  %calltmp10 = call i1 @_strEq(ptr %kind.load9, ptr @2274)
   br label %or_end
 
 or_end:                                           ; preds = %or_rhs, %whilebody
@@ -22655,12 +23918,12 @@ or_end:                                           ; preds = %or_rhs, %whilebody
 then:                                             ; preds = %or_end
   %next.load = load i32, ptr %next, align 4
   %calltmp12 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load)
-  %calltmp13 = call i1 @_strEq(ptr %calltmp12, ptr @2149)
+  %calltmp13 = call i1 @_strEq(ptr %calltmp12, ptr @2275)
   br i1 %calltmp13, label %or_end16, label %or_rhs15
 
 else:                                             ; preds = %or_end
   %kind.load100 = load ptr, ptr %kind, align 8
-  %calltmp101 = call i1 @_strEq(ptr %kind.load100, ptr @2156)
+  %calltmp101 = call i1 @_strEq(ptr %kind.load100, ptr @2282)
   %ifcond102 = icmp ne i1 %calltmp101, false
   br i1 %ifcond102, label %then103, label %else104
 
@@ -22674,7 +23937,7 @@ ifcont:                                           ; preds = %ifcont105, %ifcont2
 or_rhs15:                                         ; preds = %then
   %next.load18 = load i32, ptr %next, align 4
   %calltmp19 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load18)
-  %calltmp20 = call i1 @_strEq(ptr %calltmp19, ptr @2150)
+  %calltmp20 = call i1 @_strEq(ptr %calltmp19, ptr @2276)
   br label %or_end16
 
 or_end16:                                         ; preds = %or_rhs15, %then
@@ -22691,7 +23954,7 @@ then23:                                           ; preds = %or_end16
 else24:                                           ; preds = %or_end16
   %next.load31 = load i32, ptr %next, align 4
   %calltmp32 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load31)
-  %calltmp33 = call i1 @_strEq(ptr %calltmp32, ptr @2151)
+  %calltmp33 = call i1 @_strEq(ptr %calltmp32, ptr @2277)
   %ifcond34 = icmp ne i1 %calltmp33, false
   br i1 %ifcond34, label %then35, label %else36
 
@@ -22708,7 +23971,7 @@ then35:                                           ; preds = %else24
 else36:                                           ; preds = %else24
   %next.load45 = load i32, ptr %next, align 4
   %calltmp46 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load45)
-  %calltmp47 = call i1 @_strEq(ptr %calltmp46, ptr @2152)
+  %calltmp47 = call i1 @_strEq(ptr %calltmp46, ptr @2278)
   %ifcond48 = icmp ne i1 %calltmp47, false
   br i1 %ifcond48, label %then49, label %else50
 
@@ -22725,7 +23988,7 @@ then49:                                           ; preds = %else36
 else50:                                           ; preds = %else36
   %next.load59 = load i32, ptr %next, align 4
   %calltmp60 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load59)
-  %calltmp61 = call i1 @_strEq(ptr %calltmp60, ptr @2153)
+  %calltmp61 = call i1 @_strEq(ptr %calltmp60, ptr @2279)
   %ifcond62 = icmp ne i1 %calltmp61, false
   br i1 %ifcond62, label %then63, label %else64
 
@@ -22742,7 +24005,7 @@ then63:                                           ; preds = %else50
 else64:                                           ; preds = %else50
   %next.load73 = load i32, ptr %next, align 4
   %calltmp74 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load73)
-  %calltmp75 = call i1 @_strEq(ptr %calltmp74, ptr @2154)
+  %calltmp75 = call i1 @_strEq(ptr %calltmp74, ptr @2280)
   %ifcond76 = icmp ne i1 %calltmp75, false
   br i1 %ifcond76, label %then77, label %else78
 
@@ -22760,7 +24023,7 @@ else78:                                           ; preds = %else64
   %next.load87 = load i32, ptr %next, align 4
   %calltmp88 = call ptr @_localDeclarationType(ptr %0, i32 %cursor.0, i32 %next.load87)
   %calltmp89 = call ptr @_irTypeName(ptr %calltmp88)
-  %calltmp90 = call i1 @_strEq(ptr %calltmp89, ptr @2155)
+  %calltmp90 = call i1 @_strEq(ptr %calltmp89, ptr @2281)
   %ifcond91 = icmp ne i1 %calltmp90, false
   br i1 %ifcond91, label %then92, label %ifcont93
 
@@ -22787,7 +24050,7 @@ then103:                                          ; preds = %else
 
 else104:                                          ; preds = %else
   %kind.load207 = load ptr, ptr %kind, align 8
-  %calltmp208 = call i1 @_strEq(ptr %kind.load207, ptr @2179)
+  %calltmp208 = call i1 @_strEq(ptr %kind.load207, ptr @2305)
   %ifcond209 = icmp ne i1 %calltmp208, false
   br i1 %ifcond209, label %then210, label %else211
 
@@ -22797,7 +24060,7 @@ ifcont105:                                        ; preds = %ifcont212
 and_rhs110:                                       ; preds = %then103
   %addtmp113 = add i32 %cursor.0, 2
   %calltmp114 = call i8 @_kindOperator()
-  %calltmp115 = call i1 @_tokenIs(ptr %0, i32 %addtmp113, i8 %calltmp114, ptr @2157)
+  %calltmp115 = call i1 @_tokenIs(ptr %0, i32 %addtmp113, i8 %calltmp114, ptr @2283)
   br label %and_end111
 
 and_end111:                                       ; preds = %and_rhs110, %then103
@@ -22806,11 +24069,11 @@ and_end111:                                       ; preds = %and_rhs110, %then10
   br i1 %ifcond117, label %then118, label %ifcont119
 
 then118:                                          ; preds = %and_end111
-  %str.concat121 = call ptr @csec_string_concat(ptr %output.0, ptr @2158)
+  %str.concat121 = call ptr @csec_string_concat(ptr %output.0, ptr @2284)
   %addtmp123 = add i32 %cursor.0, 1
   %calltmp124 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp123)
   %str.concat125 = call ptr @csec_string_concat(ptr %str.concat121, ptr %calltmp124)
-  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @2159)
+  %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr @2285)
   ret ptr %str.concat126
 
 ifcont119:                                        ; preds = %and_end111
@@ -22823,7 +24086,7 @@ ifcont119:                                        ; preds = %and_end111
 and_rhs133:                                       ; preds = %ifcont119
   %addtmp136 = add i32 %cursor.0, 2
   %calltmp137 = call i8 @_kindOperator()
-  %calltmp138 = call i1 @_tokenIs(ptr %0, i32 %addtmp136, i8 %calltmp137, ptr @2160)
+  %calltmp138 = call i1 @_tokenIs(ptr %0, i32 %addtmp136, i8 %calltmp137, ptr @2286)
   br label %and_end134
 
 and_end134:                                       ; preds = %and_rhs133, %ifcont119
@@ -22841,36 +24104,36 @@ then141:                                          ; preds = %and_end134
   %returnType = alloca ptr, align 8
   store ptr %calltmp147, ptr %returnType, align 8
   %returnType.load = load ptr, ptr %returnType, align 8
-  %calltmp148 = call i1 @_strEq(ptr %returnType.load, ptr @2161)
+  %calltmp148 = call i1 @_strEq(ptr %returnType.load, ptr @2287)
   %ifcond149 = icmp ne i1 %calltmp148, false
   br i1 %ifcond149, label %then150, label %ifcont151
 
 ifcont142:                                        ; preds = %and_end134
   %addtmp201 = add i32 %cursor.0, 1
   %next.load202 = load i32, ptr %next, align 4
-  %calltmp203 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp201, i32 %next.load202, ptr @2177)
+  %calltmp203 = call ptr @_generateLLVMExpressionI32(ptr %0, i32 %addtmp201, i32 %next.load202, ptr @2303)
   %str.concat204 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp203)
-  %str.concat206 = call ptr @csec_string_concat(ptr %str.concat204, ptr @2178)
+  %str.concat206 = call ptr @csec_string_concat(ptr %str.concat204, ptr @2304)
   ret ptr %str.concat206
 
 then150:                                          ; preds = %then141
   %returnName.load154 = load ptr, ptr %returnName, align 8
   %returnType.load155 = load ptr, ptr %returnType, align 8
   %returnName.load156 = load ptr, ptr %returnName, align 8
-  %str.concat157 = call ptr @csec_string_concat(ptr @2162, ptr %returnName.load156)
-  %str.concat158 = call ptr @csec_string_concat(ptr %str.concat157, ptr @2163)
+  %str.concat157 = call ptr @csec_string_concat(ptr @2288, ptr %returnName.load156)
+  %str.concat158 = call ptr @csec_string_concat(ptr %str.concat157, ptr @2289)
   %calltmp159 = call ptr @_llvmLoadForValueType(ptr %0, i32 %cursor.0, ptr %returnName.load154, ptr %returnType.load155, ptr %str.concat158)
   %str.concat160 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp159)
-  %str.concat161 = call ptr @csec_string_concat(ptr %str.concat160, ptr @2164)
+  %str.concat161 = call ptr @csec_string_concat(ptr %str.concat160, ptr @2290)
   %returnName.load162 = load ptr, ptr %returnName, align 8
   %str.concat163 = call ptr @csec_string_concat(ptr %str.concat161, ptr %returnName.load162)
-  %str.concat164 = call ptr @csec_string_concat(ptr %str.concat163, ptr @2165)
-  %str.concat165 = call ptr @csec_string_concat(ptr %str.concat164, ptr @2166)
+  %str.concat164 = call ptr @csec_string_concat(ptr %str.concat163, ptr @2291)
+  %str.concat165 = call ptr @csec_string_concat(ptr %str.concat164, ptr @2292)
   ret ptr %str.concat165
 
 ifcont151:                                        ; preds = %then141
   %returnType.load166 = load ptr, ptr %returnType, align 8
-  %calltmp167 = call i1 @_strEq(ptr %returnType.load166, ptr @2167)
+  %calltmp167 = call i1 @_strEq(ptr %returnType.load166, ptr @2293)
   %ifcond168 = icmp ne i1 %calltmp167, false
   br i1 %ifcond168, label %then169, label %ifcont170
 
@@ -22878,29 +24141,29 @@ then169:                                          ; preds = %ifcont151
   %returnName.load173 = load ptr, ptr %returnName, align 8
   %returnType.load174 = load ptr, ptr %returnType, align 8
   %returnName.load175 = load ptr, ptr %returnName, align 8
-  %str.concat176 = call ptr @csec_string_concat(ptr @2168, ptr %returnName.load175)
-  %str.concat177 = call ptr @csec_string_concat(ptr %str.concat176, ptr @2169)
+  %str.concat176 = call ptr @csec_string_concat(ptr @2294, ptr %returnName.load175)
+  %str.concat177 = call ptr @csec_string_concat(ptr %str.concat176, ptr @2295)
   %calltmp178 = call ptr @_llvmLoadForValueType(ptr %0, i32 %cursor.0, ptr %returnName.load173, ptr %returnType.load174, ptr %str.concat177)
   %str.concat179 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp178)
-  %str.concat180 = call ptr @csec_string_concat(ptr %str.concat179, ptr @2170)
+  %str.concat180 = call ptr @csec_string_concat(ptr %str.concat179, ptr @2296)
   %returnName.load181 = load ptr, ptr %returnName, align 8
   %str.concat182 = call ptr @csec_string_concat(ptr %str.concat180, ptr %returnName.load181)
-  %str.concat183 = call ptr @csec_string_concat(ptr %str.concat182, ptr @2171)
-  %str.concat184 = call ptr @csec_string_concat(ptr %str.concat183, ptr @2172)
+  %str.concat183 = call ptr @csec_string_concat(ptr %str.concat182, ptr @2297)
+  %str.concat184 = call ptr @csec_string_concat(ptr %str.concat183, ptr @2298)
   ret ptr %str.concat184
 
 ifcont170:                                        ; preds = %ifcont151
   %returnName.load187 = load ptr, ptr %returnName, align 8
   %returnType.load188 = load ptr, ptr %returnType, align 8
   %returnName.load189 = load ptr, ptr %returnName, align 8
-  %str.concat190 = call ptr @csec_string_concat(ptr @2173, ptr %returnName.load189)
-  %str.concat191 = call ptr @csec_string_concat(ptr %str.concat190, ptr @2174)
+  %str.concat190 = call ptr @csec_string_concat(ptr @2299, ptr %returnName.load189)
+  %str.concat191 = call ptr @csec_string_concat(ptr %str.concat190, ptr @2300)
   %calltmp192 = call ptr @_llvmLoadForValueType(ptr %0, i32 %cursor.0, ptr %returnName.load187, ptr %returnType.load188, ptr %str.concat191)
   %str.concat193 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp192)
-  %str.concat194 = call ptr @csec_string_concat(ptr %str.concat193, ptr @2175)
+  %str.concat194 = call ptr @csec_string_concat(ptr %str.concat193, ptr @2301)
   %returnName.load195 = load ptr, ptr %returnName, align 8
   %str.concat196 = call ptr @csec_string_concat(ptr %str.concat194, ptr %returnName.load195)
-  %str.concat197 = call ptr @csec_string_concat(ptr %str.concat196, ptr @2176)
+  %str.concat197 = call ptr @csec_string_concat(ptr %str.concat196, ptr @2302)
   ret ptr %str.concat197
 
 then210:                                          ; preds = %else104
@@ -22911,7 +24174,7 @@ then210:                                          ; preds = %else104
 
 else211:                                          ; preds = %else104
   %kind.load219 = load ptr, ptr %kind, align 8
-  %calltmp220 = call i1 @_strEq(ptr %kind.load219, ptr @2180)
+  %calltmp220 = call i1 @_strEq(ptr %kind.load219, ptr @2306)
   %ifcond221 = icmp ne i1 %calltmp220, false
   br i1 %ifcond221, label %then222, label %else223
 
@@ -22928,7 +24191,7 @@ then222:                                          ; preds = %else211
 
 else223:                                          ; preds = %else211
   %kind.load231 = load ptr, ptr %kind, align 8
-  %calltmp232 = call i1 @_strEq(ptr %kind.load231, ptr @2181)
+  %calltmp232 = call i1 @_strEq(ptr %kind.load231, ptr @2307)
   %ifcond233 = icmp ne i1 %calltmp232, false
   br i1 %ifcond233, label %then234, label %else235
 
@@ -22961,7 +24224,7 @@ then248:                                          ; preds = %else235
   %targetType = alloca ptr, align 8
   store ptr %calltmp254, ptr %targetType, align 8
   %targetType.load = load ptr, ptr %targetType, align 8
-  %calltmp255 = call i1 @_strEq(ptr %targetType.load, ptr @2182)
+  %calltmp255 = call i1 @_strEq(ptr %targetType.load, ptr @2308)
   %ifcond256 = icmp ne i1 %calltmp255, false
   br i1 %ifcond256, label %then257, label %else258
 
@@ -22984,7 +24247,7 @@ then257:                                          ; preds = %then248
 
 else258:                                          ; preds = %then248
   %targetType.load266 = load ptr, ptr %targetType, align 8
-  %calltmp267 = call i1 @_strEq(ptr %targetType.load266, ptr @2183)
+  %calltmp267 = call i1 @_strEq(ptr %targetType.load266, ptr @2309)
   %ifcond268 = icmp ne i1 %calltmp267, false
   br i1 %ifcond268, label %then269, label %else270
 
@@ -23001,7 +24264,7 @@ then269:                                          ; preds = %else258
 
 else270:                                          ; preds = %else258
   %targetType.load278 = load ptr, ptr %targetType, align 8
-  %calltmp279 = call i1 @_strEq(ptr %targetType.load278, ptr @2184)
+  %calltmp279 = call i1 @_strEq(ptr %targetType.load278, ptr @2310)
   %ifcond280 = icmp ne i1 %calltmp279, false
   br i1 %ifcond280, label %then281, label %else282
 
@@ -23018,7 +24281,7 @@ then281:                                          ; preds = %else270
 
 else282:                                          ; preds = %else270
   %targetType.load290 = load ptr, ptr %targetType, align 8
-  %calltmp291 = call i1 @_strEq(ptr %targetType.load290, ptr @2185)
+  %calltmp291 = call i1 @_strEq(ptr %targetType.load290, ptr @2311)
   %ifcond292 = icmp ne i1 %calltmp291, false
   br i1 %ifcond292, label %then293, label %else294
 
@@ -23036,7 +24299,7 @@ then293:                                          ; preds = %else282
 else294:                                          ; preds = %else282
   %targetType.load302 = load ptr, ptr %targetType, align 8
   %calltmp303 = call ptr @_irTypeName(ptr %targetType.load302)
-  %calltmp304 = call i1 @_strEq(ptr %calltmp303, ptr @2186)
+  %calltmp304 = call i1 @_strEq(ptr %calltmp303, ptr @2312)
   %ifcond305 = icmp ne i1 %calltmp304, false
   br i1 %ifcond305, label %then306, label %else307
 
@@ -23071,11 +24334,11 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @2188
+  ret ptr @2314
 
 ifcont:                                           ; preds = %entry
   %calltmp2 = call i32 @_advanceTopLevelDecl(ptr %0, i32 %1)
-  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp, i32 %calltmp2, ptr @2189, ptr @2190)
+  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp, i32 %calltmp2, ptr @2315, ptr @2316)
   %paramEnd = alloca i32, align 4
   store i32 %calltmp3, ptr %paramEnd, align 4
   %paramEnd.load = load i32, ptr %paramEnd, align 4
@@ -23084,14 +24347,14 @@ ifcont:                                           ; preds = %entry
   br i1 %ifcond5, label %then6, label %ifcont7
 
 then6:                                            ; preds = %ifcont
-  ret ptr @2191
+  ret ptr @2317
 
 ifcont7:                                          ; preds = %ifcont
   %addtmp = add i32 %calltmp, 1
   %cursor = alloca i32, align 4
   store i32 %addtmp, ptr %cursor, align 4
   %output = alloca ptr, align 8
-  store ptr @2192, ptr %output, align 8
+  store ptr @2318, ptr %output, align 8
   %first = alloca i1, align 1
   store i1 true, ptr %first, align 1
   br label %whilecond
@@ -23127,11 +24390,11 @@ and_end:                                          ; preds = %and_rhs, %whilecond
 
 then18:                                           ; preds = %whilebody
   %typeName = alloca ptr, align 8
-  store ptr @2193, ptr %typeName, align 8
+  store ptr @2319, ptr %typeName, align 8
   %cursor.load20 = load i32, ptr %cursor, align 4
   %addtmp21 = add i32 %cursor.load20, 1
   %calltmp22 = call i8 @_kindOperator()
-  %calltmp23 = call i1 @_tokenIs(ptr %0, i32 %addtmp21, i8 %calltmp22, ptr @2194)
+  %calltmp23 = call i1 @_tokenIs(ptr %0, i32 %addtmp21, i8 %calltmp22, ptr @2320)
   %ifcond24 = icmp ne i1 %calltmp23, false
   br i1 %ifcond24, label %then25, label %ifcont26
 
@@ -23156,7 +24419,7 @@ ifcont26:                                         ; preds = %then25, %then18
 then32:                                           ; preds = %ifcont26
   %output.load = load ptr, ptr %output, align 8
   %output.load34 = load ptr, ptr %output, align 8
-  %str.concat = call ptr @csec_string_concat(ptr %output.load34, ptr @2195)
+  %str.concat = call ptr @csec_string_concat(ptr %output.load34, ptr @2321)
   store ptr %str.concat, ptr %output, align 8
   br label %ifcont33
 
@@ -23166,7 +24429,7 @@ ifcont33:                                         ; preds = %then32, %ifcont26
   %typeName.load37 = load ptr, ptr %typeName, align 8
   %calltmp38 = call ptr @_irTypeName(ptr %typeName.load37)
   %str.concat39 = call ptr @csec_string_concat(ptr %output.load36, ptr %calltmp38)
-  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @2196)
+  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @2322)
   %cursor.load41 = load i32, ptr %cursor, align 4
   %calltmp42 = call ptr @_tokenTextAt(ptr %0, i32 %cursor.load41)
   %str.concat43 = call ptr @csec_string_concat(ptr %str.concat40, ptr %calltmp42)
@@ -23198,7 +24461,7 @@ afterwhile47:                                     ; preds = %and_end53
 and_rhs52:                                        ; preds = %whilecond45
   %cursor.load54 = load i32, ptr %cursor, align 4
   %calltmp55 = call i8 @_kindOperator()
-  %calltmp56 = call i1 @_tokenIs(ptr %0, i32 %cursor.load54, i8 %calltmp55, ptr @2197)
+  %calltmp56 = call i1 @_tokenIs(ptr %0, i32 %cursor.load54, i8 %calltmp55, ptr @2323)
   %nottmp57 = xor i1 %calltmp56, true
   br label %and_end53
 
@@ -23215,11 +24478,11 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @2198
+  ret ptr @2324
 
 ifcont:                                           ; preds = %entry
   %calltmp2 = call i32 @_advanceTopLevelDecl(ptr %0, i32 %1)
-  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp, i32 %calltmp2, ptr @2199, ptr @2200)
+  %calltmp3 = call i32 @_findClosingToken(ptr %0, i32 %calltmp, i32 %calltmp2, ptr @2325, ptr @2326)
   %paramEnd = alloca i32, align 4
   store i32 %calltmp3, ptr %paramEnd, align 4
   %paramEnd.load = load i32, ptr %paramEnd, align 4
@@ -23228,14 +24491,14 @@ ifcont:                                           ; preds = %entry
   br i1 %ifcond5, label %then6, label %ifcont7
 
 then6:                                            ; preds = %ifcont
-  ret ptr @2201
+  ret ptr @2327
 
 ifcont7:                                          ; preds = %ifcont
   %addtmp = add i32 %calltmp, 1
   %cursor = alloca i32, align 4
   store i32 %addtmp, ptr %cursor, align 4
   %output = alloca ptr, align 8
-  store ptr @2202, ptr %output, align 8
+  store ptr @2328, ptr %output, align 8
   br label %whilecond
 
 whilecond:                                        ; preds = %afterwhile52, %ifcont7
@@ -23273,11 +24536,11 @@ then18:                                           ; preds = %whilebody
   %name = alloca ptr, align 8
   store ptr %calltmp21, ptr %name, align 8
   %typeName = alloca ptr, align 8
-  store ptr @2203, ptr %typeName, align 8
+  store ptr @2329, ptr %typeName, align 8
   %cursor.load22 = load i32, ptr %cursor, align 4
   %addtmp23 = add i32 %cursor.load22, 1
   %calltmp24 = call i8 @_kindOperator()
-  %calltmp25 = call i1 @_tokenIs(ptr %0, i32 %addtmp23, i8 %calltmp24, ptr @2204)
+  %calltmp25 = call i1 @_tokenIs(ptr %0, i32 %addtmp23, i8 %calltmp24, ptr @2330)
   %ifcond26 = icmp ne i1 %calltmp25, false
   br i1 %ifcond26, label %then27, label %ifcont28
 
@@ -23300,23 +24563,23 @@ ifcont28:                                         ; preds = %then27, %then18
   store ptr %calltmp34, ptr %llvmType, align 8
   %output.load = load ptr, ptr %output, align 8
   %output.load35 = load ptr, ptr %output, align 8
-  %str.concat = call ptr @csec_string_concat(ptr %output.load35, ptr @2205)
+  %str.concat = call ptr @csec_string_concat(ptr %output.load35, ptr @2331)
   %name.load = load ptr, ptr %name, align 8
   %str.concat36 = call ptr @csec_string_concat(ptr %str.concat, ptr %name.load)
-  %str.concat37 = call ptr @csec_string_concat(ptr %str.concat36, ptr @2206)
+  %str.concat37 = call ptr @csec_string_concat(ptr %str.concat36, ptr @2332)
   %llvmType.load = load ptr, ptr %llvmType, align 8
   %str.concat38 = call ptr @csec_string_concat(ptr %str.concat37, ptr %llvmType.load)
-  %str.concat39 = call ptr @csec_string_concat(ptr %str.concat38, ptr @2207)
-  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @2208)
+  %str.concat39 = call ptr @csec_string_concat(ptr %str.concat38, ptr @2333)
+  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @2334)
   %llvmType.load41 = load ptr, ptr %llvmType, align 8
   %str.concat42 = call ptr @csec_string_concat(ptr %str.concat40, ptr %llvmType.load41)
-  %str.concat43 = call ptr @csec_string_concat(ptr %str.concat42, ptr @2209)
+  %str.concat43 = call ptr @csec_string_concat(ptr %str.concat42, ptr @2335)
   %name.load44 = load ptr, ptr %name, align 8
   %str.concat45 = call ptr @csec_string_concat(ptr %str.concat43, ptr %name.load44)
-  %str.concat46 = call ptr @csec_string_concat(ptr %str.concat45, ptr @2210)
+  %str.concat46 = call ptr @csec_string_concat(ptr %str.concat45, ptr @2336)
   %name.load47 = load ptr, ptr %name, align 8
   %str.concat48 = call ptr @csec_string_concat(ptr %str.concat46, ptr %name.load47)
-  %str.concat49 = call ptr @csec_string_concat(ptr %str.concat48, ptr @2211)
+  %str.concat49 = call ptr @csec_string_concat(ptr %str.concat48, ptr @2337)
   store ptr %str.concat49, ptr %output, align 8
   br label %ifcont19
 
@@ -23343,7 +24606,7 @@ afterwhile52:                                     ; preds = %and_end58
 and_rhs57:                                        ; preds = %whilecond50
   %cursor.load59 = load i32, ptr %cursor, align 4
   %calltmp60 = call i8 @_kindOperator()
-  %calltmp61 = call i1 @_tokenIs(ptr %0, i32 %cursor.load59, i8 %calltmp60, ptr @2212)
+  %calltmp61 = call i1 @_tokenIs(ptr %0, i32 %cursor.load59, i8 %calltmp60, ptr @2338)
   %nottmp = xor i1 %calltmp61, true
   br label %and_end58
 
@@ -23358,7 +24621,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2213, %entry ], [ %output.1, %ifcont ]
+  %output.0 = phi ptr [ @2339, %entry ], [ %output.1, %ifcont ]
   %cursor.0 = phi i32 [ %calltmp, %entry ], [ %calltmp237, %ifcont ]
   %lttmp = icmp slt i32 %cursor.0, %2
   br i1 %lttmp, label %and_rhs, label %and_end
@@ -23371,12 +24634,12 @@ whilebody:                                        ; preds = %and_end
   %kind = alloca ptr, align 8
   store ptr %calltmp7, ptr %kind, align 8
   %kind.load = load ptr, ptr %kind, align 8
-  %calltmp8 = call i1 @_strEq(ptr %kind.load, ptr @2214)
+  %calltmp8 = call i1 @_strEq(ptr %kind.load, ptr @2340)
   %ifcond = icmp ne i1 %calltmp8, false
   br i1 %ifcond, label %then, label %else
 
 afterwhile:                                       ; preds = %and_end
-  %str.concat239 = call ptr @csec_string_concat(ptr %output.0, ptr @2255)
+  %str.concat239 = call ptr @csec_string_concat(ptr %output.0, ptr @2381)
   ret ptr %str.concat239
 
 and_rhs:                                          ; preds = %whilecond
@@ -23392,7 +24655,7 @@ and_end:                                          ; preds = %and_rhs, %whilecond
 then:                                             ; preds = %whilebody
   %str.sext = sext i32 %cursor.0 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
-  %str.concat = call ptr @csec_string_concat(ptr @2215, ptr %str.int.call)
+  %str.concat = call ptr @csec_string_concat(ptr @2341, ptr %str.int.call)
   %resultName = alloca ptr, align 8
   store ptr %str.concat, ptr %resultName, align 8
   %addtmp = add i32 %cursor.0, 1
@@ -23403,7 +24666,7 @@ then:                                             ; preds = %whilebody
 
 else:                                             ; preds = %whilebody
   %kind.load76 = load ptr, ptr %kind, align 8
-  %calltmp77 = call i1 @_strEq(ptr %kind.load76, ptr @2227)
+  %calltmp77 = call i1 @_strEq(ptr %kind.load76, ptr @2353)
   %ifcond78 = icmp ne i1 %calltmp77, false
   br i1 %ifcond78, label %then79, label %else80
 
@@ -23415,7 +24678,7 @@ ifcont:                                           ; preds = %ifcont81
 and_rhs14:                                        ; preds = %then
   %addtmp17 = add i32 %cursor.0, 2
   %calltmp18 = call i8 @_kindOperator()
-  %calltmp19 = call i1 @_tokenIs(ptr %0, i32 %addtmp17, i8 %calltmp18, ptr @2216)
+  %calltmp19 = call i1 @_tokenIs(ptr %0, i32 %addtmp17, i8 %calltmp18, ptr @2342)
   br label %and_end15
 
 and_end15:                                        ; preds = %and_rhs14, %then
@@ -23429,10 +24692,10 @@ then22:                                           ; preds = %and_end15
   %resultName.load = load ptr, ptr %resultName, align 8
   %calltmp26 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp25, i32 %next.load, ptr %resultName.load)
   %str.concat27 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp26)
-  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @2217)
+  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @2343)
   %resultName.load29 = load ptr, ptr %resultName, align 8
   %str.concat30 = call ptr @csec_string_concat(ptr %str.concat28, ptr %resultName.load29)
-  %str.concat31 = call ptr @csec_string_concat(ptr %str.concat30, ptr @2218)
+  %str.concat31 = call ptr @csec_string_concat(ptr %str.concat30, ptr @2344)
   ret ptr %str.concat31
 
 ifcont23:                                         ; preds = %and_end15
@@ -23445,7 +24708,7 @@ ifcont23:                                         ; preds = %and_end15
 and_rhs38:                                        ; preds = %ifcont23
   %addtmp41 = add i32 %cursor.0, 2
   %calltmp42 = call i8 @_kindOperator()
-  %calltmp43 = call i1 @_tokenIs(ptr %0, i32 %addtmp41, i8 %calltmp42, ptr @2219)
+  %calltmp43 = call i1 @_tokenIs(ptr %0, i32 %addtmp41, i8 %calltmp42, ptr @2345)
   br label %and_end39
 
 and_end39:                                        ; preds = %and_rhs38, %ifcont23
@@ -23454,20 +24717,20 @@ and_end39:                                        ; preds = %and_rhs38, %ifcont2
   br i1 %ifcond45, label %then46, label %ifcont47
 
 then46:                                           ; preds = %and_end39
-  %str.concat49 = call ptr @csec_string_concat(ptr %output.0, ptr @2220)
+  %str.concat49 = call ptr @csec_string_concat(ptr %output.0, ptr @2346)
   %resultName.load50 = load ptr, ptr %resultName, align 8
   %str.concat51 = call ptr @csec_string_concat(ptr %str.concat49, ptr %resultName.load50)
-  %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr @2221)
+  %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr @2347)
   %addtmp54 = add i32 %cursor.0, 1
   %addtmp56 = add i32 %cursor.0, 1
   %calltmp57 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp56)
   %calltmp58 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %addtmp54, ptr %calltmp57)
   %str.concat59 = call ptr @csec_string_concat(ptr %str.concat52, ptr %calltmp58)
-  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @2222)
-  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @2223)
+  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @2348)
+  %str.concat61 = call ptr @csec_string_concat(ptr %str.concat60, ptr @2349)
   %resultName.load62 = load ptr, ptr %resultName, align 8
   %str.concat63 = call ptr @csec_string_concat(ptr %str.concat61, ptr %resultName.load62)
-  %str.concat64 = call ptr @csec_string_concat(ptr %str.concat63, ptr @2224)
+  %str.concat64 = call ptr @csec_string_concat(ptr %str.concat63, ptr @2350)
   ret ptr %str.concat64
 
 ifcont47:                                         ; preds = %and_end39
@@ -23476,10 +24739,10 @@ ifcont47:                                         ; preds = %and_end39
   %resultName.load69 = load ptr, ptr %resultName, align 8
   %calltmp70 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp67, i32 %next.load68, ptr %resultName.load69)
   %str.concat71 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp70)
-  %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr @2225)
+  %str.concat72 = call ptr @csec_string_concat(ptr %str.concat71, ptr @2351)
   %resultName.load73 = load ptr, ptr %resultName, align 8
   %str.concat74 = call ptr @csec_string_concat(ptr %str.concat72, ptr %resultName.load73)
-  %str.concat75 = call ptr @csec_string_concat(ptr %str.concat74, ptr @2226)
+  %str.concat75 = call ptr @csec_string_concat(ptr %str.concat74, ptr @2352)
   ret ptr %str.concat75
 
 then79:                                           ; preds = %else
@@ -23497,7 +24760,7 @@ then79:                                           ; preds = %else
   store i32 %calltmp90, ptr %thenStart, align 4
   %thenStart.load = load i32, ptr %thenStart, align 4
   %next.load91 = load i32, ptr %next, align 4
-  %calltmp92 = call i32 @_findClosingToken(ptr %0, i32 %thenStart.load, i32 %next.load91, ptr @2228, ptr @2229)
+  %calltmp92 = call i32 @_findClosingToken(ptr %0, i32 %thenStart.load, i32 %next.load91, ptr @2354, ptr @2355)
   %thenEnd = alloca i32, align 4
   store i32 %calltmp92, ptr %thenEnd, align 4
   %openParen.load = load i32, ptr %openParen, align 4
@@ -23546,13 +24809,13 @@ or_end103:                                        ; preds = %or_rhs102, %or_end9
   br i1 %ifcond107, label %then108, label %else109
 
 then108:                                          ; preds = %or_end103
-  %str.concat113 = call ptr @csec_string_concat(ptr %output.0, ptr @2230)
+  %str.concat113 = call ptr @csec_string_concat(ptr %output.0, ptr @2356)
   br label %ifcont110
 
 else109:                                          ; preds = %or_end103
   %str.sext115 = sext i32 %cursor.0 to i64
   %str.int.call116 = call ptr @csec_to_string_i64(i64 %str.sext115)
-  %str.concat117 = call ptr @csec_string_concat(ptr @2231, ptr %str.int.call116)
+  %str.concat117 = call ptr @csec_string_concat(ptr @2357, ptr %str.int.call116)
   %labelSeed = alloca ptr, align 8
   store ptr %str.concat117, ptr %labelSeed, align 8
   %thenEnd.load118 = load i32, ptr %thenEnd, align 4
@@ -23561,10 +24824,10 @@ else109:                                          ; preds = %or_end103
   %possibleElse = alloca i32, align 4
   store i32 %calltmp120, ptr %possibleElse, align 4
   %thenBody = alloca ptr, align 8
-  store ptr @2232, ptr %thenBody, align 8
+  store ptr @2358, ptr %thenBody, align 8
   %labelSeed.load = load ptr, ptr %labelSeed, align 8
-  %str.concat121 = call ptr @csec_string_concat(ptr @2233, ptr %labelSeed.load)
-  %str.concat122 = call ptr @csec_string_concat(ptr %str.concat121, ptr @2234)
+  %str.concat121 = call ptr @csec_string_concat(ptr @2359, ptr %labelSeed.load)
+  %str.concat122 = call ptr @csec_string_concat(ptr %str.concat121, ptr @2360)
   %thenBranch = alloca ptr, align 8
   store ptr %str.concat122, ptr %thenBranch, align 8
   %thenStart.load123 = load i32, ptr %thenStart, align 4
@@ -23587,7 +24850,7 @@ then128:                                          ; preds = %else109
   %calltmp134 = call ptr @_generateLLVMBooleanBodyFromRange(ptr %0, i32 %addtmp132, i32 %thenEnd.load133)
   store ptr %calltmp134, ptr %thenBody, align 8
   %thenBranch.load = load ptr, ptr %thenBranch, align 8
-  store ptr @2235, ptr %thenBranch, align 8
+  store ptr @2361, ptr %thenBranch, align 8
   br label %ifcont130
 
 else129:                                          ; preds = %else109
@@ -23600,12 +24863,12 @@ else129:                                          ; preds = %else109
   br label %ifcont130
 
 ifcont130:                                        ; preds = %else129, %then128
-  %result = phi ptr [ @2235, %then128 ], [ %calltmp139, %else129 ]
+  %result = phi ptr [ @2361, %then128 ], [ %calltmp139, %else129 ]
   %elseBody = alloca ptr, align 8
-  store ptr @2236, ptr %elseBody, align 8
+  store ptr @2362, ptr %elseBody, align 8
   %labelSeed.load140 = load ptr, ptr %labelSeed, align 8
-  %str.concat141 = call ptr @csec_string_concat(ptr @2237, ptr %labelSeed.load140)
-  %str.concat142 = call ptr @csec_string_concat(ptr %str.concat141, ptr @2238)
+  %str.concat141 = call ptr @csec_string_concat(ptr @2363, ptr %labelSeed.load140)
+  %str.concat142 = call ptr @csec_string_concat(ptr %str.concat141, ptr @2364)
   %elseBranch = alloca ptr, align 8
   store ptr %str.concat142, ptr %elseBranch, align 8
   %possibleElse.load = load i32, ptr %possibleElse, align 4
@@ -23616,7 +24879,7 @@ ifcont130:                                        ; preds = %else129, %then128
 and_rhs146:                                       ; preds = %ifcont130
   %possibleElse.load148 = load i32, ptr %possibleElse, align 4
   %calltmp149 = call i8 @_kindKeyword()
-  %calltmp150 = call i1 @_tokenIs(ptr %0, i32 %possibleElse.load148, i8 %calltmp149, ptr @2239)
+  %calltmp150 = call i1 @_tokenIs(ptr %0, i32 %possibleElse.load148, i8 %calltmp149, ptr @2365)
   br label %and_end147
 
 and_end147:                                       ; preds = %and_rhs146, %ifcont130
@@ -23632,7 +24895,7 @@ then153:                                          ; preds = %and_end147
   store i32 %calltmp157, ptr %elseStart, align 4
   %elseStart.load = load i32, ptr %elseStart, align 4
   %calltmp158 = call i8 @_kindOperator()
-  %calltmp159 = call i1 @_tokenIs(ptr %0, i32 %elseStart.load, i8 %calltmp158, ptr @2240)
+  %calltmp159 = call i1 @_tokenIs(ptr %0, i32 %elseStart.load, i8 %calltmp158, ptr @2366)
   %ifcond160 = icmp ne i1 %calltmp159, false
   br i1 %ifcond160, label %then161, label %ifcont162
 
@@ -23641,45 +24904,45 @@ ifcont154:                                        ; preds = %ifcont162, %and_end
   %addtmp191 = add i32 %openParen.load190, 1
   %closeParen.load192 = load i32, ptr %closeParen, align 4
   %labelSeed.load193 = load ptr, ptr %labelSeed, align 8
-  %str.concat194 = call ptr @csec_string_concat(ptr @2244, ptr %labelSeed.load193)
+  %str.concat194 = call ptr @csec_string_concat(ptr @2370, ptr %labelSeed.load193)
   %calltmp195 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp191, i32 %closeParen.load192, ptr %str.concat194)
   %str.concat196 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp195)
-  %str.concat197 = call ptr @csec_string_concat(ptr %str.concat196, ptr @2245)
+  %str.concat197 = call ptr @csec_string_concat(ptr %str.concat196, ptr @2371)
   %labelSeed.load198 = load ptr, ptr %labelSeed, align 8
   %str.concat199 = call ptr @csec_string_concat(ptr %str.concat197, ptr %labelSeed.load198)
-  %str.concat200 = call ptr @csec_string_concat(ptr %str.concat199, ptr @2246)
+  %str.concat200 = call ptr @csec_string_concat(ptr %str.concat199, ptr @2372)
   %labelSeed.load201 = load ptr, ptr %labelSeed, align 8
   %str.concat202 = call ptr @csec_string_concat(ptr %str.concat200, ptr %labelSeed.load201)
-  %str.concat203 = call ptr @csec_string_concat(ptr %str.concat202, ptr @2247)
+  %str.concat203 = call ptr @csec_string_concat(ptr %str.concat202, ptr @2373)
   %labelSeed.load204 = load ptr, ptr %labelSeed, align 8
   %str.concat205 = call ptr @csec_string_concat(ptr %str.concat203, ptr %labelSeed.load204)
-  %str.concat206 = call ptr @csec_string_concat(ptr %str.concat205, ptr @2248)
-  %str.concat207 = call ptr @csec_string_concat(ptr %str.concat206, ptr @2249)
+  %str.concat206 = call ptr @csec_string_concat(ptr %str.concat205, ptr @2374)
+  %str.concat207 = call ptr @csec_string_concat(ptr %str.concat206, ptr @2375)
   %labelSeed.load208 = load ptr, ptr %labelSeed, align 8
   %str.concat209 = call ptr @csec_string_concat(ptr %str.concat207, ptr %labelSeed.load208)
-  %str.concat210 = call ptr @csec_string_concat(ptr %str.concat209, ptr @2250)
+  %str.concat210 = call ptr @csec_string_concat(ptr %str.concat209, ptr @2376)
   %thenBody.load211 = load ptr, ptr %thenBody, align 8
   %str.concat212 = call ptr @csec_string_concat(ptr %str.concat210, ptr %thenBody.load211)
   %thenBranch.load213 = load ptr, ptr %thenBranch, align 8
   %str.concat214 = call ptr @csec_string_concat(ptr %str.concat212, ptr %thenBranch.load213)
-  %str.concat215 = call ptr @csec_string_concat(ptr %str.concat214, ptr @2251)
+  %str.concat215 = call ptr @csec_string_concat(ptr %str.concat214, ptr @2377)
   %labelSeed.load216 = load ptr, ptr %labelSeed, align 8
   %str.concat217 = call ptr @csec_string_concat(ptr %str.concat215, ptr %labelSeed.load216)
-  %str.concat218 = call ptr @csec_string_concat(ptr %str.concat217, ptr @2252)
+  %str.concat218 = call ptr @csec_string_concat(ptr %str.concat217, ptr @2378)
   %elseBody.load219 = load ptr, ptr %elseBody, align 8
   %str.concat220 = call ptr @csec_string_concat(ptr %str.concat218, ptr %elseBody.load219)
   %elseBranch.load221 = load ptr, ptr %elseBranch, align 8
   %str.concat222 = call ptr @csec_string_concat(ptr %str.concat220, ptr %elseBranch.load221)
-  %str.concat223 = call ptr @csec_string_concat(ptr %str.concat222, ptr @2253)
+  %str.concat223 = call ptr @csec_string_concat(ptr %str.concat222, ptr @2379)
   %labelSeed.load224 = load ptr, ptr %labelSeed, align 8
   %str.concat225 = call ptr @csec_string_concat(ptr %str.concat223, ptr %labelSeed.load224)
-  %str.concat226 = call ptr @csec_string_concat(ptr %str.concat225, ptr @2254)
+  %str.concat226 = call ptr @csec_string_concat(ptr %str.concat225, ptr @2380)
   br label %ifcont110
 
 then161:                                          ; preds = %then153
   %elseStart.load163 = load i32, ptr %elseStart, align 4
   %next.load164 = load i32, ptr %next, align 4
-  %calltmp165 = call i32 @_findClosingToken(ptr %0, i32 %elseStart.load163, i32 %next.load164, ptr @2241, ptr @2242)
+  %calltmp165 = call i32 @_findClosingToken(ptr %0, i32 %elseStart.load163, i32 %next.load164, ptr @2367, ptr @2368)
   %elseEnd = alloca i32, align 4
   store i32 %calltmp165, ptr %elseEnd, align 4
   %elseEnd.load = load i32, ptr %elseEnd, align 4
@@ -23710,7 +24973,7 @@ then175:                                          ; preds = %then168
   %calltmp181 = call ptr @_generateLLVMBooleanBodyFromRange(ptr %0, i32 %addtmp179, i32 %elseEnd.load180)
   store ptr %calltmp181, ptr %elseBody, align 8
   %elseBranch.load = load ptr, ptr %elseBranch, align 8
-  store ptr @2243, ptr %elseBranch, align 8
+  store ptr @2369, ptr %elseBranch, align 8
   br label %ifcont177
 
 else176:                                          ; preds = %then168
@@ -23723,7 +24986,7 @@ else176:                                          ; preds = %then168
   br label %ifcont177
 
 ifcont177:                                        ; preds = %else176, %then175
-  %result187 = phi ptr [ @2243, %then175 ], [ %calltmp186, %else176 ]
+  %result187 = phi ptr [ @2369, %then175 ], [ %calltmp186, %else176 ]
   br label %ifcont169
 }
 
@@ -23733,7 +24996,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2256, %entry ], [ %str.concat122, %ifcont ]
+  %output.0 = phi ptr [ @2382, %entry ], [ %str.concat122, %ifcont ]
   %cursor.0 = phi i32 [ %calltmp, %entry ], [ %calltmp125, %ifcont ]
   %lttmp = icmp slt i32 %cursor.0, %2
   br i1 %lttmp, label %and_rhs, label %and_end
@@ -23743,12 +25006,12 @@ whilebody:                                        ; preds = %and_end
   %next = alloca i32, align 4
   store i32 %calltmp5, ptr %next, align 4
   %calltmp7 = call ptr @_statementKind(ptr %0, i32 %cursor.0)
-  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @2257)
+  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @2383)
   %ifcond = icmp ne i1 %calltmp8, false
   br i1 %ifcond, label %then, label %ifcont
 
 afterwhile:                                       ; preds = %and_end
-  %str.concat127 = call ptr @csec_string_concat(ptr %output.0, ptr @2275)
+  %str.concat127 = call ptr @csec_string_concat(ptr %output.0, ptr @2401)
   ret ptr %str.concat127
 
 and_rhs:                                          ; preds = %whilecond
@@ -23779,7 +25042,7 @@ ifcont:                                           ; preds = %ifcont78, %whilebod
 and_rhs13:                                        ; preds = %then
   %addtmp16 = add i32 %cursor.0, 2
   %calltmp17 = call i8 @_kindOperator()
-  %calltmp18 = call i1 @_tokenIs(ptr %0, i32 %addtmp16, i8 %calltmp17, ptr @2258)
+  %calltmp18 = call i1 @_tokenIs(ptr %0, i32 %addtmp16, i8 %calltmp17, ptr @2384)
   br label %and_end14
 
 and_end14:                                        ; preds = %and_rhs13, %then
@@ -23788,12 +25051,12 @@ and_end14:                                        ; preds = %and_rhs13, %then
   br i1 %ifcond20, label %then21, label %ifcont22
 
 then21:                                           ; preds = %and_end14
-  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2259)
+  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2385)
   %addtmp24 = add i32 %cursor.0, 1
   %calltmp25 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp24)
   %calltmp26 = call ptr @_llvmCharI8Value(ptr %calltmp25)
   %str.concat27 = call ptr @csec_string_concat(ptr %str.concat, ptr %calltmp26)
-  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @2260)
+  %str.concat28 = call ptr @csec_string_concat(ptr %str.concat27, ptr @2386)
   ret ptr %str.concat28
 
 ifcont22:                                         ; preds = %and_end14
@@ -23806,7 +25069,7 @@ ifcont22:                                         ; preds = %and_end14
 and_rhs35:                                        ; preds = %ifcont22
   %addtmp38 = add i32 %cursor.0, 2
   %calltmp39 = call i8 @_kindOperator()
-  %calltmp40 = call i1 @_tokenIs(ptr %0, i32 %addtmp38, i8 %calltmp39, ptr @2261)
+  %calltmp40 = call i1 @_tokenIs(ptr %0, i32 %addtmp38, i8 %calltmp39, ptr @2387)
   br label %and_end36
 
 and_end36:                                        ; preds = %and_rhs35, %ifcont22
@@ -23815,14 +25078,14 @@ and_end36:                                        ; preds = %and_rhs35, %ifcont2
   br i1 %ifcond42, label %then43, label %ifcont44
 
 then43:                                           ; preds = %and_end36
-  %str.concat46 = call ptr @csec_string_concat(ptr %output.0, ptr @2262)
+  %str.concat46 = call ptr @csec_string_concat(ptr %output.0, ptr @2388)
   %addtmp48 = add i32 %cursor.0, 1
   %addtmp50 = add i32 %cursor.0, 1
   %calltmp51 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp50)
   %calltmp52 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %addtmp48, ptr %calltmp51)
   %str.concat53 = call ptr @csec_string_concat(ptr %str.concat46, ptr %calltmp52)
-  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr @2263)
-  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @2264)
+  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat53, ptr @2389)
+  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @2390)
   ret ptr %str.concat55
 
 ifcont44:                                         ; preds = %and_end36
@@ -23845,7 +25108,7 @@ and_end63:                                        ; preds = %and_rhs62, %ifcont4
 and_rhs69:                                        ; preds = %and_end63
   %addtmp72 = add i32 %cursor.0, 2
   %calltmp73 = call i8 @_kindOperator()
-  %calltmp74 = call i1 @_tokenIs(ptr %0, i32 %addtmp72, i8 %calltmp73, ptr @2265)
+  %calltmp74 = call i1 @_tokenIs(ptr %0, i32 %addtmp72, i8 %calltmp73, ptr @2391)
   br label %and_end70
 
 and_end70:                                        ; preds = %and_rhs69, %and_end63
@@ -23856,7 +25119,7 @@ and_end70:                                        ; preds = %and_rhs69, %and_end
 then77:                                           ; preds = %and_end70
   %addtmp80 = add i32 %cursor.0, 2
   %next.load81 = load i32, ptr %next, align 4
-  %calltmp82 = call i32 @_findClosingToken(ptr %0, i32 %addtmp80, i32 %next.load81, ptr @2266, ptr @2267)
+  %calltmp82 = call i32 @_findClosingToken(ptr %0, i32 %addtmp80, i32 %next.load81, ptr @2392, ptr @2393)
   %callEnd = alloca i32, align 4
   store i32 %calltmp82, ptr %callEnd, align 4
   %callEnd.load = load i32, ptr %callEnd, align 4
@@ -23871,7 +25134,7 @@ ifcont78:                                         ; preds = %ifcont87, %and_end7
 then86:                                           ; preds = %then77
   %str.sext = sext i32 %cursor.0 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
-  %str.concat89 = call ptr @csec_string_concat(ptr @2268, ptr %str.int.call)
+  %str.concat89 = call ptr @csec_string_concat(ptr @2394, ptr %str.int.call)
   %resultName = alloca ptr, align 8
   store ptr %str.concat89, ptr %resultName, align 8
   %addtmp92 = add i32 %cursor.0, 3
@@ -23879,25 +25142,25 @@ then86:                                           ; preds = %then77
   %resultName.load = load ptr, ptr %resultName, align 8
   %calltmp94 = call ptr @_generateLLVMCallArgumentLoadsI32(ptr %0, i32 %addtmp92, i32 %callEnd.load93, ptr %resultName.load)
   %str.concat95 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp94)
-  %str.concat96 = call ptr @csec_string_concat(ptr %str.concat95, ptr @2269)
+  %str.concat96 = call ptr @csec_string_concat(ptr %str.concat95, ptr @2395)
   %resultName.load97 = load ptr, ptr %resultName, align 8
   %str.concat98 = call ptr @csec_string_concat(ptr %str.concat96, ptr %resultName.load97)
-  %str.concat99 = call ptr @csec_string_concat(ptr %str.concat98, ptr @2270)
+  %str.concat99 = call ptr @csec_string_concat(ptr %str.concat98, ptr @2396)
   %addtmp101 = add i32 %cursor.0, 1
   %calltmp102 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp101)
   %calltmp103 = call ptr @_llvmRuntimeCallName(ptr %calltmp102)
   %str.concat104 = call ptr @csec_string_concat(ptr %str.concat99, ptr %calltmp103)
-  %str.concat105 = call ptr @csec_string_concat(ptr %str.concat104, ptr @2271)
+  %str.concat105 = call ptr @csec_string_concat(ptr %str.concat104, ptr @2397)
   %addtmp107 = add i32 %cursor.0, 3
   %callEnd.load108 = load i32, ptr %callEnd, align 4
   %resultName.load109 = load ptr, ptr %resultName, align 8
   %calltmp110 = call ptr @_generateLLVMCallArgumentListI32(ptr %0, i32 %addtmp107, i32 %callEnd.load108, ptr %resultName.load109)
   %str.concat111 = call ptr @csec_string_concat(ptr %str.concat105, ptr %calltmp110)
-  %str.concat112 = call ptr @csec_string_concat(ptr %str.concat111, ptr @2272)
-  %str.concat113 = call ptr @csec_string_concat(ptr %str.concat112, ptr @2273)
+  %str.concat112 = call ptr @csec_string_concat(ptr %str.concat111, ptr @2398)
+  %str.concat113 = call ptr @csec_string_concat(ptr %str.concat112, ptr @2399)
   %resultName.load114 = load ptr, ptr %resultName, align 8
   %str.concat115 = call ptr @csec_string_concat(ptr %str.concat113, ptr %resultName.load114)
-  %str.concat116 = call ptr @csec_string_concat(ptr %str.concat115, ptr @2274)
+  %str.concat116 = call ptr @csec_string_concat(ptr %str.concat115, ptr @2400)
   ret ptr %str.concat116
 
 ifcont87:                                         ; preds = %then77
@@ -23910,7 +25173,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2276, %entry ], [ %str.concat71, %ifcont ]
+  %output.0 = phi ptr [ @2402, %entry ], [ %str.concat71, %ifcont ]
   %cursor.0 = phi i32 [ %calltmp, %entry ], [ %calltmp74, %ifcont ]
   %lttmp = icmp slt i32 %cursor.0, %2
   br i1 %lttmp, label %and_rhs, label %and_end
@@ -23920,12 +25183,12 @@ whilebody:                                        ; preds = %and_end
   %next = alloca i32, align 4
   store i32 %calltmp5, ptr %next, align 4
   %calltmp7 = call ptr @_statementKind(ptr %0, i32 %cursor.0)
-  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @2277)
+  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @2403)
   %ifcond = icmp ne i1 %calltmp8, false
   br i1 %ifcond, label %then, label %ifcont
 
 afterwhile:                                       ; preds = %and_end
-  %str.concat76 = call ptr @csec_string_concat(ptr %output.0, ptr @2287)
+  %str.concat76 = call ptr @csec_string_concat(ptr %output.0, ptr @2413)
   ret ptr %str.concat76
 
 and_rhs:                                          ; preds = %whilecond
@@ -23967,7 +25230,7 @@ or_end:                                           ; preds = %or_rhs, %then
 and_rhs18:                                        ; preds = %or_end
   %addtmp21 = add i32 %cursor.0, 2
   %calltmp22 = call i8 @_kindOperator()
-  %calltmp23 = call i1 @_tokenIs(ptr %0, i32 %addtmp21, i8 %calltmp22, ptr @2278)
+  %calltmp23 = call i1 @_tokenIs(ptr %0, i32 %addtmp21, i8 %calltmp22, ptr @2404)
   br label %and_end19
 
 and_end19:                                        ; preds = %and_rhs18, %or_end
@@ -23978,9 +25241,9 @@ and_end19:                                        ; preds = %and_rhs18, %or_end
 then26:                                           ; preds = %and_end19
   %addtmp29 = add i32 %cursor.0, 1
   %next.load = load i32, ptr %next, align 4
-  %calltmp30 = call ptr @_generateLLVMExpressionF64(ptr %0, i32 %addtmp29, i32 %next.load, ptr @2279)
+  %calltmp30 = call ptr @_generateLLVMExpressionF64(ptr %0, i32 %addtmp29, i32 %next.load, ptr @2405)
   %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp30)
-  %str.concat31 = call ptr @csec_string_concat(ptr %str.concat, ptr @2280)
+  %str.concat31 = call ptr @csec_string_concat(ptr %str.concat, ptr @2406)
   ret ptr %str.concat31
 
 ifcont27:                                         ; preds = %and_end19
@@ -23993,7 +25256,7 @@ ifcont27:                                         ; preds = %and_end19
 and_rhs38:                                        ; preds = %ifcont27
   %addtmp41 = add i32 %cursor.0, 2
   %calltmp42 = call i8 @_kindOperator()
-  %calltmp43 = call i1 @_tokenIs(ptr %0, i32 %addtmp41, i8 %calltmp42, ptr @2281)
+  %calltmp43 = call i1 @_tokenIs(ptr %0, i32 %addtmp41, i8 %calltmp42, ptr @2407)
   br label %and_end39
 
 and_end39:                                        ; preds = %and_rhs38, %ifcont27
@@ -24002,22 +25265,22 @@ and_end39:                                        ; preds = %and_rhs38, %ifcont2
   br i1 %ifcond45, label %then46, label %ifcont47
 
 then46:                                           ; preds = %and_end39
-  %str.concat49 = call ptr @csec_string_concat(ptr %output.0, ptr @2282)
+  %str.concat49 = call ptr @csec_string_concat(ptr %output.0, ptr @2408)
   %addtmp51 = add i32 %cursor.0, 1
   %addtmp53 = add i32 %cursor.0, 1
   %calltmp54 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp53)
   %calltmp55 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %addtmp51, ptr %calltmp54)
   %str.concat56 = call ptr @csec_string_concat(ptr %str.concat49, ptr %calltmp55)
-  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @2283)
-  %str.concat58 = call ptr @csec_string_concat(ptr %str.concat57, ptr @2284)
+  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @2409)
+  %str.concat58 = call ptr @csec_string_concat(ptr %str.concat57, ptr @2410)
   ret ptr %str.concat58
 
 ifcont47:                                         ; preds = %and_end39
   %addtmp61 = add i32 %cursor.0, 1
   %next.load62 = load i32, ptr %next, align 4
-  %calltmp63 = call ptr @_generateLLVMExpressionF64(ptr %0, i32 %addtmp61, i32 %next.load62, ptr @2285)
+  %calltmp63 = call ptr @_generateLLVMExpressionF64(ptr %0, i32 %addtmp61, i32 %next.load62, ptr @2411)
   %str.concat64 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp63)
-  %str.concat65 = call ptr @csec_string_concat(ptr %str.concat64, ptr @2286)
+  %str.concat65 = call ptr @csec_string_concat(ptr %str.concat64, ptr @2412)
   ret ptr %str.concat65
 }
 
@@ -24027,7 +25290,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2288, %entry ], [ %str.concat66, %ifcont ]
+  %output.0 = phi ptr [ @2414, %entry ], [ %str.concat66, %ifcont ]
   %cursor.0 = phi i32 [ %calltmp, %entry ], [ %calltmp69, %ifcont ]
   %lttmp = icmp slt i32 %cursor.0, %2
   br i1 %lttmp, label %and_rhs, label %and_end
@@ -24037,12 +25300,12 @@ whilebody:                                        ; preds = %and_end
   %next = alloca i32, align 4
   store i32 %calltmp5, ptr %next, align 4
   %calltmp7 = call ptr @_statementKind(ptr %0, i32 %cursor.0)
-  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @2289)
+  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @2415)
   %ifcond = icmp ne i1 %calltmp8, false
   br i1 %ifcond, label %then, label %ifcont
 
 afterwhile:                                       ; preds = %and_end
-  %str.concat71 = call ptr @csec_string_concat(ptr %output.0, ptr @2299)
+  %str.concat71 = call ptr @csec_string_concat(ptr %output.0, ptr @2425)
   ret ptr %str.concat71
 
 and_rhs:                                          ; preds = %whilecond
@@ -24073,7 +25336,7 @@ ifcont:                                           ; preds = %whilebody
 and_rhs13:                                        ; preds = %then
   %addtmp16 = add i32 %cursor.0, 2
   %calltmp17 = call i8 @_kindOperator()
-  %calltmp18 = call i1 @_tokenIs(ptr %0, i32 %addtmp16, i8 %calltmp17, ptr @2290)
+  %calltmp18 = call i1 @_tokenIs(ptr %0, i32 %addtmp16, i8 %calltmp17, ptr @2416)
   br label %and_end14
 
 and_end14:                                        ; preds = %and_rhs13, %then
@@ -24084,9 +25347,9 @@ and_end14:                                        ; preds = %and_rhs13, %then
 then21:                                           ; preds = %and_end14
   %addtmp24 = add i32 %cursor.0, 1
   %next.load = load i32, ptr %next, align 4
-  %calltmp25 = call ptr @_generateLLVMExpressionI64(ptr %0, i32 %addtmp24, i32 %next.load, ptr @2291)
+  %calltmp25 = call ptr @_generateLLVMExpressionI64(ptr %0, i32 %addtmp24, i32 %next.load, ptr @2417)
   %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp25)
-  %str.concat26 = call ptr @csec_string_concat(ptr %str.concat, ptr @2292)
+  %str.concat26 = call ptr @csec_string_concat(ptr %str.concat, ptr @2418)
   ret ptr %str.concat26
 
 ifcont22:                                         ; preds = %and_end14
@@ -24099,7 +25362,7 @@ ifcont22:                                         ; preds = %and_end14
 and_rhs33:                                        ; preds = %ifcont22
   %addtmp36 = add i32 %cursor.0, 2
   %calltmp37 = call i8 @_kindOperator()
-  %calltmp38 = call i1 @_tokenIs(ptr %0, i32 %addtmp36, i8 %calltmp37, ptr @2293)
+  %calltmp38 = call i1 @_tokenIs(ptr %0, i32 %addtmp36, i8 %calltmp37, ptr @2419)
   br label %and_end34
 
 and_end34:                                        ; preds = %and_rhs33, %ifcont22
@@ -24108,22 +25371,22 @@ and_end34:                                        ; preds = %and_rhs33, %ifcont2
   br i1 %ifcond40, label %then41, label %ifcont42
 
 then41:                                           ; preds = %and_end34
-  %str.concat44 = call ptr @csec_string_concat(ptr %output.0, ptr @2294)
+  %str.concat44 = call ptr @csec_string_concat(ptr %output.0, ptr @2420)
   %addtmp46 = add i32 %cursor.0, 1
   %addtmp48 = add i32 %cursor.0, 1
   %calltmp49 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp48)
   %calltmp50 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %addtmp46, ptr %calltmp49)
   %str.concat51 = call ptr @csec_string_concat(ptr %str.concat44, ptr %calltmp50)
-  %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr @2295)
-  %str.concat53 = call ptr @csec_string_concat(ptr %str.concat52, ptr @2296)
+  %str.concat52 = call ptr @csec_string_concat(ptr %str.concat51, ptr @2421)
+  %str.concat53 = call ptr @csec_string_concat(ptr %str.concat52, ptr @2422)
   ret ptr %str.concat53
 
 ifcont42:                                         ; preds = %and_end34
   %addtmp56 = add i32 %cursor.0, 1
   %next.load57 = load i32, ptr %next, align 4
-  %calltmp58 = call ptr @_generateLLVMExpressionI64(ptr %0, i32 %addtmp56, i32 %next.load57, ptr @2297)
+  %calltmp58 = call ptr @_generateLLVMExpressionI64(ptr %0, i32 %addtmp56, i32 %next.load57, ptr @2423)
   %str.concat59 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp58)
-  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @2298)
+  %str.concat60 = call ptr @csec_string_concat(ptr %str.concat59, ptr @2424)
   ret ptr %str.concat60
 }
 
@@ -24180,7 +25443,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2300, %entry ], [ %output.1, %ifcont ]
+  %output.0 = phi ptr [ @2426, %entry ], [ %output.1, %ifcont ]
   %cursor.0 = phi i32 [ %calltmp, %entry ], [ %calltmp258, %ifcont ]
   %lttmp = icmp slt i32 %cursor.0, %2
   br i1 %lttmp, label %and_rhs, label %and_end
@@ -24193,12 +25456,12 @@ whilebody:                                        ; preds = %and_end
   %kind = alloca ptr, align 8
   store ptr %calltmp7, ptr %kind, align 8
   %kind.load = load ptr, ptr %kind, align 8
-  %calltmp8 = call i1 @_strEq(ptr %kind.load, ptr @2301)
+  %calltmp8 = call i1 @_strEq(ptr %kind.load, ptr @2427)
   %ifcond = icmp ne i1 %calltmp8, false
   br i1 %ifcond, label %then, label %else
 
 afterwhile:                                       ; preds = %and_end
-  %str.concat260 = call ptr @csec_string_concat(ptr %output.0, ptr @2347)
+  %str.concat260 = call ptr @csec_string_concat(ptr %output.0, ptr @2473)
   ret ptr %str.concat260
 
 and_rhs:                                          ; preds = %whilecond
@@ -24214,7 +25477,7 @@ and_end:                                          ; preds = %and_rhs, %whilecond
 then:                                             ; preds = %whilebody
   %str.sext = sext i32 %cursor.0 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
-  %str.concat = call ptr @csec_string_concat(ptr @2302, ptr %str.int.call)
+  %str.concat = call ptr @csec_string_concat(ptr @2428, ptr %str.int.call)
   %resultName = alloca ptr, align 8
   store ptr %str.concat, ptr %resultName, align 8
   %addtmp = add i32 %cursor.0, 1
@@ -24225,7 +25488,7 @@ then:                                             ; preds = %whilebody
 
 else:                                             ; preds = %whilebody
   %kind.load97 = load ptr, ptr %kind, align 8
-  %calltmp98 = call i1 @_strEq(ptr %kind.load97, ptr @2319)
+  %calltmp98 = call i1 @_strEq(ptr %kind.load97, ptr @2445)
   %ifcond99 = icmp ne i1 %calltmp98, false
   br i1 %ifcond99, label %then100, label %else101
 
@@ -24237,7 +25500,7 @@ ifcont:                                           ; preds = %ifcont102
 and_rhs14:                                        ; preds = %then
   %addtmp17 = add i32 %cursor.0, 2
   %calltmp18 = call i8 @_kindOperator()
-  %calltmp19 = call i1 @_tokenIs(ptr %0, i32 %addtmp17, i8 %calltmp18, ptr @2303)
+  %calltmp19 = call i1 @_tokenIs(ptr %0, i32 %addtmp17, i8 %calltmp18, ptr @2429)
   br label %and_end15
 
 and_end15:                                        ; preds = %and_rhs14, %then
@@ -24254,24 +25517,24 @@ then22:                                           ; preds = %and_end15
   %calltmp27 = call i32 @_llvmStringLiteralByteLength(ptr %text.load)
   %byteLength = alloca i32, align 4
   store i32 %calltmp27, ptr %byteLength, align 4
-  %str.concat28 = call ptr @csec_string_concat(ptr %output.0, ptr @2304)
+  %str.concat28 = call ptr @csec_string_concat(ptr %output.0, ptr @2430)
   %resultName.load = load ptr, ptr %resultName, align 8
   %str.concat29 = call ptr @csec_string_concat(ptr %str.concat28, ptr %resultName.load)
-  %str.concat30 = call ptr @csec_string_concat(ptr %str.concat29, ptr @2305)
+  %str.concat30 = call ptr @csec_string_concat(ptr %str.concat29, ptr @2431)
   %byteLength.load = load i32, ptr %byteLength, align 4
   %str.sext31 = sext i32 %byteLength.load to i64
   %str.int.call32 = call ptr @csec_to_string_i64(i64 %str.sext31)
   %str.concat33 = call ptr @csec_string_concat(ptr %str.concat30, ptr %str.int.call32)
-  %str.concat34 = call ptr @csec_string_concat(ptr %str.concat33, ptr @2306)
+  %str.concat34 = call ptr @csec_string_concat(ptr %str.concat33, ptr @2432)
   %addtmp36 = add i32 %cursor.0, 1
   %str.sext37 = sext i32 %addtmp36 to i64
   %str.int.call38 = call ptr @csec_to_string_i64(i64 %str.sext37)
   %str.concat39 = call ptr @csec_string_concat(ptr %str.concat34, ptr %str.int.call38)
-  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @2307)
-  %str.concat41 = call ptr @csec_string_concat(ptr %str.concat40, ptr @2308)
+  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @2433)
+  %str.concat41 = call ptr @csec_string_concat(ptr %str.concat40, ptr @2434)
   %resultName.load42 = load ptr, ptr %resultName, align 8
   %str.concat43 = call ptr @csec_string_concat(ptr %str.concat41, ptr %resultName.load42)
-  %str.concat44 = call ptr @csec_string_concat(ptr %str.concat43, ptr @2309)
+  %str.concat44 = call ptr @csec_string_concat(ptr %str.concat43, ptr @2435)
   ret ptr %str.concat44
 
 ifcont23:                                         ; preds = %and_end15
@@ -24284,7 +25547,7 @@ ifcont23:                                         ; preds = %and_end15
 and_rhs51:                                        ; preds = %ifcont23
   %addtmp54 = add i32 %cursor.0, 2
   %calltmp55 = call i8 @_kindOperator()
-  %calltmp56 = call i1 @_tokenIs(ptr %0, i32 %addtmp54, i8 %calltmp55, ptr @2310)
+  %calltmp56 = call i1 @_tokenIs(ptr %0, i32 %addtmp54, i8 %calltmp55, ptr @2436)
   br label %and_end52
 
 and_end52:                                        ; preds = %and_rhs51, %ifcont23
@@ -24293,20 +25556,20 @@ and_end52:                                        ; preds = %and_rhs51, %ifcont2
   br i1 %ifcond58, label %then59, label %ifcont60
 
 then59:                                           ; preds = %and_end52
-  %str.concat62 = call ptr @csec_string_concat(ptr %output.0, ptr @2311)
+  %str.concat62 = call ptr @csec_string_concat(ptr %output.0, ptr @2437)
   %resultName.load63 = load ptr, ptr %resultName, align 8
   %str.concat64 = call ptr @csec_string_concat(ptr %str.concat62, ptr %resultName.load63)
-  %str.concat65 = call ptr @csec_string_concat(ptr %str.concat64, ptr @2312)
+  %str.concat65 = call ptr @csec_string_concat(ptr %str.concat64, ptr @2438)
   %addtmp67 = add i32 %cursor.0, 1
   %addtmp69 = add i32 %cursor.0, 1
   %calltmp70 = call ptr @_tokenTextAt(ptr %0, i32 %addtmp69)
   %calltmp71 = call ptr @_lookupVisibleStorageName(ptr %0, i32 %addtmp67, ptr %calltmp70)
   %str.concat72 = call ptr @csec_string_concat(ptr %str.concat65, ptr %calltmp71)
-  %str.concat73 = call ptr @csec_string_concat(ptr %str.concat72, ptr @2313)
-  %str.concat74 = call ptr @csec_string_concat(ptr %str.concat73, ptr @2314)
+  %str.concat73 = call ptr @csec_string_concat(ptr %str.concat72, ptr @2439)
+  %str.concat74 = call ptr @csec_string_concat(ptr %str.concat73, ptr @2440)
   %resultName.load75 = load ptr, ptr %resultName, align 8
   %str.concat76 = call ptr @csec_string_concat(ptr %str.concat74, ptr %resultName.load75)
-  %str.concat77 = call ptr @csec_string_concat(ptr %str.concat76, ptr @2315)
+  %str.concat77 = call ptr @csec_string_concat(ptr %str.concat76, ptr @2441)
   ret ptr %str.concat77
 
 ifcont60:                                         ; preds = %and_end52
@@ -24322,14 +25585,14 @@ then82:                                           ; preds = %ifcont60
   %resultName.load88 = load ptr, ptr %resultName, align 8
   %calltmp89 = call ptr @_generateLLVMExpressionPtr(ptr %0, i32 %addtmp86, i32 %next.load87, ptr %resultName.load88)
   %str.concat90 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp89)
-  %str.concat91 = call ptr @csec_string_concat(ptr %str.concat90, ptr @2316)
+  %str.concat91 = call ptr @csec_string_concat(ptr %str.concat90, ptr @2442)
   %resultName.load92 = load ptr, ptr %resultName, align 8
   %str.concat93 = call ptr @csec_string_concat(ptr %str.concat91, ptr %resultName.load92)
-  %str.concat94 = call ptr @csec_string_concat(ptr %str.concat93, ptr @2317)
+  %str.concat94 = call ptr @csec_string_concat(ptr %str.concat93, ptr @2443)
   ret ptr %str.concat94
 
 ifcont83:                                         ; preds = %ifcont60
-  %str.concat96 = call ptr @csec_string_concat(ptr %output.0, ptr @2318)
+  %str.concat96 = call ptr @csec_string_concat(ptr %output.0, ptr @2444)
   ret ptr %str.concat96
 
 then100:                                          ; preds = %else
@@ -24347,7 +25610,7 @@ then100:                                          ; preds = %else
   store i32 %calltmp111, ptr %thenStart, align 4
   %thenStart.load = load i32, ptr %thenStart, align 4
   %next.load112 = load i32, ptr %next, align 4
-  %calltmp113 = call i32 @_findClosingToken(ptr %0, i32 %thenStart.load, i32 %next.load112, ptr @2320, ptr @2321)
+  %calltmp113 = call i32 @_findClosingToken(ptr %0, i32 %thenStart.load, i32 %next.load112, ptr @2446, ptr @2447)
   %thenEnd = alloca i32, align 4
   store i32 %calltmp113, ptr %thenEnd, align 4
   %openParen.load = load i32, ptr %openParen, align 4
@@ -24396,13 +25659,13 @@ or_end124:                                        ; preds = %or_rhs123, %or_end1
   br i1 %ifcond128, label %then129, label %else130
 
 then129:                                          ; preds = %or_end124
-  %str.concat134 = call ptr @csec_string_concat(ptr %output.0, ptr @2322)
+  %str.concat134 = call ptr @csec_string_concat(ptr %output.0, ptr @2448)
   br label %ifcont131
 
 else130:                                          ; preds = %or_end124
   %str.sext136 = sext i32 %cursor.0 to i64
   %str.int.call137 = call ptr @csec_to_string_i64(i64 %str.sext136)
-  %str.concat138 = call ptr @csec_string_concat(ptr @2323, ptr %str.int.call137)
+  %str.concat138 = call ptr @csec_string_concat(ptr @2449, ptr %str.int.call137)
   %labelSeed = alloca ptr, align 8
   store ptr %str.concat138, ptr %labelSeed, align 8
   %thenEnd.load139 = load i32, ptr %thenEnd, align 4
@@ -24411,10 +25674,10 @@ else130:                                          ; preds = %or_end124
   %possibleElse = alloca i32, align 4
   store i32 %calltmp141, ptr %possibleElse, align 4
   %thenBody = alloca ptr, align 8
-  store ptr @2324, ptr %thenBody, align 8
+  store ptr @2450, ptr %thenBody, align 8
   %labelSeed.load = load ptr, ptr %labelSeed, align 8
-  %str.concat142 = call ptr @csec_string_concat(ptr @2325, ptr %labelSeed.load)
-  %str.concat143 = call ptr @csec_string_concat(ptr %str.concat142, ptr @2326)
+  %str.concat142 = call ptr @csec_string_concat(ptr @2451, ptr %labelSeed.load)
+  %str.concat143 = call ptr @csec_string_concat(ptr %str.concat142, ptr @2452)
   %thenBranch = alloca ptr, align 8
   store ptr %str.concat143, ptr %thenBranch, align 8
   %thenStart.load144 = load i32, ptr %thenStart, align 4
@@ -24437,7 +25700,7 @@ then149:                                          ; preds = %else130
   %calltmp155 = call ptr @_generateLLVMPointerBodyFromRange(ptr %0, i32 %addtmp153, i32 %thenEnd.load154)
   store ptr %calltmp155, ptr %thenBody, align 8
   %thenBranch.load = load ptr, ptr %thenBranch, align 8
-  store ptr @2327, ptr %thenBranch, align 8
+  store ptr @2453, ptr %thenBranch, align 8
   br label %ifcont151
 
 else150:                                          ; preds = %else130
@@ -24450,12 +25713,12 @@ else150:                                          ; preds = %else130
   br label %ifcont151
 
 ifcont151:                                        ; preds = %else150, %then149
-  %result = phi ptr [ @2327, %then149 ], [ %calltmp160, %else150 ]
+  %result = phi ptr [ @2453, %then149 ], [ %calltmp160, %else150 ]
   %elseBody = alloca ptr, align 8
-  store ptr @2328, ptr %elseBody, align 8
+  store ptr @2454, ptr %elseBody, align 8
   %labelSeed.load161 = load ptr, ptr %labelSeed, align 8
-  %str.concat162 = call ptr @csec_string_concat(ptr @2329, ptr %labelSeed.load161)
-  %str.concat163 = call ptr @csec_string_concat(ptr %str.concat162, ptr @2330)
+  %str.concat162 = call ptr @csec_string_concat(ptr @2455, ptr %labelSeed.load161)
+  %str.concat163 = call ptr @csec_string_concat(ptr %str.concat162, ptr @2456)
   %elseBranch = alloca ptr, align 8
   store ptr %str.concat163, ptr %elseBranch, align 8
   %possibleElse.load = load i32, ptr %possibleElse, align 4
@@ -24466,7 +25729,7 @@ ifcont151:                                        ; preds = %else150, %then149
 and_rhs167:                                       ; preds = %ifcont151
   %possibleElse.load169 = load i32, ptr %possibleElse, align 4
   %calltmp170 = call i8 @_kindKeyword()
-  %calltmp171 = call i1 @_tokenIs(ptr %0, i32 %possibleElse.load169, i8 %calltmp170, ptr @2331)
+  %calltmp171 = call i1 @_tokenIs(ptr %0, i32 %possibleElse.load169, i8 %calltmp170, ptr @2457)
   br label %and_end168
 
 and_end168:                                       ; preds = %and_rhs167, %ifcont151
@@ -24482,7 +25745,7 @@ then174:                                          ; preds = %and_end168
   store i32 %calltmp178, ptr %elseStart, align 4
   %elseStart.load = load i32, ptr %elseStart, align 4
   %calltmp179 = call i8 @_kindOperator()
-  %calltmp180 = call i1 @_tokenIs(ptr %0, i32 %elseStart.load, i8 %calltmp179, ptr @2332)
+  %calltmp180 = call i1 @_tokenIs(ptr %0, i32 %elseStart.load, i8 %calltmp179, ptr @2458)
   %ifcond181 = icmp ne i1 %calltmp180, false
   br i1 %ifcond181, label %then182, label %ifcont183
 
@@ -24491,45 +25754,45 @@ ifcont175:                                        ; preds = %ifcont183, %and_end
   %addtmp212 = add i32 %openParen.load211, 1
   %closeParen.load213 = load i32, ptr %closeParen, align 4
   %labelSeed.load214 = load ptr, ptr %labelSeed, align 8
-  %str.concat215 = call ptr @csec_string_concat(ptr @2336, ptr %labelSeed.load214)
+  %str.concat215 = call ptr @csec_string_concat(ptr @2462, ptr %labelSeed.load214)
   %calltmp216 = call ptr @_generateLLVMExpressionI1(ptr %0, i32 %addtmp212, i32 %closeParen.load213, ptr %str.concat215)
   %str.concat217 = call ptr @csec_string_concat(ptr %output.0, ptr %calltmp216)
-  %str.concat218 = call ptr @csec_string_concat(ptr %str.concat217, ptr @2337)
+  %str.concat218 = call ptr @csec_string_concat(ptr %str.concat217, ptr @2463)
   %labelSeed.load219 = load ptr, ptr %labelSeed, align 8
   %str.concat220 = call ptr @csec_string_concat(ptr %str.concat218, ptr %labelSeed.load219)
-  %str.concat221 = call ptr @csec_string_concat(ptr %str.concat220, ptr @2338)
+  %str.concat221 = call ptr @csec_string_concat(ptr %str.concat220, ptr @2464)
   %labelSeed.load222 = load ptr, ptr %labelSeed, align 8
   %str.concat223 = call ptr @csec_string_concat(ptr %str.concat221, ptr %labelSeed.load222)
-  %str.concat224 = call ptr @csec_string_concat(ptr %str.concat223, ptr @2339)
+  %str.concat224 = call ptr @csec_string_concat(ptr %str.concat223, ptr @2465)
   %labelSeed.load225 = load ptr, ptr %labelSeed, align 8
   %str.concat226 = call ptr @csec_string_concat(ptr %str.concat224, ptr %labelSeed.load225)
-  %str.concat227 = call ptr @csec_string_concat(ptr %str.concat226, ptr @2340)
-  %str.concat228 = call ptr @csec_string_concat(ptr %str.concat227, ptr @2341)
+  %str.concat227 = call ptr @csec_string_concat(ptr %str.concat226, ptr @2466)
+  %str.concat228 = call ptr @csec_string_concat(ptr %str.concat227, ptr @2467)
   %labelSeed.load229 = load ptr, ptr %labelSeed, align 8
   %str.concat230 = call ptr @csec_string_concat(ptr %str.concat228, ptr %labelSeed.load229)
-  %str.concat231 = call ptr @csec_string_concat(ptr %str.concat230, ptr @2342)
+  %str.concat231 = call ptr @csec_string_concat(ptr %str.concat230, ptr @2468)
   %thenBody.load232 = load ptr, ptr %thenBody, align 8
   %str.concat233 = call ptr @csec_string_concat(ptr %str.concat231, ptr %thenBody.load232)
   %thenBranch.load234 = load ptr, ptr %thenBranch, align 8
   %str.concat235 = call ptr @csec_string_concat(ptr %str.concat233, ptr %thenBranch.load234)
-  %str.concat236 = call ptr @csec_string_concat(ptr %str.concat235, ptr @2343)
+  %str.concat236 = call ptr @csec_string_concat(ptr %str.concat235, ptr @2469)
   %labelSeed.load237 = load ptr, ptr %labelSeed, align 8
   %str.concat238 = call ptr @csec_string_concat(ptr %str.concat236, ptr %labelSeed.load237)
-  %str.concat239 = call ptr @csec_string_concat(ptr %str.concat238, ptr @2344)
+  %str.concat239 = call ptr @csec_string_concat(ptr %str.concat238, ptr @2470)
   %elseBody.load240 = load ptr, ptr %elseBody, align 8
   %str.concat241 = call ptr @csec_string_concat(ptr %str.concat239, ptr %elseBody.load240)
   %elseBranch.load242 = load ptr, ptr %elseBranch, align 8
   %str.concat243 = call ptr @csec_string_concat(ptr %str.concat241, ptr %elseBranch.load242)
-  %str.concat244 = call ptr @csec_string_concat(ptr %str.concat243, ptr @2345)
+  %str.concat244 = call ptr @csec_string_concat(ptr %str.concat243, ptr @2471)
   %labelSeed.load245 = load ptr, ptr %labelSeed, align 8
   %str.concat246 = call ptr @csec_string_concat(ptr %str.concat244, ptr %labelSeed.load245)
-  %str.concat247 = call ptr @csec_string_concat(ptr %str.concat246, ptr @2346)
+  %str.concat247 = call ptr @csec_string_concat(ptr %str.concat246, ptr @2472)
   br label %ifcont131
 
 then182:                                          ; preds = %then174
   %elseStart.load184 = load i32, ptr %elseStart, align 4
   %next.load185 = load i32, ptr %next, align 4
-  %calltmp186 = call i32 @_findClosingToken(ptr %0, i32 %elseStart.load184, i32 %next.load185, ptr @2333, ptr @2334)
+  %calltmp186 = call i32 @_findClosingToken(ptr %0, i32 %elseStart.load184, i32 %next.load185, ptr @2459, ptr @2460)
   %elseEnd = alloca i32, align 4
   store i32 %calltmp186, ptr %elseEnd, align 4
   %elseEnd.load = load i32, ptr %elseEnd, align 4
@@ -24560,7 +25823,7 @@ then196:                                          ; preds = %then189
   %calltmp202 = call ptr @_generateLLVMPointerBodyFromRange(ptr %0, i32 %addtmp200, i32 %elseEnd.load201)
   store ptr %calltmp202, ptr %elseBody, align 8
   %elseBranch.load = load ptr, ptr %elseBranch, align 8
-  store ptr @2335, ptr %elseBranch, align 8
+  store ptr @2461, ptr %elseBranch, align 8
   br label %ifcont198
 
 else197:                                          ; preds = %then189
@@ -24573,7 +25836,7 @@ else197:                                          ; preds = %then189
   br label %ifcont198
 
 ifcont198:                                        ; preds = %else197, %then196
-  %result208 = phi ptr [ @2335, %then196 ], [ %calltmp207, %else197 ]
+  %result208 = phi ptr [ @2461, %then196 ], [ %calltmp207, %else197 ]
   br label %ifcont190
 }
 
@@ -24583,7 +25846,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2348, %entry ], [ %str.concat13, %ifcont ]
+  %output.0 = phi ptr [ @2474, %entry ], [ %str.concat13, %ifcont ]
   %cursor.0 = phi i32 [ %calltmp, %entry ], [ %calltmp16, %ifcont ]
   %lttmp = icmp slt i32 %cursor.0, %2
   br i1 %lttmp, label %and_rhs, label %and_end
@@ -24593,12 +25856,12 @@ whilebody:                                        ; preds = %and_end
   %next = alloca i32, align 4
   store i32 %calltmp5, ptr %next, align 4
   %calltmp7 = call ptr @_statementKind(ptr %0, i32 %cursor.0)
-  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @2349)
+  %calltmp8 = call i1 @_strEq(ptr %calltmp7, ptr @2475)
   %ifcond = icmp ne i1 %calltmp8, false
   br i1 %ifcond, label %then, label %ifcont
 
 afterwhile:                                       ; preds = %and_end
-  %str.concat18 = call ptr @csec_string_concat(ptr %output.0, ptr @2351)
+  %str.concat18 = call ptr @csec_string_concat(ptr %output.0, ptr @2477)
   ret ptr %str.concat18
 
 and_rhs:                                          ; preds = %whilecond
@@ -24612,7 +25875,7 @@ and_end:                                          ; preds = %and_rhs, %whilecond
   br i1 %and_result.0, label %whilebody, label %afterwhile
 
 then:                                             ; preds = %whilebody
-  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2350)
+  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2476)
   ret ptr %str.concat
 
 ifcont:                                           ; preds = %whilebody
@@ -24629,7 +25892,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2352, %entry ], [ %output.1, %ifcont ]
+  %output.0 = phi ptr [ @2478, %entry ], [ %output.1, %ifcont ]
   %cursor.0 = phi i32 [ 0, %entry ], [ %cursor.1, %ifcont ]
   %str.length = call i64 @csec_string_length(ptr %0)
   %num.sext = sext i32 %cursor.0 to i64
@@ -24645,7 +25908,7 @@ whilebody:                                        ; preds = %whilecond
   br i1 %eqtmp, label %and_rhs, label %and_end
 
 afterwhile:                                       ; preds = %whilecond
-  %str.concat93 = call ptr @csec_string_concat(ptr %output.0, ptr @2361)
+  %str.concat93 = call ptr @csec_string_concat(ptr %output.0, ptr @2487)
   ret ptr %str.concat93
 
 and_rhs:                                          ; preds = %whilebody
@@ -24683,7 +25946,7 @@ ifcont:                                           ; preds = %ifcont67, %ifcont13
   br label %whilecond
 
 then11:                                           ; preds = %then
-  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2353)
+  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2479)
   br label %ifcont13
 
 else12:                                           ; preds = %then
@@ -24699,7 +25962,7 @@ ifcont13:                                         ; preds = %ifcont20, %then11
   br label %ifcont
 
 then18:                                           ; preds = %else12
-  %str.concat23 = call ptr @csec_string_concat(ptr %output.0, ptr @2354)
+  %str.concat23 = call ptr @csec_string_concat(ptr %output.0, ptr @2480)
   br label %ifcont20
 
 else19:                                           ; preds = %else12
@@ -24714,7 +25977,7 @@ ifcont20:                                         ; preds = %ifcont29, %then18
   br label %ifcont13
 
 then27:                                           ; preds = %else19
-  %str.concat32 = call ptr @csec_string_concat(ptr %output.0, ptr @2355)
+  %str.concat32 = call ptr @csec_string_concat(ptr %output.0, ptr @2481)
   br label %ifcont29
 
 else28:                                           ; preds = %else19
@@ -24729,7 +25992,7 @@ ifcont29:                                         ; preds = %ifcont38, %then27
   br label %ifcont20
 
 then36:                                           ; preds = %else28
-  %str.concat41 = call ptr @csec_string_concat(ptr %output.0, ptr @2356)
+  %str.concat41 = call ptr @csec_string_concat(ptr %output.0, ptr @2482)
   br label %ifcont38
 
 else37:                                           ; preds = %else28
@@ -24744,7 +26007,7 @@ ifcont38:                                         ; preds = %ifcont47, %then36
   br label %ifcont29
 
 then45:                                           ; preds = %else37
-  %str.concat50 = call ptr @csec_string_concat(ptr %output.0, ptr @2357)
+  %str.concat50 = call ptr @csec_string_concat(ptr %output.0, ptr @2483)
   br label %ifcont47
 
 else46:                                           ; preds = %else37
@@ -24759,7 +26022,7 @@ ifcont47:                                         ; preds = %else46, %then45
   br label %ifcont38
 
 then65:                                           ; preds = %else
-  %str.concat70 = call ptr @csec_string_concat(ptr %output.0, ptr @2358)
+  %str.concat70 = call ptr @csec_string_concat(ptr %output.0, ptr @2484)
   br label %ifcont67
 
 else66:                                           ; preds = %else
@@ -24775,11 +26038,11 @@ ifcont67:                                         ; preds = %ifcont76, %then65
   br label %ifcont
 
 then74:                                           ; preds = %else66
-  %str.concat79 = call ptr @csec_string_concat(ptr %output.0, ptr @2359)
+  %str.concat79 = call ptr @csec_string_concat(ptr %output.0, ptr @2485)
   br label %ifcont76
 
 else75:                                           ; preds = %else66
-  %str.concat82 = call ptr @csec_string_concat(ptr %output.0, ptr @2360)
+  %str.concat82 = call ptr @csec_string_concat(ptr %output.0, ptr @2486)
   %ch.load83 = load i8, ptr %ch, align 1
   %str.char.call84 = call ptr @csec_to_string_char(i8 %ch.load83)
   %str.concat85 = call ptr @csec_string_concat(ptr %str.concat82, ptr %str.char.call84)
@@ -24798,7 +26061,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2362, %entry ], [ %output.1, %ifcont ]
+  %output.0 = phi ptr [ @2488, %entry ], [ %output.1, %ifcont ]
   %cursor.0 = phi i32 [ 0, %entry ], [ %addtmp, %ifcont ]
   %calltmp = call i8 @_tokenKindAt(ptr %0, i32 %cursor.0)
   %calltmp1 = call i8 @_kindEof()
@@ -24826,20 +26089,20 @@ then:                                             ; preds = %whilebody
   %calltmp7 = call i32 @_llvmStringLiteralByteLength(ptr %text.load)
   %byteLength = alloca i32, align 4
   store i32 %calltmp7, ptr %byteLength, align 4
-  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2363)
+  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2489)
   %str.sext = sext i32 %cursor.0 to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat10 = call ptr @csec_string_concat(ptr %str.concat, ptr %str.int.call)
-  %str.concat11 = call ptr @csec_string_concat(ptr %str.concat10, ptr @2364)
+  %str.concat11 = call ptr @csec_string_concat(ptr %str.concat10, ptr @2490)
   %byteLength.load = load i32, ptr %byteLength, align 4
   %str.sext12 = sext i32 %byteLength.load to i64
   %str.int.call13 = call ptr @csec_to_string_i64(i64 %str.sext12)
   %str.concat14 = call ptr @csec_string_concat(ptr %str.concat11, ptr %str.int.call13)
-  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @2365)
+  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @2491)
   %text.load16 = load ptr, ptr %text, align 8
   %calltmp17 = call ptr @_llvmStringLiteralBytes(ptr %text.load16)
   %str.concat18 = call ptr @csec_string_concat(ptr %str.concat15, ptr %calltmp17)
-  %str.concat19 = call ptr @csec_string_concat(ptr %str.concat18, ptr @2366)
+  %str.concat19 = call ptr @csec_string_concat(ptr %str.concat18, ptr @2492)
   br label %ifcont
 
 ifcont:                                           ; preds = %then, %whilebody
@@ -24848,11 +26111,11 @@ ifcont:                                           ; preds = %then, %whilebody
   br label %whilecond
 
 then24:                                           ; preds = %afterwhile
-  %str.concat27 = call ptr @csec_string_concat(ptr %output.0, ptr @2367)
+  %str.concat27 = call ptr @csec_string_concat(ptr %output.0, ptr @2493)
   ret ptr %str.concat27
 
 ifcont25:                                         ; preds = %afterwhile
-  ret ptr @2368
+  ret ptr @2494
 }
 
 define ptr @_generateLLVMFunctionDefinition(ptr %0, i32 %1) {
@@ -24892,7 +26155,7 @@ then:                                             ; preds = %and_end
   %calltmp13 = call i32 @_trimExpressionEnd(ptr %0, i32 %valueStart.load, i32 %calltmp4)
   %valueEnd = alloca i32, align 4
   store i32 %calltmp13, ptr %valueEnd, align 4
-  %calltmp14 = call i1 @_strEq(ptr %calltmp1, ptr @2369)
+  %calltmp14 = call i1 @_strEq(ptr %calltmp1, ptr @2495)
   br i1 %calltmp14, label %and_rhs16, label %and_end17
 
 ifcont:                                           ; preds = %ifcont118, %and_end
@@ -24923,18 +26186,18 @@ and_end24:                                        ; preds = %and_rhs23, %and_end
   br i1 %ifcond29, label %then30, label %ifcont31
 
 then30:                                           ; preds = %and_end24
-  %str.concat = call ptr @csec_string_concat(ptr @2370, ptr %calltmp)
-  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat, ptr @2371)
-  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @2372)
+  %str.concat = call ptr @csec_string_concat(ptr @2496, ptr %calltmp)
+  %str.concat32 = call ptr @csec_string_concat(ptr %str.concat, ptr @2497)
+  %str.concat33 = call ptr @csec_string_concat(ptr %str.concat32, ptr @2498)
   %valueStart.load34 = load i32, ptr %valueStart, align 4
   %calltmp35 = call ptr @_tokenTextAt(ptr %0, i32 %valueStart.load34)
   %calltmp36 = call ptr @_llvmCharI8Value(ptr %calltmp35)
   %str.concat37 = call ptr @csec_string_concat(ptr %str.concat33, ptr %calltmp36)
-  %str.concat38 = call ptr @csec_string_concat(ptr %str.concat37, ptr @2373)
+  %str.concat38 = call ptr @csec_string_concat(ptr %str.concat37, ptr @2499)
   ret ptr %str.concat38
 
 ifcont31:                                         ; preds = %and_end24
-  %calltmp40 = call i1 @_strEq(ptr %calltmp1, ptr @2374)
+  %calltmp40 = call i1 @_strEq(ptr %calltmp1, ptr @2500)
   br i1 %calltmp40, label %and_rhs42, label %and_end43
 
 and_rhs42:                                        ; preds = %ifcont31
@@ -24961,17 +26224,17 @@ and_end51:                                        ; preds = %and_rhs50, %and_end
   br i1 %ifcond57, label %then58, label %ifcont59
 
 then58:                                           ; preds = %and_end51
-  %str.concat61 = call ptr @csec_string_concat(ptr @2375, ptr %calltmp)
-  %str.concat62 = call ptr @csec_string_concat(ptr %str.concat61, ptr @2376)
-  %str.concat63 = call ptr @csec_string_concat(ptr %str.concat62, ptr @2377)
+  %str.concat61 = call ptr @csec_string_concat(ptr @2501, ptr %calltmp)
+  %str.concat62 = call ptr @csec_string_concat(ptr %str.concat61, ptr @2502)
+  %str.concat63 = call ptr @csec_string_concat(ptr %str.concat62, ptr @2503)
   %valueStart.load64 = load i32, ptr %valueStart, align 4
   %calltmp65 = call ptr @_tokenTextAt(ptr %0, i32 %valueStart.load64)
   %str.concat66 = call ptr @csec_string_concat(ptr %str.concat63, ptr %calltmp65)
-  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @2378)
+  %str.concat67 = call ptr @csec_string_concat(ptr %str.concat66, ptr @2504)
   ret ptr %str.concat67
 
 ifcont59:                                         ; preds = %and_end51
-  %calltmp69 = call i1 @_strEq(ptr %calltmp1, ptr @2379)
+  %calltmp69 = call i1 @_strEq(ptr %calltmp1, ptr @2505)
   br i1 %calltmp69, label %and_rhs71, label %and_end72
 
 and_rhs71:                                        ; preds = %ifcont59
@@ -24998,18 +26261,18 @@ and_end80:                                        ; preds = %and_rhs79, %and_end
   br i1 %ifcond86, label %then87, label %ifcont88
 
 then87:                                           ; preds = %and_end80
-  %str.concat90 = call ptr @csec_string_concat(ptr @2380, ptr %calltmp)
-  %str.concat91 = call ptr @csec_string_concat(ptr %str.concat90, ptr @2381)
-  %str.concat92 = call ptr @csec_string_concat(ptr %str.concat91, ptr @2382)
+  %str.concat90 = call ptr @csec_string_concat(ptr @2506, ptr %calltmp)
+  %str.concat91 = call ptr @csec_string_concat(ptr %str.concat90, ptr @2507)
+  %str.concat92 = call ptr @csec_string_concat(ptr %str.concat91, ptr @2508)
   %valueStart.load93 = load i32, ptr %valueStart, align 4
   %calltmp94 = call ptr @_tokenTextAt(ptr %0, i32 %valueStart.load93)
   %str.concat95 = call ptr @csec_string_concat(ptr %str.concat92, ptr %calltmp94)
-  %str.concat96 = call ptr @csec_string_concat(ptr %str.concat95, ptr @2383)
+  %str.concat96 = call ptr @csec_string_concat(ptr %str.concat95, ptr @2509)
   ret ptr %str.concat96
 
 ifcont88:                                         ; preds = %and_end80
   %calltmp98 = call ptr @_irTypeName(ptr %calltmp1)
-  %calltmp99 = call i1 @_strEq(ptr %calltmp98, ptr @2384)
+  %calltmp99 = call i1 @_strEq(ptr %calltmp98, ptr @2510)
   br i1 %calltmp99, label %and_rhs101, label %and_end102
 
 and_rhs101:                                       ; preds = %ifcont88
@@ -25044,20 +26307,20 @@ then117:                                          ; preds = %and_end110
   %calltmp121 = call i32 @_llvmStringLiteralByteLength(ptr %text.load)
   %byteLength = alloca i32, align 4
   store i32 %calltmp121, ptr %byteLength, align 4
-  %str.concat123 = call ptr @csec_string_concat(ptr @2385, ptr %calltmp)
-  %str.concat124 = call ptr @csec_string_concat(ptr %str.concat123, ptr @2386)
-  %str.concat125 = call ptr @csec_string_concat(ptr %str.concat124, ptr @2387)
+  %str.concat123 = call ptr @csec_string_concat(ptr @2511, ptr %calltmp)
+  %str.concat124 = call ptr @csec_string_concat(ptr %str.concat123, ptr @2512)
+  %str.concat125 = call ptr @csec_string_concat(ptr %str.concat124, ptr @2513)
   %byteLength.load = load i32, ptr %byteLength, align 4
   %str.sext = sext i32 %byteLength.load to i64
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.sext)
   %str.concat126 = call ptr @csec_string_concat(ptr %str.concat125, ptr %str.int.call)
-  %str.concat127 = call ptr @csec_string_concat(ptr %str.concat126, ptr @2388)
+  %str.concat127 = call ptr @csec_string_concat(ptr %str.concat126, ptr @2514)
   %valueStart.load128 = load i32, ptr %valueStart, align 4
   %str.sext129 = sext i32 %valueStart.load128 to i64
   %str.int.call130 = call ptr @csec_to_string_i64(i64 %str.sext129)
   %str.concat131 = call ptr @csec_string_concat(ptr %str.concat127, ptr %str.int.call130)
-  %str.concat132 = call ptr @csec_string_concat(ptr %str.concat131, ptr @2389)
-  %str.concat133 = call ptr @csec_string_concat(ptr %str.concat132, ptr @2390)
+  %str.concat132 = call ptr @csec_string_concat(ptr %str.concat131, ptr @2515)
+  %str.concat133 = call ptr @csec_string_concat(ptr %str.concat132, ptr @2516)
   ret ptr %str.concat133
 
 ifcont118:                                        ; preds = %and_end110
@@ -25073,10 +26336,10 @@ or_end138:                                        ; preds = %or_rhs137, %ifcont
   br i1 %ifcond141, label %then142, label %ifcont143
 
 then142:                                          ; preds = %or_end138
-  ret ptr @2391
+  ret ptr @2517
 
 ifcont143:                                        ; preds = %or_end138
-  %calltmp145 = call i1 @_strEq(ptr %calltmp1, ptr @2392)
+  %calltmp145 = call i1 @_strEq(ptr %calltmp1, ptr @2518)
   %ifcond146 = icmp ne i1 %calltmp145, false
   br i1 %ifcond146, label %then147, label %ifcont148
 
@@ -25084,12 +26347,12 @@ then147:                                          ; preds = %ifcont143
   %calltmp151 = call ptr @_generateLLVMMainBodyFromRange(ptr %0, i32 %calltmp2, i32 %calltmp3)
   %body = alloca ptr, align 8
   store ptr %calltmp151, ptr %body, align 8
-  %str.concat153 = call ptr @csec_string_concat(ptr @2393, ptr %calltmp)
-  %str.concat154 = call ptr @csec_string_concat(ptr %str.concat153, ptr @2394)
+  %str.concat153 = call ptr @csec_string_concat(ptr @2519, ptr %calltmp)
+  %str.concat154 = call ptr @csec_string_concat(ptr %str.concat153, ptr @2520)
   %calltmp155 = call ptr @_generateLLVMParamList(ptr %0, i32 %1)
   %str.concat156 = call ptr @csec_string_concat(ptr %str.concat154, ptr %calltmp155)
-  %str.concat157 = call ptr @csec_string_concat(ptr %str.concat156, ptr @2395)
-  %str.concat158 = call ptr @csec_string_concat(ptr %str.concat157, ptr @2396)
+  %str.concat157 = call ptr @csec_string_concat(ptr %str.concat156, ptr @2521)
+  %str.concat158 = call ptr @csec_string_concat(ptr %str.concat157, ptr @2522)
   %calltmp159 = call ptr @_generateLLVMParamAllocas(ptr %0, i32 %1)
   %str.concat160 = call ptr @csec_string_concat(ptr %str.concat158, ptr %calltmp159)
   %body.load = load ptr, ptr %body, align 8
@@ -25099,126 +26362,126 @@ then147:                                          ; preds = %ifcont143
   %str.arg.trunc = trunc i64 %subtmp to i32
   %str.substring = call ptr @csec_string_substring(ptr %body.load, i32 7, i32 %str.arg.trunc)
   %str.concat162 = call ptr @csec_string_concat(ptr %str.concat160, ptr %str.substring)
-  %str.concat163 = call ptr @csec_string_concat(ptr %str.concat162, ptr @2397)
+  %str.concat163 = call ptr @csec_string_concat(ptr %str.concat162, ptr @2523)
   ret ptr %str.concat163
 
 ifcont148:                                        ; preds = %ifcont143
-  %calltmp165 = call i1 @_strEq(ptr %calltmp1, ptr @2398)
+  %calltmp165 = call i1 @_strEq(ptr %calltmp1, ptr @2524)
   %ifcond166 = icmp ne i1 %calltmp165, false
   br i1 %ifcond166, label %then167, label %ifcont168
 
 then167:                                          ; preds = %ifcont148
-  %str.concat170 = call ptr @csec_string_concat(ptr @2399, ptr %calltmp)
-  %str.concat171 = call ptr @csec_string_concat(ptr %str.concat170, ptr @2400)
+  %str.concat170 = call ptr @csec_string_concat(ptr @2525, ptr %calltmp)
+  %str.concat171 = call ptr @csec_string_concat(ptr %str.concat170, ptr @2526)
   %calltmp172 = call ptr @_generateLLVMParamList(ptr %0, i32 %1)
   %str.concat173 = call ptr @csec_string_concat(ptr %str.concat171, ptr %calltmp172)
-  %str.concat174 = call ptr @csec_string_concat(ptr %str.concat173, ptr @2401)
-  %str.concat175 = call ptr @csec_string_concat(ptr %str.concat174, ptr @2402)
+  %str.concat174 = call ptr @csec_string_concat(ptr %str.concat173, ptr @2527)
+  %str.concat175 = call ptr @csec_string_concat(ptr %str.concat174, ptr @2528)
   %calltmp176 = call ptr @_generateLLVMParamAllocas(ptr %0, i32 %1)
   %str.concat177 = call ptr @csec_string_concat(ptr %str.concat175, ptr %calltmp176)
   %calltmp180 = call ptr @_generateLLVMBooleanBodyFromRange(ptr %0, i32 %calltmp2, i32 %calltmp3)
   %str.concat181 = call ptr @csec_string_concat(ptr %str.concat177, ptr %calltmp180)
-  %str.concat182 = call ptr @csec_string_concat(ptr %str.concat181, ptr @2403)
+  %str.concat182 = call ptr @csec_string_concat(ptr %str.concat181, ptr @2529)
   ret ptr %str.concat182
 
 ifcont168:                                        ; preds = %ifcont148
-  %calltmp184 = call i1 @_strEq(ptr %calltmp1, ptr @2404)
+  %calltmp184 = call i1 @_strEq(ptr %calltmp1, ptr @2530)
   %ifcond185 = icmp ne i1 %calltmp184, false
   br i1 %ifcond185, label %then186, label %ifcont187
 
 then186:                                          ; preds = %ifcont168
-  %str.concat189 = call ptr @csec_string_concat(ptr @2405, ptr %calltmp)
-  %str.concat190 = call ptr @csec_string_concat(ptr %str.concat189, ptr @2406)
+  %str.concat189 = call ptr @csec_string_concat(ptr @2531, ptr %calltmp)
+  %str.concat190 = call ptr @csec_string_concat(ptr %str.concat189, ptr @2532)
   %calltmp191 = call ptr @_generateLLVMParamList(ptr %0, i32 %1)
   %str.concat192 = call ptr @csec_string_concat(ptr %str.concat190, ptr %calltmp191)
-  %str.concat193 = call ptr @csec_string_concat(ptr %str.concat192, ptr @2407)
-  %str.concat194 = call ptr @csec_string_concat(ptr %str.concat193, ptr @2408)
+  %str.concat193 = call ptr @csec_string_concat(ptr %str.concat192, ptr @2533)
+  %str.concat194 = call ptr @csec_string_concat(ptr %str.concat193, ptr @2534)
   %calltmp195 = call ptr @_generateLLVMParamAllocas(ptr %0, i32 %1)
   %str.concat196 = call ptr @csec_string_concat(ptr %str.concat194, ptr %calltmp195)
   %calltmp199 = call ptr @_generateLLVMCharBodyFromRange(ptr %0, i32 %calltmp2, i32 %calltmp3)
   %str.concat200 = call ptr @csec_string_concat(ptr %str.concat196, ptr %calltmp199)
-  %str.concat201 = call ptr @csec_string_concat(ptr %str.concat200, ptr @2409)
+  %str.concat201 = call ptr @csec_string_concat(ptr %str.concat200, ptr @2535)
   ret ptr %str.concat201
 
 ifcont187:                                        ; preds = %ifcont168
-  %calltmp203 = call i1 @_strEq(ptr %calltmp1, ptr @2410)
+  %calltmp203 = call i1 @_strEq(ptr %calltmp1, ptr @2536)
   %ifcond204 = icmp ne i1 %calltmp203, false
   br i1 %ifcond204, label %then205, label %ifcont206
 
 then205:                                          ; preds = %ifcont187
-  %str.concat208 = call ptr @csec_string_concat(ptr @2411, ptr %calltmp)
-  %str.concat209 = call ptr @csec_string_concat(ptr %str.concat208, ptr @2412)
+  %str.concat208 = call ptr @csec_string_concat(ptr @2537, ptr %calltmp)
+  %str.concat209 = call ptr @csec_string_concat(ptr %str.concat208, ptr @2538)
   %calltmp210 = call ptr @_generateLLVMParamList(ptr %0, i32 %1)
   %str.concat211 = call ptr @csec_string_concat(ptr %str.concat209, ptr %calltmp210)
-  %str.concat212 = call ptr @csec_string_concat(ptr %str.concat211, ptr @2413)
-  %str.concat213 = call ptr @csec_string_concat(ptr %str.concat212, ptr @2414)
+  %str.concat212 = call ptr @csec_string_concat(ptr %str.concat211, ptr @2539)
+  %str.concat213 = call ptr @csec_string_concat(ptr %str.concat212, ptr @2540)
   %calltmp214 = call ptr @_generateLLVMParamAllocas(ptr %0, i32 %1)
   %str.concat215 = call ptr @csec_string_concat(ptr %str.concat213, ptr %calltmp214)
   %calltmp218 = call ptr @_generateLLVMDoubleBodyFromRange(ptr %0, i32 %calltmp2, i32 %calltmp3)
   %str.concat219 = call ptr @csec_string_concat(ptr %str.concat215, ptr %calltmp218)
-  %str.concat220 = call ptr @csec_string_concat(ptr %str.concat219, ptr @2415)
+  %str.concat220 = call ptr @csec_string_concat(ptr %str.concat219, ptr @2541)
   ret ptr %str.concat220
 
 ifcont206:                                        ; preds = %ifcont187
-  %calltmp222 = call i1 @_strEq(ptr %calltmp1, ptr @2416)
+  %calltmp222 = call i1 @_strEq(ptr %calltmp1, ptr @2542)
   %ifcond223 = icmp ne i1 %calltmp222, false
   br i1 %ifcond223, label %then224, label %ifcont225
 
 then224:                                          ; preds = %ifcont206
-  %str.concat227 = call ptr @csec_string_concat(ptr @2417, ptr %calltmp)
-  %str.concat228 = call ptr @csec_string_concat(ptr %str.concat227, ptr @2418)
+  %str.concat227 = call ptr @csec_string_concat(ptr @2543, ptr %calltmp)
+  %str.concat228 = call ptr @csec_string_concat(ptr %str.concat227, ptr @2544)
   %calltmp229 = call ptr @_generateLLVMParamList(ptr %0, i32 %1)
   %str.concat230 = call ptr @csec_string_concat(ptr %str.concat228, ptr %calltmp229)
-  %str.concat231 = call ptr @csec_string_concat(ptr %str.concat230, ptr @2419)
-  %str.concat232 = call ptr @csec_string_concat(ptr %str.concat231, ptr @2420)
+  %str.concat231 = call ptr @csec_string_concat(ptr %str.concat230, ptr @2545)
+  %str.concat232 = call ptr @csec_string_concat(ptr %str.concat231, ptr @2546)
   %calltmp233 = call ptr @_generateLLVMParamAllocas(ptr %0, i32 %1)
   %str.concat234 = call ptr @csec_string_concat(ptr %str.concat232, ptr %calltmp233)
   %calltmp237 = call ptr @_generateLLVMLongBodyFromRange(ptr %0, i32 %calltmp2, i32 %calltmp3)
   %str.concat238 = call ptr @csec_string_concat(ptr %str.concat234, ptr %calltmp237)
-  %str.concat239 = call ptr @csec_string_concat(ptr %str.concat238, ptr @2421)
+  %str.concat239 = call ptr @csec_string_concat(ptr %str.concat238, ptr @2547)
   ret ptr %str.concat239
 
 ifcont225:                                        ; preds = %ifcont206
-  %calltmp241 = call i1 @_strEq(ptr %calltmp1, ptr @2422)
+  %calltmp241 = call i1 @_strEq(ptr %calltmp1, ptr @2548)
   %ifcond242 = icmp ne i1 %calltmp241, false
   br i1 %ifcond242, label %then243, label %ifcont244
 
 then243:                                          ; preds = %ifcont225
-  %str.concat246 = call ptr @csec_string_concat(ptr @2423, ptr %calltmp)
-  %str.concat247 = call ptr @csec_string_concat(ptr %str.concat246, ptr @2424)
+  %str.concat246 = call ptr @csec_string_concat(ptr @2549, ptr %calltmp)
+  %str.concat247 = call ptr @csec_string_concat(ptr %str.concat246, ptr @2550)
   %calltmp248 = call ptr @_generateLLVMParamList(ptr %0, i32 %1)
   %str.concat249 = call ptr @csec_string_concat(ptr %str.concat247, ptr %calltmp248)
-  %str.concat250 = call ptr @csec_string_concat(ptr %str.concat249, ptr @2425)
-  %str.concat251 = call ptr @csec_string_concat(ptr %str.concat250, ptr @2426)
+  %str.concat250 = call ptr @csec_string_concat(ptr %str.concat249, ptr @2551)
+  %str.concat251 = call ptr @csec_string_concat(ptr %str.concat250, ptr @2552)
   %calltmp252 = call ptr @_generateLLVMParamAllocas(ptr %0, i32 %1)
   %str.concat253 = call ptr @csec_string_concat(ptr %str.concat251, ptr %calltmp252)
   %calltmp256 = call ptr @_generateLLVMVoidBodyFromRange(ptr %0, i32 %calltmp2, i32 %calltmp3)
   %str.concat257 = call ptr @csec_string_concat(ptr %str.concat253, ptr %calltmp256)
-  %str.concat258 = call ptr @csec_string_concat(ptr %str.concat257, ptr @2427)
+  %str.concat258 = call ptr @csec_string_concat(ptr %str.concat257, ptr @2553)
   ret ptr %str.concat258
 
 ifcont244:                                        ; preds = %ifcont225
   %calltmp260 = call ptr @_irTypeName(ptr %calltmp1)
-  %calltmp261 = call i1 @_strEq(ptr %calltmp260, ptr @2428)
+  %calltmp261 = call i1 @_strEq(ptr %calltmp260, ptr @2554)
   %ifcond262 = icmp ne i1 %calltmp261, false
   br i1 %ifcond262, label %then263, label %ifcont264
 
 then263:                                          ; preds = %ifcont244
-  %str.concat266 = call ptr @csec_string_concat(ptr @2429, ptr %calltmp)
-  %str.concat267 = call ptr @csec_string_concat(ptr %str.concat266, ptr @2430)
+  %str.concat266 = call ptr @csec_string_concat(ptr @2555, ptr %calltmp)
+  %str.concat267 = call ptr @csec_string_concat(ptr %str.concat266, ptr @2556)
   %calltmp268 = call ptr @_generateLLVMParamList(ptr %0, i32 %1)
   %str.concat269 = call ptr @csec_string_concat(ptr %str.concat267, ptr %calltmp268)
-  %str.concat270 = call ptr @csec_string_concat(ptr %str.concat269, ptr @2431)
-  %str.concat271 = call ptr @csec_string_concat(ptr %str.concat270, ptr @2432)
+  %str.concat270 = call ptr @csec_string_concat(ptr %str.concat269, ptr @2557)
+  %str.concat271 = call ptr @csec_string_concat(ptr %str.concat270, ptr @2558)
   %calltmp272 = call ptr @_generateLLVMParamAllocas(ptr %0, i32 %1)
   %str.concat273 = call ptr @csec_string_concat(ptr %str.concat271, ptr %calltmp272)
   %calltmp276 = call ptr @_generateLLVMPointerBodyFromRange(ptr %0, i32 %calltmp2, i32 %calltmp3)
   %str.concat277 = call ptr @csec_string_concat(ptr %str.concat273, ptr %calltmp276)
-  %str.concat278 = call ptr @csec_string_concat(ptr %str.concat277, ptr @2433)
+  %str.concat278 = call ptr @csec_string_concat(ptr %str.concat277, ptr @2559)
   ret ptr %str.concat278
 
 ifcont264:                                        ; preds = %ifcont244
-  ret ptr @2434
+  ret ptr @2560
 }
 
 define ptr @_generateLLVMModule(ptr %0) {
@@ -25229,119 +26492,121 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @2435
+  ret ptr @2561
 
 ifcont:                                           ; preds = %entry
-  %str.concat = call ptr @csec_string_concat(ptr @2436, ptr @2437)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @2438)
-  %str.concat2 = call ptr @csec_string_concat(ptr %str.concat1, ptr @2439)
-  %str.concat3 = call ptr @csec_string_concat(ptr %str.concat2, ptr @2440)
-  %str.concat4 = call ptr @csec_string_concat(ptr %str.concat3, ptr @2441)
-  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @2442)
-  %str.concat6 = call ptr @csec_string_concat(ptr %str.concat5, ptr @2443)
-  %str.concat7 = call ptr @csec_string_concat(ptr %str.concat6, ptr @2444)
-  %str.concat8 = call ptr @csec_string_concat(ptr %str.concat7, ptr @2445)
-  %str.concat9 = call ptr @csec_string_concat(ptr %str.concat8, ptr @2446)
-  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @2447)
-  %str.concat11 = call ptr @csec_string_concat(ptr %str.concat10, ptr @2448)
-  %str.concat12 = call ptr @csec_string_concat(ptr %str.concat11, ptr @2449)
-  %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr @2450)
-  %str.concat14 = call ptr @csec_string_concat(ptr %str.concat13, ptr @2451)
-  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @2452)
-  %str.concat16 = call ptr @csec_string_concat(ptr %str.concat15, ptr @2453)
-  %calltmp17 = call ptr @_generateLLVMStringLiteralGlobals(ptr %0)
-  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat16, ptr %calltmp17)
+  %str.concat = call ptr @csec_string_concat(ptr @2562, ptr @2563)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @2564)
+  %str.concat2 = call ptr @csec_string_concat(ptr %str.concat1, ptr @2565)
+  %str.concat3 = call ptr @csec_string_concat(ptr %str.concat2, ptr @2566)
+  %str.concat4 = call ptr @csec_string_concat(ptr %str.concat3, ptr @2567)
+  %str.concat5 = call ptr @csec_string_concat(ptr %str.concat4, ptr @2568)
+  %str.concat6 = call ptr @csec_string_concat(ptr %str.concat5, ptr @2569)
+  %str.concat7 = call ptr @csec_string_concat(ptr %str.concat6, ptr @2570)
+  %str.concat8 = call ptr @csec_string_concat(ptr %str.concat7, ptr @2571)
+  %str.concat9 = call ptr @csec_string_concat(ptr %str.concat8, ptr @2572)
+  %str.concat10 = call ptr @csec_string_concat(ptr %str.concat9, ptr @2573)
+  %str.concat11 = call ptr @csec_string_concat(ptr %str.concat10, ptr @2574)
+  %str.concat12 = call ptr @csec_string_concat(ptr %str.concat11, ptr @2575)
+  %str.concat13 = call ptr @csec_string_concat(ptr %str.concat12, ptr @2576)
+  %str.concat14 = call ptr @csec_string_concat(ptr %str.concat13, ptr @2577)
+  %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr @2578)
+  %str.concat16 = call ptr @csec_string_concat(ptr %str.concat15, ptr @2579)
+  %str.concat17 = call ptr @csec_string_concat(ptr %str.concat16, ptr @2580)
+  %str.concat18 = call ptr @csec_string_concat(ptr %str.concat17, ptr @2581)
+  %calltmp19 = call ptr @_generateLLVMStringLiteralGlobals(ptr %0)
+  %str.concat20 = call ptr @csec_string_concat(ptr %str.concat18, ptr %calltmp19)
   %output = alloca ptr, align 8
-  store ptr %str.concat18, ptr %output, align 8
+  store ptr %str.concat20, ptr %output, align 8
   %emitted = alloca i1, align 1
   store i1 false, ptr %emitted, align 1
   %cursor = alloca i32, align 4
   store i32 0, ptr %cursor, align 4
   br label %whilecond
 
-whilecond:                                        ; preds = %ifcont40, %ifcont
+whilecond:                                        ; preds = %ifcont42, %ifcont
   %cursor.load = load i32, ptr %cursor, align 4
-  %calltmp19 = call i8 @_tokenKindAt(ptr %0, i32 %cursor.load)
-  %calltmp20 = call i8 @_kindEof()
-  %netmp = icmp ne i8 %calltmp19, %calltmp20
+  %calltmp21 = call i8 @_tokenKindAt(ptr %0, i32 %cursor.load)
+  %calltmp22 = call i8 @_kindEof()
+  %netmp = icmp ne i8 %calltmp21, %calltmp22
   br i1 %netmp, label %whilebody, label %afterwhile
 
 whilebody:                                        ; preds = %whilecond
-  %cursor.load21 = load i32, ptr %cursor, align 4
-  %calltmp22 = call i8 @_kindKeyword()
-  %calltmp23 = call i1 @_tokenIs(ptr %0, i32 %cursor.load21, i8 %calltmp22, ptr @2454)
-  %ifcond24 = icmp ne i1 %calltmp23, false
-  br i1 %ifcond24, label %then25, label %ifcont26
+  %cursor.load23 = load i32, ptr %cursor, align 4
+  %calltmp24 = call i8 @_kindKeyword()
+  %calltmp25 = call i1 @_tokenIs(ptr %0, i32 %cursor.load23, i8 %calltmp24, ptr @2582)
+  %ifcond26 = icmp ne i1 %calltmp25, false
+  br i1 %ifcond26, label %then27, label %ifcont28
 
 afterwhile:                                       ; preds = %whilecond
-  %emitted.load46 = load i1, ptr %emitted, align 1
-  %ifcond47 = icmp ne i1 %emitted.load46, false
-  br i1 %ifcond47, label %then48, label %ifcont49
+  %emitted.load48 = load i1, ptr %emitted, align 1
+  %ifcond49 = icmp ne i1 %emitted.load48, false
+  br i1 %ifcond49, label %then50, label %ifcont51
 
-then25:                                           ; preds = %whilebody
-  %cursor.load27 = load i32, ptr %cursor, align 4
-  %calltmp28 = call ptr @_generateLLVMFunctionDefinition(ptr %0, i32 %cursor.load27)
+then27:                                           ; preds = %whilebody
+  %cursor.load29 = load i32, ptr %cursor, align 4
+  %calltmp30 = call ptr @_generateLLVMFunctionDefinition(ptr %0, i32 %cursor.load29)
   %definition = alloca ptr, align 8
-  store ptr %calltmp28, ptr %definition, align 8
+  store ptr %calltmp30, ptr %definition, align 8
   %definition.load = load ptr, ptr %definition, align 8
   %str.length = call i64 @csec_string_length(ptr %definition.load)
   %gttmp = icmp sgt i64 %str.length, 0
-  %ifcond29 = icmp ne i1 %gttmp, false
-  br i1 %ifcond29, label %then30, label %ifcont31
+  %ifcond31 = icmp ne i1 %gttmp, false
+  br i1 %ifcond31, label %then32, label %ifcont33
 
-ifcont26:                                         ; preds = %ifcont31, %whilebody
-  %cursor.load35 = load i32, ptr %cursor, align 4
-  %calltmp36 = call i32 @_advanceTopLevelDecl(ptr %0, i32 %cursor.load35)
-  %next = alloca i32, align 4
-  store i32 %calltmp36, ptr %next, align 4
-  %next.load = load i32, ptr %next, align 4
+ifcont28:                                         ; preds = %ifcont33, %whilebody
   %cursor.load37 = load i32, ptr %cursor, align 4
-  %letmp = icmp sle i32 %next.load, %cursor.load37
-  %ifcond38 = icmp ne i1 %letmp, false
-  br i1 %ifcond38, label %then39, label %else
+  %calltmp38 = call i32 @_advanceTopLevelDecl(ptr %0, i32 %cursor.load37)
+  %next = alloca i32, align 4
+  store i32 %calltmp38, ptr %next, align 4
+  %next.load = load i32, ptr %next, align 4
+  %cursor.load39 = load i32, ptr %cursor, align 4
+  %letmp = icmp sle i32 %next.load, %cursor.load39
+  %ifcond40 = icmp ne i1 %letmp, false
+  br i1 %ifcond40, label %then41, label %else
 
-then30:                                           ; preds = %then25
+then32:                                           ; preds = %then27
   %output.load = load ptr, ptr %output, align 8
-  %output.load32 = load ptr, ptr %output, align 8
-  %definition.load33 = load ptr, ptr %definition, align 8
-  %str.concat34 = call ptr @csec_string_concat(ptr %output.load32, ptr %definition.load33)
-  store ptr %str.concat34, ptr %output, align 8
+  %output.load34 = load ptr, ptr %output, align 8
+  %definition.load35 = load ptr, ptr %definition, align 8
+  %str.concat36 = call ptr @csec_string_concat(ptr %output.load34, ptr %definition.load35)
+  store ptr %str.concat36, ptr %output, align 8
   %emitted.load = load i1, ptr %emitted, align 1
   store i1 true, ptr %emitted, align 1
-  br label %ifcont31
+  br label %ifcont33
 
-ifcont31:                                         ; preds = %then30, %then25
-  br label %ifcont26
+ifcont33:                                         ; preds = %then32, %then27
+  br label %ifcont28
 
-then39:                                           ; preds = %ifcont26
-  %cursor.load41 = load i32, ptr %cursor, align 4
-  %cursor.load42 = load i32, ptr %cursor, align 4
-  %addtmp = add i32 %cursor.load42, 1
-  store i32 %addtmp, ptr %cursor, align 4
-  br label %ifcont40
-
-else:                                             ; preds = %ifcont26
+then41:                                           ; preds = %ifcont28
   %cursor.load43 = load i32, ptr %cursor, align 4
-  %next.load44 = load i32, ptr %next, align 4
-  %calltmp45 = call i32 @_skipTrivia(ptr %0, i32 %next.load44)
-  store i32 %calltmp45, ptr %cursor, align 4
-  br label %ifcont40
+  %cursor.load44 = load i32, ptr %cursor, align 4
+  %addtmp = add i32 %cursor.load44, 1
+  store i32 %addtmp, ptr %cursor, align 4
+  br label %ifcont42
 
-ifcont40:                                         ; preds = %else, %then39
-  %result = phi i32 [ %addtmp, %then39 ], [ %calltmp45, %else ]
+else:                                             ; preds = %ifcont28
+  %cursor.load45 = load i32, ptr %cursor, align 4
+  %next.load46 = load i32, ptr %next, align 4
+  %calltmp47 = call i32 @_skipTrivia(ptr %0, i32 %next.load46)
+  store i32 %calltmp47, ptr %cursor, align 4
+  br label %ifcont42
+
+ifcont42:                                         ; preds = %else, %then41
+  %result = phi i32 [ %addtmp, %then41 ], [ %calltmp47, %else ]
   br label %whilecond
 
-then48:                                           ; preds = %afterwhile
-  %output.load50 = load ptr, ptr %output, align 8
-  ret ptr %output.load50
+then50:                                           ; preds = %afterwhile
+  %output.load52 = load ptr, ptr %output, align 8
+  ret ptr %output.load52
 
-ifcont49:                                         ; preds = %afterwhile
-  %output.load51 = load ptr, ptr %output, align 8
-  %str.concat52 = call ptr @csec_string_concat(ptr %output.load51, ptr @2455)
-  %calltmp53 = call ptr @_generateLLVMMainBody(ptr %0)
-  %str.concat54 = call ptr @csec_string_concat(ptr %str.concat52, ptr %calltmp53)
-  %str.concat55 = call ptr @csec_string_concat(ptr %str.concat54, ptr @2456)
-  ret ptr %str.concat55
+ifcont51:                                         ; preds = %afterwhile
+  %output.load53 = load ptr, ptr %output, align 8
+  %str.concat54 = call ptr @csec_string_concat(ptr %output.load53, ptr @2583)
+  %calltmp55 = call ptr @_generateLLVMMainBody(ptr %0)
+  %str.concat56 = call ptr @csec_string_concat(ptr %str.concat54, ptr %calltmp55)
+  %str.concat57 = call ptr @csec_string_concat(ptr %str.concat56, ptr @2584)
+  ret ptr %str.concat57
 }
 
 define ptr @_generateExecutionC(ptr %0) {
@@ -25352,7 +26617,7 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @2457
+  ret ptr @2585
 
 ifcont:                                           ; preds = %entry
   %calltmp1 = call ptr @_generateMainExecutionC(ptr %0)
@@ -25472,7 +26737,7 @@ whilebody:                                        ; preds = %whilecond
   br i1 %eqtmp, label %or_end, label %or_rhs
 
 afterwhile:                                       ; preds = %whilecond
-  ret ptr @2458
+  ret ptr @2586
 
 or_rhs:                                           ; preds = %whilebody
   %ch.load2 = load i8, ptr %ch, align 1
@@ -25502,7 +26767,7 @@ entry:
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont, %entry
-  %output.0 = phi ptr [ @2459, %entry ], [ %output.1, %ifcont ]
+  %output.0 = phi ptr [ @2587, %entry ], [ %output.1, %ifcont ]
   %cursor.0 = phi i32 [ 0, %entry ], [ %addtmp, %ifcont ]
   %str.length = call i64 @csec_string_length(ptr %0)
   %num.sext = sext i32 %cursor.0 to i64
@@ -25522,11 +26787,11 @@ afterwhile:                                       ; preds = %whilecond
   ret ptr %output.0
 
 then:                                             ; preds = %whilebody
-  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2460)
+  %str.concat = call ptr @csec_string_concat(ptr %output.0, ptr @2588)
   br label %ifcont
 
 else:                                             ; preds = %whilebody
-  %str.concat5 = call ptr @csec_string_concat(ptr %output.0, ptr @2461)
+  %str.concat5 = call ptr @csec_string_concat(ptr %output.0, ptr @2589)
   %ch.load6 = load i8, ptr %ch, align 1
   %str.char.call = call ptr @csec_to_string_char(i8 %ch.load6)
   %str.concat7 = call ptr @csec_string_concat(ptr %str.concat5, ptr %str.char.call)
@@ -25542,12 +26807,12 @@ ifcont:                                           ; preds = %else, %then
 define ptr @_importTargetFromLine(ptr %0) {
 entry:
   %calltmp = call ptr @_trimAscii(ptr %0)
-  %str.bool.i32 = call i32 @csec_string_starts_with(ptr %calltmp, ptr @2462)
+  %str.bool.i32 = call i32 @csec_string_starts_with(ptr %calltmp, ptr @2590)
   %str.bool = icmp ne i32 %str.bool.i32, 0
   br i1 %str.bool, label %or_end, label %or_rhs
 
 or_rhs:                                           ; preds = %entry
-  %str.bool.i322 = call i32 @csec_string_starts_with(ptr %calltmp, ptr @2463)
+  %str.bool.i322 = call i32 @csec_string_starts_with(ptr %calltmp, ptr @2591)
   %str.bool3 = icmp ne i32 %str.bool.i322, 0
   %nottmp = xor i1 %str.bool3, true
   br label %or_end
@@ -25558,7 +26823,7 @@ or_end:                                           ; preds = %or_rhs, %entry
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %or_end
-  ret ptr @2464
+  ret ptr @2592
 
 ifcont:                                           ; preds = %or_end
   %str.length = call i64 @csec_string_length(ptr %calltmp)
@@ -25617,7 +26882,7 @@ or_end23:                                         ; preds = %or_rhs22, %or_end17
   br i1 %ifcond28, label %then29, label %ifcont30
 
 then29:                                           ; preds = %or_end23
-  ret ptr @2465
+  ret ptr @2593
 
 ifcont30:                                         ; preds = %or_end23
   br label %ifcont7
@@ -25720,7 +26985,7 @@ ifcont95:                                         ; preds = %and_end59
 
 define ptr @_importCandidate(ptr %0) {
 entry:
-  %calltmp = call i1 @_stringEndsWith(ptr %0, ptr @2466)
+  %calltmp = call i1 @_stringEndsWith(ptr %0, ptr @2594)
   %ifcond = icmp ne i1 %calltmp, false
   br i1 %ifcond, label %then, label %ifcont
 
@@ -25728,7 +26993,7 @@ then:                                             ; preds = %entry
   ret ptr %0
 
 ifcont:                                           ; preds = %entry
-  %str.concat = call ptr @csec_string_concat(ptr %0, ptr @2467)
+  %str.concat = call ptr @csec_string_concat(ptr %0, ptr @2595)
   ret ptr %str.concat
 }
 
@@ -25736,7 +27001,7 @@ define ptr @_resolveImportPath(ptr %0, ptr %1) {
 entry:
   %calltmp = call ptr @_parentDirectory(ptr %0)
   %calltmp1 = call ptr @_importCandidate(ptr %1)
-  %str.concat = call ptr @csec_string_concat(ptr %calltmp, ptr @2468)
+  %str.concat = call ptr @csec_string_concat(ptr %calltmp, ptr @2596)
   %str.concat2 = call ptr @csec_string_concat(ptr %str.concat, ptr %calltmp1)
   %file.exists.i32 = call i32 @csec_file_exists(ptr %str.concat2)
   %file.exists = icmp ne i32 %file.exists.i32, 0
@@ -25760,7 +27025,7 @@ ifcont9:                                          ; preds = %ifcont
   %calltmp12 = call ptr @_importCandidate(ptr %calltmp11)
   %dotted = alloca ptr, align 8
   store ptr %calltmp12, ptr %dotted, align 8
-  %str.concat14 = call ptr @csec_string_concat(ptr %calltmp, ptr @2469)
+  %str.concat14 = call ptr @csec_string_concat(ptr %calltmp, ptr @2597)
   %dotted.load = load ptr, ptr %dotted, align 8
   %str.concat15 = call ptr @csec_string_concat(ptr %str.concat14, ptr %dotted.load)
   %dottedFromBase = alloca ptr, align 8
@@ -25783,22 +27048,22 @@ declare i32 @csec_file_exists(ptr)
 
 define ptr @_expandImportsFromFile(ptr %0, ptr %1) {
 entry:
-  %str.concat = call ptr @csec_string_concat(ptr @2470, ptr %0)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @2471)
+  %str.concat = call ptr @csec_string_concat(ptr @2598, ptr %0)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @2599)
   %str.bool.i32 = call i32 @csec_string_contains(ptr %1, ptr %str.concat1)
   %str.bool = icmp ne i32 %str.bool.i32, 0
   %ifcond = icmp ne i1 %str.bool, false
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  ret ptr @2472
+  ret ptr @2600
 
 ifcont:                                           ; preds = %entry
   %file.read_all_text = call ptr @csec_file_read_all_text(ptr %0)
   %source = alloca ptr, align 8
   store ptr %file.read_all_text, ptr %source, align 8
   %source.load = load ptr, ptr %source, align 8
-  %str.bool.i322 = call i32 @csec_string_contains(ptr %source.load, ptr @2473)
+  %str.bool.i322 = call i32 @csec_string_contains(ptr %source.load, ptr @2601)
   %str.bool3 = icmp ne i32 %str.bool.i322, 0
   %nottmp = xor i1 %str.bool3, true
   %ifcond4 = icmp ne i1 %nottmp, false
@@ -25815,7 +27080,7 @@ ifcont6:                                          ; preds = %ifcont
   %cursor = alloca i32, align 4
   store i32 0, ptr %cursor, align 4
   %output = alloca ptr, align 8
-  store ptr @2474, ptr %output, align 8
+  store ptr @2602, ptr %output, align 8
   br label %whilecond
 
 whilecond:                                        ; preds = %ifcont77, %ifcont6
@@ -25923,7 +27188,7 @@ then33:                                           ; preds = %then28
   %nextSeen.load = load ptr, ptr %nextSeen, align 8
   %calltmp38 = call ptr @_expandImportsFromFile(ptr %importPath.load37, ptr %nextSeen.load)
   %str.concat39 = call ptr @csec_string_concat(ptr %output.load36, ptr %calltmp38)
-  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @2475)
+  %str.concat40 = call ptr @csec_string_concat(ptr %str.concat39, ptr @2603)
   store ptr %str.concat40, ptr %output, align 8
   br label %ifcont35
 
@@ -25947,7 +27212,7 @@ ifcont35:                                         ; preds = %ifcont52, %then33
 then51:                                           ; preds = %else34
   %output.load53 = load ptr, ptr %output, align 8
   %output.load54 = load ptr, ptr %output, align 8
-  %str.concat55 = call ptr @csec_string_concat(ptr %output.load54, ptr @2476)
+  %str.concat55 = call ptr @csec_string_concat(ptr %output.load54, ptr @2604)
   store ptr %str.concat55, ptr %output, align 8
   br label %ifcont52
 
@@ -25957,7 +27222,7 @@ ifcont52:                                         ; preds = %then51, %else34
 then66:                                           ; preds = %else
   %output.load68 = load ptr, ptr %output, align 8
   %output.load69 = load ptr, ptr %output, align 8
-  %str.concat70 = call ptr @csec_string_concat(ptr %output.load69, ptr @2477)
+  %str.concat70 = call ptr @csec_string_concat(ptr %output.load69, ptr @2605)
   store ptr %str.concat70, ptr %output, align 8
   br label %ifcont67
 
@@ -25981,7 +27246,7 @@ declare ptr @csec_file_read_all_text(ptr)
 define ptr @_compileSource(ptr %0, ptr %1) {
 entry:
   %calltmp = call ptr @_tokenize(ptr %0)
-  %str.bool.i32 = call i32 @csec_string_starts_with(ptr %1, ptr @2478)
+  %str.bool.i32 = call i32 @csec_string_starts_with(ptr %1, ptr @2606)
   %str.bool = icmp ne i32 %str.bool.i32, 0
   %ifcond = icmp ne i1 %str.bool, false
   br i1 %ifcond, label %then, label %ifcont
@@ -25989,12 +27254,12 @@ entry:
 then:                                             ; preds = %entry
   %str.length = call i64 @csec_string_length(ptr %calltmp)
   %str.int.call = call ptr @csec_to_string_i64(i64 %str.length)
-  %str.concat = call ptr @csec_string_concat(ptr @2479, ptr %str.int.call)
-  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @2480)
+  %str.concat = call ptr @csec_string_concat(ptr @2607, ptr %str.int.call)
+  %str.concat1 = call ptr @csec_string_concat(ptr %str.concat, ptr @2608)
   ret ptr %str.concat1
 
 ifcont:                                           ; preds = %entry
-  %str.bool.i322 = call i32 @csec_string_starts_with(ptr %1, ptr @2481)
+  %str.bool.i322 = call i32 @csec_string_starts_with(ptr %1, ptr @2609)
   %str.bool3 = icmp ne i32 %str.bool.i322, 0
   %ifcond4 = icmp ne i1 %str.bool3, false
   br i1 %ifcond4, label %then5, label %ifcont6
@@ -26003,7 +27268,7 @@ then5:                                            ; preds = %ifcont
   ret ptr %calltmp
 
 ifcont6:                                          ; preds = %ifcont
-  %str.bool.i328 = call i32 @csec_string_starts_with(ptr %1, ptr @2482)
+  %str.bool.i328 = call i32 @csec_string_starts_with(ptr %1, ptr @2610)
   %str.bool9 = icmp ne i32 %str.bool.i328, 0
   %ifcond10 = icmp ne i1 %str.bool9, false
   br i1 %ifcond10, label %then11, label %ifcont12
@@ -26013,7 +27278,7 @@ then11:                                           ; preds = %ifcont6
   ret ptr %calltmp14
 
 ifcont12:                                         ; preds = %ifcont6
-  %str.bool.i3215 = call i32 @csec_string_starts_with(ptr %1, ptr @2483)
+  %str.bool.i3215 = call i32 @csec_string_starts_with(ptr %1, ptr @2611)
   %str.bool16 = icmp ne i32 %str.bool.i3215, 0
   %ifcond17 = icmp ne i1 %str.bool16, false
   br i1 %ifcond17, label %then18, label %ifcont19
@@ -26023,7 +27288,7 @@ then18:                                           ; preds = %ifcont12
   ret ptr %calltmp21
 
 ifcont19:                                         ; preds = %ifcont12
-  %str.bool.i3222 = call i32 @csec_string_starts_with(ptr %1, ptr @2484)
+  %str.bool.i3222 = call i32 @csec_string_starts_with(ptr %1, ptr @2612)
   %str.bool23 = icmp ne i32 %str.bool.i3222, 0
   %ifcond24 = icmp ne i1 %str.bool23, false
   br i1 %ifcond24, label %then25, label %ifcont26
@@ -26033,7 +27298,7 @@ then25:                                           ; preds = %ifcont19
   ret ptr %calltmp28
 
 ifcont26:                                         ; preds = %ifcont19
-  %str.bool.i3229 = call i32 @csec_string_starts_with(ptr %1, ptr @2485)
+  %str.bool.i3229 = call i32 @csec_string_starts_with(ptr %1, ptr @2613)
   %str.bool30 = icmp ne i32 %str.bool.i3229, 0
   %ifcond31 = icmp ne i1 %str.bool30, false
   br i1 %ifcond31, label %then32, label %ifcont33
@@ -26057,7 +27322,7 @@ entry:
   br i1 %ifcond, label %then, label %ifcont
 
 then:                                             ; preds = %entry
-  call void @csec_print_string(ptr @2486)
+  call void @csec_print_string(ptr @2614)
   call void @csec_print_newline()
   ret i32 1
 
@@ -26087,7 +27352,7 @@ then:                                             ; preds = %entry
   ret i32 %calltmp
 
 ifcont:                                           ; preds = %entry
-  %calltmp3 = call i32 @_compileFile(ptr @2487, ptr @2488, ptr @2489)
+  %calltmp3 = call i32 @_compileFile(ptr @2615, ptr @2616, ptr @2617)
   ret i32 %calltmp3
 }
 

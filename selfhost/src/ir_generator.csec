@@ -861,6 +861,15 @@ def llvmCallArgumentType(tokens: String, start: Int, rawEnd: Int): String {
             return llvmType;
         }
     }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        val returnType: String = irTypeName(lookupFunctionReturnType(tokens, tokenTextAt(tokens, start)));
+        if (strEq(returnType, "ptr") or strEq(returnType, "i8") or strEq(returnType, "i1") or
+            strEq(returnType, "i64") or strEq(returnType, "double")) {
+            return returnType;
+        }
+    }
     val op: Int = expressionTopLevelOperator(tokens, start, end);
     if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
         if (strEq(tokenTextAt(tokens, op), "+") and
@@ -917,6 +926,28 @@ def generateLLVMCallArgumentLoadI32(tokens: String, start: Int, rawEnd: Int, res
         }
         return "  " + resultName + " = load i32, ptr %" + storageName + "\n";
     }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        val callee: String = tokenTextAt(tokens, start);
+        val returnType: String = irTypeName(lookupFunctionReturnType(tokens, callee));
+        if (strEq(returnType, "ptr") and strEq(callee, "commandLineArg")) {
+            return generateLLVMCallArgumentLoadI32(tokens, start + 2, end - 1, resultName + ".arg0") +
+                "  " + resultName + " = call ptr @csec_command_line_arg(i32 " + resultName + ".arg0)\n";
+        }
+        if (strEq(returnType, "ptr") and strEq(callee, "tokenTextAt")) {
+            val comma: Int = findTokenTextInRange(tokens, start + 2, end - 1, ",");
+            if (comma > start + 2) {
+                return generateLLVMCallArgumentLoadI32(tokens, start + 2, comma, resultName + ".arg0") +
+                    generateLLVMCallArgumentLoadI32(tokens, comma + 1, end - 1, resultName + ".arg1") +
+                    "  " + resultName + " = call ptr @csec_token_text_at(ptr " + resultName + ".arg0, i32 " +
+                    resultName + ".arg1)\n";
+            }
+        }
+        if (strEq(returnType, "i8") and start + 2 == end - 1) {
+            return "  " + resultName + " = call i8 @" + callee + "()\n";
+        }
+    }
     if (tokenKindAt(tokens, start) == kindIdentifier() and start + 4 < end and
         tokenIs(tokens, start + 1, kindOperator(), ".") and
         tokenIs(tokens, start + 2, kindIdentifier(), "charAt") and
@@ -946,8 +977,46 @@ def generateLLVMCallArgumentLoadI32(tokens: String, start: Int, rawEnd: Int, res
         if (strEq(tokenTextAt(tokens, op), "+") and
             (strEq(llvmCallArgumentType(tokens, start, op), "ptr") or
              strEq(llvmCallArgumentType(tokens, op + 1, end), "ptr"))) {
-            return generateLLVMCallArgumentLoadI32(tokens, start, op, resultName + ".left") +
-                generateLLVMCallArgumentLoadI32(tokens, op + 1, end, resultName + ".right") +
+            val rightStart: Int = skipTrivia(tokens, op + 1);
+            var leftCode: String = "";
+            var rightCode: String = "";
+            if (strEq(llvmCallArgumentType(tokens, start, op), "ptr")) {
+                leftCode = generateLLVMCallArgumentLoadI32(tokens, start, op, resultName + ".left");
+            }
+            else if (tokenKindAt(tokens, start) == kindChar() and trimExpressionEnd(tokens, start, op) == start + 1) {
+                leftCode = "  " + resultName + ".left = call ptr @csec_to_string_char(i8 " +
+                    llvmCharI8Value(tokenTextAt(tokens, start)) + ")\n";
+            }
+            else if (tokenKindAt(tokens, start) == kindIdentifier() and trimExpressionEnd(tokens, start, op) == start + 1 and
+                strEq(lookupVisibleValueType(tokens, start, tokenTextAt(tokens, start)), "Char")) {
+                leftCode = "  " + resultName + ".left.i8 = load i8, ptr %" +
+                    lookupVisibleStorageName(tokens, start, tokenTextAt(tokens, start)) + "\n" +
+                    "  " + resultName + ".left = call ptr @csec_to_string_char(i8 " + resultName + ".left.i8)\n";
+            }
+            else {
+                leftCode = generateLLVMCallArgumentLoadI32(tokens, start, op, resultName + ".left.i32") +
+                    "  " + resultName + ".left.i64 = sext i32 " + resultName + ".left.i32 to i64\n" +
+                    "  " + resultName + ".left = call ptr @csec_to_string_i64(i64 " + resultName + ".left.i64)\n";
+            }
+            if (strEq(llvmCallArgumentType(tokens, rightStart, end), "ptr")) {
+                rightCode = generateLLVMCallArgumentLoadI32(tokens, rightStart, end, resultName + ".right");
+            }
+            else if (tokenKindAt(tokens, rightStart) == kindChar() and trimExpressionEnd(tokens, rightStart, end) == rightStart + 1) {
+                rightCode = "  " + resultName + ".right = call ptr @csec_to_string_char(i8 " +
+                    llvmCharI8Value(tokenTextAt(tokens, rightStart)) + ")\n";
+            }
+            else if (tokenKindAt(tokens, rightStart) == kindIdentifier() and trimExpressionEnd(tokens, rightStart, end) == rightStart + 1 and
+                strEq(lookupVisibleValueType(tokens, rightStart, tokenTextAt(tokens, rightStart)), "Char")) {
+                rightCode = "  " + resultName + ".right.i8 = load i8, ptr %" +
+                    lookupVisibleStorageName(tokens, rightStart, tokenTextAt(tokens, rightStart)) + "\n" +
+                    "  " + resultName + ".right = call ptr @csec_to_string_char(i8 " + resultName + ".right.i8)\n";
+            }
+            else {
+                rightCode = generateLLVMCallArgumentLoadI32(tokens, rightStart, end, resultName + ".right.i32") +
+                    "  " + resultName + ".right.i64 = sext i32 " + resultName + ".right.i32 to i64\n" +
+                    "  " + resultName + ".right = call ptr @csec_to_string_i64(i64 " + resultName + ".right.i64)\n";
+            }
+            return leftCode + rightCode +
                 "  " + resultName + " = call ptr @csec_string_concat(ptr " + resultName + ".left, ptr " +
                 resultName + ".right)\n";
         }
@@ -1633,8 +1702,74 @@ def generateLLVMExpressionPtr(tokens: String, start: Int, rawEnd: Int, resultNam
     }
     val op: Int = expressionTopLevelOperator(tokens, start, end);
     if (op > start and tokenKindAt(tokens, op) == kindOperator() and strEq(tokenTextAt(tokens, op), "+")) {
-        return generateLLVMExpressionPtr(tokens, start, op, resultName + ".left") +
-            generateLLVMExpressionPtr(tokens, op + 1, end, resultName + ".right") +
+        val leftEnd: Int = trimExpressionEnd(tokens, start, op);
+        val rightStart: Int = skipTrivia(tokens, op + 1);
+        val rightEnd: Int = trimExpressionEnd(tokens, rightStart, end);
+        val leftOp: Int = expressionTopLevelOperator(tokens, start, leftEnd);
+        val rightOp: Int = expressionTopLevelOperator(tokens, rightStart, rightEnd);
+        var leftCode: String = "";
+        var rightCode: String = "";
+        if ((tokenKindAt(tokens, start) == kindString() and leftEnd == start + 1) or
+            (tokenKindAt(tokens, start) == kindIdentifier() and leftEnd == start + 1 and
+             strEq(irTypeName(lookupVisibleValueType(tokens, start, tokenTextAt(tokens, start))), "ptr")) or
+            (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < leftEnd and
+             tokenIs(tokens, start + 1, kindOperator(), "(") and
+             findClosingToken(tokens, start + 1, leftEnd, "(", ")") == leftEnd - 1 and
+             strEq(irTypeName(lookupFunctionReturnType(tokens, tokenTextAt(tokens, start))), "ptr")) or
+            (tokenKindAt(tokens, start) == kindIdentifier() and start + 6 < leftEnd and
+             tokenIs(tokens, start + 1, kindOperator(), ".") and
+             tokenIs(tokens, start + 2, kindIdentifier(), "substring") and
+             tokenIs(tokens, start + 3, kindOperator(), "(") and
+             findClosingToken(tokens, start + 3, leftEnd, "(", ")") == leftEnd - 1) or
+            (leftOp > start and tokenKindAt(tokens, leftOp) == kindOperator() and strEq(tokenTextAt(tokens, leftOp), "+"))) {
+            leftCode = generateLLVMExpressionPtr(tokens, start, leftEnd, resultName + ".left");
+        }
+        else if (tokenKindAt(tokens, start) == kindChar() and leftEnd == start + 1) {
+            leftCode = "  " + resultName + ".left = call ptr @csec_to_string_char(i8 " +
+                llvmCharI8Value(tokenTextAt(tokens, start)) + ")\n";
+        }
+        else if (tokenKindAt(tokens, start) == kindIdentifier() and leftEnd == start + 1 and
+            strEq(lookupVisibleValueType(tokens, start, tokenTextAt(tokens, start)), "Char")) {
+            leftCode = "  " + resultName + ".left.i8 = load i8, ptr %" +
+                lookupVisibleStorageName(tokens, start, tokenTextAt(tokens, start)) + "\n" +
+                "  " + resultName + ".left = call ptr @csec_to_string_char(i8 " + resultName + ".left.i8)\n";
+        }
+        else {
+            leftCode = generateLLVMExpressionI32(tokens, start, leftEnd, resultName + ".left.i32") +
+                "  " + resultName + ".left.i64 = sext i32 " + resultName + ".left.i32 to i64\n" +
+                "  " + resultName + ".left = call ptr @csec_to_string_i64(i64 " + resultName + ".left.i64)\n";
+        }
+        if ((tokenKindAt(tokens, rightStart) == kindString() and rightEnd == rightStart + 1) or
+            (tokenKindAt(tokens, rightStart) == kindIdentifier() and rightEnd == rightStart + 1 and
+             strEq(irTypeName(lookupVisibleValueType(tokens, rightStart, tokenTextAt(tokens, rightStart))), "ptr")) or
+            (tokenKindAt(tokens, rightStart) == kindIdentifier() and rightStart + 1 < rightEnd and
+             tokenIs(tokens, rightStart + 1, kindOperator(), "(") and
+             findClosingToken(tokens, rightStart + 1, rightEnd, "(", ")") == rightEnd - 1 and
+             strEq(irTypeName(lookupFunctionReturnType(tokens, tokenTextAt(tokens, rightStart))), "ptr")) or
+            (tokenKindAt(tokens, rightStart) == kindIdentifier() and rightStart + 6 < rightEnd and
+             tokenIs(tokens, rightStart + 1, kindOperator(), ".") and
+             tokenIs(tokens, rightStart + 2, kindIdentifier(), "substring") and
+             tokenIs(tokens, rightStart + 3, kindOperator(), "(") and
+             findClosingToken(tokens, rightStart + 3, rightEnd, "(", ")") == rightEnd - 1) or
+            (rightOp > rightStart and tokenKindAt(tokens, rightOp) == kindOperator() and strEq(tokenTextAt(tokens, rightOp), "+"))) {
+            rightCode = generateLLVMExpressionPtr(tokens, rightStart, rightEnd, resultName + ".right");
+        }
+        else if (tokenKindAt(tokens, rightStart) == kindChar() and rightEnd == rightStart + 1) {
+            rightCode = "  " + resultName + ".right = call ptr @csec_to_string_char(i8 " +
+                llvmCharI8Value(tokenTextAt(tokens, rightStart)) + ")\n";
+        }
+        else if (tokenKindAt(tokens, rightStart) == kindIdentifier() and rightEnd == rightStart + 1 and
+            strEq(lookupVisibleValueType(tokens, rightStart, tokenTextAt(tokens, rightStart)), "Char")) {
+            rightCode = "  " + resultName + ".right.i8 = load i8, ptr %" +
+                lookupVisibleStorageName(tokens, rightStart, tokenTextAt(tokens, rightStart)) + "\n" +
+                "  " + resultName + ".right = call ptr @csec_to_string_char(i8 " + resultName + ".right.i8)\n";
+        }
+        else {
+            rightCode = generateLLVMExpressionI32(tokens, rightStart, rightEnd, resultName + ".right.i32") +
+                "  " + resultName + ".right.i64 = sext i32 " + resultName + ".right.i32 to i64\n" +
+                "  " + resultName + ".right = call ptr @csec_to_string_i64(i64 " + resultName + ".right.i64)\n";
+        }
+        return leftCode + rightCode +
             "  " + resultName + " = call ptr @csec_string_concat(ptr " + resultName + ".left, ptr " +
             resultName + ".right)\n";
     }
@@ -2628,6 +2763,8 @@ def generateLLVMModule(tokens: String): String {
         "declare ptr @csec_string_concat(ptr, ptr)\n" +
         "declare i32 @csec_string_starts_with(ptr, ptr)\n" +
         "declare ptr @csec_string_substring(ptr, i32, i32)\n" +
+        "declare ptr @csec_to_string_i64(i64)\n" +
+        "declare ptr @csec_to_string_char(i8)\n" +
         "declare i64 @csec_token_builder_new()\n" +
         "declare i32 @csec_token_builder_append(i64, i8, ptr)\n" +
         "declare ptr @csec_token_builder_finish(i64)\n" +

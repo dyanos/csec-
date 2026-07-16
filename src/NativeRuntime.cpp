@@ -453,12 +453,102 @@ int csec_digit_value(char ch) {
     return ch >= '0' && ch <= '9' ? ch - '0' : 0;
 }
 
+int csec_to_int(const char* text) {
+    return text ? static_cast<int>(std::strtol(text, nullptr, 10)) : 0;
+}
+
+int csec_line_start(const char* text, int ordinal) {
+    if (!text || ordinal <= 0) return 0;
+    int cursor = 0;
+    int line = 0;
+    while (text[cursor] && line < ordinal) {
+        if (text[cursor] == '\n') ++line;
+        ++cursor;
+    }
+    return cursor;
+}
+
+int csec_line_end(const char* text, int start) {
+    if (!text || start < 0) return 0;
+    int cursor = start;
+    while (text[cursor] && text[cursor] != '\n') ++cursor;
+    return cursor;
+}
+
+int csec_validate_balanced(const char* tokens) {
+    int paren = 0;
+    int brace = 0;
+    int bracket = 0;
+    for (int ordinal = 0; csec_token_kind_at(tokens, ordinal) != 'E'; ++ordinal) {
+        if (csec_token_kind_at(tokens, ordinal) != 'O') continue;
+        const char* text = csec_token_text_at(tokens, ordinal);
+        if (!text) continue;
+        if (std::strcmp(text, "(") == 0) ++paren;
+        else if (std::strcmp(text, ")") == 0) --paren;
+        else if (std::strcmp(text, "{") == 0) ++brace;
+        else if (std::strcmp(text, "}") == 0) --brace;
+        else if (std::strcmp(text, "[") == 0) ++bracket;
+        else if (std::strcmp(text, "]") == 0) --bracket;
+        if (paren < 0 || brace < 0 || bracket < 0) return 0;
+    }
+    return paren == 0 && brace == 0 && bracket == 0;
+}
+
 char* csec_llvm_lexer_helper_definition(const char* name) {
     const char* definition = "";
     if (name && std::strcmp(name, "tokenIs") == 0) {
         definition = "define i1 @tokenIs(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text) {\nentry:\n  %token.is = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text)\n  %token.is.bool = icmp ne i32 %token.is, 0\n  ret i1 %token.is.bool\n}\n\n";
     } else if (name && std::strcmp(name, "digitValue") == 0) {
         definition = "define i32 @digitValue(i8 %arg.ch) {\nentry:\n  %ret = call i32 @csec_digit_value(i8 %arg.ch)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "toInt") == 0) {
+        definition = "define i32 @toInt(ptr %arg.text) {\nentry:\n  %ret = call i32 @csec_to_int(ptr %arg.text)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lineStart") == 0) {
+        definition = "define i32 @lineStart(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call i32 @csec_line_start(ptr %arg.tokens, i32 %arg.ordinal)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lineEnd") == 0) {
+        definition = "define i32 @lineEnd(ptr %arg.tokens, i32 %arg.start) {\nentry:\n  %ret = call i32 @csec_line_end(ptr %arg.tokens, i32 %arg.start)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "tokenKindAt") == 0) {
+        definition = "define i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %arg.ordinal)\n  ret i8 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "tokenTextAt") == 0) {
+        definition = "define ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %arg.ordinal)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "skipTrivia") == 0) {
+        definition = "define i32 @skipTrivia(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  br label %loop\nloop:\n  %cursor = phi i32 [ %arg.ordinal, %entry ], [ %next, %body ]\n  %kind = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %cursor)\n  %is.comment = icmp eq i8 %kind, 77\n  br i1 %is.comment, label %body, label %exit\nbody:\n  %next = add i32 %cursor, 1\n  br label %loop\nexit:\n  ret i32 %cursor\n}\n\n";
+    } else if (name && std::strcmp(name, "validateBalanced") == 0) {
+        definition = "define i1 @validateBalanced(ptr %arg.tokens) {\nentry:\n  %valid = call i32 @csec_validate_balanced(ptr %arg.tokens)\n  %ret = icmp ne i32 %valid, 0\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "trimExpressionEnd") == 0) {
+        definition = "define i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  br label %trim.loop\ntrim.loop:\n  %last = phi i32 [ %arg.end, %entry ], [ %previous, %trim.comment ]\n  %has.previous = icmp sgt i32 %last, %arg.start\n  br i1 %has.previous, label %trim.inspect, label %trim.check\ntrim.inspect:\n  %index = sub i32 %last, 1\n  %kind = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %index)\n  %is.comment = icmp eq i8 %kind, 77\n  br i1 %is.comment, label %trim.comment, label %trim.check\ntrim.comment:\n  %previous = sub i32 %last, 1\n  br label %trim.loop\ntrim.check:\n  %has.token = icmp sgt i32 %last, %arg.start\n  br i1 %has.token, label %trim.semicolon, label %trim.return\ntrim.semicolon:\n  %candidate = sub i32 %last, 1\n  %is.semicolon = call i32 @csec_token_is(ptr %arg.tokens, i32 %candidate, i8 79, ptr @.str.trim.semicolon)\n  %has.semicolon = icmp ne i32 %is.semicolon, 0\n  br i1 %has.semicolon, label %trim.without.semicolon, label %trim.return\ntrim.without.semicolon:\n  %result = sub i32 %last, 1\n  ret i32 %result\ntrim.return:\n  ret i32 %last\n}\n\n@.str.trim.semicolon = private unnamed_addr constant [2 x i8] c\";\\00\"\n\n";
+    } else if (name && std::strcmp(name, "findTokenTextInRange") == 0) {
+        definition = "define i32 @findTokenTextInRange(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr %arg.text) {\nentry:\n  %ret = call i32 @csec_find_token_text_in_range(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr %arg.text)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findClosingToken") == 0) {
+        definition = "define i32 @findClosingToken(ptr %arg.tokens, i32 %arg.openOrdinal, i32 %arg.end, ptr %arg.openText, ptr %arg.closeText) {\nentry:\n  %ret = call i32 @csec_find_closing_token(ptr %arg.tokens, i32 %arg.openOrdinal, i32 %arg.end, ptr %arg.openText, ptr %arg.closeText)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findStatementParenStart") == 0) {
+        definition = "define i32 @findStatementParenStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_find_statement_paren_start(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findStatementParenEnd") == 0) {
+        definition = "define i32 @findStatementParenEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_find_statement_paren_end(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findStatementBlockStart") == 0) {
+        definition = "define i32 @findStatementBlockStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_find_statement_block_start(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findStatementBlockEnd") == 0) {
+        definition = "define i32 @findStatementBlockEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_find_statement_block_end(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
+    } else if (name && (std::strcmp(name, "advanceTopLevelDecl") == 0 || std::strcmp(name, "advanceTopLevelDeclSlow") == 0)) {
+        const char* functionName = std::strcmp(name, "advanceTopLevelDecl") == 0 ? "advanceTopLevelDecl" : "advanceTopLevelDeclSlow";
+        std::string generated = "define i32 @" + std::string(functionName) + "(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call i32 @csec_advance_top_level_decl(ptr %arg.tokens, i32 %arg.ordinal)\n  ret i32 %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && (std::strcmp(name, "findDeclBodyStart") == 0 || std::strcmp(name, "findDeclBodyStartSlow") == 0)) {
+        const char* functionName = std::strcmp(name, "findDeclBodyStart") == 0 ? "findDeclBodyStart" : "findDeclBodyStartSlow";
+        std::string generated = "define i32 @" + std::string(functionName) + "(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call i32 @csec_find_decl_body_start(ptr %arg.tokens, i32 %arg.ordinal)\n  ret i32 %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && (std::strcmp(name, "findDeclBodyEnd") == 0 || std::strcmp(name, "findDeclBodyEndSlow") == 0)) {
+        const char* functionName = std::strcmp(name, "findDeclBodyEnd") == 0 ? "findDeclBodyEnd" : "findDeclBodyEndSlow";
+        std::string generated = "define i32 @" + std::string(functionName) + "(ptr %arg.tokens, i32 %arg.bodyStart) {\nentry:\n  %ret = call i32 @csec_find_decl_body_end(ptr %arg.tokens, i32 %arg.bodyStart)\n  ret i32 %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
     } else if (name && std::strcmp(name, "isAlpha") == 0) {
         definition = "define i1 @isAlpha(i8 %arg.ch) {\nentry:\n  %lower = icmp sge i8 %arg.ch, 97\n  %lower.end = icmp sle i8 %arg.ch, 122\n  %lower.match = and i1 %lower, %lower.end\n  %upper = icmp sge i8 %arg.ch, 65\n  %upper.end = icmp sle i8 %arg.ch, 90\n  %upper.match = and i1 %upper, %upper.end\n  %ret = or i1 %lower.match, %upper.match\n  ret i1 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "isIdentifierStart") == 0) {
@@ -1058,6 +1148,40 @@ int csec_find_decl_body_end(const char* tokens, int bodyStart) {
     if (!csec_native_token_is(tokens, openBrace, 'O', "{")) return -1;
     int closeBrace = findMatchingBraceToken(tokens ? tokens : "", openBrace, tokenCount);
     return closeBrace;
+}
+
+int csec_find_token_text_in_range(const char* tokens, int start, int end, const char* text) {
+    if (!tokens || !text) return -1;
+    for (int ordinal = start < 0 ? 0 : start; ordinal < end && csec_token_kind_at(tokens, ordinal) != 'E'; ++ordinal) {
+        const char* candidate = csec_token_text_at(tokens, ordinal);
+        if (candidate && std::strcmp(candidate, text) == 0) return ordinal;
+    }
+    return -1;
+}
+
+int csec_find_closing_token(const char* tokens, int openOrdinal, int end, const char* openText, const char* closeText) {
+    return csec_native_find_closing_token(tokens, openOrdinal, end, openText, closeText);
+}
+
+int csec_find_statement_paren_start(const char* tokens, int start, int end) {
+    return csec_find_token_text_in_range(tokens, start, end, "(");
+}
+
+int csec_find_statement_paren_end(const char* tokens, int start, int end) {
+    int openParen = csec_find_statement_paren_start(tokens, start, end);
+    return openParen < 0 ? -1 : csec_native_find_closing_token(tokens, openParen, end, "(", ")");
+}
+
+int csec_find_statement_block_start(const char* tokens, int start, int end) {
+    int closeParen = csec_find_statement_paren_end(tokens, start, end);
+    return closeParen >= 0
+        ? csec_find_token_text_in_range(tokens, closeParen + 1, end, "{")
+        : csec_find_token_text_in_range(tokens, start, end, "{");
+}
+
+int csec_find_statement_block_end(const char* tokens, int start, int end) {
+    int openBrace = csec_find_statement_block_start(tokens, start, end);
+    return openBrace < 0 ? -1 : csec_native_find_closing_token(tokens, openBrace, end, "{", "}");
 }
 
 int csec_function_param_end(const char* tokens, int declStart) {

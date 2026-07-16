@@ -1088,84 +1088,58 @@ def generateLLVMCallArgumentLoadI32(tokens: String, start: Int, rawEnd: Int, res
 }
 
 def generateLLVMCallArgumentLoadsI32(tokens: String, argsStart: Int, argsEnd: Int, resultName: String): String {
-    var cursor: Int = argsStart;
-    var argStart: Int = argsStart;
-    var index: Int = 0;
-    var paren: Int = 0;
-    var bracket: Int = 0;
-    var brace: Int = 0;
-    var output: String = "";
-    while (cursor <= argsEnd and tokenKindAt(tokens, cursor) != kindEof()) {
-        var boundary: Boolean = cursor == argsEnd;
-        if (!boundary and tokenKindAt(tokens, cursor) == kindOperator()) {
-            val text: String = tokenTextAt(tokens, cursor);
-            if (strEq(text, "(")) { paren = paren + 1; }
-            else if (strEq(text, ")")) { paren = paren - 1; }
-            else if (strEq(text, "[")) { bracket = bracket + 1; }
-            else if (strEq(text, "]")) { bracket = bracket - 1; }
-            else if (strEq(text, "{")) { brace = brace + 1; }
-            else if (strEq(text, "}")) { brace = brace - 1; }
-            else if (strEq(text, ",") and paren == 0 and bracket == 0 and brace == 0) {
-                boundary = true;
-            }
-        }
-        if (boundary) {
-            val argEnd: Int = trimExpressionEnd(tokens, argStart, cursor);
-            if (argEnd > argStart) {
-                if (tokenKindAt(tokens, argStart) == kindInteger() and argEnd == argStart + 1) {
-                    output = output;
-                }
-                else {
-                    output = output + generateLLVMCallArgumentLoadI32(tokens, argStart, argEnd, resultName + ".arg" + index);
-                }
-                index = index + 1;
-            }
-            argStart = cursor + 1;
-        }
-        cursor = cursor + 1;
+    val first: Int = skipTrivia(tokens, argsStart);
+    val end: Int = trimExpressionEnd(tokens, first, argsEnd);
+    if (first >= end) { return ""; }
+    val lastComma: Int = findTopLevelOperator(tokens, first, end, 12);
+    if (lastComma < first) { return generateLLVMCallArgumentLoadI32(tokens, first, end, resultName + ".arg0"); }
+    val secondComma: Int = findTopLevelOperator(tokens, first, lastComma, 12);
+    if (secondComma < first) {
+        return generateLLVMCallArgumentLoadI32(tokens, first, lastComma, resultName + ".arg0") +
+            generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, lastComma + 1), end, resultName + ".arg1");
     }
-    return output;
+    val firstComma: Int = findTopLevelOperator(tokens, first, secondComma, 12);
+    if (firstComma < first) {
+        return generateLLVMCallArgumentLoadI32(tokens, first, secondComma, resultName + ".arg0") +
+            generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, secondComma + 1), lastComma, resultName + ".arg1") +
+            generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, lastComma + 1), end, resultName + ".arg2");
+    }
+    return generateLLVMCallArgumentLoadI32(tokens, first, firstComma, resultName + ".arg0") +
+        generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, firstComma + 1), secondComma, resultName + ".arg1") +
+        generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, secondComma + 1), lastComma, resultName + ".arg2") +
+        generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, lastComma + 1), end, resultName + ".arg3");
 }
 
 def generateLLVMCallArgumentListI32(tokens: String, argsStart: Int, argsEnd: Int, resultName: String): String {
-    var cursor: Int = argsStart;
-    var argStart: Int = argsStart;
-    var index: Int = 0;
-    var paren: Int = 0;
-    var bracket: Int = 0;
-    var brace: Int = 0;
-    var output: String = "";
-    var first: Boolean = true;
-    while (cursor <= argsEnd and tokenKindAt(tokens, cursor) != kindEof()) {
-        var boundary: Boolean = cursor == argsEnd;
-        if (!boundary and tokenKindAt(tokens, cursor) == kindOperator()) {
-            val text: String = tokenTextAt(tokens, cursor);
-            if (strEq(text, "(")) { paren = paren + 1; }
-            else if (strEq(text, ")")) { paren = paren - 1; }
-            else if (strEq(text, "[")) { bracket = bracket + 1; }
-            else if (strEq(text, "]")) { bracket = bracket - 1; }
-            else if (strEq(text, "{")) { brace = brace + 1; }
-            else if (strEq(text, "}")) { brace = brace - 1; }
-            else if (strEq(text, ",") and paren == 0 and bracket == 0 and brace == 0) {
-                boundary = true;
-            }
-        }
-        if (boundary) {
-            val argEnd: Int = trimExpressionEnd(tokens, argStart, cursor);
-            if (argEnd > argStart) {
-                if (!first) {
-                    output = output + ", ";
-                }
-                output = output + llvmCallArgumentType(tokens, argStart, argEnd) + " " +
-                    llvmCallArgumentValue(tokens, argStart, argEnd, resultName, index);
-                first = false;
-                index = index + 1;
-            }
-            argStart = cursor + 1;
-        }
-        cursor = cursor + 1;
+    val first: Int = skipTrivia(tokens, argsStart);
+    val end: Int = trimExpressionEnd(tokens, first, argsEnd);
+    if (first >= end) { return ""; }
+    val lastComma: Int = findTopLevelOperator(tokens, first, end, 12);
+    if (lastComma < first) {
+        return llvmCallArgumentType(tokens, first, end) + " " +
+            llvmCallArgumentValue(tokens, first, end, resultName, 0);
     }
-    return output;
+    val secondComma: Int = findTopLevelOperator(tokens, first, lastComma, 12);
+    if (secondComma < first) {
+        val second: Int = skipTrivia(tokens, lastComma + 1);
+        return llvmCallArgumentType(tokens, first, lastComma) + " " + llvmCallArgumentValue(tokens, first, lastComma, resultName, 0) + ", " +
+            llvmCallArgumentType(tokens, second, end) + " " + llvmCallArgumentValue(tokens, second, end, resultName, 1);
+    }
+    val firstComma: Int = findTopLevelOperator(tokens, first, secondComma, 12);
+    if (firstComma < first) {
+        val second: Int = skipTrivia(tokens, secondComma + 1);
+        val third: Int = skipTrivia(tokens, lastComma + 1);
+        return llvmCallArgumentType(tokens, first, secondComma) + " " + llvmCallArgumentValue(tokens, first, secondComma, resultName, 0) + ", " +
+            llvmCallArgumentType(tokens, second, lastComma) + " " + llvmCallArgumentValue(tokens, second, lastComma, resultName, 1) + ", " +
+            llvmCallArgumentType(tokens, third, end) + " " + llvmCallArgumentValue(tokens, third, end, resultName, 2);
+    }
+    val second: Int = skipTrivia(tokens, firstComma + 1);
+    val third: Int = skipTrivia(tokens, secondComma + 1);
+    val fourth: Int = skipTrivia(tokens, lastComma + 1);
+    return llvmCallArgumentType(tokens, first, firstComma) + " " + llvmCallArgumentValue(tokens, first, firstComma, resultName, 0) + ", " +
+        llvmCallArgumentType(tokens, second, secondComma) + " " + llvmCallArgumentValue(tokens, second, secondComma, resultName, 1) + ", " +
+        llvmCallArgumentType(tokens, third, lastComma) + " " + llvmCallArgumentValue(tokens, third, lastComma, resultName, 2) + ", " +
+        llvmCallArgumentType(tokens, fourth, end) + " " + llvmCallArgumentValue(tokens, fourth, end, resultName, 3);
 }
 
 def llvmRuntimeCallName(name: String): String {

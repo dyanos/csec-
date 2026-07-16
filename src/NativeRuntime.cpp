@@ -498,6 +498,12 @@ char* csec_llvm_lexer_helper_definition(const char* name) {
     const char* definition = "";
     if (name && std::strcmp(name, "tokenIs") == 0) {
         definition = "define i1 @tokenIs(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text) {\nentry:\n  %token.is = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text)\n  %token.is.bool = icmp ne i32 %token.is, 0\n  ret i1 %token.is.bool\n}\n\n";
+    } else if (name && std::strcmp(name, "isWhitespace") == 0) {
+        definition = "define i1 @isWhitespace(i8 %arg.ch) {\nentry:\n  %space = icmp eq i8 %arg.ch, 32\n  %newline = icmp eq i8 %arg.ch, 10\n  %carriage = icmp eq i8 %arg.ch, 13\n  %tab = icmp eq i8 %arg.ch, 9\n  %space.or.newline = or i1 %space, %newline\n  %carriage.or.tab = or i1 %carriage, %tab\n  %ret = or i1 %space.or.newline, %carriage.or.tab\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "isDigit") == 0) {
+        definition = "define i1 @isDigit(i8 %arg.ch) {\nentry:\n  %lower = icmp sge i8 %arg.ch, 48\n  %upper = icmp sle i8 %arg.ch, 57\n  %ret = and i1 %lower, %upper\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "strEq") == 0) {
+        definition = "define i1 @strEq(ptr %arg.left, ptr %arg.right) {\nentry:\n  %left.length = call i64 @csec_string_length(ptr %arg.left)\n  %right.length = call i64 @csec_string_length(ptr %arg.right)\n  %same.length = icmp eq i64 %left.length, %right.length\n  %prefix = call i32 @csec_string_starts_with(ptr %arg.left, ptr %arg.right)\n  %same.text = icmp ne i32 %prefix, 0\n  %ret = and i1 %same.length, %same.text\n  ret i1 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "digitValue") == 0) {
         definition = "define i32 @digitValue(i8 %arg.ch) {\nentry:\n  %ret = call i32 @csec_digit_value(i8 %arg.ch)\n  ret i32 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "toInt") == 0) {

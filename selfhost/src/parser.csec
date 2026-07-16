@@ -357,6 +357,9 @@ def tokenIsTopLevelOperator(tokens: String, ordinal: Int, group: Int): Boolean {
     if (group == 11 and kind == kindKeyword()) {
         return strEq(text, "inner") or strEq(text, "outer") or strEq(text, "tensor");
     }
+    if (group == 12 and kind == kindOperator()) {
+        return strEq(text, ",");
+    }
     return false;
 }
 

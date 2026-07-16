@@ -15,6 +15,7 @@
 #include "mangling.h"
 #include "type_checker.h"
 #include "utils.h"
+#include "NativeRuntime.h"
 
 #include <iostream>
 #include <llvm/Support/TargetSelect.h>
@@ -25,8 +26,18 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/IRReader/IRReader.h>
+#include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/raw_ostream.h>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
@@ -44,6 +55,7 @@
 namespace {
 enum class OutputMode {
     Run,
+    RunIR,
     SyntaxOnly,
     EmitIR,
     EmitObject,
@@ -56,12 +68,14 @@ void printUsage(const char* programName) {
         << "Options:\n"
         << "  --syntax-only, --parse-only  Parse only, no code generation\n"
         << "  --run                        Generate and run with LLVM interpreter (default)\n"
+        << "  --run-ir <file.ll>            Run an existing LLVM IR module with the interpreter\n"
         << "  --emit-ir, -S                Write LLVM IR (.ll)\n"
         << "  --emit-obj, -c               Write native object code (.obj/.o)\n"
         << "  --emit-exe                   Write native executable (.exe)\n"
         << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
         << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
         << "  --link-path <path>           Add a native library search path\n"
+        << "  -- <args...>                 Pass arguments to a program run with --run\n"
         << "  --mangle <itanium|msvc> <signature>\n"
         << "                               Print a C++ ABI mangled name and exit\n";
 }
@@ -222,6 +236,126 @@ llvm::Function* rebuildRuntimeMain(CodeGenerator& codeGen) {
     }
     jitBuilder.CreateRet(coerceReturnToInt32(jitBuilder, jitResult));
     return jitFunction;
+}
+
+int runIRFile(const std::string& inputFile, const std::vector<std::string>& runtimeArgs, const char* programName) {
+    LLVMLinkInMCJIT();
+    LLVMLinkInInterpreter();
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+
+    std::filesystem::path runtimePath = std::filesystem::path(programName).parent_path() / "System.Native.dll";
+    std::string runtimeLoadError;
+    llvm::sys::DynamicLibrary runtimeLibrary = llvm::sys::DynamicLibrary::getPermanentLibrary(
+        runtimePath.string().c_str(), &runtimeLoadError);
+    if (!runtimeLibrary.isValid()) {
+        std::cerr << "Failed to load native runtime '" << runtimePath.string()
+                  << "': " << runtimeLoadError << std::endl;
+        return 1;
+    }
+
+    auto context = std::make_unique<llvm::LLVMContext>();
+    llvm::SMDiagnostic diagnostic;
+    auto module = llvm::parseIRFile(inputFile, diagnostic, *context);
+    if (!module) {
+        diagnostic.print(programName, llvm::errs());
+        return 1;
+    }
+    if (llvm::verifyModule(*module, &llvm::errs())) {
+        std::cerr << "Input LLVM IR is invalid." << std::endl;
+        return 1;
+    }
+
+    // The host compiler emits numeric string-global identifiers (for example
+    // @0). LLVM preserves those as unnamed GlobalValues, which the legacy
+    // Interpreter backend rejects during module setup. Give them stable names
+    // before handing the module to the execution engine.
+    unsigned anonymousGlobalIndex = 0;
+    for (llvm::GlobalVariable& global : module->globals()) {
+        if (!global.hasName()) {
+            global.setName("__csec_runir_global_" + std::to_string(anonymousGlobalIndex++));
+        }
+    }
+
+    // The Interpreter does not reliably discover DLL exports through the
+    // platform loader. Bind every external declaration that System.Native
+    // exports before creating the execution engine.
+    std::vector<std::pair<std::string, void*>> runtimeSymbols;
+#ifdef _WIN32
+    HMODULE runtimeModule = ::LoadLibraryW(runtimePath.c_str());
+    if (!runtimeModule) {
+        std::cerr << "Failed to get a Windows module handle for native runtime '"
+                  << runtimePath.string() << "'." << std::endl;
+        return 1;
+    }
+#endif
+    for (llvm::Function& function : *module) {
+        if (!function.isDeclaration() || function.isIntrinsic()) {
+            continue;
+        }
+        const std::string name = function.getName().str();
+#ifdef _WIN32
+        void* address = reinterpret_cast<void*>(::GetProcAddress(runtimeModule, name.c_str()));
+#else
+        void* address = runtimeLibrary.getAddressOfSymbol(name.c_str());
+#endif
+        if (address) {
+            llvm::sys::DynamicLibrary::AddSymbol(function.getName(), address);
+            runtimeSymbols.emplace_back(name, address);
+        }
+    }
+
+    std::string engineError;
+    auto engine = llvm::EngineBuilder(std::move(module))
+        .setErrorStr(&engineError)
+        .setEngineKind(llvm::EngineKind::JIT)
+        .setOptLevel(llvm::CodeGenOpt::getLevel(0).value())
+        .create();
+    if (!engine) {
+        std::cerr << "Failed to create ExecutionEngine: " << engineError << std::endl;
+        return 1;
+    }
+
+    for (const auto& [name, address] : runtimeSymbols) {
+        if (llvm::GlobalValue* symbol = engine->FindFunctionNamed(name)) {
+            engine->addGlobalMapping(symbol, address);
+        }
+    }
+
+    llvm::Function* entryFunction = engine->FindFunctionNamed("main");
+    if (!entryFunction) {
+        // Host-emitted IR uses this zero-argument entrypoint instead of a C
+        // ABI main function. It is still a valid executable CSEC program.
+        entryFunction = engine->FindFunctionNamed("__csec_jit_entry");
+    }
+    if (!entryFunction) {
+        std::cerr << "Input LLVM IR has no executable entry function." << std::endl;
+        return 1;
+    }
+
+    std::vector<std::string> arguments;
+    arguments.reserve(runtimeArgs.size() + 1);
+    arguments.push_back(inputFile);
+    arguments.insert(arguments.end(), runtimeArgs.begin(), runtimeArgs.end());
+
+#ifdef _WIN32
+    using SetCommandLineArgs = void (*)(int, char**);
+    auto setCommandLineArgs = reinterpret_cast<SetCommandLineArgs>(
+        ::GetProcAddress(runtimeModule, "csec_set_command_line_args"));
+    if (!setCommandLineArgs) {
+        std::cerr << "Native runtime does not export csec_set_command_line_args." << std::endl;
+        return 1;
+    }
+    std::vector<char*> runtimeArgv;
+    runtimeArgv.reserve(arguments.size());
+    for (std::string& argument : arguments) {
+        runtimeArgv.push_back(argument.data());
+    }
+    setCommandLineArgs(static_cast<int>(runtimeArgv.size()), runtimeArgv.data());
+#endif
+
+    return engine->runFunctionAsMain(entryFunction, arguments, {});
 }
 
 std::string trimAscii(std::string value) {
@@ -1070,8 +1204,18 @@ int main(int argc, char** argv) {
     std::string outputFile;
     std::vector<std::string> linkLibraries;
     std::vector<std::string> linkPaths;
+    std::vector<std::string> runtimeArgs;
+    bool parsingRuntimeArgs = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
+        if (parsingRuntimeArgs) {
+            runtimeArgs.push_back(std::move(arg));
+            continue;
+        }
+        if (arg == "--") {
+            parsingRuntimeArgs = true;
+            continue;
+        }
         if (arg == "--mangle") {
             if (i + 2 >= argc) {
                 std::cerr << "Usage: " << argv[0] << " --mangle <itanium|msvc> <signature>" << std::endl;
@@ -1087,6 +1231,10 @@ int main(int argc, char** argv) {
         }
         if (arg == "--run") {
             outputMode = OutputMode::Run;
+            continue;
+        }
+        if (arg == "--run-ir") {
+            outputMode = OutputMode::RunIR;
             continue;
         }
         if (arg == "--emit-ir" || arg == "-S") {
@@ -1148,6 +1296,10 @@ int main(int argc, char** argv) {
             return 1;
         }
         inputFileSet = true;
+    }
+
+    if (outputMode == OutputMode::RunIR) {
+        return runIRFile(inputFile, runtimeArgs, argv[0]);
     }
 
     std::string code = expandImports(inputFile);
@@ -1293,6 +1445,14 @@ int main(int argc, char** argv) {
     }
 
     // main ?⑥닔 ?ㅽ뻾
+    std::vector<char*> runtimeArgv;
+    runtimeArgv.reserve(runtimeArgs.size() + 1);
+    runtimeArgv.push_back(argv[0]);
+    for (auto& runtimeArg : runtimeArgs) {
+        runtimeArgv.push_back(runtimeArg.data());
+    }
+    csec_set_command_line_args(static_cast<int>(runtimeArgv.size()), runtimeArgv.data());
+
     auto result = engine->runFunction(runtimeEntry, {});
 
     return 0;

@@ -1,5 +1,3 @@
-external def csec_expand_imports(path: String): String;
-
 def trimAscii(text: String): String {
     var start: Int = 0;
     var end: Int = text.length;
@@ -167,6 +165,18 @@ def compileSource(source: String, mode: String): String {
 
 def compileFile(inputPath: String, outputPath: String, mode: String): Int {
     val source: String = csec_expand_imports(inputPath);
+    if (mode.startsWith("llvm")) {
+        val builder: Long = csec_string_builder_new_file(outputPath);
+        if (builder == 0) {
+            System.Console.WriteLine("compile error");
+            return 1;
+        }
+        val generated: Int = generateLLVMModuleInto(tokenize(source), builder);
+        if (generated != 0) {
+            return generated;
+        }
+        return csec_string_builder_write_to_file(builder, outputPath);
+    }
     val output: String = compileSource(source, mode);
     if (output.length == 0) {
         System.Console.WriteLine("compile error");

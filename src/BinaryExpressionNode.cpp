@@ -114,9 +114,16 @@ llvm::Value* coerceValueForString(CodeGenerator& cg, llvm::Value* value, const T
         return llvm::ConstantPointerNull::get(i8PtrTy);
     }
     if (type->isStringTy()) {
-        return value->getType()->isPointerTy()
-            ? value
-            : llvm::ConstantPointerNull::get(i8PtrTy);
+        if (!value->getType()->isPointerTy()) {
+            return llvm::ConstantPointerNull::get(i8PtrTy);
+        }
+
+        // Local String variables are represented by an alloca holding an i8*.
+        // Concatenation requires the stored pointer, not the address of that slot.
+        if (auto* slot = llvm::dyn_cast<llvm::AllocaInst>(value)) {
+            return cg.builder.CreateLoad(i8PtrTy, slot, "str.load");
+        }
+        return value;
     }
     if (type->isCharTy()) {
         llvm::Value* charValue = value->getType()->isIntegerTy(8)
@@ -454,8 +461,9 @@ llvm::Value* BinaryExpressionNode::codegen() {
             std::cerr << "Type error: Cannot determine type of left operand" << std::endl;
             return nullptr;
         }
+        const bool loadStringSlot = leftType->isStringTy() && llvm::isa<llvm::AllocaInst>(leftValue);
         if (!TensorRuntime::isTensorTypeName(leftType->getName()) &&
-            !leftType->isStringTy() &&
+            (!leftType->isStringTy() || loadStringSlot) &&
             leftType->getKind() != Type::Kind::CLASS) {
             leftValue = cg.builder.CreateLoad(cg.getLLVMType(leftType.get()), leftValue, "loadtmp");
         }
@@ -581,8 +589,9 @@ llvm::Value* BinaryExpressionNode::codegen() {
             std::cerr << "Type error: Cannot determine type of right operand" << std::endl;
             return nullptr;
         }
+        const bool loadStringSlot = rightType->isStringTy() && llvm::isa<llvm::AllocaInst>(rightValue);
         if (!TensorRuntime::isTensorTypeName(rightType->getName()) &&
-            !rightType->isStringTy() &&
+            (!rightType->isStringTy() || loadStringSlot) &&
             rightType->getKind() != Type::Kind::CLASS) {
             rightValue = cg.builder.CreateLoad(cg.getLLVMType(rightType.get()), rightValue, "loadtmp");
         }
@@ -609,7 +618,12 @@ llvm::Value* BinaryExpressionNode::codegen() {
 
     auto& cg = CodeGenerator::getInstance();
 
-    if (op == "+" && (leftTypeName == "String" || rightTypeName == "String")) {
+    const bool pointerStringConcat =
+        leftValue && rightValue &&
+        leftValue->getType()->isPointerTy() && rightValue->getType()->isPointerTy() &&
+        (!left->getType() || left->getType()->getKind() != Type::Kind::CLASS) &&
+        (!right->getType() || right->getType()->getKind() != Type::Kind::CLASS);
+    if (op == "+" && (leftTypeName == "String" || rightTypeName == "String" || pointerStringConcat)) {
         auto leftStaticType = left->getType();
         auto rightStaticType = right->getType();
         return codegenStringConcat(cg, leftValue, leftStaticType.get(), rightValue, rightStaticType.get());

@@ -1,3 +1,14 @@
+external def csec_lookup_function_return_type(tokens: String, name: String): String;
+external def csec_advance_statement(tokens: String, ordinal: Int, bodyEnd: Int): Int;
+external def csec_advance_top_level_decl(tokens: String, ordinal: Int): Int;
+external def csec_find_decl_body_start(tokens: String, ordinal: Int): Int;
+external def csec_find_decl_body_end(tokens: String, bodyStart: Int): Int;
+external def csec_function_param_end(tokens: String, declStart: Int): Int;
+external def csec_function_llvm_param_list(tokens: String, declStart: Int): String;
+external def csec_function_llvm_param_allocas(tokens: String, declStart: Int): String;
+external def csec_llvm_name_with_number(prefix: String, number: Int): String;
+external def csec_function_return_type_at(tokens: String, declStart: Int): String;
+
 def validateBalanced(tokens: String): Boolean {
     var cursor: Int = 0;
     var paren: Int = 0;
@@ -10,19 +21,19 @@ def validateBalanced(tokens: String): Boolean {
             if (strEq(text, "(")) {
                 paren = paren + 1;
             }
-            else if (strEq(text, ")")) {
+            if (strEq(text, ")")) {
                 paren = paren - 1;
             }
-            else if (strEq(text, "{")) {
+            if (strEq(text, "{")) {
                 brace = brace + 1;
             }
-            else if (strEq(text, "}")) {
+            if (strEq(text, "}")) {
                 brace = brace - 1;
             }
-            else if (strEq(text, "[")) {
+            if (strEq(text, "[")) {
                 bracket = bracket + 1;
             }
-            else if (strEq(text, "]")) {
+            if (strEq(text, "]")) {
                 bracket = bracket - 1;
             }
             if (paren < 0 or brace < 0 or bracket < 0) {
@@ -69,25 +80,25 @@ def validateTopLevel(tokens: String): Boolean {
             if (strEq(text, "(")) {
                 paren = paren + 1;
             }
-            else if (strEq(text, ")")) {
+            if (strEq(text, ")")) {
                 paren = paren - 1;
             }
-            else if (strEq(text, "{")) {
+            if (strEq(text, "{")) {
                 brace = brace + 1;
             }
-            else if (strEq(text, "}")) {
+            if (strEq(text, "}")) {
                 brace = brace - 1;
                 if (brace == 0 and paren == 0 and bracket == 0) {
                     expectingDecl = true;
                 }
             }
-            else if (strEq(text, "[")) {
+            if (strEq(text, "[")) {
                 bracket = bracket + 1;
             }
-            else if (strEq(text, "]")) {
+            if (strEq(text, "]")) {
                 bracket = bracket - 1;
             }
-            else if (strEq(text, ";") and brace == 0 and paren == 0 and bracket == 0) {
+            if (strEq(text, ";") and brace == 0 and paren == 0 and bracket == 0) {
                 expectingDecl = true;
             }
         }
@@ -97,7 +108,11 @@ def validateTopLevel(tokens: String): Boolean {
 }
 
 def parseProgram(tokens: String): Boolean {
-    return validateBalanced(tokens) and validateTopLevel(tokens);
+    if (!validateBalanced(tokens)) {
+        return false;
+    }
+    System.IO.File.WriteAllText("selfhost/selfhost_llvm_trace.txt", "balanced");
+    return validateTopLevel(tokens);
 }
 
 def topLevelDeclKind(tokens: String, ordinal: Int): String {
@@ -167,6 +182,10 @@ def topLevelDeclName(tokens: String, ordinal: Int): String {
 }
 
 def advanceTopLevelDecl(tokens: String, ordinal: Int): Int {
+    return csec_advance_top_level_decl(tokens, ordinal);
+}
+
+def advanceTopLevelDeclSlow(tokens: String, ordinal: Int): Int {
     var cursor: Int = ordinal;
     var paren: Int = 0;
     var brace: Int = 0;
@@ -208,6 +227,10 @@ def advanceTopLevelDecl(tokens: String, ordinal: Int): Int {
 }
 
 def findDeclBodyStart(tokens: String, ordinal: Int): Int {
+    return csec_find_decl_body_start(tokens, ordinal);
+}
+
+def findDeclBodyStartSlow(tokens: String, ordinal: Int): Int {
     var cursor: Int = ordinal;
     while (tokenKindAt(tokens, cursor) != kindEof()) {
         if (cursor > ordinal and startsTopLevelDeclaration(tokens, cursor)) {
@@ -225,6 +248,10 @@ def findDeclBodyStart(tokens: String, ordinal: Int): Int {
 }
 
 def findDeclBodyEnd(tokens: String, bodyStart: Int): Int {
+    return csec_find_decl_body_end(tokens, bodyStart);
+}
+
+def findDeclBodyEndSlow(tokens: String, bodyStart: Int): Int {
     if (bodyStart < 0) {
         return -1;
     }
@@ -773,6 +800,10 @@ def generateExpressionAST(tokens: String, rawStart: Int, rawEnd: Int): String {
 }
 
 def advanceStatement(tokens: String, ordinal: Int, bodyEnd: Int): Int {
+    return csec_advance_statement(tokens, ordinal, bodyEnd);
+}
+
+def advanceStatementSlow(tokens: String, ordinal: Int, bodyEnd: Int): Int {
     var cursor: Int = ordinal;
     var paren: Int = 0;
     var brace: Int = 0;
@@ -783,13 +814,13 @@ def advanceStatement(tokens: String, ordinal: Int, bodyEnd: Int): Int {
             if (strEq(text, "(")) {
                 paren = paren + 1;
             }
-            else if (strEq(text, ")")) {
+            if (strEq(text, ")")) {
                 paren = paren - 1;
             }
-            else if (strEq(text, "{")) {
+            if (strEq(text, "{")) {
                 brace = brace + 1;
             }
-            else if (strEq(text, "}")) {
+            if (strEq(text, "}")) {
                 if (brace == 0 and paren == 0 and bracket == 0) {
                     return cursor;
                 }
@@ -812,13 +843,13 @@ def advanceStatement(tokens: String, ordinal: Int, bodyEnd: Int): Int {
                     return cursor + 1;
                 }
             }
-            else if (strEq(text, "[")) {
+            if (strEq(text, "[")) {
                 bracket = bracket + 1;
             }
-            else if (strEq(text, "]")) {
+            if (strEq(text, "]")) {
                 bracket = bracket - 1;
             }
-            else if (strEq(text, ";") and brace == 0 and paren == 0 and bracket == 0) {
+            if (strEq(text, ";") and brace == 0 and paren == 0 and bracket == 0) {
                 return cursor + 1;
             }
         }
@@ -912,6 +943,10 @@ def collectTypeName(tokens: String, start: Int, end: Int): String {
 }
 
 def functionReturnType(tokens: String, declStart: Int): String {
+    return csec_function_return_type_at(tokens, declStart);
+}
+
+def functionReturnTypeSlow(tokens: String, declStart: Int): String {
     val typeStart: Int = findFunctionReturnTypeStart(tokens, declStart);
     if (typeStart < 0) {
         return "Unit";
@@ -970,6 +1005,10 @@ def declaredValueType(tokens: String, declStart: Int, declEnd: Int): String {
 }
 
 def lookupFunctionReturnType(tokens: String, name: String): String {
+    val cached: String = csec_lookup_function_return_type(tokens, name);
+    if (!strEq(cached, "unknown")) {
+        return cached;
+    }
     var cursor: Int = skipTrivia(tokens, 0);
     while (tokenKindAt(tokens, cursor) != kindEof()) {
         val kind: String = topLevelDeclKind(tokens, cursor);

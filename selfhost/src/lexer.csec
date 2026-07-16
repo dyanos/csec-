@@ -2,8 +2,18 @@ external def csec_token_append_owned(tokens: String, kind: Char, text: String): 
 external def csec_token_builder_new(): Long;
 external def csec_token_builder_append(builder: Long, kind: Char, text: String): Int;
 external def csec_token_builder_finish(builder: Long): String;
+external def csec_tokenize_source(source: String): String;
 external def csec_token_kind_at(tokens: String, ordinal: Int): Char;
 external def csec_token_text_at(tokens: String, ordinal: Int): String;
+external def csec_token_is(tokens: String, ordinal: Int, kind: Char, text: String): Int;
+external def csec_expand_imports(path: String): String;
+external def csec_string_builder_new_file(path: String): Long;
+external def csec_lex_quoted(source: String, index: Int): Int;
+external def csec_lex_number(source: String, index: Int): Int;
+external def csec_lex_identifier(source: String, index: Int): Int;
+external def csec_digit_value(ch: Char): Int;
+external def csec_lex_line_comment(source: String, index: Int): Int;
+external def csec_lex_block_comment(source: String, index: Int): Int;
 
 def kindIdentifier(): Char = 'I'
 def kindKeyword(): Char = 'K'
@@ -27,17 +37,7 @@ def isDigit(ch: Char): Boolean {
 }
 
 def digitValue(ch: Char): Int {
-    if (ch == '0') { return 0; }
-    if (ch == '1') { return 1; }
-    if (ch == '2') { return 2; }
-    if (ch == '3') { return 3; }
-    if (ch == '4') { return 4; }
-    if (ch == '5') { return 5; }
-    if (ch == '6') { return 6; }
-    if (ch == '7') { return 7; }
-    if (ch == '8') { return 8; }
-    if (ch == '9') { return 9; }
-    return 0;
+    return csec_digit_value(ch);
 }
 
 def toInt(text: String): Int {
@@ -109,70 +109,23 @@ def threeChars(source: String, index: Int, text: String): Boolean {
 }
 
 def lexIdentifier(source: String, index: Int): Int {
-    var cursor: Int = index + 1;
-    while (cursor < source.length and isIdentifierPart(source.charAt(cursor))) {
-        cursor = cursor + 1;
-    }
-    return cursor;
+    return csec_lex_identifier(source, index);
 }
 
 def lexNumber(source: String, index: Int): Int {
-    var cursor: Int = index;
-    if (twoChars(source, cursor, "0x") or twoChars(source, cursor, "0X") or
-        twoChars(source, cursor, "0b") or twoChars(source, cursor, "0B") or
-        twoChars(source, cursor, "0o") or twoChars(source, cursor, "0O")) {
-        cursor = cursor + 2;
-    }
-    while (cursor < source.length and
-        (isDigit(source.charAt(cursor)) or isAlpha(source.charAt(cursor)) or
-         source.charAt(cursor) == '_' or source.charAt(cursor) == '.')) {
-        cursor = cursor + 1;
-    }
-    return cursor;
+    return csec_lex_number(source, index);
 }
 
 def lexQuoted(source: String, index: Int): Int {
-    val quote: Char = source.charAt(index);
-    var cursor: Int = index + 1;
-    while (cursor < source.length and source.charAt(cursor) != quote) {
-        if (source.charAt(cursor) == '\\' and cursor + 1 < source.length) {
-            cursor = cursor + 2;
-        }
-        else {
-            cursor = cursor + 1;
-        }
-    }
-    if (cursor < source.length) {
-        return cursor + 1;
-    }
-    return cursor;
+    return csec_lex_quoted(source, index);
 }
 
 def lexLineComment(source: String, index: Int): Int {
-    var cursor: Int = index + 2;
-    while (cursor < source.length and source.charAt(cursor) != '\n') {
-        cursor = cursor + 1;
-    }
-    return cursor;
+    return csec_lex_line_comment(source, index);
 }
 
 def lexBlockComment(source: String, index: Int): Int {
-    var cursor: Int = index + 2;
-    var depth: Int = 1;
-    while (cursor + 1 < source.length and depth > 0) {
-        if (twoChars(source, cursor, "/*")) {
-            depth = depth + 1;
-            cursor = cursor + 2;
-        }
-        else if (twoChars(source, cursor, "*/")) {
-            depth = depth - 1;
-            cursor = cursor + 2;
-        }
-        else {
-            cursor = cursor + 1;
-        }
-    }
-    return cursor;
+    return csec_lex_block_comment(source, index);
 }
 
 def operatorLength(source: String, index: Int): Int {
@@ -213,6 +166,10 @@ def slice(source: String, start: Int, end: Int): String {
 }
 
 def tokenize(source: String): String {
+    return csec_tokenize_source(source);
+}
+
+def tokenizeSlow(source: String): String {
     val builder: Long = csec_token_builder_new();
     var cursor: Int = 0;
     var ch: Char = ' ';
@@ -343,7 +300,7 @@ def tokenTextAt(tokens: String, ordinal: Int): String {
 }
 
 def tokenIs(tokens: String, ordinal: Int, kind: Char, text: String): Boolean {
-    return tokenKindAt(tokens, ordinal) == kind and strEq(tokenTextAt(tokens, ordinal), text);
+    return csec_token_is(tokens, ordinal, kind, text) != 0;
 }
 
 def skipTrivia(tokens: String, ordinal: Int): Int {

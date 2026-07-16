@@ -1,6 +1,7 @@
 param(
     [string]$Compiler = ".\x64\Debug\csec++.exe",
-    [string]$Clang = "C:\Program Files\LLVM\bin\clang.exe"
+    [string]$Clang = "C:\Program Files\LLVM\bin\clang.exe",
+    [string]$RuntimeLib = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,6 +28,13 @@ if (-not (Test-Path $compilerPath)) {
 }
 if (-not (Test-Path $Clang)) {
     Write-Error "Clang not found: $Clang"
+}
+$runtimeLibPath = $RuntimeLib
+if ($runtimeLibPath.Length -gt 0 -and -not [System.IO.Path]::IsPathRooted($runtimeLibPath)) {
+    $runtimeLibPath = Join-Path $repoRoot $runtimeLibPath
+}
+if ($runtimeLibPath.Length -gt 0 -and -not (Test-Path $runtimeLibPath)) {
+    Write-Error "Runtime library not found: $runtimeLibPath"
 }
 
 powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "verify_selfhost.ps1") -Compiler $Compiler
@@ -85,7 +93,8 @@ $bootImportEntryAstText = Get-Content $bootImportEntryAst -Raw
 
 $requiredBootContracts = @(
     "; ModuleID = 'csec.selfhost'",
-    "define i32 @main()",
+    "declare void @csec_set_command_line_args(i32, ptr)",
+    "define i32 @main(i32 %argc, ptr %argv)",
     "define i32 @adjust",
     "define double @ratio",
     "for.cond.",
@@ -127,7 +136,12 @@ foreach ($needle in @("Decl function tokenize", "Decl function generateLLVMModul
     }
 }
 
-Invoke-Checked $Clang @("-Wno-override-module", $bootSubsetLl, "-o", $bootSubsetExe)
+$clangArgs = @("-Wno-override-module", $bootSubsetLl)
+if ($runtimeLibPath.Length -gt 0) {
+    $clangArgs += $runtimeLibPath
+}
+$clangArgs += @("-o", $bootSubsetExe)
+Invoke-Checked $Clang $clangArgs
 Invoke-CheckedWithRetry $bootSubsetExe @() 10
 
 Write-Host "Native selfhost bootstrap verification passed."

@@ -45,6 +45,32 @@ struct TokenBuilder {
     size_t capacity = 0;
 };
 
+struct StringBuilder {
+    char* data = nullptr;
+    size_t length = 0;
+    size_t capacity = 0;
+    FILE* file = nullptr;
+};
+
+struct FunctionRange {
+    int declStart = -1;
+    int bodyStart = -1;
+    int bodyEnd = -1;
+};
+
+constexpr size_t kStringBuilderGrowQuantum = 10 * 1024;
+
+size_t roundStringBuilderCapacity(size_t needed) {
+    size_t capacity = kStringBuilderGrowQuantum;
+    if (needed > capacity) {
+        size_t remainder = needed % kStringBuilderGrowQuantum;
+        capacity = remainder == 0
+            ? needed
+            : needed + (kStringBuilderGrowQuantum - remainder);
+    }
+    return capacity;
+}
+
 std::unordered_map<const char*, std::vector<int>>& tokenLineCache() {
     static std::unordered_map<const char*, std::vector<int>> cache;
     return cache;
@@ -55,10 +81,22 @@ std::unordered_map<const char*, std::vector<std::string>>& tokenTextCache() {
     return cache;
 }
 
+std::unordered_map<const char*, std::vector<FunctionRange>>& tokenFunctionRangeCache() {
+    static std::unordered_map<const char*, std::vector<FunctionRange>> cache;
+    return cache;
+}
+
+std::unordered_map<const char*, std::unordered_map<std::string, std::string>>& tokenFunctionReturnTypeCache() {
+    static std::unordered_map<const char*, std::unordered_map<std::string, std::string>> cache;
+    return cache;
+}
+
 void clearTokenCachesFor(const char* tokens) {
     if (!tokens) return;
     tokenLineCache().erase(tokens);
     tokenTextCache().erase(tokens);
+    tokenFunctionRangeCache().erase(tokens);
+    tokenFunctionReturnTypeCache().erase(tokens);
 }
 
 const std::vector<int>& tokenLineStarts(const char* tokens) {
@@ -103,6 +141,183 @@ const std::vector<std::string>& tokenTexts(const char* tokens) {
 
     auto inserted = cache.emplace(value, std::move(texts));
     return inserted.first->second;
+}
+
+char tokenKindCached(const char* tokens, int ordinal) {
+    const char* value = tokens ? tokens : "";
+    if (ordinal < 0) return 'E';
+    const auto& starts = tokenLineStarts(value);
+    if (static_cast<size_t>(ordinal) >= starts.size()) return 'E';
+    int start = starts[static_cast<size_t>(ordinal)];
+    return value[start] == '\0' ? 'E' : value[start];
+}
+
+const std::string& tokenTextCached(const char* tokens, int ordinal) {
+    static const std::string empty;
+    if (ordinal < 0) return empty;
+    const auto& texts = tokenTexts(tokens ? tokens : "");
+    if (static_cast<size_t>(ordinal) >= texts.size()) return empty;
+    return texts[static_cast<size_t>(ordinal)];
+}
+
+int tokenCountCached(const char* tokens) {
+    const auto& starts = tokenLineStarts(tokens ? tokens : "");
+    return static_cast<int>(starts.size());
+}
+
+int findMatchingBraceToken(const char* tokens, int openBrace, int tokenCount) {
+    int depth = 0;
+    for (int cursor = openBrace; cursor < tokenCount; ++cursor) {
+        if (tokenKindCached(tokens, cursor) != 'O') continue;
+        const auto& text = tokenTextCached(tokens, cursor);
+        if (text == "{") {
+            ++depth;
+        } else if (text == "}") {
+            --depth;
+            if (depth == 0) return cursor;
+        }
+    }
+    return -1;
+}
+
+bool findFunctionAroundLimit(const char* tokens, int limit, int* declStart, int* bodyStart, int* bodyEnd) {
+    const char* value = tokens ? tokens : "";
+    auto& cache = tokenFunctionRangeCache();
+    auto found = cache.find(value);
+    if (found == cache.end()) {
+        int tokenCount = tokenCountCached(value);
+        std::vector<FunctionRange> ranges;
+        for (int cursor = 0; cursor < tokenCount; ++cursor) {
+            if (tokenKindCached(value, cursor) != 'K' || tokenTextCached(value, cursor) != "def") {
+                continue;
+            }
+
+            int openBrace = -1;
+            for (int probe = cursor + 1; probe < tokenCount; ++probe) {
+                if (tokenKindCached(value, probe) != 'O') continue;
+                const auto& text = tokenTextCached(value, probe);
+                if (text == "{") {
+                    openBrace = probe;
+                    break;
+                }
+                if (text == ";") break;
+            }
+            if (openBrace < 0) continue;
+
+            int closeBrace = findMatchingBraceToken(value, openBrace, tokenCount);
+            if (closeBrace < 0) continue;
+            ranges.push_back(FunctionRange{cursor, openBrace + 1, closeBrace});
+            if (cursor < closeBrace) cursor = closeBrace;
+        }
+        found = cache.emplace(value, std::move(ranges)).first;
+    }
+
+    if (limit < 0) return false;
+    const auto& ranges = found->second;
+    int left = 0;
+    int right = static_cast<int>(ranges.size()) - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        const auto& range = ranges[static_cast<size_t>(mid)];
+        if (limit >= range.bodyStart && limit < range.bodyEnd) {
+            if (declStart) *declStart = range.declStart;
+            if (bodyStart) *bodyStart = range.bodyStart;
+            if (bodyEnd) *bodyEnd = range.bodyEnd;
+            return true;
+        }
+        if (limit < range.bodyStart) {
+            right = mid - 1;
+        }
+        else {
+            left = mid + 1;
+        }
+    }
+
+    return false;
+}
+
+int findMatchingParenToken(const char* tokens, int openParen, int tokenCount) {
+    int depth = 0;
+    for (int cursor = openParen; cursor < tokenCount; ++cursor) {
+        if (tokenKindCached(tokens, cursor) != 'O') continue;
+        const auto& text = tokenTextCached(tokens, cursor);
+        if (text == "(") {
+            ++depth;
+        } else if (text == ")") {
+            --depth;
+            if (depth == 0) return cursor;
+        }
+    }
+    return -1;
+}
+
+std::string collectFunctionReturnTypeCached(const char* tokens, int typeStart, int tokenCount) {
+    std::string output;
+    for (int cursor = typeStart; cursor < tokenCount; ++cursor) {
+        const auto& text = tokenTextCached(tokens, cursor);
+        if (text == "{" || text == "=" || text == ";" || text == ",") {
+            break;
+        }
+        if (!output.empty()) output += " ";
+        output += text;
+    }
+    return output.empty() ? "Unit" : output;
+}
+
+const std::unordered_map<std::string, std::string>& functionReturnTypesCached(const char* tokens) {
+    const char* value = tokens ? tokens : "";
+    auto& cache = tokenFunctionReturnTypeCache();
+    auto found = cache.find(value);
+    if (found != cache.end()) {
+        return found->second;
+    }
+
+    int tokenCount = tokenCountCached(value);
+    std::unordered_map<std::string, std::string> types;
+    for (int cursor = 0; cursor < tokenCount; ++cursor) {
+        int defToken = -1;
+        if (tokenKindCached(value, cursor) == 'K' && tokenTextCached(value, cursor) == "def") {
+            defToken = cursor;
+        } else if (tokenKindCached(value, cursor) == 'K' && tokenTextCached(value, cursor) == "external" &&
+                   cursor + 1 < tokenCount && tokenKindCached(value, cursor + 1) == 'K' &&
+                   tokenTextCached(value, cursor + 1) == "def") {
+            defToken = cursor + 1;
+        }
+        if (defToken < 0 || defToken + 1 >= tokenCount) {
+            continue;
+        }
+        if (tokenKindCached(value, defToken + 1) != 'I') {
+            continue;
+        }
+
+        std::string name = tokenTextCached(value, defToken + 1);
+        int openParen = -1;
+        for (int probe = defToken + 2; probe < tokenCount; ++probe) {
+            const auto& text = tokenTextCached(value, probe);
+            if (tokenKindCached(value, probe) == 'O' && text == "(") {
+                openParen = probe;
+                break;
+            }
+            if (tokenKindCached(value, probe) == 'O' && (text == "{" || text == ";" || text == "=")) {
+                break;
+            }
+        }
+        if (openParen < 0) {
+            continue;
+        }
+        int closeParen = findMatchingParenToken(value, openParen, tokenCount);
+        if (closeParen < 0) {
+            continue;
+        }
+        std::string returnType = "Unit";
+        if (closeParen + 2 < tokenCount && tokenKindCached(value, closeParen + 1) == 'O' &&
+            tokenTextCached(value, closeParen + 1) == ":") {
+            returnType = collectFunctionReturnTypeCached(value, closeParen + 2, tokenCount);
+        }
+        types[name] = returnType;
+    }
+
+    return cache.emplace(value, std::move(types)).first->second;
 }
 
 int& configuredParallelThreads() {
@@ -204,6 +419,184 @@ char* csec_string_concat(const char* left, const char* right) {
     return result;
 }
 
+int csec_lex_quoted(const char* source, int index) {
+    if (!source || index < 0 || source[index] == '\0') return index;
+    const char quote = source[index];
+    int cursor = index + 1;
+    while (source[cursor] != '\0' && source[cursor] != quote) {
+        if (source[cursor] == '\\' && source[cursor + 1] != '\0') {
+            cursor += 2;
+        } else {
+            ++cursor;
+        }
+    }
+    return source[cursor] == quote ? cursor + 1 : cursor;
+}
+
+int csec_lex_number(const char* source, int index) {
+    if (!source || index < 0) return index;
+    int cursor = index;
+    if (source[cursor] == '0' && (source[cursor + 1] == 'x' || source[cursor + 1] == 'X' ||
+        source[cursor + 1] == 'b' || source[cursor + 1] == 'B' || source[cursor + 1] == 'o' || source[cursor + 1] == 'O')) cursor += 2;
+    while (std::isalnum(static_cast<unsigned char>(source[cursor])) || source[cursor] == '_' || source[cursor] == '.') ++cursor;
+    return cursor;
+}
+
+int csec_lex_identifier(const char* source, int index) {
+    if (!source || index < 0) return index;
+    int cursor = index + 1;
+    while (std::isalnum(static_cast<unsigned char>(source[cursor])) || source[cursor] == '_') ++cursor;
+    return cursor;
+}
+
+int csec_digit_value(char ch) {
+    return ch >= '0' && ch <= '9' ? ch - '0' : 0;
+}
+
+char* csec_llvm_lexer_helper_definition(const char* name) {
+    const char* definition = "";
+    if (name && std::strcmp(name, "tokenIs") == 0) {
+        definition = "define i1 @tokenIs(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text) {\nentry:\n  %token.is = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text)\n  %token.is.bool = icmp ne i32 %token.is, 0\n  ret i1 %token.is.bool\n}\n\n";
+    } else if (name && std::strcmp(name, "digitValue") == 0) {
+        definition = "define i32 @digitValue(i8 %arg.ch) {\nentry:\n  %ret = call i32 @csec_digit_value(i8 %arg.ch)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "isAlpha") == 0) {
+        definition = "define i1 @isAlpha(i8 %arg.ch) {\nentry:\n  %lower = icmp sge i8 %arg.ch, 97\n  %lower.end = icmp sle i8 %arg.ch, 122\n  %lower.match = and i1 %lower, %lower.end\n  %upper = icmp sge i8 %arg.ch, 65\n  %upper.end = icmp sle i8 %arg.ch, 90\n  %upper.match = and i1 %upper, %upper.end\n  %ret = or i1 %lower.match, %upper.match\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "isIdentifierStart") == 0) {
+        definition = "define i1 @isIdentifierStart(i8 %arg.ch) {\nentry:\n  %alpha = call i1 @isAlpha(i8 %arg.ch)\n  %underscore = icmp eq i8 %arg.ch, 95\n  %ret = or i1 %alpha, %underscore\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "isIdentifierPart") == 0) {
+        definition = "define i1 @isIdentifierPart(i8 %arg.ch) {\nentry:\n  %start = call i1 @isIdentifierStart(i8 %arg.ch)\n  %digit = call i1 @isDigit(i8 %arg.ch)\n  %ret = or i1 %start, %digit\n  ret i1 %ret\n}\n\n";
+    }
+    const size_t length = std::strlen(definition);
+    char* result = static_cast<char*>(std::malloc(length + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, definition, length + 1);
+    return result;
+}
+
+int csec_lex_line_comment(const char* source, int index) {
+    if (!source || index < 0) return index;
+    int cursor = index + 2;
+    while (source[cursor] && source[cursor] != '\n') ++cursor;
+    return cursor;
+}
+
+int csec_lex_block_comment(const char* source, int index) {
+    if (!source || index < 0) return index;
+    int cursor = index + 2, depth = 1;
+    while (source[cursor] && source[cursor + 1] && depth > 0) {
+        if (source[cursor] == '/' && source[cursor + 1] == '*') { ++depth; cursor += 2; }
+        else if (source[cursor] == '*' && source[cursor + 1] == '/') { --depth; cursor += 2; }
+        else ++cursor;
+    }
+    return cursor;
+}
+
+long long csec_string_builder_new(void) {
+    auto* builder = new StringBuilder();
+    builder->capacity = kStringBuilderGrowQuantum;
+    builder->data = static_cast<char*>(std::malloc(builder->capacity));
+    if (!builder->data) {
+        delete builder;
+        return 0;
+    }
+    builder->data[0] = '\0';
+    return reinterpret_cast<long long>(builder);
+}
+
+long long csec_string_builder_new_file(const char* path) {
+    if (!path) return 0;
+    auto* builder = new StringBuilder();
+    builder->file = std::fopen(path, "wb");
+    if (!builder->file) {
+        delete builder;
+        return 0;
+    }
+    return reinterpret_cast<long long>(builder);
+}
+
+int csec_string_builder_append(long long handle, const char* text) {
+    auto* builder = reinterpret_cast<StringBuilder*>(handle);
+    if (!builder) return -1;
+
+    const char* value = text ? text : "";
+    size_t valueLen = std::strlen(value);
+    if (builder->file) {
+        if (std::fwrite(value, 1, valueLen, builder->file) != valueLen) return -1;
+        return std::fflush(builder->file) == 0 ? 0 : -1;
+    }
+    if (!builder->data) return -1;
+    size_t needed = builder->length + valueLen + 1;
+    if (needed > builder->capacity) {
+        size_t nextCapacity = roundStringBuilderCapacity(needed);
+        char* next = static_cast<char*>(std::realloc(builder->data, nextCapacity));
+        if (!next) return -1;
+        builder->data = next;
+        builder->capacity = nextCapacity;
+    }
+
+    std::memcpy(builder->data + builder->length, value, valueLen);
+    builder->length += valueLen;
+    builder->data[builder->length] = '\0';
+    return 0;
+}
+
+char* csec_string_builder_finish(long long handle) {
+    auto* builder = reinterpret_cast<StringBuilder*>(handle);
+    if (!builder) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+
+    char* result = builder->data;
+    builder->data = nullptr;
+    delete builder;
+    if (!result) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+    return result;
+}
+
+int csec_string_builder_write_to_file(long long handle, const char* path) {
+    auto* builder = reinterpret_cast<StringBuilder*>(handle);
+    if (!builder || !path) {
+        return -1;
+    }
+
+    if (builder->file) {
+        int closeResult = std::fclose(builder->file);
+        builder->file = nullptr;
+        delete builder;
+        return closeResult == 0 ? 0 : -1;
+    }
+
+    FILE* file = std::fopen(path, "wb");
+    if (!file) {
+        if (builder->data) {
+            std::free(builder->data);
+            builder->data = nullptr;
+        }
+        delete builder;
+        return -1;
+    }
+
+    size_t written = 0;
+    if (builder->data && builder->length > 0) {
+        written = std::fwrite(builder->data, 1, builder->length, file);
+    }
+    int closeResult = std::fclose(file);
+    int ok = (written == builder->length && closeResult == 0) ? 0 : -1;
+
+    if (builder->data) {
+        std::free(builder->data);
+        builder->data = nullptr;
+    }
+    delete builder;
+    return ok;
+}
+
 char* csec_token_append_owned(const char* tokens, char kind, const char* text) {
     const char* lhs = tokens ? tokens : "";
     const char* tokenText = text ? text : "";
@@ -285,6 +678,216 @@ char* csec_token_builder_finish(long long handle) {
     return result;
 }
 
+}
+
+static bool csec_lex_starts_with(const std::string& source, size_t index, const char* text) {
+    size_t len = std::strlen(text);
+    return index + len <= source.size() && source.compare(index, len, text) == 0;
+}
+
+static bool csec_lex_is_alpha(char ch) {
+    unsigned char value = static_cast<unsigned char>(ch);
+    return std::isalpha(value) != 0;
+}
+
+static bool csec_lex_is_digit(char ch) {
+    unsigned char value = static_cast<unsigned char>(ch);
+    return std::isdigit(value) != 0;
+}
+
+static bool csec_lex_is_identifier_start(char ch) {
+    return csec_lex_is_alpha(ch) || ch == '_';
+}
+
+static bool csec_lex_is_identifier_part(char ch) {
+    return csec_lex_is_identifier_start(ch) || csec_lex_is_digit(ch);
+}
+
+static bool csec_lex_is_keyword(const std::string& text) {
+    static const char* const keywords[] = {
+        "as", "break", "case", "class", "constexpr", "continue", "def", "else",
+        "external", "false", "filter", "for", "if", "import", "in", "map",
+        "match", "new", "object", "operator", "override", "pmap", "preduce",
+        "reduce", "return", "super", "template", "this", "true", "typename",
+        "unatomic", "unsafe", "val", "var", "while", "xor", "and", "or",
+        "to", "until", "inner", "outer", "tensor", "box", "extends", "mut",
+        "null", "ode", "molecule", "cfd", "protein", "cpu", "openmp", "gpu",
+        "simd"
+    };
+    for (const char* keyword : keywords) {
+        if (text == keyword) return true;
+    }
+    return false;
+}
+
+static size_t csec_lex_line_comment_end(const std::string& source, size_t index) {
+    size_t cursor = index + 2;
+    while (cursor < source.size() && source[cursor] != '\n') {
+        ++cursor;
+    }
+    return cursor;
+}
+
+static size_t csec_lex_block_comment_end(const std::string& source, size_t index) {
+    size_t cursor = index + 2;
+    int depth = 1;
+    while (cursor + 1 < source.size() && depth > 0) {
+        if (csec_lex_starts_with(source, cursor, "/*")) {
+            ++depth;
+            cursor += 2;
+        } else if (csec_lex_starts_with(source, cursor, "*/")) {
+            --depth;
+            cursor += 2;
+        } else {
+            ++cursor;
+        }
+    }
+    return cursor;
+}
+
+static size_t csec_lex_quoted_end(const std::string& source, size_t index) {
+    char quote = source[index];
+    size_t cursor = index + 1;
+    while (cursor < source.size() && source[cursor] != quote) {
+        if (source[cursor] == '\\' && cursor + 1 < source.size()) {
+            cursor += 2;
+        } else {
+            ++cursor;
+        }
+    }
+    if (cursor < source.size()) return cursor + 1;
+    return cursor;
+}
+
+static size_t csec_lex_identifier_end(const std::string& source, size_t index) {
+    size_t cursor = index + 1;
+    while (cursor < source.size() && csec_lex_is_identifier_part(source[cursor])) {
+        ++cursor;
+    }
+    return cursor;
+}
+
+static size_t csec_lex_number_end(const std::string& source, size_t index) {
+    size_t cursor = index;
+    if (csec_lex_starts_with(source, cursor, "0x") || csec_lex_starts_with(source, cursor, "0X") ||
+        csec_lex_starts_with(source, cursor, "0b") || csec_lex_starts_with(source, cursor, "0B") ||
+        csec_lex_starts_with(source, cursor, "0o") || csec_lex_starts_with(source, cursor, "0O")) {
+        cursor += 2;
+    }
+    while (cursor < source.size() &&
+           (csec_lex_is_digit(source[cursor]) || csec_lex_is_alpha(source[cursor]) ||
+            source[cursor] == '_' || source[cursor] == '.')) {
+        ++cursor;
+    }
+    return cursor;
+}
+
+static size_t csec_lex_operator_width(const std::string& source, size_t index) {
+    static const char* const operators[] = {
+        "[@", "=>", "<-", "->", "<=", ">=", "==", "&&", "||", "++", "--",
+        "!=", "+=", "-=", "*=", "/=", "%=", "<<", ">>", "..", "$$", "**"
+    };
+    for (const char* op : operators) {
+        if (csec_lex_starts_with(source, index, op)) return 2;
+    }
+    return 1;
+}
+
+static std::string csec_lex_slice(const std::string& source, size_t start, size_t end) {
+    if (end <= start || start >= source.size()) return std::string();
+    if (end > source.size()) end = source.size();
+    return source.substr(start, end - start);
+}
+
+static std::string csec_lex_repair_leading_r_token(const std::string& text) {
+    if (text == "eturn") return "return";
+    if (text == "atio") return "ratio";
+    if (text == "educe") return "reduce";
+    if (text == "ange") return "range";
+    if (text == "egex") return "regex";
+    if (text == "Regex") return "Regex";
+    return text;
+}
+
+extern "C" {
+
+char* csec_tokenize_source(const char* sourceText) {
+    std::string source = sourceText ? sourceText : "";
+    long long builder = csec_token_builder_new();
+    if (!builder) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+
+    size_t cursor = 0;
+    while (cursor < source.size()) {
+        char ch = source[cursor];
+        if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') {
+            ++cursor;
+        } else if (csec_lex_starts_with(source, cursor, "//")) {
+            cursor = csec_lex_line_comment_end(source, cursor);
+        } else if (csec_lex_starts_with(source, cursor, "/*")) {
+            cursor = csec_lex_block_comment_end(source, cursor);
+        } else if ((ch == 'r' || ch == 'R') && cursor + 1 < source.size() &&
+                   csec_lex_is_identifier_part(source[cursor + 1])) {
+            size_t end = csec_lex_identifier_end(source, cursor);
+            std::string text(1, ch);
+            text += csec_lex_slice(source, cursor + 1, end);
+            text = csec_lex_repair_leading_r_token(text);
+            char kind = (text == "true" || text == "false") ? 'B' : (csec_lex_is_keyword(text) ? 'K' : 'I');
+            csec_token_builder_append(builder, kind, text.c_str());
+            cursor = end;
+        } else if ((ch == 'r' || ch == 'R') && cursor + 1 < source.size() &&
+                   !csec_lex_is_identifier_part(source[cursor + 1]) && source[cursor + 1] == '"') {
+            size_t end = csec_lex_quoted_end(source, cursor + 1);
+            std::string text = csec_lex_slice(source, cursor + 2, end > 0 ? end - 1 : end);
+            csec_token_builder_append(builder, 'R', text.c_str());
+            cursor = end;
+        } else if ((ch == 'u' || ch == 'U') && cursor + 1 < source.size() && source[cursor + 1] == '"') {
+            size_t end = csec_lex_quoted_end(source, cursor + 1);
+            std::string text = csec_lex_slice(source, cursor + 2, end > 0 ? end - 1 : end);
+            csec_token_builder_append(builder, 'S', text.c_str());
+            cursor = end;
+        } else if (ch == '"') {
+            size_t end = csec_lex_quoted_end(source, cursor);
+            std::string text = csec_lex_slice(source, cursor + 1, end > 0 ? end - 1 : end);
+            csec_token_builder_append(builder, 'S', text.c_str());
+            cursor = end;
+        } else if (ch == '\'') {
+            size_t end = csec_lex_quoted_end(source, cursor);
+            std::string text = csec_lex_slice(source, cursor + 1, end > 0 ? end - 1 : end);
+            csec_token_builder_append(builder, 'C', text.c_str());
+            cursor = end;
+        } else if (csec_lex_is_digit(ch)) {
+            size_t end = csec_lex_number_end(source, cursor);
+            std::string text = csec_lex_slice(source, cursor, end);
+            char kind = (text.find('.') != std::string::npos || text.find('e') != std::string::npos ||
+                         text.find('E') != std::string::npos) ? 'F' : 'N';
+            csec_token_builder_append(builder, kind, text.c_str());
+            cursor = end;
+        } else if (csec_lex_is_identifier_start(ch)) {
+            size_t end = csec_lex_identifier_end(source, cursor);
+            std::string text = csec_lex_slice(source, cursor, end);
+            if (ch == 'r' || ch == 'R') {
+                text = std::string(1, ch) + csec_lex_slice(source, cursor + 1, end);
+            }
+            text = csec_lex_repair_leading_r_token(text);
+            char kind = (text == "true" || text == "false") ? 'B' : (csec_lex_is_keyword(text) ? 'K' : 'I');
+            csec_token_builder_append(builder, kind, text.c_str());
+            cursor = end;
+        } else {
+            size_t width = csec_lex_operator_width(source, cursor);
+            std::string text = csec_lex_slice(source, cursor, cursor + width);
+            csec_token_builder_append(builder, 'O', text.c_str());
+            cursor += width;
+        }
+    }
+
+    csec_token_builder_append(builder, 'E', "<eof>");
+    return csec_token_builder_finish(builder);
+}
+
 char csec_token_kind_at(const char* tokens, int ordinal) {
     const char* value = tokens ? tokens : "";
     if (ordinal < 0) return 'E';
@@ -307,6 +910,343 @@ char* csec_token_text_at(const char* tokens, int ordinal) {
         return const_cast<char*>("");
     }
     return const_cast<char*>(texts[static_cast<size_t>(ordinal)].c_str());
+}
+
+static bool csec_native_token_is(const char* tokens, int ordinal, char kind, const char* text) {
+    if (csec_token_kind_at(tokens, ordinal) != kind) return false;
+    const char* tokenText = csec_token_text_at(tokens, ordinal);
+    return std::strcmp(tokenText ? tokenText : "", text ? text : "") == 0;
+}
+
+int csec_token_is(const char* tokens, int ordinal, char kind, const char* text) {
+    return csec_native_token_is(tokens, ordinal, kind, text) ? 1 : 0;
+}
+
+static int csec_native_find_closing_token(const char* tokens, int openOrdinal, int limit, const char* openText, const char* closeText) {
+    int depth = 0;
+    int cursor = openOrdinal;
+    while (cursor < limit && csec_token_kind_at(tokens, cursor) != 'E') {
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (std::strcmp(text, openText) == 0) {
+            ++depth;
+        } else if (std::strcmp(text, closeText) == 0) {
+            --depth;
+            if (depth == 0) return cursor;
+        }
+        ++cursor;
+    }
+    return -1;
+}
+
+int csec_advance_statement(const char* tokens, int ordinal, int bodyEnd) {
+    int cursor = ordinal;
+    int paren = 0;
+    int brace = 0;
+    int bracket = 0;
+    while (cursor < bodyEnd && csec_token_kind_at(tokens, cursor) != 'E') {
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (csec_token_kind_at(tokens, cursor) == 'O') {
+            if (std::strcmp(text, "(") == 0) {
+                ++paren;
+            }
+            if (std::strcmp(text, ")") == 0) {
+                --paren;
+            }
+            if (std::strcmp(text, "{") == 0) {
+                ++brace;
+            }
+            if (std::strcmp(text, "}") == 0) {
+                if (brace == 0 && paren == 0 && bracket == 0) {
+                    return cursor;
+                }
+                --brace;
+                if (brace == 0 && paren == 0 && bracket == 0) {
+                    int possibleElse = cursor + 1;
+                    while (possibleElse < bodyEnd && csec_token_kind_at(tokens, possibleElse) == 'M') {
+                        ++possibleElse;
+                    }
+                    if (csec_native_token_is(tokens, ordinal, 'K', "if") &&
+                        csec_native_token_is(tokens, possibleElse, 'K', "else")) {
+                        int afterElse = possibleElse + 1;
+                        while (afterElse < bodyEnd && csec_token_kind_at(tokens, afterElse) == 'M') {
+                            ++afterElse;
+                        }
+                        if (csec_native_token_is(tokens, afterElse, 'K', "if")) {
+                            return csec_advance_statement(tokens, afterElse, bodyEnd);
+                        }
+                        if (csec_native_token_is(tokens, afterElse, 'O', "{")) {
+                            int elseEnd = csec_native_find_closing_token(tokens, afterElse, bodyEnd, "{", "}");
+                            if (elseEnd > afterElse) return elseEnd + 1;
+                        }
+                    }
+                    return cursor + 1;
+                }
+            }
+            if (std::strcmp(text, "[") == 0) {
+                ++bracket;
+            }
+            if (std::strcmp(text, "]") == 0) {
+                --bracket;
+            }
+            if (std::strcmp(text, ";") == 0 && brace == 0 && paren == 0 && bracket == 0) {
+                return cursor + 1;
+            }
+        }
+        ++cursor;
+    }
+    return cursor;
+}
+
+static bool csec_native_starts_top_level_declaration(const char* tokens, int ordinal) {
+    char kind = csec_token_kind_at(tokens, ordinal);
+    const char* text = csec_token_text_at(tokens, ordinal);
+    if (kind == 'E') return true;
+    if (kind == 'O' && std::strcmp(text, "[@") == 0) return true;
+    if (kind != 'K') return false;
+    return std::strcmp(text, "import") == 0 || std::strcmp(text, "class") == 0 ||
+           std::strcmp(text, "object") == 0 || std::strcmp(text, "external") == 0 ||
+           std::strcmp(text, "def") == 0 || std::strcmp(text, "template") == 0 ||
+           std::strcmp(text, "val") == 0 || std::strcmp(text, "var") == 0 ||
+           std::strcmp(text, "unsafe") == 0 || std::strcmp(text, "unatomic") == 0 ||
+           std::strcmp(text, "constexpr") == 0;
+}
+
+int csec_advance_top_level_decl(const char* tokens, int ordinal) {
+    int cursor = ordinal;
+    int paren = 0;
+    int brace = 0;
+    int bracket = 0;
+    while (csec_token_kind_at(tokens, cursor) != 'E') {
+        if (cursor > ordinal && paren == 0 && brace == 0 && bracket == 0 &&
+            csec_native_starts_top_level_declaration(tokens, cursor)) {
+            return cursor;
+        }
+        if (csec_token_kind_at(tokens, cursor) == 'O') {
+            const char* text = csec_token_text_at(tokens, cursor);
+            if (std::strcmp(text, "(") == 0) ++paren;
+            if (std::strcmp(text, ")") == 0) --paren;
+            if (std::strcmp(text, "{") == 0) ++brace;
+            if (std::strcmp(text, "}") == 0) {
+                --brace;
+                if (brace == 0 && paren == 0 && bracket == 0) return cursor + 1;
+            }
+            if (std::strcmp(text, "[") == 0) ++bracket;
+            if (std::strcmp(text, "]") == 0) --bracket;
+            if (std::strcmp(text, ";") == 0 && brace == 0 && paren == 0 && bracket == 0) {
+                return cursor + 1;
+            }
+        }
+        ++cursor;
+    }
+    return cursor;
+}
+
+int csec_find_decl_body_start(const char* tokens, int ordinal) {
+    int tokenCount = tokenCountCached(tokens ? tokens : "");
+    for (int cursor = ordinal; cursor < tokenCount; ++cursor) {
+        if (cursor > ordinal && csec_native_starts_top_level_declaration(tokens, cursor)) return -1;
+        if (csec_native_token_is(tokens, cursor, 'O', "{")) return cursor + 1;
+        if (csec_native_token_is(tokens, cursor, 'O', ";")) return -1;
+    }
+    return -1;
+}
+
+int csec_find_decl_body_end(const char* tokens, int bodyStart) {
+    if (bodyStart < 0) return -1;
+    int tokenCount = tokenCountCached(tokens ? tokens : "");
+    int openBrace = bodyStart - 1;
+    if (!csec_native_token_is(tokens, openBrace, 'O', "{")) return -1;
+    int closeBrace = findMatchingBraceToken(tokens ? tokens : "", openBrace, tokenCount);
+    return closeBrace;
+}
+
+int csec_function_param_end(const char* tokens, int declStart) {
+    int declEnd = csec_advance_top_level_decl(tokens, declStart);
+    for (int cursor = declStart; cursor < declEnd && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', "(")) {
+            return csec_native_find_closing_token(tokens, cursor, declEnd, "(", ")");
+        }
+        if (csec_native_token_is(tokens, cursor, 'O', "{") || csec_native_token_is(tokens, cursor, 'O', ";")) {
+            break;
+        }
+    }
+    return -1;
+}
+
+}
+
+static const char* csec_llvm_type_for_name(const std::string& typeName) {
+    if (typeName == "Int" || typeName == "Short" || typeName == "Byte") return "i32";
+    if (typeName == "Long") return "i64";
+    if (typeName == "Boolean") return "i1";
+    if (typeName == "Char") return "i8";
+    if (typeName == "Double") return "double";
+    if (typeName == "Float") return "float";
+    return "ptr";
+}
+
+static char* csec_owned_string(const std::string& text) {
+    char* result = static_cast<char*>(std::malloc(text.size() + 1));
+    if (!result) return const_cast<char*>("");
+    std::memcpy(result, text.c_str(), text.size() + 1);
+    return result;
+}
+
+static std::vector<std::pair<std::string, std::string>> csec_function_params(const char* tokens, int declStart) {
+    std::vector<std::pair<std::string, std::string>> params;
+    int paramEnd = csec_function_param_end(tokens, declStart);
+    if (paramEnd < 0) return params;
+    int paramStart = -1;
+    for (int cursor = declStart; cursor < paramEnd; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', "(")) {
+            paramStart = cursor;
+            break;
+        }
+    }
+    if (paramStart < 0) return params;
+    int cursor = paramStart + 1;
+    while (cursor < paramEnd) {
+        if (csec_token_kind_at(tokens, cursor) == 'I') {
+            std::string name = csec_token_text_at(tokens, cursor);
+            std::string typeName = "String";
+            if (csec_native_token_is(tokens, cursor + 1, 'O', ":")) {
+                typeName = csec_token_text_at(tokens, cursor + 2);
+            }
+            params.emplace_back(std::move(name), std::move(typeName));
+        }
+        while (cursor < paramEnd && !csec_native_token_is(tokens, cursor, 'O', ",")) ++cursor;
+        ++cursor;
+    }
+    return params;
+}
+
+extern "C" {
+
+char* csec_function_llvm_param_list(const char* tokens, int declStart) {
+    std::string output;
+    for (const auto& param : csec_function_params(tokens, declStart)) {
+        if (!output.empty()) output += ", ";
+        output += csec_llvm_type_for_name(param.second);
+        output += " %arg.";
+        output += param.first;
+    }
+    return csec_owned_string(output);
+}
+
+char* csec_function_llvm_param_allocas(const char* tokens, int declStart) {
+    std::string output;
+    for (const auto& param : csec_function_params(tokens, declStart)) {
+        const char* llvmType = csec_llvm_type_for_name(param.second);
+        output += "  %" + param.first + " = alloca ";
+        output += llvmType;
+        output += "\n  store ";
+        output += llvmType;
+        output += " %arg." + param.first + ", ptr %" + param.first + "\n";
+    }
+    return csec_owned_string(output);
+}
+
+char* csec_llvm_name_with_number(const char* prefix, int number) {
+    return csec_owned_string(std::string(prefix ? prefix : "") + std::to_string(number));
+}
+
+char* csec_llvm_string_literal_bytes(const char* text) {
+    const std::string input = text ? text : "";
+    std::string output;
+    output.reserve(input.size() * 3 + 3);
+    for (size_t index = 0; index < input.size(); ++index) {
+        char value = input[index];
+        if (value == '\\' && index + 1 < input.size()) {
+            const char escaped = input[++index];
+            switch (escaped) {
+            case 'n': output += "\\0A"; break;
+            case 'r': output += "\\0D"; break;
+            case 't': output += "\\09"; break;
+            case '"': output += "\\22"; break;
+            case '\\': output += "\\5C"; break;
+            default: output += escaped; break;
+            }
+        } else if (value == '"') {
+            output += "\\22";
+        } else if (value == '\\') {
+            output += "\\5C";
+        } else {
+            output += value;
+        }
+    }
+    output += "\\00";
+    return csec_owned_string(output);
+}
+
+char* csec_function_return_type_at(const char* tokens, int declStart) {
+    int declEnd = csec_advance_top_level_decl(tokens, declStart);
+    int paramStart = -1;
+    for (int cursor = declStart; cursor < declEnd && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', "(")) {
+            paramStart = cursor;
+            break;
+        }
+        if (csec_native_token_is(tokens, cursor, 'O', "{") || csec_native_token_is(tokens, cursor, 'O', ";")) {
+            break;
+        }
+    }
+    if (paramStart < 0) return const_cast<char*>("Unit");
+
+    int paramEnd = csec_native_find_closing_token(tokens, paramStart, declEnd, "(", ")");
+    if (paramEnd < 0) return const_cast<char*>("Unit");
+    if (!csec_native_token_is(tokens, paramEnd + 1, 'O', ":")) return const_cast<char*>("Unit");
+
+    std::string typeName;
+    for (int cursor = paramEnd + 2; cursor < declEnd && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (std::strcmp(text, "{") == 0 || std::strcmp(text, "=") == 0 ||
+            std::strcmp(text, ";") == 0 || std::strcmp(text, ",") == 0) {
+            break;
+        }
+        typeName += text;
+    }
+    if (typeName.empty()) return const_cast<char*>("Unit");
+
+    char* result = static_cast<char*>(std::malloc(typeName.size() + 1));
+    if (!result) return const_cast<char*>("Unit");
+    std::memcpy(result, typeName.c_str(), typeName.size() + 1);
+    return result;
+}
+
+int csec_enclosing_function_decl_start(const char* tokens, int limit) {
+    int declStart = -1;
+    if (!findFunctionAroundLimit(tokens, limit, &declStart, nullptr, nullptr)) {
+        return -1;
+    }
+    return declStart;
+}
+
+int csec_enclosing_function_body_start(const char* tokens, int limit) {
+    int bodyStart = -1;
+    if (!findFunctionAroundLimit(tokens, limit, nullptr, &bodyStart, nullptr)) {
+        return -1;
+    }
+    return bodyStart;
+}
+
+int csec_enclosing_function_body_end(const char* tokens, int limit) {
+    int bodyEnd = -1;
+    if (!findFunctionAroundLimit(tokens, limit, nullptr, nullptr, &bodyEnd)) {
+        return -1;
+    }
+    return bodyEnd;
+}
+
+char* csec_lookup_function_return_type(const char* tokens, const char* name) {
+    if (!name) {
+        return const_cast<char*>("unknown");
+    }
+    const auto& types = functionReturnTypesCached(tokens);
+    auto found = types.find(name);
+    if (found == types.end()) {
+        return const_cast<char*>("unknown");
+    }
+    return const_cast<char*>(found->second.c_str());
 }
 
 long long csec_string_length(const char* value) {

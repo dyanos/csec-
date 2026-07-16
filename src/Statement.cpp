@@ -340,9 +340,11 @@ std::unique_ptr<ASTNode> Parser::parseOdeSimulationExpression() {
 
 std::unique_ptr<BlockNode> Parser::parseBlock() {
 	auto block = std::make_unique<BlockNode>();
+	const Token openingBrace = previous();
 	while (!match(TokenType::OPERATOR, "}")) {
 		if (isAtEnd()) {
-			error("Unterminated block");
+			error("Unterminated block opened at line " + std::to_string(openingBrace.line) +
+				", column " + std::to_string(openingBrace.column));
 			return nullptr;
 		}
 		auto stmt = parseStatement();

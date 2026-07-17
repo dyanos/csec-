@@ -3086,6 +3086,7 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader3c: Int = csec_string_builder_append(builder, "declare i32 @csec_lex_line_comment(ptr, i32)\n");
     val appendHeader3d: Int = csec_string_builder_append(builder, "declare i32 @csec_lex_block_comment(ptr, i32)\n");
     val appendHeader3e: Int = csec_string_builder_append(builder, "declare i32 @csec_digit_value(i8)\n");
+    val appendHeader3e0: Int = csec_string_builder_append(builder, "declare i32 @csec_is_keyword(ptr)\n");
     val appendHeader3ea: Int = csec_string_builder_append(builder, "declare i32 @csec_to_int(ptr)\n");
     val appendHeader3eb: Int = csec_string_builder_append(builder, "declare i32 @csec_line_start(ptr, i32)\n");
     val appendHeader3ec: Int = csec_string_builder_append(builder, "declare i32 @csec_line_end(ptr, i32)\n");
@@ -3096,6 +3097,8 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader3ei: Int = csec_string_builder_append(builder, "declare i32 @csec_find_statement_paren_end(ptr, i32, i32)\n");
     val appendHeader3ej: Int = csec_string_builder_append(builder, "declare i32 @csec_find_statement_block_start(ptr, i32, i32)\n");
     val appendHeader3ek: Int = csec_string_builder_append(builder, "declare i32 @csec_find_statement_block_end(ptr, i32, i32)\n");
+    val appendHeader3el: Int = csec_string_builder_append(builder, "declare i32 @csec_count_comma_separated(ptr, i32, i32)\n");
+    val appendHeader3em: Int = csec_string_builder_append(builder, "declare i32 @csec_find_last_top_level_token(ptr, i32, i32, ptr)\n");
     val appendHeader3f: Int = csec_string_builder_append(builder, "declare ptr @csec_llvm_lexer_helper_definition(ptr)\n");
     val appendHeader4: Int = csec_string_builder_append(builder, "declare i64 @csec_string_builder_new()\n");
     val appendHeader4a: Int = csec_string_builder_append(builder, "declare i64 @csec_string_builder_new_file(ptr)\n");
@@ -3192,6 +3195,7 @@ def generateLLVMModule(tokens: String): String {
         "declare i32 @csec_lex_line_comment(ptr, i32)\n" +
         "declare i32 @csec_lex_block_comment(ptr, i32)\n" +
         "declare i32 @csec_digit_value(i8)\n" +
+        "declare i32 @csec_is_keyword(ptr)\n" +
         "declare i32 @csec_to_int(ptr)\n" +
         "declare i32 @csec_line_start(ptr, i32)\n" +
         "declare i32 @csec_line_end(ptr, i32)\n" +
@@ -3202,6 +3206,8 @@ def generateLLVMModule(tokens: String): String {
         "declare i32 @csec_find_statement_paren_end(ptr, i32, i32)\n" +
         "declare i32 @csec_find_statement_block_start(ptr, i32, i32)\n" +
         "declare i32 @csec_find_statement_block_end(ptr, i32, i32)\n" +
+        "declare i32 @csec_count_comma_separated(ptr, i32, i32)\n" +
+        "declare i32 @csec_find_last_top_level_token(ptr, i32, i32, ptr)\n" +
         "declare ptr @csec_llvm_lexer_helper_definition(ptr)\n" +
         "declare i64 @csec_string_builder_new()\n" +
         "declare i64 @csec_string_builder_new_file(ptr)\n" +

@@ -26,6 +26,7 @@ CSEC_NATIVE_API int csec_lex_quoted(const char* source, int index);
 CSEC_NATIVE_API int csec_lex_number(const char* source, int index);
 CSEC_NATIVE_API int csec_lex_identifier(const char* source, int index);
 CSEC_NATIVE_API int csec_digit_value(char ch);
+CSEC_NATIVE_API int csec_is_keyword(const char* text);
 CSEC_NATIVE_API int csec_to_int(const char* text);
 CSEC_NATIVE_API int csec_line_start(const char* text, int ordinal);
 CSEC_NATIVE_API int csec_line_end(const char* text, int start);
@@ -56,6 +57,8 @@ CSEC_NATIVE_API int csec_find_statement_paren_start(const char* tokens, int star
 CSEC_NATIVE_API int csec_find_statement_paren_end(const char* tokens, int start, int end);
 CSEC_NATIVE_API int csec_find_statement_block_start(const char* tokens, int start, int end);
 CSEC_NATIVE_API int csec_find_statement_block_end(const char* tokens, int start, int end);
+CSEC_NATIVE_API int csec_count_comma_separated(const char* tokens, int start, int end);
+CSEC_NATIVE_API int csec_find_last_top_level_token(const char* tokens, int start, int end, const char* text);
 CSEC_NATIVE_API int csec_function_param_end(const char* tokens, int declStart);
 CSEC_NATIVE_API char* csec_function_llvm_param_list(const char* tokens, int declStart);
 CSEC_NATIVE_API char* csec_function_llvm_param_allocas(const char* tokens, int declStart);

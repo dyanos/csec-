@@ -453,6 +453,21 @@ int csec_digit_value(char ch) {
     return ch >= '0' && ch <= '9' ? ch - '0' : 0;
 }
 
+int csec_is_keyword(const char* text) {
+    if (!text) return 0;
+    static const char* const keywords[] = {
+        "import", "class", "extends", "object", "external", "def", "operator", "override", "return",
+        "val", "var", "if", "else", "for", "while", "match", "case", "map", "pmap", "filter",
+        "reduce", "preduce", "template", "typename", "new", "this", "super", "unsafe", "unatomic",
+        "constexpr", "box", "mut", "null", "inner", "outer", "tensor", "to", "until", "and", "or",
+        "xor", "ode", "molecule", "cfd", "protein", "cpu", "openmp", "gpu", "simd"
+    };
+    for (const char* keyword : keywords) {
+        if (std::strcmp(text, keyword) == 0) return 1;
+    }
+    return 0;
+}
+
 int csec_to_int(const char* text) {
     return text ? static_cast<int>(std::strtol(text, nullptr, 10)) : 0;
 }
@@ -504,6 +519,48 @@ char* csec_llvm_lexer_helper_definition(const char* name) {
         definition = "define i1 @isDigit(i8 %arg.ch) {\nentry:\n  %lower = icmp sge i8 %arg.ch, 48\n  %upper = icmp sle i8 %arg.ch, 57\n  %ret = and i1 %lower, %upper\n  ret i1 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "strEq") == 0) {
         definition = "define i1 @strEq(ptr %arg.left, ptr %arg.right) {\nentry:\n  %left.length = call i64 @csec_string_length(ptr %arg.left)\n  %right.length = call i64 @csec_string_length(ptr %arg.right)\n  %same.length = icmp eq i64 %left.length, %right.length\n  %prefix = call i32 @csec_string_starts_with(ptr %arg.left, ptr %arg.right)\n  %same.text = icmp ne i32 %prefix, 0\n  %ret = and i1 %same.length, %same.text\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "isKeyword") == 0) {
+        definition = "define i1 @isKeyword(ptr %arg.text) {\nentry:\n  %keyword = call i32 @csec_is_keyword(ptr %arg.text)\n  %ret = icmp ne i32 %keyword, 0\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "appendToken") == 0) {
+        definition = "define ptr @appendToken(ptr %arg.tokens, i8 %arg.kind, ptr %arg.text) {\nentry:\n  %ret = call ptr @csec_token_append_owned(ptr %arg.tokens, i8 %arg.kind, ptr %arg.text)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "appendTokenTo") == 0) {
+        definition = "define i32 @appendTokenTo(i64 %arg.builder, i8 %arg.kind, ptr %arg.text) {\nentry:\n  %ret = call i32 @csec_token_builder_append(i64 %arg.builder, i8 %arg.kind, ptr %arg.text)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "twoChars") == 0) {
+        definition = "define i1 @twoChars(ptr %arg.source, i32 %arg.index, ptr %arg.text) {\nentry:\n  %length = call i64 @csec_string_length(ptr %arg.source)\n  %last = add i32 %arg.index, 1\n  %last64 = sext i32 %last to i64\n  %in.range = icmp slt i64 %last64, %length\n  br i1 %in.range, label %compare, label %false\ncompare:\n  %source0 = call i8 @csec_string_char_at(ptr %arg.source, i32 %arg.index)\n  %text0 = call i8 @csec_string_char_at(ptr %arg.text, i32 0)\n  %first = icmp eq i8 %source0, %text0\n  %source1 = call i8 @csec_string_char_at(ptr %arg.source, i32 %last)\n  %text1 = call i8 @csec_string_char_at(ptr %arg.text, i32 1)\n  %second = icmp eq i8 %source1, %text1\n  %ret = and i1 %first, %second\n  ret i1 %ret\nfalse:\n  ret i1 false\n}\n\n";
+    } else if (name && std::strcmp(name, "threeChars") == 0) {
+        definition = "define i1 @threeChars(ptr %arg.source, i32 %arg.index, ptr %arg.text) {\nentry:\n  %length = call i64 @csec_string_length(ptr %arg.source)\n  %last = add i32 %arg.index, 2\n  %last64 = sext i32 %last to i64\n  %in.range = icmp slt i64 %last64, %length\n  br i1 %in.range, label %compare, label %false\ncompare:\n  %source0 = call i8 @csec_string_char_at(ptr %arg.source, i32 %arg.index)\n  %text0 = call i8 @csec_string_char_at(ptr %arg.text, i32 0)\n  %first = icmp eq i8 %source0, %text0\n  %index1 = add i32 %arg.index, 1\n  %source1 = call i8 @csec_string_char_at(ptr %arg.source, i32 %index1)\n  %text1 = call i8 @csec_string_char_at(ptr %arg.text, i32 1)\n  %second = icmp eq i8 %source1, %text1\n  %source2 = call i8 @csec_string_char_at(ptr %arg.source, i32 %last)\n  %text2 = call i8 @csec_string_char_at(ptr %arg.text, i32 2)\n  %third = icmp eq i8 %source2, %text2\n  %first.two = and i1 %first, %second\n  %ret = and i1 %first.two, %third\n  ret i1 %ret\nfalse:\n  ret i1 false\n}\n\n";
+    } else if (name && std::strcmp(name, "lexIdentifier") == 0) {
+        definition = "define i32 @lexIdentifier(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_lex_identifier(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lexNumber") == 0) {
+        definition = "define i32 @lexNumber(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_lex_number(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lexQuoted") == 0) {
+        definition = "define i32 @lexQuoted(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_lex_quoted(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lexLineComment") == 0) {
+        definition = "define i32 @lexLineComment(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_lex_line_comment(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lexBlockComment") == 0) {
+        definition = "define i32 @lexBlockComment(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_lex_block_comment(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "slice") == 0) {
+        definition = "define ptr @slice(ptr %arg.source, i32 %arg.start, i32 %arg.end) {\nentry:\n  %valid = icmp sgt i32 %arg.end, %arg.start\n  br i1 %valid, label %slice, label %empty\nslice:\n  %length = sub i32 %arg.end, %arg.start\n  %ret = call ptr @csec_string_substring(ptr %arg.source, i32 %arg.start, i32 %length)\n  ret ptr %ret\nempty:\n  ret ptr null\n}\n\n";
+    } else if (name && (std::strcmp(name, "tokenize") == 0 || std::strcmp(name, "tokenizeSlow") == 0)) {
+        const char* functionName = std::strcmp(name, "tokenize") == 0 ? "tokenize" : "tokenizeSlow";
+        std::string generated = "define ptr @" + std::string(functionName) + "(ptr %arg.source) {\nentry:\n  %ret = call ptr @csec_tokenize_source(ptr %arg.source)\n  ret ptr %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "countCommaSeparated") == 0) {
+        definition = "define i32 @countCommaSeparated(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_count_comma_separated(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findLastTopLevelToken") == 0) {
+        definition = "define i32 @findLastTopLevelToken(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr %arg.text) {\nentry:\n  %ret = call i32 @csec_find_last_top_level_token(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr %arg.text)\n  ret i32 %ret\n}\n\n";
+    } else if (name && (std::strcmp(name, "advanceStatement") == 0 || std::strcmp(name, "advanceStatementSlow") == 0)) {
+        const char* functionName = std::strcmp(name, "advanceStatement") == 0 ? "advanceStatement" : "advanceStatementSlow";
+        std::string generated = "define i32 @" + std::string(functionName) + "(ptr %arg.tokens, i32 %arg.ordinal, i32 %arg.bodyEnd) {\nentry:\n  %ret = call i32 @csec_advance_statement(ptr %arg.tokens, i32 %arg.ordinal, i32 %arg.bodyEnd)\n  ret i32 %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "countMatchCases") == 0) {
+        definition = "@.str.count.match.case = private unnamed_addr constant [5 x i8] c\"case\\00\"\n\ndefine i32 @countMatchCases(ptr %arg.tokens, i32 %arg.matchOrdinal, i32 %arg.end) {\nentry:\n  %open = call i32 @findTokenTextInRange(ptr %arg.tokens, i32 %arg.matchOrdinal, i32 %arg.end, ptr @.str.open.brace)\n  %has.open = icmp sge i32 %open, 0\n  br i1 %has.open, label %find.close, label %empty\nfind.close:\n  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %open, i32 %arg.end, ptr @.str.open.brace, ptr @.str.close.brace)\n  %first = add i32 %open, 1\n  br label %loop\nloop:\n  %cursor = phi i32 [ %first, %find.close ], [ %next, %body ]\n  %count = phi i32 [ 0, %find.close ], [ %updated, %body ]\n  %before.close = icmp slt i32 %cursor, %close\n  br i1 %before.close, label %inspect, label %done\ninspect:\n  %kind = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %cursor)\n  %is.eof = icmp eq i8 %kind, 69\n  br i1 %is.eof, label %done, label %body\nbody:\n  %case.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %cursor, i8 75, ptr @.str.count.match.case)\n  %is.case = icmp ne i32 %case.raw, 0\n  %increment = zext i1 %is.case to i32\n  %updated = add i32 %count, %increment\n  %next = add i32 %cursor, 1\n  br label %loop\ndone:\n  ret i32 %count\nempty:\n  ret i32 0\n}\n\n@.str.open.brace = private unnamed_addr constant [2 x i8] c\"{\\00\"\n@.str.close.brace = private unnamed_addr constant [2 x i8] c\"}\\00\"\n\n";
     } else if (name && std::strcmp(name, "digitValue") == 0) {
         definition = "define i32 @digitValue(i8 %arg.ch) {\nentry:\n  %ret = call i32 @csec_digit_value(i8 %arg.ch)\n  ret i32 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "toInt") == 0) {
@@ -1188,6 +1245,47 @@ int csec_find_statement_block_start(const char* tokens, int start, int end) {
 int csec_find_statement_block_end(const char* tokens, int start, int end) {
     int openBrace = csec_find_statement_block_start(tokens, start, end);
     return openBrace < 0 ? -1 : csec_native_find_closing_token(tokens, openBrace, end, "{", "}");
+}
+
+int csec_count_comma_separated(const char* tokens, int start, int end) {
+    if (!tokens || end <= start) return 0;
+    int count = 1;
+    int paren = 0;
+    int bracket = 0;
+    int brace = 0;
+    for (int cursor = start; cursor < end && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_token_kind_at(tokens, cursor) != 'O') continue;
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (!text) continue;
+        if (std::strcmp(text, "(") == 0) ++paren;
+        else if (std::strcmp(text, ")") == 0) --paren;
+        else if (std::strcmp(text, "[") == 0) ++bracket;
+        else if (std::strcmp(text, "]") == 0) --bracket;
+        else if (std::strcmp(text, "{") == 0) ++brace;
+        else if (std::strcmp(text, "}") == 0) --brace;
+        else if (std::strcmp(text, ",") == 0 && paren == 0 && bracket == 0 && brace == 0) ++count;
+    }
+    return count;
+}
+
+int csec_find_last_top_level_token(const char* tokens, int start, int end, const char* text) {
+    if (!tokens || !text) return -1;
+    int paren = 0;
+    int bracket = 0;
+    int brace = 0;
+    for (int cursor = end - 1; cursor >= start; --cursor) {
+        const char* current = csec_token_text_at(tokens, cursor);
+        if (csec_token_kind_at(tokens, cursor) == 'O' && current) {
+            if (std::strcmp(current, ")") == 0) ++paren;
+            else if (std::strcmp(current, "(") == 0) --paren;
+            else if (std::strcmp(current, "]") == 0) ++bracket;
+            else if (std::strcmp(current, "[") == 0) --bracket;
+            else if (std::strcmp(current, "}") == 0) ++brace;
+            else if (std::strcmp(current, "{") == 0) --brace;
+        }
+        if (paren == 0 && bracket == 0 && brace == 0 && current && std::strcmp(current, text) == 0) return cursor;
+    }
+    return -1;
 }
 
 int csec_function_param_end(const char* tokens, int declStart) {

@@ -577,6 +577,47 @@ char* csec_llvm_lexer_helper_definition(const char* name) {
         definition = "define i32 @skipTrivia(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  br label %loop\nloop:\n  %cursor = phi i32 [ %arg.ordinal, %entry ], [ %next, %body ]\n  %kind = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %cursor)\n  %is.comment = icmp eq i8 %kind, 77\n  br i1 %is.comment, label %body, label %exit\nbody:\n  %next = add i32 %cursor, 1\n  br label %loop\nexit:\n  ret i32 %cursor\n}\n\n";
     } else if (name && std::strcmp(name, "validateBalanced") == 0) {
         definition = "define i1 @validateBalanced(ptr %arg.tokens) {\nentry:\n  %valid = call i32 @csec_validate_balanced(ptr %arg.tokens)\n  %ret = icmp ne i32 %valid, 0\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "startsTopLevelDeclaration") == 0) {
+        definition = "define i1 @startsTopLevelDeclaration(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %valid = call i32 @csec_starts_top_level_declaration(ptr %arg.tokens, i32 %arg.ordinal)\n  %ret = icmp ne i32 %valid, 0\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "validateTopLevel") == 0) {
+        definition = "define i1 @validateTopLevel(ptr %arg.tokens) {\nentry:\n  %valid = call i32 @csec_validate_top_level(ptr %arg.tokens)\n  %ret = icmp ne i32 %valid, 0\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "parseProgram") == 0) {
+        definition = "define i1 @parseProgram(ptr %arg.tokens) {\nentry:\n  %balanced = call i1 @validateBalanced(ptr %arg.tokens)\n  br i1 %balanced, label %validate, label %invalid\nvalidate:\n  %ret = call i1 @validateTopLevel(ptr %arg.tokens)\n  ret i1 %ret\ninvalid:\n  ret i1 false\n}\n\n";
+    } else if (name && std::strcmp(name, "topLevelDeclKind") == 0) {
+        definition = "define ptr @topLevelDeclKind(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call ptr @csec_top_level_decl_kind(ptr %arg.tokens, i32 %arg.ordinal)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "topLevelDeclName") == 0) {
+        definition = "define ptr @topLevelDeclName(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call ptr @csec_top_level_decl_name(ptr %arg.tokens, i32 %arg.ordinal)\n  ret ptr %ret\n}\n\n";
+    } else if (name && (std::strcmp(name, "functionReturnType") == 0 || std::strcmp(name, "functionReturnTypeSlow") == 0)) {
+        const char* functionName = std::strcmp(name, "functionReturnType") == 0 ? "functionReturnType" : "functionReturnTypeSlow";
+        std::string generated = "define ptr @" + std::string(functionName) + "(ptr %arg.tokens, i32 %arg.declStart) {\nentry:\n  %ret = call ptr @csec_function_return_type_at(ptr %arg.tokens, i32 %arg.declStart)\n  ret ptr %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "countFunctionParams") == 0) {
+        definition = "define i32 @countFunctionParams(ptr %arg.tokens, i32 %arg.declStart) {\nentry:\n  %ret = call i32 @csec_count_function_params(ptr %arg.tokens, i32 %arg.declStart)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "tokenIsTopLevelOperator") == 0) {
+        definition = "define i1 @tokenIsTopLevelOperator(ptr %arg.tokens, i32 %arg.ordinal, i32 %arg.group) {\nentry:\n  %valid = call i32 @csec_token_is_top_level_operator(ptr %arg.tokens, i32 %arg.ordinal, i32 %arg.group)\n  %ret = icmp ne i32 %valid, 0\n  ret i1 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findTopLevelOperator") == 0) {
+        definition = "define i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 %arg.group) {\nentry:\n  %ret = call i32 @csec_find_top_level_operator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 %arg.group)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findTopLevelMatch") == 0) {
+        definition = "define i32 @findTopLevelMatch(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_find_top_level_match(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findLambdaArrow") == 0) {
+        definition = "define i32 @findLambdaArrow(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_find_lambda_arrow(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lambdaCaptureSummary") == 0) {
+        definition = "define ptr @lambdaCaptureSummary(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr @.str.lambda.capture.open, ptr @.str.lambda.capture.close)\n  %minimum = add i32 %arg.start, 1\n  %has.capture = icmp sgt i32 %close, %minimum\n  br i1 %has.capture, label %capture, label %none\ncapture:\n  %first = add i32 %arg.start, 1\n  %ret.capture = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %first, i32 %close)\n  ret ptr %ret.capture\nnone:\n  %ret.none = getelementptr inbounds [5 x i8], ptr @.str.lambda.none, i32 0, i32 0\n  ret ptr %ret.none\n}\n\n@.str.lambda.capture.open = private unnamed_addr constant [2 x i8] c\"[\\00\"\n@.str.lambda.capture.close = private unnamed_addr constant [2 x i8] c\"]\\00\"\n@.str.lambda.none = private unnamed_addr constant [5 x i8] c\"none\\00\"\n\n";
+    } else if (name && std::strcmp(name, "lambdaParameterCount") == 0) {
+        definition = "define i32 @lambdaParameterCount(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %capture.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr @.str.lambda.params.capture.open, ptr @.str.lambda.params.capture.close)\n  %capture.valid = icmp sge i32 %capture.close, 0\n  br i1 %capture.valid, label %params.start, label %empty\nparams.start:\n  %after.capture = add i32 %capture.close, 1\n  %params.open = call i32 @skipTrivia(ptr %arg.tokens, i32 %after.capture)\n  %is.open.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %params.open, i8 79, ptr @.str.lambda.params.open)\n  %is.open = icmp ne i32 %is.open.raw, 0\n  br i1 %is.open, label %params.end, label %empty\nparams.end:\n  %params.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %params.open, i32 %arg.end, ptr @.str.lambda.params.open, ptr @.str.lambda.params.close)\n  %first = add i32 %params.open, 1\n  %ret = call i32 @countCommaSeparated(ptr %arg.tokens, i32 %first, i32 %params.close)\n  ret i32 %ret\nempty:\n  ret i32 0\n}\n\n@.str.lambda.params.capture.open = private unnamed_addr constant [2 x i8] c\"[\\00\"\n@.str.lambda.params.capture.close = private unnamed_addr constant [2 x i8] c\"]\\00\"\n@.str.lambda.params.open = private unnamed_addr constant [2 x i8] c\"(\\00\"\n@.str.lambda.params.close = private unnamed_addr constant [2 x i8] c\")\\00\"\n\n";
+    } else if (name && std::strcmp(name, "generateSymbolTable") == 0) {
+        definition = "define ptr @generateSymbolTable(ptr %arg.tokens) {\nentry:\n  %ret = call ptr @csec_generate_symbol_table(ptr %arg.tokens)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "appendExpressionUntil") == 0) {
+        definition = "define ptr @appendExpressionUntil(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call ptr @csec_append_expression_until(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "generateIRExpression") == 0) {
+        definition = "define ptr @generateIRExpression(ptr %arg.tokens, i32 %arg.rawStart, i32 %arg.rawEnd) {\nentry:\n  %start = call i32 @skipTrivia(ptr %arg.tokens, i32 %arg.rawStart)\n  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %start, i32 %arg.rawEnd)\n  %nonempty = icmp sgt i32 %end, %start\n  br i1 %nonempty, label %classify, label %empty\nempty:\n  %empty.value = getelementptr inbounds [5 x i8], ptr @.str.ir.expr.void, i32 0, i32 0\n  ret ptr %empty.value\nclassify:\n  %type.name = call ptr @inferExpressionType(ptr %arg.tokens, i32 %start, i32 %end)\n  %ir.type = call ptr @irTypeName(ptr %type.name)\n  %op = call i32 @expressionTopLevelOperator(ptr %arg.tokens, i32 %start, i32 %end)\n  %has.op = icmp sgt i32 %op, %start\n  br i1 %has.op, label %binary, label %identifier.check\nbinary:\n  %op.text = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %op)\n  %op.name = call ptr @irOperatorName(ptr %op.text)\n  %b1 = call ptr @csec_string_concat(ptr %op.name, ptr @.str.ir.expr.space)\n  %b2 = call ptr @csec_string_concat(ptr %b1, ptr %ir.type)\n  %b3 = call ptr @csec_string_concat(ptr %b2, ptr @.str.ir.expr.open)\n  %left = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %start, i32 %op)\n  %b4 = call ptr @csec_string_concat(ptr %b3, ptr %left)\n  %b5 = call ptr @csec_string_concat(ptr %b4, ptr @.str.ir.expr.middle)\n  %right.start = add i32 %op, 1\n  %right = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %right.start, i32 %end)\n  %b6 = call ptr @csec_string_concat(ptr %b5, ptr %right)\n  %b7 = call ptr @csec_string_concat(ptr %b6, ptr @.str.ir.expr.close)\n  ret ptr %b7\nidentifier.check:\n  %kind = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %start)\n  %is.identifier = icmp eq i8 %kind, 73\n  br i1 %is.identifier, label %call.check, label %fallback\ncall.check:\n  %next = add i32 %start, 1\n  %before.end = icmp slt i32 %next, %end\n  br i1 %before.end, label %open.check, label %single.check\nopen.check:\n  %is.open.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %next, i8 79, ptr @.str.ir.expr.paren.open)\n  %is.open = icmp ne i32 %is.open.raw, 0\n  br i1 %is.open, label %close.check, label %single.check\nclose.check:\n  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %next, i32 %end, ptr @.str.ir.expr.paren.open, ptr @.str.ir.expr.paren.close)\n  %last = sub i32 %end, 1\n  %is.call = icmp eq i32 %close, %last\n  br i1 %is.call, label %call, label %single.check\ncall:\n  %c1 = call ptr @csec_string_concat(ptr @.str.ir.expr.call, ptr %ir.type)\n  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.ir.expr.at)\n  %name = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %start)\n  %c3 = call ptr @csec_string_concat(ptr %c2, ptr %name)\n  %c4 = call ptr @csec_string_concat(ptr %c3, ptr @.str.ir.expr.paren.open)\n  %args.start = add i32 %start, 2\n  %args = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %args.start, i32 %last)\n  %c5 = call ptr @csec_string_concat(ptr %c4, ptr %args)\n  %c6 = call ptr @csec_string_concat(ptr %c5, ptr @.str.ir.expr.paren.close)\n  ret ptr %c6\nsingle.check:\n  %single.end = add i32 %start, 1\n  %is.single = icmp eq i32 %end, %single.end\n  br i1 %is.single, label %single, label %fallback\nsingle:\n  %s1 = call ptr @csec_string_concat(ptr @.str.ir.expr.load, ptr %ir.type)\n  %s2 = call ptr @csec_string_concat(ptr %s1, ptr @.str.ir.expr.load.middle)\n  %single.name = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %start)\n  %s3 = call ptr @csec_string_concat(ptr %s2, ptr %single.name)\n  ret ptr %s3\nfallback:\n  %f1 = call ptr @csec_string_concat(ptr %ir.type, ptr @.str.ir.expr.space)\n  %f2 = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %start, i32 %end)\n  %f3 = call ptr @csec_string_concat(ptr %f1, ptr %f2)\n  ret ptr %f3\n}\n\n@.str.ir.expr.void = private unnamed_addr constant [5 x i8] c\"void\\00\"\n@.str.ir.expr.space = private unnamed_addr constant [2 x i8] c\" \\00\"\n@.str.ir.expr.open = private unnamed_addr constant [3 x i8] c\" (\\00\"\n@.str.ir.expr.middle = private unnamed_addr constant [5 x i8] c\"), (\\00\"\n@.str.ir.expr.close = private unnamed_addr constant [2 x i8] c\")\\00\"\n@.str.ir.expr.paren.open = private unnamed_addr constant [2 x i8] c\"(\\00\"\n@.str.ir.expr.paren.close = private unnamed_addr constant [2 x i8] c\")\\00\"\n@.str.ir.expr.call = private unnamed_addr constant [6 x i8] c\"call \\00\"\n@.str.ir.expr.at = private unnamed_addr constant [2 x i8] c\"@\\00\"\n@.str.ir.expr.load = private unnamed_addr constant [6 x i8] c\"load \\00\"\n@.str.ir.expr.load.middle = private unnamed_addr constant [8 x i8] c\", ptr %\\00\"\n\n";
+    } else if (name && std::strcmp(name, "irOperatorName") == 0) {
+        definition = "define ptr @irOperatorName(ptr %arg.text) {\nentry:\n  %ret = call ptr @csec_ir_operator_name(ptr %arg.text)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "expressionTopLevelOperator") == 0) {
+        definition = "define i32 @expressionTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_expression_top_level_operator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "trimExpressionEnd") == 0) {
         definition = "define i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  br label %trim.loop\ntrim.loop:\n  %last = phi i32 [ %arg.end, %entry ], [ %previous, %trim.comment ]\n  %has.previous = icmp sgt i32 %last, %arg.start\n  br i1 %has.previous, label %trim.inspect, label %trim.check\ntrim.inspect:\n  %index = sub i32 %last, 1\n  %kind = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %index)\n  %is.comment = icmp eq i8 %kind, 77\n  br i1 %is.comment, label %trim.comment, label %trim.check\ntrim.comment:\n  %previous = sub i32 %last, 1\n  br label %trim.loop\ntrim.check:\n  %has.token = icmp sgt i32 %last, %arg.start\n  br i1 %has.token, label %trim.semicolon, label %trim.return\ntrim.semicolon:\n  %candidate = sub i32 %last, 1\n  %is.semicolon = call i32 @csec_token_is(ptr %arg.tokens, i32 %candidate, i8 79, ptr @.str.trim.semicolon)\n  %has.semicolon = icmp ne i32 %is.semicolon, 0\n  br i1 %has.semicolon, label %trim.without.semicolon, label %trim.return\ntrim.without.semicolon:\n  %result = sub i32 %last, 1\n  ret i32 %result\ntrim.return:\n  ret i32 %last\n}\n\n@.str.trim.semicolon = private unnamed_addr constant [2 x i8] c\";\\00\"\n\n";
     } else if (name && std::strcmp(name, "findTokenTextInRange") == 0) {
@@ -1162,6 +1203,299 @@ static bool csec_native_starts_top_level_declaration(const char* tokens, int ord
            std::strcmp(text, "val") == 0 || std::strcmp(text, "var") == 0 ||
            std::strcmp(text, "unsafe") == 0 || std::strcmp(text, "unatomic") == 0 ||
            std::strcmp(text, "constexpr") == 0;
+}
+
+int csec_starts_top_level_declaration(const char* tokens, int ordinal) {
+    return csec_native_starts_top_level_declaration(tokens, ordinal) ? 1 : 0;
+}
+
+int csec_validate_top_level(const char* tokens) {
+    int cursor = 0;
+    while (csec_token_kind_at(tokens, cursor) == 'M') ++cursor;
+    int paren = 0;
+    int brace = 0;
+    int bracket = 0;
+    bool expectingDecl = true;
+    while (csec_token_kind_at(tokens, cursor) != 'E') {
+        char kind = csec_token_kind_at(tokens, cursor);
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (expectingDecl && paren == 0 && brace == 0 && bracket == 0 &&
+            !csec_native_starts_top_level_declaration(tokens, cursor)) {
+            return 0;
+        }
+        if (expectingDecl && paren == 0 && brace == 0 && bracket == 0) expectingDecl = false;
+        if (kind == 'O') {
+            if (std::strcmp(text, "(") == 0) ++paren;
+            if (std::strcmp(text, ")") == 0) --paren;
+            if (std::strcmp(text, "{") == 0) ++brace;
+            if (std::strcmp(text, "}") == 0) {
+                --brace;
+                if (brace == 0 && paren == 0 && bracket == 0) expectingDecl = true;
+            }
+            if (std::strcmp(text, "[") == 0) ++bracket;
+            if (std::strcmp(text, "]") == 0) --bracket;
+            if (std::strcmp(text, ";") == 0 && brace == 0 && paren == 0 && bracket == 0) expectingDecl = true;
+        }
+        ++cursor;
+        while (csec_token_kind_at(tokens, cursor) == 'M') ++cursor;
+    }
+    return 1;
+}
+
+char* csec_top_level_decl_kind(const char* tokens, int ordinal) {
+    for (;;) {
+        const char* text = csec_token_text_at(tokens, ordinal);
+        const char kind = csec_token_kind_at(tokens, ordinal);
+        if (kind == 'O' && std::strcmp(text, "[@") == 0) return const_cast<char*>("attribute");
+        if (kind != 'K') return const_cast<char*>("unknown");
+        if (std::strcmp(text, "external") == 0) {
+            const char* next = csec_token_text_at(tokens, ordinal + 1);
+            if (std::strcmp(next, "class") == 0) return const_cast<char*>("external-class");
+            if (std::strcmp(next, "object") == 0) return const_cast<char*>("external-object");
+            if (std::strcmp(next, "def") == 0) return const_cast<char*>("external-function");
+            return const_cast<char*>("external");
+        }
+        if (std::strcmp(text, "unsafe") == 0 || std::strcmp(text, "unatomic") == 0 ||
+            std::strcmp(text, "constexpr") == 0) {
+            ++ordinal;
+            continue;
+        }
+        if (std::strcmp(text, "template") == 0) return const_cast<char*>("template");
+        if (std::strcmp(text, "import") == 0) return const_cast<char*>("import");
+        if (std::strcmp(text, "class") == 0) return const_cast<char*>("class");
+        if (std::strcmp(text, "object") == 0) return const_cast<char*>("object");
+        if (std::strcmp(text, "def") == 0) return const_cast<char*>("function");
+        if (std::strcmp(text, "val") == 0) return const_cast<char*>("value");
+        if (std::strcmp(text, "var") == 0) return const_cast<char*>("variable");
+        return const_cast<char*>("unknown");
+    }
+}
+
+char* csec_top_level_decl_name(const char* tokens, int ordinal) {
+    const char* kind = csec_top_level_decl_kind(tokens, ordinal);
+    if (std::strcmp(kind, "external-class") == 0 || std::strcmp(kind, "external-object") == 0 ||
+        std::strcmp(kind, "external-function") == 0) {
+        return csec_top_level_decl_name(tokens, ordinal + 1);
+    }
+    if (std::strcmp(kind, "template") == 0) {
+        int depth = 0;
+        for (int cursor = ordinal + 1; csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+            const char* text = csec_token_text_at(tokens, cursor);
+            if (std::strcmp(text, "<") == 0) ++depth;
+            if (std::strcmp(text, ">") == 0 && --depth == 0) return csec_top_level_decl_name(tokens, cursor + 1);
+        }
+        return const_cast<char*>("<template>");
+    }
+    if (std::strcmp(kind, "import") == 0) return csec_token_text_at(tokens, ordinal + 1);
+    if (std::strcmp(kind, "function") == 0) {
+        if (std::strcmp(csec_token_text_at(tokens, ordinal + 1), "operator") != 0) {
+            return csec_token_text_at(tokens, ordinal + 1);
+        }
+        const char* suffix = csec_token_text_at(tokens, ordinal + 2);
+        const size_t length = std::strlen(suffix) + 9;
+        char* result = static_cast<char*>(std::malloc(length));
+        if (!result) return const_cast<char*>("operator");
+        std::snprintf(result, length, "operator%s", suffix);
+        return result;
+    }
+    if (std::strcmp(kind, "class") == 0 || std::strcmp(kind, "object") == 0 ||
+        std::strcmp(kind, "value") == 0 || std::strcmp(kind, "variable") == 0) {
+        return csec_token_text_at(tokens, ordinal + 1);
+    }
+    return const_cast<char*>("<anonymous>");
+}
+
+int csec_count_function_params(const char* tokens, int declStart) {
+    const int paramStart = csec_function_param_end(tokens, declStart) < 0
+        ? -1
+        : csec_find_token_text_in_range(tokens, declStart, csec_function_param_end(tokens, declStart), "(");
+    if (paramStart < 0) return 0;
+    const int paramEnd = csec_function_param_end(tokens, declStart);
+    if (paramEnd <= paramStart + 1) return 0;
+    int count = 1;
+    for (int cursor = paramStart + 1; cursor < paramEnd; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', ",")) ++count;
+    }
+    return count;
+}
+
+int csec_token_is_top_level_operator(const char* tokens, int ordinal, int group) {
+    const char kind = csec_token_kind_at(tokens, ordinal);
+    const char* text = csec_token_text_at(tokens, ordinal);
+    const auto is = [text](const char* candidate) { return std::strcmp(text, candidate) == 0; };
+    if (group == 1 && kind == 'O') return is("=") || is("<-") || is("+=") || is("-=") || is("*=") || is("/=") || is("%=");
+    if (group == 2) return (kind == 'K' && is("or")) || (kind == 'O' && (is("||") || is("|")));
+    if (group == 3) return (kind == 'K' && is("and")) || (kind == 'O' && is("&&"));
+    if (group == 8) return (kind == 'K' && is("xor")) || (kind == 'O' && is("^"));
+    if (group == 9 && kind == 'O') return is("&");
+    if (group == 4 && kind == 'O') return is("==") || is("!=") || is("<") || is(">") || is("<=") || is(">=");
+    if (group == 10 && kind == 'O') return is("<<") || is(">>");
+    if (group == 5) return (kind == 'O' && is("..")) || (kind == 'K' && (is("to") || is("until")));
+    if (group == 6 && kind == 'O') return is("+") || is("-");
+    if (group == 7 && kind == 'O') return is("*") || is("/") || is("%") || is("@");
+    if (group == 11 && kind == 'K') return is("inner") || is("outer") || is("tensor");
+    return group == 12 && kind == 'O' && is(",");
+}
+
+int csec_find_top_level_operator(const char* tokens, int start, int end, int group) {
+    int paren = 0;
+    int brace = 0;
+    int bracket = 0;
+    for (int cursor = end - 1; cursor >= start; --cursor) {
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (csec_token_kind_at(tokens, cursor) == 'O') {
+            if (std::strcmp(text, ")") == 0) ++paren;
+            else if (std::strcmp(text, "(") == 0) --paren;
+            else if (std::strcmp(text, "}") == 0) ++brace;
+            else if (std::strcmp(text, "{") == 0) --brace;
+            else if (std::strcmp(text, "]") == 0) ++bracket;
+            else if (std::strcmp(text, "[") == 0) --bracket;
+        }
+        if (paren == 0 && brace == 0 && bracket == 0 &&
+            csec_token_is_top_level_operator(tokens, cursor, group)) {
+            return cursor;
+        }
+    }
+    return -1;
+}
+
+int csec_find_top_level_match(const char* tokens, int start, int end) {
+    int paren = 0;
+    int brace = 0;
+    int bracket = 0;
+    for (int cursor = start; cursor < end && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (csec_token_kind_at(tokens, cursor) == 'O') {
+            if (std::strcmp(text, "(") == 0) ++paren;
+            else if (std::strcmp(text, ")") == 0) --paren;
+            else if (std::strcmp(text, "{") == 0) ++brace;
+            else if (std::strcmp(text, "}") == 0) --brace;
+            else if (std::strcmp(text, "[") == 0) ++bracket;
+            else if (std::strcmp(text, "]") == 0) --bracket;
+        }
+        if (paren == 0 && brace == 0 && bracket == 0 &&
+            csec_token_is(tokens, cursor, 'K', "match")) {
+            return cursor;
+        }
+    }
+    return -1;
+}
+
+int csec_find_lambda_arrow(const char* tokens, int start, int end) {
+    const int closeCapture = csec_find_closing_token(tokens, start, end, "[", "]");
+    if (closeCapture < 0) return -1;
+    int openParams = closeCapture + 1;
+    while (csec_token_kind_at(tokens, openParams) == 'M') ++openParams;
+    if (!csec_token_is(tokens, openParams, 'O', "(")) return -1;
+    const int closeParams = csec_find_closing_token(tokens, openParams, end, "(", ")");
+    if (closeParams < 0) return -1;
+    int arrow = closeParams + 1;
+    while (csec_token_kind_at(tokens, arrow) == 'M') ++arrow;
+    return csec_token_is(tokens, arrow, 'O', "->") ? arrow : -1;
+}
+
+char* csec_generate_symbol_table(const char* tokens) {
+    std::string output;
+    if (!csec_validate_top_level(tokens)) {
+        output = "error: parse failed\n";
+    } else {
+        output = "Symbols\n";
+        int cursor = 0;
+        while (csec_token_kind_at(tokens, cursor) == 'M') ++cursor;
+        while (csec_token_kind_at(tokens, cursor) != 'E') {
+            const char* kind = csec_top_level_decl_kind(tokens, cursor);
+            const char* name = csec_top_level_decl_name(tokens, cursor);
+            const int declEnd = csec_advance_top_level_decl(tokens, cursor);
+            if (std::strcmp(kind, "function") == 0 || std::strcmp(kind, "external-function") == 0) {
+                output += "Symbol function ";
+                output += name;
+                output += " params=" + std::to_string(csec_count_function_params(tokens, cursor));
+                output += " returns=";
+                output += csec_function_return_type_at(tokens, cursor);
+                output += "\n";
+                if (std::strcmp(kind, "external-function") == 0) {
+                    output += "  External function ";
+                    output += name;
+                    output += "\n";
+                }
+            } else if (std::strcmp(kind, "value") == 0 || std::strcmp(kind, "variable") == 0) {
+                output += "Symbol ";
+                output += kind;
+                output += " ";
+                output += name;
+                output += "\n";
+            } else if (std::strcmp(kind, "import") == 0) {
+                output += "Symbol import ";
+                output += name;
+                output += "\n";
+            } else if (std::strcmp(kind, "class") == 0 || std::strcmp(kind, "object") == 0 ||
+                       std::strcmp(kind, "external-class") == 0 || std::strcmp(kind, "external-object") == 0) {
+                output += "Symbol type ";
+                output += name;
+                output += " kind=";
+                output += kind;
+                output += "\n";
+            } else {
+                output += "Symbol ";
+                output += kind;
+                output += " ";
+                output += name;
+                output += "\n";
+            }
+            cursor = declEnd;
+            while (csec_token_kind_at(tokens, cursor) == 'M') ++cursor;
+        }
+    }
+    char* result = static_cast<char*>(std::malloc(output.size() + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, output.c_str(), output.size() + 1);
+    return result;
+}
+
+char* csec_append_expression_until(const char* tokens, int start, int end) {
+    std::string output;
+    for (int cursor = start; cursor < end && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        output += csec_token_text_at(tokens, cursor);
+        if (cursor + 1 < end) output += " ";
+    }
+    char* result = static_cast<char*>(std::malloc(output.size() + 1));
+    if (!result) return nullptr;
+    std::memcpy(result, output.c_str(), output.size() + 1);
+    return result;
+}
+
+char* csec_ir_operator_name(const char* text) {
+    const char* value = text ? text : "";
+    if (std::strcmp(value, "+") == 0) return const_cast<char*>("add");
+    if (std::strcmp(value, "-") == 0) return const_cast<char*>("sub");
+    if (std::strcmp(value, "*") == 0) return const_cast<char*>("mul");
+    if (std::strcmp(value, "/") == 0) return const_cast<char*>("sdiv");
+    if (std::strcmp(value, "%") == 0) return const_cast<char*>("srem");
+    if (std::strcmp(value, "<<") == 0) return const_cast<char*>("shl");
+    if (std::strcmp(value, ">>") == 0) return const_cast<char*>("ashr");
+    if (std::strcmp(value, "&") == 0 || std::strcmp(value, "and") == 0 || std::strcmp(value, "&&") == 0) return const_cast<char*>("and");
+    if (std::strcmp(value, "|") == 0 || std::strcmp(value, "or") == 0 || std::strcmp(value, "||") == 0) return const_cast<char*>("or");
+    if (std::strcmp(value, "^") == 0 || std::strcmp(value, "xor") == 0) return const_cast<char*>("xor");
+    if (std::strcmp(value, "==") == 0) return const_cast<char*>("icmp_eq");
+    if (std::strcmp(value, "!=") == 0) return const_cast<char*>("icmp_ne");
+    if (std::strcmp(value, "<") == 0) return const_cast<char*>("icmp_slt");
+    if (std::strcmp(value, "<=") == 0) return const_cast<char*>("icmp_sle");
+    if (std::strcmp(value, ">") == 0) return const_cast<char*>("icmp_sgt");
+    if (std::strcmp(value, ">=") == 0) return const_cast<char*>("icmp_sge");
+    if (std::strcmp(value, "..") == 0) return const_cast<char*>("range");
+    if (std::strcmp(value, "to") == 0) return const_cast<char*>("range_to");
+    if (std::strcmp(value, "until") == 0) return const_cast<char*>("range_until");
+    if (std::strcmp(value, "@") == 0) return const_cast<char*>("matmul");
+    return const_cast<char*>(value);
+}
+
+int csec_expression_top_level_operator(const char* tokens, int start, int end) {
+    static const int groups[] = {1, 2, 3, 8, 9, 4, 10, 5, 6, 7, 11};
+    for (int group : groups) {
+        const int ordinal = csec_find_top_level_operator(tokens, start, end, group);
+        if (ordinal >= start) return ordinal;
+    }
+    return -1;
 }
 
 int csec_advance_top_level_decl(const char* tokens, int ordinal) {

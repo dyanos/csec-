@@ -4830,6 +4830,19 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader3eb: Int = csec_string_builder_append(builder, "declare i32 @csec_line_start(ptr, i32)\n");
     val appendHeader3ec: Int = csec_string_builder_append(builder, "declare i32 @csec_line_end(ptr, i32)\n");
     val appendHeader3ee: Int = csec_string_builder_append(builder, "declare i32 @csec_validate_balanced(ptr)\n");
+    val appendHeader3eea: Int = csec_string_builder_append(builder, "declare i32 @csec_starts_top_level_declaration(ptr, i32)\n");
+    val appendHeader3eeb: Int = csec_string_builder_append(builder, "declare i32 @csec_validate_top_level(ptr)\n");
+    val appendHeader3eec: Int = csec_string_builder_append(builder, "declare ptr @csec_top_level_decl_kind(ptr, i32)\n");
+    val appendHeader3eed: Int = csec_string_builder_append(builder, "declare ptr @csec_top_level_decl_name(ptr, i32)\n");
+    val appendHeader3eee: Int = csec_string_builder_append(builder, "declare i32 @csec_count_function_params(ptr, i32)\n");
+    val appendHeader3eef: Int = csec_string_builder_append(builder, "declare i32 @csec_token_is_top_level_operator(ptr, i32, i32)\n");
+    val appendHeader3eeg: Int = csec_string_builder_append(builder, "declare i32 @csec_find_top_level_operator(ptr, i32, i32, i32)\n");
+    val appendHeader3eegm: Int = csec_string_builder_append(builder, "declare i32 @csec_find_top_level_match(ptr, i32, i32)\n");
+    val appendHeader3eegla: Int = csec_string_builder_append(builder, "declare i32 @csec_find_lambda_arrow(ptr, i32, i32)\n");
+    val appendHeader3eegst: Int = csec_string_builder_append(builder, "declare ptr @csec_generate_symbol_table(ptr)\n");
+    val appendHeader3eegae: Int = csec_string_builder_append(builder, "declare ptr @csec_append_expression_until(ptr, i32, i32)\n");
+    val appendHeader3eeh: Int = csec_string_builder_append(builder, "declare ptr @csec_ir_operator_name(ptr)\n");
+    val appendHeader3eei: Int = csec_string_builder_append(builder, "declare i32 @csec_expression_top_level_operator(ptr, i32, i32)\n");
     val appendHeader3ef: Int = csec_string_builder_append(builder, "declare i32 @csec_find_token_text_in_range(ptr, i32, i32, ptr)\n");
     val appendHeader3eg: Int = csec_string_builder_append(builder, "declare i32 @csec_find_closing_token(ptr, i32, i32, ptr, ptr)\n");
     val appendHeader3eh: Int = csec_string_builder_append(builder, "declare i32 @csec_find_statement_paren_start(ptr, i32, i32)\n");
@@ -4939,6 +4952,19 @@ def generateLLVMModule(tokens: String): String {
         "declare i32 @csec_line_start(ptr, i32)\n" +
         "declare i32 @csec_line_end(ptr, i32)\n" +
         "declare i32 @csec_validate_balanced(ptr)\n" +
+        "declare i32 @csec_starts_top_level_declaration(ptr, i32)\n" +
+        "declare i32 @csec_validate_top_level(ptr)\n" +
+        "declare ptr @csec_top_level_decl_kind(ptr, i32)\n" +
+        "declare ptr @csec_top_level_decl_name(ptr, i32)\n" +
+        "declare i32 @csec_count_function_params(ptr, i32)\n" +
+        "declare i32 @csec_token_is_top_level_operator(ptr, i32, i32)\n" +
+        "declare i32 @csec_find_top_level_operator(ptr, i32, i32, i32)\n" +
+        "declare i32 @csec_find_top_level_match(ptr, i32, i32)\n" +
+        "declare i32 @csec_find_lambda_arrow(ptr, i32, i32)\n" +
+        "declare ptr @csec_generate_symbol_table(ptr)\n" +
+        "declare ptr @csec_append_expression_until(ptr, i32, i32)\n" +
+        "declare ptr @csec_ir_operator_name(ptr)\n" +
+        "declare i32 @csec_expression_top_level_operator(ptr, i32, i32)\n" +
         "declare i32 @csec_find_token_text_in_range(ptr, i32, i32, ptr)\n" +
         "declare i32 @csec_find_closing_token(ptr, i32, i32, ptr, ptr)\n" +
         "declare i32 @csec_find_statement_paren_start(ptr, i32, i32)\n" +

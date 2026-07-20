@@ -1742,6 +1742,7 @@ external def csec_string_builder_append(builder: Long, text: String): Int;
 external def csec_string_builder_finish(builder: Long): String;
 external def csec_string_builder_write_to_file(builder: Long, path: String): Int;
 external def csec_llvm_string_literal_bytes(text: String): String;
+external def csec_llvm_string_literal_byte_length(text: String): Int;
 external def csec_enclosing_function_decl_start(tokens: String, limit: Int): Int;
 external def csec_enclosing_function_body_start(tokens: String, limit: Int): Int;
 external def csec_enclosing_function_body_end(tokens: String, limit: Int): Int;
@@ -4498,18 +4499,7 @@ def generateLLVMLongBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int):
 }
 
 def llvmStringLiteralByteLength(text: String): Int {
-    var cursor: Int = 0;
-    var length: Int = 1;
-    while (cursor < text.length) {
-        if (text.charAt(cursor) == '\\' and cursor + 1 < text.length) {
-            cursor = cursor + 2;
-        }
-        else {
-            cursor = cursor + 1;
-        }
-        length = length + 1;
-    }
-    return length;
+    return csec_llvm_string_literal_byte_length(text);
 }
 
 def generateLLVMPointerBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int): String {
@@ -4841,7 +4831,14 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader3eegla: Int = csec_string_builder_append(builder, "declare i32 @csec_find_lambda_arrow(ptr, i32, i32)\n");
     val appendHeader3eegst: Int = csec_string_builder_append(builder, "declare ptr @csec_generate_symbol_table(ptr)\n");
     val appendHeader3eegae: Int = csec_string_builder_append(builder, "declare ptr @csec_append_expression_until(ptr, i32, i32)\n");
+    val appendHeader3eegaea: Int = csec_string_builder_append(builder, "declare ptr @csec_generate_expression_ast(ptr, i32, i32)\n");
+    val appendHeader3eegaeb: Int = csec_string_builder_append(builder, "declare ptr @csec_generate_statement_ast(ptr, i32, i32)\n");
+    val appendHeader3eegaec: Int = csec_string_builder_append(builder, "declare ptr @csec_generate_body_ast(ptr, i32, i32)\n");
+    val appendHeader3eegaed: Int = csec_string_builder_append(builder, "declare i32 @csec_find_function_param_start(ptr, i32)\n");
+    val appendHeader3eegaee: Int = csec_string_builder_append(builder, "declare ptr @csec_generate_c_body(ptr, i32, i32, ptr)\n");
+    val appendHeader3eegaef: Int = csec_string_builder_append(builder, "declare ptr @csec_generate_c_expression(ptr, i32, i32)\n");
     val appendHeader3eeh: Int = csec_string_builder_append(builder, "declare ptr @csec_ir_operator_name(ptr)\n");
+    val appendHeader3eehType: Int = csec_string_builder_append(builder, "declare ptr @csec_ir_type_name(ptr)\n");
     val appendHeader3eei: Int = csec_string_builder_append(builder, "declare i32 @csec_expression_top_level_operator(ptr, i32, i32)\n");
     val appendHeader3ef: Int = csec_string_builder_append(builder, "declare i32 @csec_find_token_text_in_range(ptr, i32, i32, ptr)\n");
     val appendHeader3eg: Int = csec_string_builder_append(builder, "declare i32 @csec_find_closing_token(ptr, i32, i32, ptr, ptr)\n");
@@ -4865,6 +4862,7 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader13: Int = csec_string_builder_append(builder, "declare void @csec_print_string(ptr)\n");
     val appendHeader14: Int = csec_string_builder_append(builder, "declare void @csec_print_newline()\n");
     val appendHeader15: Int = csec_string_builder_append(builder, "declare ptr @csec_string_concat(ptr, ptr)\n");
+    val appendHeader15eq: Int = csec_string_builder_append(builder, "declare i32 @csec_string_equals(ptr, ptr)\n");
     val appendHeader16: Int = csec_string_builder_append(builder, "declare i32 @csec_string_starts_with(ptr, ptr)\n");
     val appendHeader17: Int = csec_string_builder_append(builder, "declare ptr @csec_string_substring(ptr, i32, i32)\n");
     val appendHeader18: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_i64(i64)\n");
@@ -4886,11 +4884,15 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader34: Int = csec_string_builder_append(builder, "declare ptr @csec_function_llvm_param_allocas(ptr, i32)\n");
     val appendHeader35: Int = csec_string_builder_append(builder, "declare ptr @csec_llvm_name_with_number(ptr, i32)\n");
     val appendHeader35a: Int = csec_string_builder_append(builder, "declare ptr @csec_llvm_string_literal_bytes(ptr)\n");
+    val appendHeader35b: Int = csec_string_builder_append(builder, "declare i32 @csec_llvm_string_literal_byte_length(ptr)\n");
     val appendHeader36: Int = csec_string_builder_append(builder, "declare ptr @csec_function_return_type_at(ptr, i32)\n");
+    val appendHeader36a: Int = csec_string_builder_append(builder, "declare ptr @csec_collect_type_name(ptr, i32, i32)\n");
     val appendHeader37: Int = csec_string_builder_append(builder, "declare i32 @csec_enclosing_function_decl_start(ptr, i32)\n");
     val appendHeader38: Int = csec_string_builder_append(builder, "declare i32 @csec_enclosing_function_body_start(ptr, i32)\n");
     val appendHeader39: Int = csec_string_builder_append(builder, "declare i32 @csec_enclosing_function_body_end(ptr, i32)\n");
     val appendHeader40: Int = csec_string_builder_append(builder, "declare ptr @csec_lookup_function_return_type(ptr, ptr)\n");
+    val appendHeader40a: Int = csec_string_builder_append(builder, "declare ptr @csec_lookup_visible_value_type(ptr, i32, ptr)\n");
+    val appendHeader40b: Int = csec_string_builder_append(builder, "declare ptr @csec_lookup_visible_storage_name(ptr, i32, ptr)\n");
     val appendHeader41: Int = csec_string_builder_append(builder, "declare ptr @csec_expand_imports(ptr)\n\n");
     val appendHeader42: Int = csec_string_builder_append(builder, generateLLVMStringLiteralGlobals(tokens));
     var emitted: Boolean = false;
@@ -4963,7 +4965,14 @@ def generateLLVMModule(tokens: String): String {
         "declare i32 @csec_find_lambda_arrow(ptr, i32, i32)\n" +
         "declare ptr @csec_generate_symbol_table(ptr)\n" +
         "declare ptr @csec_append_expression_until(ptr, i32, i32)\n" +
+        "declare ptr @csec_generate_expression_ast(ptr, i32, i32)\n" +
+        "declare ptr @csec_generate_statement_ast(ptr, i32, i32)\n" +
+        "declare ptr @csec_generate_body_ast(ptr, i32, i32)\n" +
+        "declare i32 @csec_find_function_param_start(ptr, i32)\n" +
+        "declare ptr @csec_generate_c_body(ptr, i32, i32, ptr)\n" +
+        "declare ptr @csec_generate_c_expression(ptr, i32, i32)\n" +
         "declare ptr @csec_ir_operator_name(ptr)\n" +
+        "declare ptr @csec_ir_type_name(ptr)\n" +
         "declare i32 @csec_expression_top_level_operator(ptr, i32, i32)\n" +
         "declare i32 @csec_find_token_text_in_range(ptr, i32, i32, ptr)\n" +
         "declare i32 @csec_find_closing_token(ptr, i32, i32, ptr, ptr)\n" +
@@ -4987,6 +4996,7 @@ def generateLLVMModule(tokens: String): String {
         "declare void @csec_print_string(ptr)\n" +
         "declare void @csec_print_newline()\n" +
         "declare ptr @csec_string_concat(ptr, ptr)\n" +
+        "declare i32 @csec_string_equals(ptr, ptr)\n" +
         "declare i32 @csec_string_starts_with(ptr, ptr)\n" +
         "declare ptr @csec_string_substring(ptr, i32, i32)\n" +
         "declare ptr @csec_to_string_i64(i64)\n" +
@@ -5008,11 +5018,15 @@ def generateLLVMModule(tokens: String): String {
         "declare ptr @csec_function_llvm_param_allocas(ptr, i32)\n" +
         "declare ptr @csec_llvm_name_with_number(ptr, i32)\n" +
         "declare ptr @csec_llvm_string_literal_bytes(ptr)\n" +
+        "declare i32 @csec_llvm_string_literal_byte_length(ptr)\n" +
         "declare ptr @csec_function_return_type_at(ptr, i32)\n" +
+        "declare ptr @csec_collect_type_name(ptr, i32, i32)\n" +
         "declare i32 @csec_enclosing_function_decl_start(ptr, i32)\n" +
         "declare i32 @csec_enclosing_function_body_start(ptr, i32)\n" +
         "declare i32 @csec_enclosing_function_body_end(ptr, i32)\n" +
         "declare ptr @csec_lookup_function_return_type(ptr, ptr)\n" +
+        "declare ptr @csec_lookup_visible_value_type(ptr, i32, ptr)\n" +
+        "declare ptr @csec_lookup_visible_storage_name(ptr, i32, ptr)\n" +
         "declare ptr @csec_expand_imports(ptr)\n\n" +
         generateLLVMStringLiteralGlobals(tokens);
     var emitted: Boolean = false;

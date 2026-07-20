@@ -39,6 +39,24 @@ namespace {
 int g_argc = 0;
 char** g_argv = nullptr;
 
+std::string llvmStringGlobal(const std::string& name, const std::string& value) {
+    static constexpr char hex[] = "0123456789ABCDEF";
+    std::string escaped;
+    escaped.reserve(value.size() * 2 + 4);
+    for (unsigned char ch : value) {
+        if (ch >= 32 && ch <= 126 && ch != '"' && ch != '\\') {
+            escaped.push_back(static_cast<char>(ch));
+        } else {
+            escaped.push_back('\\');
+            escaped.push_back(hex[ch >> 4]);
+            escaped.push_back(hex[ch & 0x0f]);
+        }
+    }
+    escaped += "\\00";
+    return "@" + name + " = private unnamed_addr constant [" +
+        std::to_string(value.size() + 1) + " x i8] c\"" + escaped + "\"\n";
+}
+
 struct TokenBuilder {
     char* data = nullptr;
     size_t length = 0;
@@ -97,6 +115,13 @@ void clearTokenCachesFor(const char* tokens) {
     tokenTextCache().erase(tokens);
     tokenFunctionRangeCache().erase(tokens);
     tokenFunctionReturnTypeCache().erase(tokens);
+}
+
+void clearAllTokenCaches() {
+    tokenLineCache().clear();
+    tokenTextCache().clear();
+    tokenFunctionRangeCache().clear();
+    tokenFunctionReturnTypeCache().clear();
 }
 
 const std::vector<int>& tokenLineStarts(const char* tokens) {
@@ -419,6 +444,10 @@ char* csec_string_concat(const char* left, const char* right) {
     return result;
 }
 
+void csec_release_concat_strings(void) {
+    clearAllTokenCaches();
+}
+
 int csec_lex_quoted(const char* source, int index) {
     if (!source || index < 0 || source[index] == '\0') return index;
     const char quote = source[index];
@@ -447,6 +476,25 @@ int csec_lex_identifier(const char* source, int index) {
     int cursor = index + 1;
     while (std::isalnum(static_cast<unsigned char>(source[cursor])) || source[cursor] == '_') ++cursor;
     return cursor;
+}
+
+int csec_operator_length(const char* source, int index) {
+    if (!source || index < 0 || source[index] == '\0') return 0;
+    const char first = source[index];
+    const char second = source[index + 1];
+    if (first == '[' && second == '@') return 2;
+    const bool pair =
+        (first == '=' && (second == '>' || second == '=')) ||
+        (first == '<' && (second == '-' || second == '=' || second == '<')) ||
+        (first == '>' && (second == '=' || second == '>')) ||
+        (first == '!' && second == '=') ||
+        (first == '+' && (second == '+' || second == '=')) ||
+        (first == '-' && (second == '-' || second == '=' || second == '>')) ||
+        (first == '*' && (second == '*' || second == '=')) ||
+        (first == '/' && second == '=') || (first == '%' && second == '=') ||
+        (first == '&' && second == '&') || (first == '|' && second == '|') ||
+        (first == '.' && second == '.') || (first == '$' && second == '$');
+    return pair ? 2 : 1;
 }
 
 int csec_digit_value(char ch) {
@@ -509,10 +557,2580 @@ int csec_validate_balanced(const char* tokens) {
     return paren == 0 && brace == 0 && bracket == 0;
 }
 
+std::string llvmGenerateIRAssignmentDefinition() {
+    return R"IR(define ptr @generateIRAssignment(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %op = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %valid.op = icmp sgt i32 %op, %arg.start
+  br i1 %valid.op, label %kind, label %invalid
+kind:
+  %kind.value = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %arg.start)
+  %is.identifier = icmp eq i8 %kind.value, 73
+  br i1 %is.identifier, label %assignment, label %invalid
+assignment:
+  %name = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %arg.start)
+  %op.text = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %op)
+  %rhs.start = add i32 %op, 1
+  %rhs = call ptr @generateIRExpression(ptr %arg.tokens, i32 %rhs.start, i32 %arg.end)
+  %equals.raw = call i32 @csec_string_equals(ptr %op.text, ptr @.str.ir.assign.equals)
+  %left.raw = call i32 @csec_string_equals(ptr %op.text, ptr @.str.ir.assign.left)
+  %equals = icmp ne i32 %equals.raw, 0
+  %left = icmp ne i32 %left.raw, 0
+  %is.store = or i1 %equals, %left
+  br i1 %is.store, label %store, label %compound
+store:
+  %s1 = call ptr @csec_string_concat(ptr @.str.ir.assign.store, ptr %rhs)
+  %s2 = call ptr @csec_string_concat(ptr %s1, ptr @.str.ir.assign.ptr)
+  %s3 = call ptr @csec_string_concat(ptr %s2, ptr %name)
+  %s4 = call ptr @csec_string_concat(ptr %s3, ptr @.str.ir.assign.nl)
+  ret ptr %s4
+compound:
+  %type.name = call ptr @inferExpressionType(ptr %arg.tokens, i32 %rhs.start, i32 %arg.end)
+  %ir.type = call ptr @irTypeName(ptr %type.name)
+  %operator = call ptr @csec_string_substring(ptr %op.text, i32 0, i32 1)
+  %binary = call ptr @irOperatorName(ptr %operator)
+  %a1 = call ptr @csec_string_concat(ptr @.str.ir.assign.old, ptr %name)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.ir.assign.load)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %ir.type)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.ir.assign.ptr)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr %name)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.ir.assign.nl)
+  %b1 = call ptr @csec_string_concat(ptr @.str.ir.assign.new, ptr %name)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.ir.assign.eqspace)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr %binary)
+  %b4 = call ptr @csec_string_concat(ptr %b3, ptr @.str.ir.expr.space)
+  %b5 = call ptr @csec_string_concat(ptr %b4, ptr %ir.type)
+  %b6 = call ptr @csec_string_concat(ptr %b5, ptr @.str.ir.assign.oldref)
+  %b7 = call ptr @csec_string_concat(ptr %b6, ptr %name)
+  %b8 = call ptr @csec_string_concat(ptr %b7, ptr @.str.ir.expr.middle)
+  %trimmed = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %rhs.start, i32 %arg.end)
+  %raw = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %rhs.start, i32 %trimmed)
+  %b9 = call ptr @csec_string_concat(ptr %b8, ptr %raw)
+  %b10 = call ptr @csec_string_concat(ptr %b9, ptr @.str.ir.expr.close)
+  %b11 = call ptr @csec_string_concat(ptr %b10, ptr @.str.ir.assign.nl)
+  %c1 = call ptr @csec_string_concat(ptr @.str.ir.assign.store, ptr %ir.type)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.ir.assign.newref)
+  %c3 = call ptr @csec_string_concat(ptr %c2, ptr %name)
+  %c4 = call ptr @csec_string_concat(ptr %c3, ptr @.str.ir.assign.ptr)
+  %c5 = call ptr @csec_string_concat(ptr %c4, ptr %name)
+  %c6 = call ptr @csec_string_concat(ptr %c5, ptr @.str.ir.assign.nl)
+  %result1 = call ptr @csec_string_concat(ptr %a6, ptr %b11)
+  %result2 = call ptr @csec_string_concat(ptr %result1, ptr %c6)
+  ret ptr %result2
+invalid:
+  ret ptr @.str.ir.assign.empty
+}
+
+@.str.ir.assign.empty = private unnamed_addr constant [1 x i8] c"\00"
+@.str.ir.assign.equals = private unnamed_addr constant [2 x i8] c"=\00"
+@.str.ir.assign.left = private unnamed_addr constant [3 x i8] c"<-\00"
+@.str.ir.assign.store = private unnamed_addr constant [11 x i8] c"    store \00"
+@.str.ir.assign.ptr = private unnamed_addr constant [8 x i8] c", ptr %\00"
+@.str.ir.assign.nl = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.ir.assign.old = private unnamed_addr constant [10 x i8] c"    %old.\00"
+@.str.ir.assign.load = private unnamed_addr constant [9 x i8] c" = load \00"
+@.str.ir.assign.new = private unnamed_addr constant [10 x i8] c"    %new.\00"
+@.str.ir.assign.eqspace = private unnamed_addr constant [4 x i8] c" = \00"
+@.str.ir.assign.oldref = private unnamed_addr constant [7 x i8] c" %old.\00"
+@.str.ir.assign.newref = private unnamed_addr constant [7 x i8] c" %new.\00"
+
+)IR";
+}
+
+std::string llvmGenerateIRIfDefinition() {
+    return R"IR(define ptr @generateIRIf(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %open = call i32 @findStatementParenStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %close = call i32 @findStatementParenEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %then.open = call i32 @findStatementBlockStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %then.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %then.open, i32 %arg.end, ptr @.str.ir.if.brace.open, ptr @.str.ir.if.brace.close)
+  %open.ok = icmp sge i32 %open, 0
+  %close.ok = icmp sgt i32 %close, %open
+  %then.open.ok = icmp sge i32 %then.open, 0
+  %then.close.ok = icmp sgt i32 %then.close, %then.open
+  %ok.1 = and i1 %open.ok, %close.ok
+  %ok.2 = and i1 %then.open.ok, %then.close.ok
+  %ok = and i1 %ok.1, %ok.2
+  br i1 %ok, label %build, label %malformed
+malformed:
+  ret ptr @.str.ir.if.malformed
+build:
+  %seed.i64 = sext i32 %arg.start to i64
+  %seed = call ptr @csec_to_string_i64(i64 %seed.i64)
+  %after.then = add i32 %then.close, 1
+  %possible.else = call i32 @skipTrivia(ptr %arg.tokens, i32 %after.then)
+  %before.end = icmp slt i32 %possible.else, %arg.end
+  br i1 %before.end, label %else.test, label %else.none
+else.test:
+  %else.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %possible.else, i8 75, ptr @.str.ir.if.else.keyword)
+  %else.bool = icmp ne i32 %else.raw, 0
+  br label %else.join
+else.none:
+  br label %else.join
+else.join:
+  %has.else = phi i1 [ %else.bool, %else.test ], [ false, %else.none ]
+  %expr.start = add i32 %open, 1
+  %condition = call ptr @generateIRExpression(ptr %arg.tokens, i32 %expr.start, i32 %close)
+  %then.start = add i32 %then.open, 1
+  %then.body = call ptr @generateIRFlatBody(ptr %arg.tokens, i32 %then.start, i32 %then.close)
+  %else.body = call ptr @generateIRElseFlatBody(ptr %arg.tokens, i32 %possible.else, i32 %arg.end, i1 %has.else)
+  %a1 = call ptr @csec_string_concat(ptr @.str.ir.if.cond, ptr %seed)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.ir.if.equals)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %condition)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.ir.if.newline)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr @.str.ir.if.branch)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr %seed)
+  %a7 = call ptr @csec_string_concat(ptr %a6, ptr @.str.ir.if.then)
+  %a8 = call ptr @csec_string_concat(ptr %a7, ptr %seed)
+  %a9 = call ptr @csec_string_concat(ptr %a8, ptr @.str.ir.if.else)
+  %a10 = call ptr @csec_string_concat(ptr %a9, ptr %seed)
+  %a11 = call ptr @csec_string_concat(ptr %a10, ptr @.str.ir.if.colon)
+  %a12 = call ptr @csec_string_concat(ptr %a11, ptr %then.body)
+  %a13 = call ptr @csec_string_concat(ptr %a12, ptr @.str.ir.if.end.branch)
+  %a14 = call ptr @csec_string_concat(ptr %a13, ptr %seed)
+  %a15 = call ptr @csec_string_concat(ptr %a14, ptr @.str.ir.if.newline)
+  %a16 = call ptr @csec_string_concat(ptr %a15, ptr @.str.ir.if.else.label)
+  %a17 = call ptr @csec_string_concat(ptr %a16, ptr %seed)
+  %a18 = call ptr @csec_string_concat(ptr %a17, ptr @.str.ir.if.colon)
+  %a19 = call ptr @csec_string_concat(ptr %a18, ptr %else.body)
+  %a20 = call ptr @csec_string_concat(ptr %a19, ptr @.str.ir.if.end.branch)
+  %a21 = call ptr @csec_string_concat(ptr %a20, ptr %seed)
+  %a22 = call ptr @csec_string_concat(ptr %a21, ptr @.str.ir.if.newline)
+  %a23 = call ptr @csec_string_concat(ptr %a22, ptr @.str.ir.if.end.label)
+  %a24 = call ptr @csec_string_concat(ptr %a23, ptr %seed)
+  %ret = call ptr @csec_string_concat(ptr %a24, ptr @.str.ir.if.colon)
+  ret ptr %ret
+}
+
+@.str.ir.if.malformed = private unnamed_addr constant [20 x i8] c"    ; malformed if\0A\00"
+@.str.ir.if.brace.open = private unnamed_addr constant [2 x i8] c"{\00"
+@.str.ir.if.brace.close = private unnamed_addr constant [2 x i8] c"}\00"
+@.str.ir.if.else.keyword = private unnamed_addr constant [5 x i8] c"else\00"
+@.str.ir.if.cond = private unnamed_addr constant [11 x i8] c"    %cond.\00"
+@.str.ir.if.equals = private unnamed_addr constant [4 x i8] c" = \00"
+@.str.ir.if.newline = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.ir.if.branch = private unnamed_addr constant [17 x i8] c"    br i1 %cond.\00"
+@.str.ir.if.then = private unnamed_addr constant [18 x i8] c", label %if.then.\00"
+@.str.ir.if.else = private unnamed_addr constant [18 x i8] c", label %if.else.\00"
+@.str.ir.if.colon = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.ir.if.end.branch = private unnamed_addr constant [22 x i8] c"    br label %if.end.\00"
+@.str.ir.if.else.label = private unnamed_addr constant [9 x i8] c"if.else.\00"
+@.str.ir.if.end.label = private unnamed_addr constant [8 x i8] c"if.end.\00"
+)IR";
+}
+
+std::string llvmGenerateIRWhileDefinition() {
+    return R"WHILELLVM(define ptr @generateIRWhile(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %open = call i32 @findStatementParenStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %close = call i32 @findStatementParenEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %body.open = call i32 @findStatementBlockStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %body.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %body.open, i32 %arg.end, ptr @.str.ir.while.brace.open, ptr @.str.ir.while.brace.close)
+  %open.ok = icmp sge i32 %open, 0
+  %close.ok = icmp sgt i32 %close, %open
+  %body.open.ok = icmp sge i32 %body.open, 0
+  %body.close.ok = icmp sgt i32 %body.close, %body.open
+  %ok.1 = and i1 %open.ok, %close.ok
+  %ok.2 = and i1 %body.open.ok, %body.close.ok
+  %ok = and i1 %ok.1, %ok.2
+  br i1 %ok, label %build, label %bad
+bad:
+  ret ptr @.str.ir.while.bad
+build:
+  %seed.i64 = sext i32 %arg.start to i64
+  %seed = call ptr @csec_to_string_i64(i64 %seed.i64)
+  %expr.start = add i32 %open, 1
+  %expr = call ptr @generateIRExpression(ptr %arg.tokens, i32 %expr.start, i32 %close)
+  %body.start = add i32 %body.open, 1
+  %body = call ptr @generateIRFlatBody(ptr %arg.tokens, i32 %body.start, i32 %body.close)
+  %a1 = call ptr @csec_string_concat(ptr @.str.ir.while.branch, ptr %seed)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.ir.while.nl)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr @.str.ir.while.cond.label)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr %seed)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr @.str.ir.while.colon)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.ir.while.value)
+  %a7 = call ptr @csec_string_concat(ptr %a6, ptr %seed)
+  %a8 = call ptr @csec_string_concat(ptr %a7, ptr @.str.ir.while.equals)
+  %a9 = call ptr @csec_string_concat(ptr %a8, ptr %expr)
+  %a10 = call ptr @csec_string_concat(ptr %a9, ptr @.str.ir.while.nl)
+  %a11 = call ptr @csec_string_concat(ptr %a10, ptr @.str.ir.while.test)
+  %a12 = call ptr @csec_string_concat(ptr %a11, ptr %seed)
+  %a13 = call ptr @csec_string_concat(ptr %a12, ptr @.str.ir.while.body.label)
+  %a14 = call ptr @csec_string_concat(ptr %a13, ptr %seed)
+  %a15 = call ptr @csec_string_concat(ptr %a14, ptr @.str.ir.while.end.label)
+  %a16 = call ptr @csec_string_concat(ptr %a15, ptr %seed)
+  %a17 = call ptr @csec_string_concat(ptr %a16, ptr @.str.ir.while.nl)
+  %a18 = call ptr @csec_string_concat(ptr %a17, ptr @.str.ir.while.body.name)
+  %a19 = call ptr @csec_string_concat(ptr %a18, ptr %seed)
+  %a20 = call ptr @csec_string_concat(ptr %a19, ptr @.str.ir.while.colon)
+  %a21 = call ptr @csec_string_concat(ptr %a20, ptr %body)
+  %a22 = call ptr @csec_string_concat(ptr %a21, ptr @.str.ir.while.branch)
+  %a23 = call ptr @csec_string_concat(ptr %a22, ptr %seed)
+  %a24 = call ptr @csec_string_concat(ptr %a23, ptr @.str.ir.while.nl)
+  %a25 = call ptr @csec_string_concat(ptr %a24, ptr @.str.ir.while.end.name)
+  %a26 = call ptr @csec_string_concat(ptr %a25, ptr %seed)
+  %ret = call ptr @csec_string_concat(ptr %a26, ptr @.str.ir.while.colon)
+  ret ptr %ret
+}
+
+@.str.ir.while.bad = private unnamed_addr constant [23 x i8] c"    ; malformed while\0A\00"
+@.str.ir.while.brace.open = private unnamed_addr constant [2 x i8] c"{\00"
+@.str.ir.while.brace.close = private unnamed_addr constant [2 x i8] c"}\00"
+@.str.ir.while.branch = private unnamed_addr constant [26 x i8] c"    br label %while.cond.\00"
+@.str.ir.while.nl = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.ir.while.cond.label = private unnamed_addr constant [12 x i8] c"while.cond.\00"
+@.str.ir.while.colon = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.ir.while.value = private unnamed_addr constant [16 x i8] c"    %whilecond.\00"
+@.str.ir.while.equals = private unnamed_addr constant [4 x i8] c" = \00"
+@.str.ir.while.test = private unnamed_addr constant [22 x i8] c"    br i1 %whilecond.\00"
+@.str.ir.while.body.label = private unnamed_addr constant [21 x i8] c", label %while.body.\00"
+@.str.ir.while.end.label = private unnamed_addr constant [20 x i8] c", label %while.end.\00"
+@.str.ir.while.body.name = private unnamed_addr constant [12 x i8] c"while.body.\00"
+@.str.ir.while.end.name = private unnamed_addr constant [11 x i8] c"while.end.\00"
+)WHILELLVM";
+}
+
+std::string llvmGenerateIRForDefinition() {
+    return R"FORLLVM(define ptr @generateIRFor(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %open = call i32 @findStatementParenStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %close = call i32 @findStatementParenEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %body.open = call i32 @findStatementBlockStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %body.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %body.open, i32 %arg.end, ptr @.str.ir.for.brace.open, ptr @.str.ir.for.brace.close)
+  %open.ok = icmp sge i32 %open, 0
+  %close.ok = icmp sgt i32 %close, %open
+  %body.open.ok = icmp sge i32 %body.open, 0
+  %body.close.ok = icmp sgt i32 %body.close, %body.open
+  %ok.1 = and i1 %open.ok, %close.ok
+  %ok.2 = and i1 %body.open.ok, %body.close.ok
+  %ok = and i1 %ok.1, %ok.2
+  br i1 %ok, label %arrow.find, label %malformed
+malformed:
+  ret ptr @.str.ir.for.malformed
+arrow.find:
+  %iterator.index = add i32 %open, 1
+  %arrow = call i32 @findTokenTextInRange(ptr %arg.tokens, i32 %iterator.index, i32 %close, ptr @.str.ir.for.arrow)
+  %arrow.ok = icmp sge i32 %arrow, 0
+  br i1 %arrow.ok, label %build, label %source.malformed
+source.malformed:
+  ret ptr @.str.ir.for.source.malformed
+build:
+  %seed.i64 = sext i32 %arg.start to i64
+  %seed = call ptr @csec_to_string_i64(i64 %seed.i64)
+  %iterator = call ptr @tokenTextAt(ptr %arg.tokens, i32 %iterator.index)
+  %expr.start = add i32 %arrow, 1
+  %expr = call ptr @generateIRExpression(ptr %arg.tokens, i32 %expr.start, i32 %close)
+  %body.start = add i32 %body.open, 1
+  %body = call ptr @generateIRFlatBody(ptr %arg.tokens, i32 %body.start, i32 %body.close)
+  %a1 = call ptr @csec_string_concat(ptr @.str.ir.for.source, ptr %expr)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.ir.for.nl)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr @.str.ir.for.local)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr %iterator)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr @.str.ir.for.alloca)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.ir.for.branch)
+  %a7 = call ptr @csec_string_concat(ptr %a6, ptr %seed)
+  %a8 = call ptr @csec_string_concat(ptr %a7, ptr @.str.ir.for.nl)
+  %a9 = call ptr @csec_string_concat(ptr %a8, ptr @.str.ir.for.cond)
+  %a10 = call ptr @csec_string_concat(ptr %a9, ptr %seed)
+  %a11 = call ptr @csec_string_concat(ptr %a10, ptr @.str.ir.for.colon)
+  %a12 = call ptr @csec_string_concat(ptr %a11, ptr @.str.ir.for.next)
+  %a13 = call ptr @csec_string_concat(ptr %a12, ptr %iterator)
+  %a14 = call ptr @csec_string_concat(ptr %a13, ptr @.str.ir.for.nl)
+  %a15 = call ptr @csec_string_concat(ptr %a14, ptr @.str.ir.for.test)
+  %a16 = call ptr @csec_string_concat(ptr %a15, ptr %seed)
+  %a17 = call ptr @csec_string_concat(ptr %a16, ptr @.str.ir.for.body.label)
+  %a18 = call ptr @csec_string_concat(ptr %a17, ptr %seed)
+  %a19 = call ptr @csec_string_concat(ptr %a18, ptr @.str.ir.for.end.label)
+  %a20 = call ptr @csec_string_concat(ptr %a19, ptr %seed)
+  %a21 = call ptr @csec_string_concat(ptr %a20, ptr @.str.ir.for.nl)
+  %a22 = call ptr @csec_string_concat(ptr %a21, ptr @.str.ir.for.body)
+  %a23 = call ptr @csec_string_concat(ptr %a22, ptr %seed)
+  %a24 = call ptr @csec_string_concat(ptr %a23, ptr @.str.ir.for.colon)
+  %a25 = call ptr @csec_string_concat(ptr %a24, ptr %body)
+  %a26 = call ptr @csec_string_concat(ptr %a25, ptr @.str.ir.for.branch)
+  %a27 = call ptr @csec_string_concat(ptr %a26, ptr %seed)
+  %a28 = call ptr @csec_string_concat(ptr %a27, ptr @.str.ir.for.nl)
+  %a29 = call ptr @csec_string_concat(ptr %a28, ptr @.str.ir.for.end)
+  %a30 = call ptr @csec_string_concat(ptr %a29, ptr %seed)
+  %ret = call ptr @csec_string_concat(ptr %a30, ptr @.str.ir.for.colon)
+  ret ptr %ret
+}
+
+@.str.ir.for.malformed = private unnamed_addr constant [21 x i8] c"    ; malformed for\0A\00"
+@.str.ir.for.source.malformed = private unnamed_addr constant [28 x i8] c"    ; malformed for source\0A\00"
+@.str.ir.for.brace.open = private unnamed_addr constant [2 x i8] c"{\00"
+@.str.ir.for.brace.close = private unnamed_addr constant [2 x i8] c"}\00"
+@.str.ir.for.arrow = private unnamed_addr constant [3 x i8] c"<-\00"
+@.str.ir.for.source = private unnamed_addr constant [18 x i8] c"    ; for source \00"
+@.str.ir.for.nl = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.ir.for.local = private unnamed_addr constant [6 x i8] c"    %\00"
+@.str.ir.for.alloca = private unnamed_addr constant [15 x i8] c" = alloca ptr\0A\00"
+@.str.ir.for.branch = private unnamed_addr constant [24 x i8] c"    br label %for.cond.\00"
+@.str.ir.for.cond = private unnamed_addr constant [10 x i8] c"for.cond.\00"
+@.str.ir.for.colon = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.ir.for.next = private unnamed_addr constant [21 x i8] c"    ; iterator next \00"
+@.str.ir.for.test = private unnamed_addr constant [24 x i8] c"    br i1 %for.hasnext.\00"
+@.str.ir.for.body.label = private unnamed_addr constant [19 x i8] c", label %for.body.\00"
+@.str.ir.for.end.label = private unnamed_addr constant [18 x i8] c", label %for.end.\00"
+@.str.ir.for.body = private unnamed_addr constant [10 x i8] c"for.body.\00"
+@.str.ir.for.end = private unnamed_addr constant [9 x i8] c"for.end.\00"
+)FORLLVM";
+}
+
+std::string llvmLoadForValueTypeDefinition() {
+    return R"LOADLLVM(define ptr @llvmLoadForValueType(ptr %arg.tokens, i32 %arg.limit, ptr %arg.name, ptr %arg.valueType, ptr %arg.resultName) {
+entry:
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.limit, ptr %arg.name)
+  %is.bool = call i1 @strEq(ptr %arg.valueType, ptr @.str.load.type.boolean)
+  br i1 %is.bool, label %bool, label %char.check
+bool:
+  %b1 = call ptr @csec_string_concat(ptr @.str.load.prefix, ptr %arg.resultName)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.load.i1)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr %storage)
+  %b4 = call ptr @csec_string_concat(ptr %b3, ptr @.str.load.newline)
+  ret ptr %b4
+char.check:
+  %is.char = call i1 @strEq(ptr %arg.valueType, ptr @.str.load.type.char)
+  br i1 %is.char, label %char, label %double.check
+char:
+  %c1 = call ptr @csec_string_concat(ptr @.str.load.prefix, ptr %arg.resultName)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.load.i8)
+  %c3 = call ptr @csec_string_concat(ptr %c2, ptr %storage)
+  %c4 = call ptr @csec_string_concat(ptr %c3, ptr @.str.load.newline)
+  ret ptr %c4
+double.check:
+  %is.double = call i1 @strEq(ptr %arg.valueType, ptr @.str.load.type.double)
+  br i1 %is.double, label %double, label %long.check
+double:
+  %d1 = call ptr @csec_string_concat(ptr @.str.load.prefix, ptr %arg.resultName)
+  %d2 = call ptr @csec_string_concat(ptr %d1, ptr @.str.load.double)
+  %d3 = call ptr @csec_string_concat(ptr %d2, ptr %storage)
+  %d4 = call ptr @csec_string_concat(ptr %d3, ptr @.str.load.newline)
+  ret ptr %d4
+long.check:
+  %is.long = call i1 @strEq(ptr %arg.valueType, ptr @.str.load.type.long)
+  br i1 %is.long, label %long, label %pointer.check
+long:
+  %l1 = call ptr @csec_string_concat(ptr @.str.load.prefix, ptr %arg.resultName)
+  %l2 = call ptr @csec_string_concat(ptr %l1, ptr @.str.load.i64)
+  %l3 = call ptr @csec_string_concat(ptr %l2, ptr %storage)
+  %l4 = call ptr @csec_string_concat(ptr %l3, ptr @.str.load.newline)
+  ret ptr %l4
+pointer.check:
+  %llvm.type = call ptr @irTypeName(ptr %arg.valueType)
+  %is.pointer = call i1 @strEq(ptr %llvm.type, ptr @.str.load.type.ptr)
+  br i1 %is.pointer, label %pointer, label %integer
+pointer:
+  %p1 = call ptr @csec_string_concat(ptr @.str.load.prefix, ptr %arg.resultName)
+  %p2 = call ptr @csec_string_concat(ptr %p1, ptr @.str.load.ptr)
+  %p3 = call ptr @csec_string_concat(ptr %p2, ptr %storage)
+  %p4 = call ptr @csec_string_concat(ptr %p3, ptr @.str.load.newline)
+  ret ptr %p4
+integer:
+  %i1 = call ptr @csec_string_concat(ptr @.str.load.prefix, ptr %arg.resultName)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.load.i32)
+  %i3 = call ptr @csec_string_concat(ptr %i2, ptr %storage)
+  %i4 = call ptr @csec_string_concat(ptr %i3, ptr @.str.load.newline)
+  ret ptr %i4
+}
+
+@.str.load.type.boolean = private unnamed_addr constant [8 x i8] c"Boolean\00"
+@.str.load.type.char = private unnamed_addr constant [5 x i8] c"Char\00"
+@.str.load.type.double = private unnamed_addr constant [7 x i8] c"Double\00"
+@.str.load.type.long = private unnamed_addr constant [5 x i8] c"Long\00"
+@.str.load.type.ptr = private unnamed_addr constant [4 x i8] c"ptr\00"
+@.str.load.prefix = private unnamed_addr constant [3 x i8] c"  \00"
+@.str.load.i1 = private unnamed_addr constant [18 x i8] c" = load i1, ptr %\00"
+@.str.load.i8 = private unnamed_addr constant [18 x i8] c" = load i8, ptr %\00"
+@.str.load.double = private unnamed_addr constant [22 x i8] c" = load double, ptr %\00"
+@.str.load.i64 = private unnamed_addr constant [19 x i8] c" = load i64, ptr %\00"
+@.str.load.ptr = private unnamed_addr constant [19 x i8] c" = load ptr, ptr %\00"
+@.str.load.i32 = private unnamed_addr constant [19 x i8] c" = load i32, ptr %\00"
+@.str.load.newline = private unnamed_addr constant [2 x i8] c"\0A\00"
+)LOADLLVM";
+}
+
+std::string llvmGenerateCallArgumentListI32Definition() {
+    return R"CALLARGLISTLLVM(define ptr @generateLLVMCallArgumentListI32(ptr %arg.tokens, i32 %arg.argsStart, i32 %arg.argsEnd, ptr %arg.resultName) {
+entry:
+  %first = call i32 @skipTrivia(ptr %arg.tokens, i32 %arg.argsStart)
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %first, i32 %arg.argsEnd)
+  %empty = icmp sge i32 %first, %end
+  br i1 %empty, label %empty.return, label %last.find
+empty.return:
+  ret ptr @.str.callargs.empty
+last.find:
+  %last = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %first, i32 %end, i32 12)
+  %one = icmp slt i32 %last, %first
+  br i1 %one, label %one.return, label %second.find
+one.return:
+  %one.type = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %first, i32 %end)
+  %one.value = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %first, i32 %end, ptr %arg.resultName, i32 0)
+  %one.join = call ptr @csec_string_concat(ptr %one.type, ptr @.str.callargs.space)
+  %one.result = call ptr @csec_string_concat(ptr %one.join, ptr %one.value)
+  ret ptr %one.result
+second.find:
+  %second.comma = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %first, i32 %last, i32 12)
+  %two = icmp slt i32 %second.comma, %first
+  br i1 %two, label %two.return, label %first.find
+two.return:
+  %second.start.raw = add i32 %last, 1
+  %second.start = call i32 @skipTrivia(ptr %arg.tokens, i32 %second.start.raw)
+  %two.type0 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %first, i32 %last)
+  %two.value0 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %first, i32 %last, ptr %arg.resultName, i32 0)
+  %two.type1 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %second.start, i32 %end)
+  %two.value1 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %second.start, i32 %end, ptr %arg.resultName, i32 1)
+  %two.a = call ptr @csec_string_concat(ptr %two.type0, ptr @.str.callargs.space)
+  %two.b = call ptr @csec_string_concat(ptr %two.a, ptr %two.value0)
+  %two.c = call ptr @csec_string_concat(ptr %two.b, ptr @.str.callargs.comma)
+  %two.d = call ptr @csec_string_concat(ptr %two.c, ptr %two.type1)
+  %two.e = call ptr @csec_string_concat(ptr %two.d, ptr @.str.callargs.space)
+  %two.result = call ptr @csec_string_concat(ptr %two.e, ptr %two.value1)
+  ret ptr %two.result
+first.find:
+  %first.comma = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %first, i32 %second.comma, i32 12)
+  %three = icmp slt i32 %first.comma, %first
+  br i1 %three, label %three.return, label %four.return
+three.return:
+  %three.start1.raw = add i32 %second.comma, 1
+  %three.start1 = call i32 @skipTrivia(ptr %arg.tokens, i32 %three.start1.raw)
+  %three.start2.raw = add i32 %last, 1
+  %three.start2 = call i32 @skipTrivia(ptr %arg.tokens, i32 %three.start2.raw)
+  %three.type0 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %first, i32 %second.comma)
+  %three.value0 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %first, i32 %second.comma, ptr %arg.resultName, i32 0)
+  %three.type1 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %three.start1, i32 %last)
+  %three.value1 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %three.start1, i32 %last, ptr %arg.resultName, i32 1)
+  %three.type2 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %three.start2, i32 %end)
+  %three.value2 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %three.start2, i32 %end, ptr %arg.resultName, i32 2)
+  %three.a = call ptr @csec_string_concat(ptr %three.type0, ptr @.str.callargs.space)
+  %three.b = call ptr @csec_string_concat(ptr %three.a, ptr %three.value0)
+  %three.c = call ptr @csec_string_concat(ptr %three.b, ptr @.str.callargs.comma)
+  %three.d = call ptr @csec_string_concat(ptr %three.c, ptr %three.type1)
+  %three.e = call ptr @csec_string_concat(ptr %three.d, ptr @.str.callargs.space)
+  %three.f = call ptr @csec_string_concat(ptr %three.e, ptr %three.value1)
+  %three.g = call ptr @csec_string_concat(ptr %three.f, ptr @.str.callargs.comma)
+  %three.h = call ptr @csec_string_concat(ptr %three.g, ptr %three.type2)
+  %three.i = call ptr @csec_string_concat(ptr %three.h, ptr @.str.callargs.space)
+  %three.result = call ptr @csec_string_concat(ptr %three.i, ptr %three.value2)
+  ret ptr %three.result
+four.return:
+  %four.start1.raw = add i32 %first.comma, 1
+  %four.start1 = call i32 @skipTrivia(ptr %arg.tokens, i32 %four.start1.raw)
+  %four.start2.raw = add i32 %second.comma, 1
+  %four.start2 = call i32 @skipTrivia(ptr %arg.tokens, i32 %four.start2.raw)
+  %four.start3.raw = add i32 %last, 1
+  %four.start3 = call i32 @skipTrivia(ptr %arg.tokens, i32 %four.start3.raw)
+  %four.type0 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %first, i32 %first.comma)
+  %four.value0 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %first, i32 %first.comma, ptr %arg.resultName, i32 0)
+  %four.type1 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %four.start1, i32 %second.comma)
+  %four.value1 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %four.start1, i32 %second.comma, ptr %arg.resultName, i32 1)
+  %four.type2 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %four.start2, i32 %last)
+  %four.value2 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %four.start2, i32 %last, ptr %arg.resultName, i32 2)
+  %four.type3 = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %four.start3, i32 %end)
+  %four.value3 = call ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %four.start3, i32 %end, ptr %arg.resultName, i32 3)
+  %four.a = call ptr @csec_string_concat(ptr %four.type0, ptr @.str.callargs.space)
+  %four.b = call ptr @csec_string_concat(ptr %four.a, ptr %four.value0)
+  %four.c = call ptr @csec_string_concat(ptr %four.b, ptr @.str.callargs.comma)
+  %four.d = call ptr @csec_string_concat(ptr %four.c, ptr %four.type1)
+  %four.e = call ptr @csec_string_concat(ptr %four.d, ptr @.str.callargs.space)
+  %four.f = call ptr @csec_string_concat(ptr %four.e, ptr %four.value1)
+  %four.g = call ptr @csec_string_concat(ptr %four.f, ptr @.str.callargs.comma)
+  %four.h = call ptr @csec_string_concat(ptr %four.g, ptr %four.type2)
+  %four.i = call ptr @csec_string_concat(ptr %four.h, ptr @.str.callargs.space)
+  %four.j = call ptr @csec_string_concat(ptr %four.i, ptr %four.value2)
+  %four.k = call ptr @csec_string_concat(ptr %four.j, ptr @.str.callargs.comma)
+  %four.l = call ptr @csec_string_concat(ptr %four.k, ptr %four.type3)
+  %four.m = call ptr @csec_string_concat(ptr %four.l, ptr @.str.callargs.space)
+  %four.result = call ptr @csec_string_concat(ptr %four.m, ptr %four.value3)
+  ret ptr %four.result
+}
+
+@.str.callargs.empty = private unnamed_addr constant [1 x i8] c"\00"
+@.str.callargs.space = private unnamed_addr constant [2 x i8] c" \00"
+@.str.callargs.comma = private unnamed_addr constant [3 x i8] c", \00"
+)CALLARGLISTLLVM";
+}
+
+std::string llvmI32CallArgumentValueDefinition() {
+    return R"I32CALLARGLLVM(define ptr @llvmI32CallArgumentValue(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName, i32 %arg.index) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %empty = icmp sle i32 %end, %arg.start
+  br i1 %empty, label %empty.return, label %integer.check
+empty.return:
+  ret ptr @.str.i32.callarg.zero
+integer.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %integer.kind = call i8 @kindInteger()
+  %is.integer = icmp eq i8 %kind, %integer.kind
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %integer = and i1 %is.integer, %single
+  br i1 %integer, label %integer.return, label %temporary.return
+integer.return:
+  %text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  ret ptr %text
+temporary.return:
+  %a = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.i32.callarg.arg)
+  %index.i64 = sext i32 %arg.index to i64
+  %index.text = call ptr @csec_to_string_i64(i64 %index.i64)
+  %result = call ptr @csec_string_concat(ptr %a, ptr %index.text)
+  ret ptr %result
+}
+
+@.str.i32.callarg.zero = private unnamed_addr constant [2 x i8] c"0\00"
+@.str.i32.callarg.arg = private unnamed_addr constant [5 x i8] c".arg\00"
+)I32CALLARGLLVM";
+}
+
+std::string llvmCallArgumentValueDefinition() {
+    std::string output = R"(define ptr @llvmCallArgumentValue(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName, i32 %arg.index) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %empty = icmp sle i32 %end, %arg.start
+  br i1 %empty, label %empty.return, label %integer.check
+empty.return:
+  ret ptr @.str.callarg.value.zero
+integer.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %integer.kind = call i8 @kindInteger()
+  %is.integer = icmp eq i8 %kind, %integer.kind
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %integer = and i1 %is.integer, %single
+  br i1 %integer, label %integer.return, label %char.check
+integer.return:
+  %integer.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  ret ptr %integer.text
+char.check:
+  %char.kind = call i8 @kindChar()
+  %is.char = icmp eq i8 %kind, %char.kind
+  %char = and i1 %is.char, %single
+  br i1 %char, label %char.return, label %bool.check
+char.return:
+  %char.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %char.value = call ptr @llvmCharI8Value(ptr %char.text)
+  ret ptr %char.value
+bool.check:
+  %bool.kind = call i8 @kindBool()
+  %is.bool = icmp eq i8 %kind, %bool.kind
+  %bool = and i1 %is.bool, %single
+  br i1 %bool, label %bool.return, label %temporary.return
+bool.return:
+  %bool.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  ret ptr %bool.text
+temporary.return:
+  %prefix = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callarg.value.arg)
+  %index.i64 = sext i32 %arg.index to i64
+  %index.text = call ptr @csec_to_string_i64(i64 %index.i64)
+  %result = call ptr @csec_string_concat(ptr %prefix, ptr %index.text)
+  ret ptr %result
+}
+
+)";
+    output += llvmStringGlobal(".str.callarg.value.zero", "0");
+    output += llvmStringGlobal(".str.callarg.value.arg", ".arg");
+    return output;
+}
+
+std::string llvmGenerateCallArgumentLoadI32Definition() {
+    std::string output = R"(define ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %empty = icmp sle i32 %end, %arg.start
+  br i1 %empty, label %empty.return, label %string.check
+empty.return:
+  %e1 = call ptr @csec_string_concat(ptr @.str.callargload.prefix, ptr %arg.resultName)
+  %e2 = call ptr @csec_string_concat(ptr %e1, ptr @.str.callargload.add.prefix)
+  %empty.result = call ptr @csec_string_concat(ptr %e2, ptr @.str.callargload.zero)
+  ret ptr %empty.result
+string.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %string.kind = call i8 @kindString()
+  %is.string = icmp eq i8 %kind, %string.kind
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %string = and i1 %is.string, %single
+  br i1 %string, label %string.return, label %integer.check
+string.return:
+  %text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %bytes = call i32 @csec_llvm_string_literal_byte_length(ptr %text)
+  %bytes.i64 = sext i32 %bytes to i64
+  %bytes.text = call ptr @csec_to_string_i64(i64 %bytes.i64)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %s1 = call ptr @csec_string_concat(ptr @.str.callargload.prefix, ptr %arg.resultName)
+  %s2 = call ptr @csec_string_concat(ptr %s1, ptr @.str.callargload.gep.left)
+  %s3 = call ptr @csec_string_concat(ptr %s2, ptr %bytes.text)
+  %s4 = call ptr @csec_string_concat(ptr %s3, ptr @.str.callargload.gep.middle)
+  %s5 = call ptr @csec_string_concat(ptr %s4, ptr %start.text)
+  %result = call ptr @csec_string_concat(ptr %s5, ptr @.str.callargload.gep.right)
+  ret ptr %result
+integer.check:
+  %integer.kind = call i8 @kindInteger()
+  %is.integer = icmp eq i8 %kind, %integer.kind
+  %integer = and i1 %is.integer, %single
+  br i1 %integer, label %integer.return, label %char.check
+integer.return:
+  %integer.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %i1 = call ptr @csec_string_concat(ptr @.str.callargload.prefix, ptr %arg.resultName)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.callargload.add.prefix)
+  %integer.result = call ptr @csec_string_concat(ptr %i2, ptr %integer.text)
+  ret ptr %integer.result
+char.check:
+  %char.kind = call i8 @kindChar()
+  %is.char = icmp eq i8 %kind, %char.kind
+  %char = and i1 %is.char, %single
+  br i1 %char, label %char.return, label %identifier.check
+char.return:
+  %char.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %char.value = call ptr @llvmCharI8Value(ptr %char.text)
+  %c1 = call ptr @csec_string_concat(ptr @.str.callargload.prefix, ptr %arg.resultName)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.callargload.add.prefix)
+  %char.result = call ptr @csec_string_concat(ptr %c2, ptr %char.value)
+  ret ptr %char.result
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  %identifier = and i1 %is.identifier, %single
+  br i1 %identifier, label %identifier.return, label %expression.type
+identifier.return:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %value.type = call ptr @lookupVisibleValueType(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %load = call ptr @llvmLoadForValueType(ptr %arg.tokens, i32 %arg.start, ptr %name, ptr %value.type, ptr %arg.resultName)
+  ret ptr %load
+expression.type:
+  %argument.type = call ptr @llvmCallArgumentType(ptr %arg.tokens, i32 %arg.start, i32 %end)
+  %pointer.argument = call i1 @strEq(ptr %argument.type, ptr @.str.callargload.ptr)
+  br i1 %pointer.argument, label %pointer.expression.return, label %expression.return
+pointer.expression.return:
+  %pointer.expression = call ptr @generateLLVMExpressionPtr(ptr %arg.tokens, i32 %arg.start, i32 %end, ptr %arg.resultName)
+  ret ptr %pointer.expression
+expression.return:
+  %expression = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %arg.start, i32 %end, ptr %arg.resultName)
+  ret ptr %expression
+}
+
+)";
+    output += llvmStringGlobal(".str.callargload.prefix", "  ");
+    output += llvmStringGlobal(".str.callargload.zero", "0\n");
+    output += llvmStringGlobal(".str.callargload.gep.left", " = getelementptr inbounds [");
+    output += llvmStringGlobal(".str.callargload.gep.middle", " x i8], ptr @.str.");
+    output += llvmStringGlobal(".str.callargload.gep.right", ", i32 0, i32 0\n");
+    output += llvmStringGlobal(".str.callargload.add.prefix", " = add i32 0, ");
+    output += llvmStringGlobal(".str.callargload.ptr", "ptr");
+    return output;
+}
+
+std::string llvmGenerateCallArgumentLoadsI32Definition() {
+    std::string output = R"(define ptr @generateLLVMCallArgumentLoadsI32(ptr %arg.tokens, i32 %arg.argsStart, i32 %arg.argsEnd, ptr %arg.resultName) {
+entry:
+  %first = call i32 @skipTrivia(ptr %arg.tokens, i32 %arg.argsStart)
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %first, i32 %arg.argsEnd)
+  %empty = icmp sge i32 %first, %end
+  br i1 %empty, label %empty.return, label %last.find
+empty.return:
+  ret ptr @.str.callargloads.empty
+last.find:
+  %last = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %first, i32 %end, i32 12)
+  %one = icmp slt i32 %last, %first
+  br i1 %one, label %one.return, label %second.find
+one.return:
+  %name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg0)
+  %one.result = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %first, i32 %end, ptr %name)
+  ret ptr %one.result
+second.find:
+  %second.comma = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %first, i32 %last, i32 12)
+  %two = icmp slt i32 %second.comma, %first
+  br i1 %two, label %two.return, label %first.find
+two.return:
+  %name0 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg0)
+  %left = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %first, i32 %last, ptr %name0)
+  %second.start.raw = add i32 %last, 1
+  %second.start = call i32 @skipTrivia(ptr %arg.tokens, i32 %second.start.raw)
+  %name1 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg1)
+  %right = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %second.start, i32 %end, ptr %name1)
+  %two.result = call ptr @csec_string_concat(ptr %left, ptr %right)
+  ret ptr %two.result
+first.find:
+  %first.comma = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %first, i32 %second.comma, i32 12)
+  %three = icmp slt i32 %first.comma, %first
+  br i1 %three, label %three.return, label %four.return
+three.return:
+  %name0.3 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg0)
+  %part0 = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %first, i32 %second.comma, ptr %name0.3)
+  %second.start.raw.3 = add i32 %second.comma, 1
+  %second.start.3 = call i32 @skipTrivia(ptr %arg.tokens, i32 %second.start.raw.3)
+  %name1.3 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg1)
+  %part1 = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %second.start.3, i32 %last, ptr %name1.3)
+  %third.start.raw = add i32 %last, 1
+  %third.start = call i32 @skipTrivia(ptr %arg.tokens, i32 %third.start.raw)
+  %name2.3 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg2)
+  %part2 = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %third.start, i32 %end, ptr %name2.3)
+  %join0 = call ptr @csec_string_concat(ptr %part0, ptr %part1)
+  %result3 = call ptr @csec_string_concat(ptr %join0, ptr %part2)
+  ret ptr %result3
+four.return:
+  %name0.4 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg0)
+  %part0.4 = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %first, i32 %first.comma, ptr %name0.4)
+  %second.start.raw.4 = add i32 %first.comma, 1
+  %second.start.4 = call i32 @skipTrivia(ptr %arg.tokens, i32 %second.start.raw.4)
+  %name1.4 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg1)
+  %part1.4 = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %second.start.4, i32 %second.comma, ptr %name1.4)
+  %third.start.raw.4 = add i32 %second.comma, 1
+  %third.start.4 = call i32 @skipTrivia(ptr %arg.tokens, i32 %third.start.raw.4)
+  %name2.4 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg2)
+  %part2.4 = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %third.start.4, i32 %last, ptr %name2.4)
+  %fourth.start.raw = add i32 %last, 1
+  %fourth.start = call i32 @skipTrivia(ptr %arg.tokens, i32 %fourth.start.raw)
+  %name3.4 = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.callargloads.arg3)
+  %part3.4 = call ptr @generateLLVMCallArgumentLoadI32(ptr %arg.tokens, i32 %fourth.start, i32 %end, ptr %name3.4)
+  %join1 = call ptr @csec_string_concat(ptr %part0.4, ptr %part1.4)
+  %join2 = call ptr @csec_string_concat(ptr %join1, ptr %part2.4)
+  %result4 = call ptr @csec_string_concat(ptr %join2, ptr %part3.4)
+  ret ptr %result4
+}
+
+)";
+    output += llvmStringGlobal(".str.callargloads.empty", "");
+    output += llvmStringGlobal(".str.callargloads.arg0", ".arg0");
+    output += llvmStringGlobal(".str.callargloads.arg1", ".arg1");
+    output += llvmStringGlobal(".str.callargloads.arg2", ".arg2");
+    output += llvmStringGlobal(".str.callargloads.arg3", ".arg3");
+    return output;
+}
+
+std::string llvmGenerateAssignmentI32Definition() {
+    std::string output = R"(define ptr @generateLLVMAssignmentI32(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %op = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %has.op = icmp sgt i32 %op, %arg.start
+  br i1 %has.op, label %kind.check, label %empty.return
+kind.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %assignment.check, label %empty.return
+assignment.check:
+  %op.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %op)
+  %equals = call i1 @strEq(ptr %op.text, ptr @.str.assignment.i32.equals)
+  br i1 %equals, label %assignment.return, label %arrow.check
+arrow.check:
+  %arrow = call i1 @strEq(ptr %op.text, ptr @.str.assignment.i32.arrow)
+  br i1 %arrow, label %assignment.return, label %empty.return
+assignment.return:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %a1 = call ptr @csec_string_concat(ptr @.str.assignment.i32.percent, ptr %name)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.assignment.i32.result)
+  %result.name = call ptr @csec_string_concat(ptr %a2, ptr %start.text)
+  %rhs.start = add i32 %op, 1
+  %expression = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %rhs.start, i32 %arg.end, ptr %result.name)
+  %s1 = call ptr @csec_string_concat(ptr %expression, ptr @.str.assignment.i32.store)
+  %s2 = call ptr @csec_string_concat(ptr %s1, ptr %result.name)
+  %s3 = call ptr @csec_string_concat(ptr %s2, ptr @.str.assignment.i32.to)
+  %assignment.result = call ptr @csec_string_concat(ptr %s3, ptr %storage)
+  ret ptr %assignment.result
+empty.return:
+  ret ptr @.str.assignment.i32.empty
+}
+
+)";
+    output += llvmStringGlobal(".str.assignment.i32.equals", "=");
+    output += llvmStringGlobal(".str.assignment.i32.arrow", "<-");
+    output += llvmStringGlobal(".str.assignment.i32.percent", "%");
+    output += llvmStringGlobal(".str.assignment.i32.result", ".assign.");
+    output += llvmStringGlobal(".str.assignment.i32.store", "  store i32 ");
+    output += llvmStringGlobal(".str.assignment.i32.to", ", ptr %");
+    output += llvmStringGlobal(".str.assignment.i32.empty", "");
+    return output;
+}
+
+std::string llvmGenerateAssignmentI64Definition() {
+    std::string output = R"(define ptr @generateLLVMAssignmentI64(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %op = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %has.op = icmp sgt i32 %op, %arg.start
+  br i1 %has.op, label %kind.check, label %empty.return
+kind.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %assignment.check, label %empty.return
+assignment.check:
+  %op.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %op)
+  %equals = call i1 @strEq(ptr %op.text, ptr @.str.assignment.i64.equals)
+  br i1 %equals, label %assignment.return, label %arrow.check
+arrow.check:
+  %arrow = call i1 @strEq(ptr %op.text, ptr @.str.assignment.i64.arrow)
+  br i1 %arrow, label %assignment.return, label %empty.return
+assignment.return:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %a1 = call ptr @csec_string_concat(ptr @.str.assignment.i64.percent, ptr %name)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.assignment.i64.result)
+  %result.name = call ptr @csec_string_concat(ptr %a2, ptr %start.text)
+  %rhs.start = add i32 %op, 1
+  %expression = call ptr @generateLLVMExpressionI64(ptr %arg.tokens, i32 %rhs.start, i32 %arg.end, ptr %result.name)
+  %s1 = call ptr @csec_string_concat(ptr %expression, ptr @.str.assignment.i64.store)
+  %s2 = call ptr @csec_string_concat(ptr %s1, ptr %result.name)
+  %s3 = call ptr @csec_string_concat(ptr %s2, ptr @.str.assignment.i64.to)
+  %assignment.result = call ptr @csec_string_concat(ptr %s3, ptr %storage)
+  ret ptr %assignment.result
+empty.return:
+  ret ptr @.str.assignment.i64.empty
+}
+
+)";
+    output += llvmStringGlobal(".str.assignment.i64.equals", "=");
+    output += llvmStringGlobal(".str.assignment.i64.arrow", "<-");
+    output += llvmStringGlobal(".str.assignment.i64.percent", "%");
+    output += llvmStringGlobal(".str.assignment.i64.result", ".lassign.");
+    output += llvmStringGlobal(".str.assignment.i64.store", "  store i64 ");
+    output += llvmStringGlobal(".str.assignment.i64.to", ", ptr %");
+    output += llvmStringGlobal(".str.assignment.i64.empty", "");
+    return output;
+}
+
+std::string llvmRuntimeCallNameDefinition() {
+    return R"RUNTIMENAMELLVM(define ptr @llvmRuntimeCallName(ptr %arg.name) {
+entry:
+  %count = call i1 @strEq(ptr %arg.name, ptr @.str.runtime.name.count)
+  br i1 %count, label %count.return, label %arg.check
+count.return:
+  ret ptr @.str.runtime.name.count.native
+arg.check:
+  %arg = call i1 @strEq(ptr %arg.name, ptr @.str.runtime.name.arg)
+  br i1 %arg, label %arg.return, label %identity.return
+arg.return:
+  ret ptr @.str.runtime.name.arg.native
+identity.return:
+  ret ptr %arg.name
+}
+
+@.str.runtime.name.count = private unnamed_addr constant [20 x i8] c"commandLineArgCount\00"
+@.str.runtime.name.count.native = private unnamed_addr constant [28 x i8] c"csec_command_line_arg_count\00"
+@.str.runtime.name.arg = private unnamed_addr constant [15 x i8] c"commandLineArg\00"
+@.str.runtime.name.arg.native = private unnamed_addr constant [22 x i8] c"csec_command_line_arg\00"
+)RUNTIMENAMELLVM";
+}
+
+std::string llvmGenerateLocalI32Definition() {
+    return R"LOCALI32LLVM(define ptr @generateLLVMLocalI32(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %initializer = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %name.index = add i32 %arg.start, 1
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %name.index)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %storage.a = call ptr @csec_string_concat(ptr %name, ptr @.str.local.i32.addr)
+  %storage = call ptr @csec_string_concat(ptr %storage.a, ptr %start.text)
+  %init.a = call ptr @csec_string_concat(ptr @.str.local.i32.percent, ptr %name)
+  %init.b = call ptr @csec_string_concat(ptr %init.a, ptr @.str.local.i32.init)
+  %init = call ptr @csec_string_concat(ptr %init.b, ptr %start.text)
+  %has.initializer = icmp sge i32 %initializer, %arg.start
+  br i1 %has.initializer, label %with.initializer, label %without.initializer
+with.initializer:
+  %expr.start = add i32 %initializer, 1
+  %expr = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %expr.start, i32 %arg.end, ptr %init)
+  %a1 = call ptr @csec_string_concat(ptr @.str.local.i32.prefix, ptr %storage)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.local.i32.alloca)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %expr)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.local.i32.store)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr %init)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.local.i32.to)
+  %result = call ptr @csec_string_concat(ptr %a6, ptr %storage)
+  ret ptr %result
+without.initializer:
+  %b1 = call ptr @csec_string_concat(ptr @.str.local.i32.prefix, ptr %storage)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.local.i32.alloca)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr @.str.local.i32.zero)
+  %fallback = call ptr @csec_string_concat(ptr %b3, ptr %storage)
+  ret ptr %fallback
+}
+
+@.str.local.i32.addr = private unnamed_addr constant [7 x i8] c".addr.\00"
+@.str.local.i32.percent = private unnamed_addr constant [2 x i8] c"%\00"
+@.str.local.i32.init = private unnamed_addr constant [7 x i8] c".init.\00"
+@.str.local.i32.prefix = private unnamed_addr constant [4 x i8] c"  %\00"
+@.str.local.i32.alloca = private unnamed_addr constant [15 x i8] c" = alloca i32\0A\00"
+@.str.local.i32.store = private unnamed_addr constant [13 x i8] c"  store i32 \00"
+@.str.local.i32.to = private unnamed_addr constant [8 x i8] c", ptr %\00"
+@.str.local.i32.zero = private unnamed_addr constant [21 x i8] c"  store i32 0, ptr %\00"
+)LOCALI32LLVM";
+}
+
+std::string llvmGenerateLocalI64Definition() {
+    return R"LOCALI64LLVM(define ptr @generateLLVMLocalI64(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %initializer = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %name.index = add i32 %arg.start, 1
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %name.index)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %storage.a = call ptr @csec_string_concat(ptr %name, ptr @.str.local.i64.addr)
+  %storage = call ptr @csec_string_concat(ptr %storage.a, ptr %start.text)
+  %init.a = call ptr @csec_string_concat(ptr @.str.local.i64.percent, ptr %name)
+  %init.b = call ptr @csec_string_concat(ptr %init.a, ptr @.str.local.i64.init)
+  %init = call ptr @csec_string_concat(ptr %init.b, ptr %start.text)
+  %has.initializer = icmp sge i32 %initializer, %arg.start
+  br i1 %has.initializer, label %with.initializer, label %without.initializer
+with.initializer:
+  %expr.start = add i32 %initializer, 1
+  %expr = call ptr @generateLLVMExpressionI64(ptr %arg.tokens, i32 %expr.start, i32 %arg.end, ptr %init)
+  %a1 = call ptr @csec_string_concat(ptr @.str.local.i64.prefix, ptr %storage)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.local.i64.alloca)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %expr)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.local.i64.store)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr %init)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.local.i64.to)
+  %result = call ptr @csec_string_concat(ptr %a6, ptr %storage)
+  ret ptr %result
+without.initializer:
+  %b1 = call ptr @csec_string_concat(ptr @.str.local.i64.prefix, ptr %storage)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.local.i64.alloca)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr @.str.local.i64.zero)
+  %fallback = call ptr @csec_string_concat(ptr %b3, ptr %storage)
+  ret ptr %fallback
+}
+
+@.str.local.i64.addr = private unnamed_addr constant [7 x i8] c".addr.\00"
+@.str.local.i64.percent = private unnamed_addr constant [2 x i8] c"%\00"
+@.str.local.i64.init = private unnamed_addr constant [8 x i8] c".linit.\00"
+@.str.local.i64.prefix = private unnamed_addr constant [4 x i8] c"  %\00"
+@.str.local.i64.alloca = private unnamed_addr constant [15 x i8] c" = alloca i64\0A\00"
+@.str.local.i64.store = private unnamed_addr constant [13 x i8] c"  store i64 \00"
+@.str.local.i64.to = private unnamed_addr constant [8 x i8] c", ptr %\00"
+@.str.local.i64.zero = private unnamed_addr constant [21 x i8] c"  store i64 0, ptr %\00"
+)LOCALI64LLVM";
+}
+
+std::string llvmGenerateLocalF64Definition() {
+    return R"LOCALF64LLVM(define ptr @generateLLVMLocalF64(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %initializer = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %name.index = add i32 %arg.start, 1
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %name.index)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %storage.a = call ptr @csec_string_concat(ptr %name, ptr @.str.local.f64.addr)
+  %storage = call ptr @csec_string_concat(ptr %storage.a, ptr %start.text)
+  %init.a = call ptr @csec_string_concat(ptr @.str.local.f64.percent, ptr %name)
+  %init.b = call ptr @csec_string_concat(ptr %init.a, ptr @.str.local.f64.init)
+  %init = call ptr @csec_string_concat(ptr %init.b, ptr %start.text)
+  %has.initializer = icmp sge i32 %initializer, %arg.start
+  br i1 %has.initializer, label %with.initializer, label %without.initializer
+with.initializer:
+  %expr.start = add i32 %initializer, 1
+  %expr = call ptr @generateLLVMExpressionF64(ptr %arg.tokens, i32 %expr.start, i32 %arg.end, ptr %init)
+  %a1 = call ptr @csec_string_concat(ptr @.str.local.f64.prefix, ptr %storage)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.local.f64.alloca)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %expr)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.local.f64.store)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr %init)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.local.f64.to)
+  %result = call ptr @csec_string_concat(ptr %a6, ptr %storage)
+  ret ptr %result
+without.initializer:
+  %b1 = call ptr @csec_string_concat(ptr @.str.local.f64.prefix, ptr %storage)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.local.f64.alloca)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr @.str.local.f64.zero)
+  %fallback = call ptr @csec_string_concat(ptr %b3, ptr %storage)
+  ret ptr %fallback
+}
+
+@.str.local.f64.addr = private unnamed_addr constant [7 x i8] c".addr.\00"
+@.str.local.f64.percent = private unnamed_addr constant [2 x i8] c"%\00"
+@.str.local.f64.init = private unnamed_addr constant [8 x i8] c".finit.\00"
+@.str.local.f64.prefix = private unnamed_addr constant [4 x i8] c"  %\00"
+@.str.local.f64.alloca = private unnamed_addr constant [18 x i8] c" = alloca double\0A\00"
+@.str.local.f64.store = private unnamed_addr constant [16 x i8] c"  store double \00"
+@.str.local.f64.to = private unnamed_addr constant [8 x i8] c", ptr %\00"
+@.str.local.f64.zero = private unnamed_addr constant [35 x i8] c"  store double 0.000000e+00, ptr %\00"
+)LOCALF64LLVM";
+}
+
+std::string llvmGenerateLocalI8Definition() {
+    std::string output = R"(define ptr @generateLLVMLocalI8(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %initializer = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %name.index = add i32 %arg.start, 1
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %name.index)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %storage.a = call ptr @csec_string_concat(ptr %name, ptr @.str.local.i8.addr)
+  %storage = call ptr @csec_string_concat(ptr %storage.a, ptr %start.text)
+  %init.a = call ptr @csec_string_concat(ptr @.str.local.i8.percent, ptr %name)
+  %init.b = call ptr @csec_string_concat(ptr %init.a, ptr @.str.local.i8.init)
+  %init = call ptr @csec_string_concat(ptr %init.b, ptr %start.text)
+  %has.initializer = icmp sge i32 %initializer, %arg.start
+  br i1 %has.initializer, label %inspect.initializer, label %fallback
+inspect.initializer:
+  %expr.start.raw = add i32 %initializer, 1
+  %expr.start = call i32 @skipTrivia(ptr %arg.tokens, i32 %expr.start.raw)
+  %expr.end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %expr.start, i32 %arg.end)
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %expr.start)
+  %char.kind = call i8 @kindChar()
+  %is.char = icmp eq i8 %kind, %char.kind
+  %single.end = add i32 %expr.start, 1
+  %is.single = icmp eq i32 %expr.end, %single.end
+  %char.literal = and i1 %is.char, %is.single
+  br i1 %char.literal, label %char.return, label %identifier.check
+char.return:
+  %char.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %expr.start)
+  %char.value = call ptr @llvmCharI8Value(ptr %char.text)
+  %c1 = call ptr @csec_string_concat(ptr @.str.local.i8.prefix, ptr %storage)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.local.i8.alloca)
+  %c3 = call ptr @csec_string_concat(ptr %c2, ptr @.str.local.i8.store)
+  %c4 = call ptr @csec_string_concat(ptr %c3, ptr %char.value)
+  %c5 = call ptr @csec_string_concat(ptr %c4, ptr @.str.local.i8.to)
+  %char.result = call ptr @csec_string_concat(ptr %c5, ptr %storage)
+  ret ptr %char.result
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %identifier.single.check, label %fallback
+identifier.single.check:
+  br i1 %is.single, label %identifier.return, label %charat.check
+identifier.return:
+  %source.name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %expr.start)
+  %source.storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %expr.start, ptr %source.name)
+  %i1 = call ptr @csec_string_concat(ptr @.str.local.i8.prefix, ptr %storage)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.local.i8.alloca)
+  %i3 = call ptr @csec_string_concat(ptr %i2, ptr @.str.local.i8.prefix)
+  %i4 = call ptr @csec_string_concat(ptr %i3, ptr %init)
+  %i5 = call ptr @csec_string_concat(ptr %i4, ptr @.str.local.i8.load)
+  %i6 = call ptr @csec_string_concat(ptr %i5, ptr %source.storage)
+  %i7 = call ptr @csec_string_concat(ptr %i6, ptr @.str.local.i8.store)
+  %i8 = call ptr @csec_string_concat(ptr %i7, ptr %init)
+  %i9 = call ptr @csec_string_concat(ptr %i8, ptr @.str.local.i8.to)
+  %identifier.result = call ptr @csec_string_concat(ptr %i9, ptr %storage)
+  ret ptr %identifier.result
+charat.check:
+  %dot.index = add i32 %expr.start, 1
+  %method.index = add i32 %expr.start, 2
+  %open.index = add i32 %expr.start, 3
+  %minimum.end = add i32 %expr.start, 4
+  %has.charat = icmp slt i32 %minimum.end, %expr.end
+  br i1 %has.charat, label %charat.tokens, label %call.check
+charat.tokens:
+  %operator.kind = call i8 @kindOperator()
+  %dot.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %dot.index, i8 %operator.kind, ptr @.str.local.i8.dot)
+  %dot = icmp ne i32 %dot.raw, 0
+  %method.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %method.index, i8 %identifier.kind, ptr @.str.local.i8.charat)
+  %method = icmp ne i32 %method.raw, 0
+  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.local.i8.open)
+  %open = icmp ne i32 %open.raw, 0
+  %charat.a = and i1 %dot, %method
+  %charat.b = and i1 %charat.a, %open
+  br i1 %charat.b, label %charat.close, label %call.check
+charat.close:
+  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %open.index, i32 %expr.end, ptr @.str.local.i8.open, ptr @.str.local.i8.close)
+  %last = sub i32 %expr.end, 1
+  %is.charat = icmp eq i32 %close, %last
+  br i1 %is.charat, label %charat.return, label %call.check
+charat.return:
+  %object.name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %expr.start)
+  %object.storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %expr.start, ptr %object.name)
+  %index.start = add i32 %expr.start, 4
+  %index.a = call ptr @csec_string_concat(ptr %init, ptr @.str.local.i8.index)
+  %index.code = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %index.start, i32 %last, ptr %index.a)
+  %o1 = call ptr @csec_string_concat(ptr @.str.local.i8.prefix, ptr %storage)
+  %o2 = call ptr @csec_string_concat(ptr %o1, ptr @.str.local.i8.alloca)
+  %o3 = call ptr @csec_string_concat(ptr %o2, ptr @.str.local.i8.prefix)
+  %o4 = call ptr @csec_string_concat(ptr %o3, ptr %init)
+  %o5 = call ptr @csec_string_concat(ptr %o4, ptr @.str.local.i8.object.load)
+  %o6 = call ptr @csec_string_concat(ptr %o5, ptr %object.storage)
+  %o7 = call ptr @csec_string_concat(ptr %o6, ptr %index.code)
+  %o8 = call ptr @csec_string_concat(ptr %o7, ptr @.str.local.i8.prefix)
+  %o9 = call ptr @csec_string_concat(ptr %o8, ptr %init)
+  %o10 = call ptr @csec_string_concat(ptr %o9, ptr @.str.local.i8.call.prefix)
+  %object.value = call ptr @csec_string_concat(ptr %init, ptr @.str.local.i8.object)
+  %o11 = call ptr @csec_string_concat(ptr %o10, ptr %object.value)
+  %o12 = call ptr @csec_string_concat(ptr %o11, ptr @.str.local.i8.call.middle)
+  %o13 = call ptr @csec_string_concat(ptr %o12, ptr %index.a)
+  %o14 = call ptr @csec_string_concat(ptr %o13, ptr @.str.local.i8.close)
+  %o15 = call ptr @csec_string_concat(ptr %o14, ptr @.str.local.i8.store)
+  %o16 = call ptr @csec_string_concat(ptr %o15, ptr %init)
+  %o17 = call ptr @csec_string_concat(ptr %o16, ptr @.str.local.i8.to)
+  %charat.result = call ptr @csec_string_concat(ptr %o17, ptr %storage)
+  ret ptr %charat.result
+call.check:
+  %call.open.index = add i32 %expr.start, 1
+  %call.before.end = icmp slt i32 %call.open.index, %expr.end
+  br i1 %call.before.end, label %call.open.check, label %fallback
+call.open.check:
+  %operator.kind.call = call i8 @kindOperator()
+  %call.open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %call.open.index, i8 %operator.kind.call, ptr @.str.local.i8.open)
+  %call.open = icmp ne i32 %call.open.raw, 0
+  br i1 %call.open, label %call.close.check, label %fallback
+call.close.check:
+  %call.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %call.open.index, i32 %expr.end, ptr @.str.local.i8.open, ptr @.str.local.i8.close)
+  %call.last = sub i32 %expr.end, 1
+  %is.call = icmp eq i32 %call.close, %call.last
+  br i1 %is.call, label %call.return, label %fallback
+call.return:
+  %callee = call ptr @tokenTextAt(ptr %arg.tokens, i32 %expr.start)
+  %args.start = add i32 %expr.start, 2
+  %args.loads = call ptr @generateLLVMCallArgumentLoadsI32(ptr %arg.tokens, i32 %args.start, i32 %call.last, ptr %init)
+  %args.list = call ptr @generateLLVMCallArgumentListI32(ptr %arg.tokens, i32 %args.start, i32 %call.last, ptr %init)
+  %callee.native = call ptr @llvmRuntimeCallName(ptr %callee)
+  %q1 = call ptr @csec_string_concat(ptr @.str.local.i8.prefix, ptr %storage)
+  %q2 = call ptr @csec_string_concat(ptr %q1, ptr @.str.local.i8.alloca)
+  %q3 = call ptr @csec_string_concat(ptr %q2, ptr %args.loads)
+  %q4 = call ptr @csec_string_concat(ptr %q3, ptr @.str.local.i8.prefix)
+  %q5 = call ptr @csec_string_concat(ptr %q4, ptr %init)
+  %q6 = call ptr @csec_string_concat(ptr %q5, ptr @.str.local.i8.call.at)
+  %q7 = call ptr @csec_string_concat(ptr %q6, ptr %callee.native)
+  %q8 = call ptr @csec_string_concat(ptr %q7, ptr @.str.local.i8.open)
+  %q9 = call ptr @csec_string_concat(ptr %q8, ptr %args.list)
+  %q10 = call ptr @csec_string_concat(ptr %q9, ptr @.str.local.i8.close)
+  %q11 = call ptr @csec_string_concat(ptr %q10, ptr @.str.local.i8.store)
+  %q12 = call ptr @csec_string_concat(ptr %q11, ptr %init)
+  %q13 = call ptr @csec_string_concat(ptr %q12, ptr @.str.local.i8.to)
+  %call.result = call ptr @csec_string_concat(ptr %q13, ptr %storage)
+  ret ptr %call.result
+fallback:
+  %f1 = call ptr @csec_string_concat(ptr @.str.local.i8.prefix, ptr %storage)
+  %f2 = call ptr @csec_string_concat(ptr %f1, ptr @.str.local.i8.alloca)
+  %f3 = call ptr @csec_string_concat(ptr %f2, ptr @.str.local.i8.zero)
+  %fallback.result = call ptr @csec_string_concat(ptr %f3, ptr %storage)
+  ret ptr %fallback.result
+}
+
+)";
+    output += llvmStringGlobal(".str.local.i8.addr", ".addr.");
+    output += llvmStringGlobal(".str.local.i8.percent", "%");
+    output += llvmStringGlobal(".str.local.i8.init", ".cinit.");
+    output += llvmStringGlobal(".str.local.i8.prefix", "  %");
+    output += llvmStringGlobal(".str.local.i8.alloca", " = alloca i8\n");
+    output += llvmStringGlobal(".str.local.i8.store", "  store i8 ");
+    output += llvmStringGlobal(".str.local.i8.to", ", ptr %");
+    output += llvmStringGlobal(".str.local.i8.zero", "  store i8 0, ptr %");
+    output += llvmStringGlobal(".str.local.i8.load", " = load i8, ptr %");
+    output += llvmStringGlobal(".str.local.i8.dot", ".");
+    output += llvmStringGlobal(".str.local.i8.charat", "charAt");
+    output += llvmStringGlobal(".str.local.i8.open", "(");
+    output += llvmStringGlobal(".str.local.i8.close", ")");
+    output += llvmStringGlobal(".str.local.i8.index", ".index");
+    output += llvmStringGlobal(".str.local.i8.object", ".obj");
+    output += llvmStringGlobal(".str.local.i8.object.load", " = load ptr, ptr %");
+    output += llvmStringGlobal(".str.local.i8.call.prefix", " = call i8 @csec_string_char_at(ptr ");
+    output += llvmStringGlobal(".str.local.i8.call.middle", ", i32 ");
+    output += llvmStringGlobal(".str.local.i8.call.at", " = call i8 @");
+    return output;
+}
+
+std::string llvmGenerateLocalI1Definition() {
+    std::string output = R"(define ptr @generateLLVMLocalI1(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %initializer = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %name.index = add i32 %arg.start, 1
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %name.index)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %storage.a = call ptr @csec_string_concat(ptr %name, ptr @.str.local.i1.addr)
+  %storage = call ptr @csec_string_concat(ptr %storage.a, ptr %start.text)
+  %init.a = call ptr @csec_string_concat(ptr @.str.local.i1.percent, ptr %name)
+  %init.b = call ptr @csec_string_concat(ptr %init.a, ptr @.str.local.i1.init)
+  %init = call ptr @csec_string_concat(ptr %init.b, ptr %start.text)
+  %has.initializer = icmp sge i32 %initializer, %arg.start
+  br i1 %has.initializer, label %with.initializer, label %without.initializer
+with.initializer:
+  %expr.start = add i32 %initializer, 1
+  %expr = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %expr.start, i32 %arg.end, ptr %init)
+  %a1 = call ptr @csec_string_concat(ptr @.str.local.i1.prefix, ptr %storage)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.local.i1.alloca)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %expr)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.local.i1.store)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr %init)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.local.i1.to)
+  %result = call ptr @csec_string_concat(ptr %a6, ptr %storage)
+  ret ptr %result
+without.initializer:
+  %b1 = call ptr @csec_string_concat(ptr @.str.local.i1.prefix, ptr %storage)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.local.i1.alloca)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr @.str.local.i1.false)
+  %fallback = call ptr @csec_string_concat(ptr %b3, ptr %storage)
+  ret ptr %fallback
+}
+
+)";
+    output += llvmStringGlobal(".str.local.i1.addr", ".addr.");
+    output += llvmStringGlobal(".str.local.i1.percent", "%");
+    output += llvmStringGlobal(".str.local.i1.init", ".binit.");
+    output += llvmStringGlobal(".str.local.i1.prefix", "  %");
+    output += llvmStringGlobal(".str.local.i1.alloca", " = alloca i1\n");
+    output += llvmStringGlobal(".str.local.i1.store", "  store i1 ");
+    output += llvmStringGlobal(".str.local.i1.to", ", ptr %");
+    output += llvmStringGlobal(".str.local.i1.false", "  store i1 false, ptr %");
+    return output;
+}
+
+std::string llvmGenerateExpressionI32Definition() {
+    std::string output = R"(define ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %empty = icmp sle i32 %end, %arg.start
+  br i1 %empty, label %zero.return, label %integer.check
+zero.return:
+  %z1 = call ptr @csec_string_concat(ptr @.str.expr.i32.prefix, ptr %arg.resultName)
+  %zero.result = call ptr @csec_string_concat(ptr %z1, ptr @.str.expr.i32.zero)
+  ret ptr %zero.result
+integer.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %integer.kind = call i8 @kindInteger()
+  %is.integer = icmp eq i8 %kind, %integer.kind
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %integer = and i1 %is.integer, %single
+  br i1 %integer, label %integer.return, label %char.check
+integer.return:
+  %integer.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %i1 = call ptr @csec_string_concat(ptr @.str.expr.i32.prefix, ptr %arg.resultName)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.expr.i32.add)
+  %integer.result = call ptr @csec_string_concat(ptr %i2, ptr %integer.text)
+  ret ptr %integer.result
+char.check:
+  %char.kind = call i8 @kindChar()
+  %is.char = icmp eq i8 %kind, %char.kind
+  %char = and i1 %is.char, %single
+  br i1 %char, label %char.return, label %identifier.check
+char.return:
+  %char.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %char.value = call ptr @llvmCharI8Value(ptr %char.text)
+  %c1 = call ptr @csec_string_concat(ptr @.str.expr.i32.prefix, ptr %arg.resultName)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.expr.i32.add)
+  %char.result = call ptr @csec_string_concat(ptr %c2, ptr %char.value)
+  ret ptr %char.result
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %identifier.next, label %operator.find
+identifier.next:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  br i1 %single, label %identifier.return, label %length.check
+identifier.return:
+  %value.type = call ptr @lookupVisibleValueType(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %is.char.type = call i1 @strEq(ptr %value.type, ptr @.str.expr.i32.char)
+  br i1 %is.char.type, label %identifier.char, label %identifier.i32
+identifier.char:
+  %storage.char = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %h1 = call ptr @csec_string_concat(ptr @.str.expr.i32.prefix, ptr %arg.resultName)
+  %h2 = call ptr @csec_string_concat(ptr %h1, ptr @.str.expr.i32.char.load)
+  %h3 = call ptr @csec_string_concat(ptr %h2, ptr %storage.char)
+  %h4 = call ptr @csec_string_concat(ptr %h3, ptr @.str.expr.i32.prefix)
+  %h5 = call ptr @csec_string_concat(ptr %h4, ptr %arg.resultName)
+  %h6 = call ptr @csec_string_concat(ptr %h5, ptr @.str.expr.i32.zext)
+  %h7 = call ptr @csec_string_concat(ptr %h6, ptr %arg.resultName)
+  %identifier.char.result = call ptr @csec_string_concat(ptr %h7, ptr @.str.expr.i32.char.to.i32)
+  ret ptr %identifier.char.result
+identifier.i32:
+  %storage.i32 = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %j1 = call ptr @csec_string_concat(ptr @.str.expr.i32.prefix, ptr %arg.resultName)
+  %j2 = call ptr @csec_string_concat(ptr %j1, ptr @.str.expr.i32.i32.load)
+  %identifier.i32.result = call ptr @csec_string_concat(ptr %j2, ptr %storage.i32)
+  ret ptr %identifier.i32.result
+length.check:
+  %dot.index = add i32 %arg.start, 1
+  %length.index = add i32 %arg.start, 2
+  %operator.kind = call i8 @kindOperator()
+  %dot.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %dot.index, i8 %operator.kind, ptr @.str.expr.i32.dot)
+  %dot = icmp ne i32 %dot.raw, 0
+  %length.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %length.index, i8 %identifier.kind, ptr @.str.expr.i32.length)
+  %length = icmp ne i32 %length.raw, 0
+  %is.length = and i1 %dot, %length
+  br i1 %is.length, label %length.return, label %charat.check
+length.return:
+  %length.storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %l1 = call ptr @csec_string_concat(ptr @.str.expr.i32.prefix, ptr %arg.resultName)
+  %l2 = call ptr @csec_string_concat(ptr %l1, ptr @.str.expr.i32.object.load)
+  %l3 = call ptr @csec_string_concat(ptr %l2, ptr %length.storage)
+  %l4 = call ptr @csec_string_concat(ptr %l3, ptr @.str.expr.i32.prefix)
+  %l5 = call ptr @csec_string_concat(ptr %l4, ptr %arg.resultName)
+  %l6 = call ptr @csec_string_concat(ptr %l5, ptr @.str.expr.i32.length.call)
+  %object.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i32.object)
+  %l7 = call ptr @csec_string_concat(ptr %l6, ptr %object.name)
+  %l8 = call ptr @csec_string_concat(ptr %l7, ptr @.str.expr.i32.prefix)
+  %l9 = call ptr @csec_string_concat(ptr %l8, ptr %arg.resultName)
+  %l10 = call ptr @csec_string_concat(ptr %l9, ptr @.str.expr.i32.trunc)
+  %l11 = call ptr @csec_string_concat(ptr %l10, ptr %arg.resultName)
+  %length.result = call ptr @csec_string_concat(ptr %l11, ptr @.str.expr.i32.i64.to.i32)
+  ret ptr %length.result
+charat.check:
+  %open.index = add i32 %arg.start, 3
+  %minimum.end = add i32 %arg.start, 4
+  %has.charat = icmp slt i32 %minimum.end, %end
+  br i1 %has.charat, label %charat.tokens, label %call.check
+charat.tokens:
+  %charat.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %length.index, i8 %identifier.kind, ptr @.str.expr.i32.charat)
+  %charat = icmp ne i32 %charat.raw, 0
+  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.expr.i32.open)
+  %open = icmp ne i32 %open.raw, 0
+  %charat.a = and i1 %dot, %charat
+  %charat.b = and i1 %charat.a, %open
+  br i1 %charat.b, label %charat.close, label %call.check
+charat.close:
+  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %open.index, i32 %end, ptr @.str.expr.i32.open, ptr @.str.expr.i32.close)
+  %last = sub i32 %end, 1
+  %is.charat = icmp eq i32 %close, %last
+  br i1 %is.charat, label %charat.return, label %call.check
+charat.return:
+  %charat.storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %index.start = add i32 %arg.start, 4
+  %index.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i32.index)
+  %index.code = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %index.start, i32 %last, ptr %index.name)
+  %q1 = call ptr @csec_string_concat(ptr @.str.expr.i32.prefix, ptr %arg.resultName)
+  %q2 = call ptr @csec_string_concat(ptr %q1, ptr @.str.expr.i32.object.load)
+  %q3 = call ptr @csec_string_concat(ptr %q2, ptr %charat.storage)
+  %q4 = call ptr @csec_string_concat(ptr %q3, ptr %index.code)
+  %q5 = call ptr @csec_string_concat(ptr %q4, ptr @.str.expr.i32.prefix)
+  %q6 = call ptr @csec_string_concat(ptr %q5, ptr %arg.resultName)
+  %q7 = call ptr @csec_string_concat(ptr %q6, ptr @.str.expr.i32.charat.call)
+  %object.name.charat = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i32.object)
+  %q8 = call ptr @csec_string_concat(ptr %q7, ptr %object.name.charat)
+  %q9 = call ptr @csec_string_concat(ptr %q8, ptr @.str.expr.i32.charat.middle)
+  %q10 = call ptr @csec_string_concat(ptr %q9, ptr %index.name)
+  %q11 = call ptr @csec_string_concat(ptr %q10, ptr @.str.expr.i32.close)
+  %q12 = call ptr @csec_string_concat(ptr %q11, ptr @.str.expr.i32.prefix)
+  %q13 = call ptr @csec_string_concat(ptr %q12, ptr %arg.resultName)
+  %q14 = call ptr @csec_string_concat(ptr %q13, ptr @.str.expr.i32.zext)
+  %q15 = call ptr @csec_string_concat(ptr %q14, ptr %arg.resultName)
+  %charat.result = call ptr @csec_string_concat(ptr %q15, ptr @.str.expr.i32.i8.to.i32)
+  ret ptr %charat.result
+call.check:
+  %call.open.index = add i32 %arg.start, 1
+  %call.before.end = icmp slt i32 %call.open.index, %end
+  br i1 %call.before.end, label %call.open.check, label %operator.find
+call.open.check:
+  %call.open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %call.open.index, i8 %operator.kind, ptr @.str.expr.i32.open)
+  %call.open = icmp ne i32 %call.open.raw, 0
+  br i1 %call.open, label %call.close.check, label %operator.find
+call.close.check:
+  %call.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %call.open.index, i32 %end, ptr @.str.expr.i32.open, ptr @.str.expr.i32.close)
+  %call.last = sub i32 %end, 1
+  %is.call = icmp eq i32 %call.close, %call.last
+  br i1 %is.call, label %call.return, label %operator.find
+call.return:
+  %callee = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %args.start = add i32 %arg.start, 2
+  %loads = call ptr @generateLLVMCallArgumentLoadsI32(ptr %arg.tokens, i32 %args.start, i32 %call.last, ptr %arg.resultName)
+  %arguments = call ptr @generateLLVMCallArgumentListI32(ptr %arg.tokens, i32 %args.start, i32 %call.last, ptr %arg.resultName)
+  %native.callee = call ptr @llvmRuntimeCallName(ptr %callee)
+  %r1 = call ptr @csec_string_concat(ptr %loads, ptr @.str.expr.i32.prefix)
+  %r2 = call ptr @csec_string_concat(ptr %r1, ptr %arg.resultName)
+  %r3 = call ptr @csec_string_concat(ptr %r2, ptr @.str.expr.i32.call.i32)
+  %r4 = call ptr @csec_string_concat(ptr %r3, ptr %native.callee)
+  %r5 = call ptr @csec_string_concat(ptr %r4, ptr @.str.expr.i32.open)
+  %r6 = call ptr @csec_string_concat(ptr %r5, ptr %arguments)
+  %call.result = call ptr @csec_string_concat(ptr %r6, ptr @.str.expr.i32.close.nl)
+  ret ptr %call.result
+operator.find:
+  %op = call i32 @expressionTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %end)
+  %has.op = icmp sgt i32 %op, %arg.start
+  br i1 %has.op, label %operator.return, label %zero.return
+operator.return:
+  %op.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %op)
+  %mnemonic = call ptr @irOperatorName(ptr %op.text)
+  %left.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i32.left)
+  %left = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %arg.start, i32 %op, ptr %left.name)
+  %right.start = add i32 %op, 1
+  %right.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i32.right)
+  %right = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %right.start, i32 %end, ptr %right.name)
+  %b1 = call ptr @csec_string_concat(ptr %left, ptr %right)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.expr.i32.prefix)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr %arg.resultName)
+  %b4 = call ptr @csec_string_concat(ptr %b3, ptr @.str.expr.i32.operator.prefix)
+  %b5 = call ptr @csec_string_concat(ptr %b4, ptr %mnemonic)
+  %b6 = call ptr @csec_string_concat(ptr %b5, ptr @.str.expr.i32.operator.middle)
+  %b7 = call ptr @csec_string_concat(ptr %b6, ptr %left.name)
+  %b8 = call ptr @csec_string_concat(ptr %b7, ptr @.str.expr.i32.operator.comma)
+  %binary.result = call ptr @csec_string_concat(ptr %b8, ptr %right.name)
+  ret ptr %binary.result
+}
+
+)";
+    output += llvmStringGlobal(".str.expr.i32.prefix", "  ");
+    output += llvmStringGlobal(".str.expr.i32.zero", " = add i32 0, 0\n");
+    output += llvmStringGlobal(".str.expr.i32.add", " = add i32 0, ");
+    output += llvmStringGlobal(".str.expr.i32.char", "Char");
+    output += llvmStringGlobal(".str.expr.i32.char.load", " = load i8, ptr %");
+    output += llvmStringGlobal(".str.expr.i32.zext", " = zext i8 ");
+    output += llvmStringGlobal(".str.expr.i32.char.to.i32", ".c to i32\n");
+    output += llvmStringGlobal(".str.expr.i32.i32.load", " = load i32, ptr %");
+    output += llvmStringGlobal(".str.expr.i32.dot", ".");
+    output += llvmStringGlobal(".str.expr.i32.length", "length");
+    output += llvmStringGlobal(".str.expr.i32.charat", "charAt");
+    output += llvmStringGlobal(".str.expr.i32.open", "(");
+    output += llvmStringGlobal(".str.expr.i32.close", ")");
+    output += llvmStringGlobal(".str.expr.i32.close.nl", ")\n");
+    output += llvmStringGlobal(".str.expr.i32.object", ".obj");
+    output += llvmStringGlobal(".str.expr.i32.index", ".index");
+    output += llvmStringGlobal(".str.expr.i32.object.load", " = load ptr, ptr %");
+    output += llvmStringGlobal(".str.expr.i32.length.call", " = call i64 @csec_string_length(ptr ");
+    output += llvmStringGlobal(".str.expr.i32.trunc", " = trunc i64 ");
+    output += llvmStringGlobal(".str.expr.i32.i64.to.i32", ".i64 to i32\n");
+    output += llvmStringGlobal(".str.expr.i32.charat.call", " = call i8 @csec_string_char_at(ptr ");
+    output += llvmStringGlobal(".str.expr.i32.charat.middle", ", i32 ");
+    output += llvmStringGlobal(".str.expr.i32.i8.to.i32", ".i8 to i32\n");
+    output += llvmStringGlobal(".str.expr.i32.call.i32", " = call i32 @");
+    output += llvmStringGlobal(".str.expr.i32.left", ".left");
+    output += llvmStringGlobal(".str.expr.i32.right", ".right");
+    output += llvmStringGlobal(".str.expr.i32.operator.prefix", " = ");
+    output += llvmStringGlobal(".str.expr.i32.operator.middle", " i32 ");
+    output += llvmStringGlobal(".str.expr.i32.operator.comma", ", ");
+    return output;
+}
+
+std::string llvmGenerateExpressionI64Definition() {
+    std::string output = R"(define ptr @generateLLVMExpressionI64(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %empty = icmp sle i32 %end, %arg.start
+  br i1 %empty, label %zero.return, label %integer.check
+zero.return:
+  %z1 = call ptr @csec_string_concat(ptr @.str.expr.i64.prefix, ptr %arg.resultName)
+  %zero.result = call ptr @csec_string_concat(ptr %z1, ptr @.str.expr.i64.zero)
+  ret ptr %zero.result
+integer.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %integer.kind = call i8 @kindInteger()
+  %is.integer = icmp eq i8 %kind, %integer.kind
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %integer = and i1 %is.integer, %single
+  br i1 %integer, label %integer.return, label %identifier.check
+integer.return:
+  %integer.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %i1 = call ptr @csec_string_concat(ptr @.str.expr.i64.prefix, ptr %arg.resultName)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.expr.i64.add)
+  %integer.result = call ptr @csec_string_concat(ptr %i2, ptr %integer.text)
+  ret ptr %integer.result
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %identifier.next, label %operator.find
+identifier.next:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  br i1 %single, label %identifier.return, label %call.check
+identifier.return:
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %n1 = call ptr @csec_string_concat(ptr @.str.expr.i64.prefix, ptr %arg.resultName)
+  %n2 = call ptr @csec_string_concat(ptr %n1, ptr @.str.expr.i64.load)
+  %identifier.result = call ptr @csec_string_concat(ptr %n2, ptr %storage)
+  ret ptr %identifier.result
+call.check:
+  %open.index = add i32 %arg.start, 1
+  %before.end = icmp slt i32 %open.index, %end
+  br i1 %before.end, label %open.check, label %operator.find
+open.check:
+  %operator.kind = call i8 @kindOperator()
+  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.expr.i64.open)
+  %open = icmp ne i32 %open.raw, 0
+  br i1 %open, label %close.check, label %operator.find
+close.check:
+  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %open.index, i32 %end, ptr @.str.expr.i64.open, ptr @.str.expr.i64.close)
+  %last = sub i32 %end, 1
+  %is.call = icmp eq i32 %close, %last
+  br i1 %is.call, label %call.return, label %operator.find
+call.return:
+  %args.start = add i32 %arg.start, 2
+  %loads = call ptr @generateLLVMCallArgumentLoadsI32(ptr %arg.tokens, i32 %args.start, i32 %last, ptr %arg.resultName)
+  %arguments = call ptr @generateLLVMCallArgumentListI32(ptr %arg.tokens, i32 %args.start, i32 %last, ptr %arg.resultName)
+  %callee = call ptr @llvmRuntimeCallName(ptr %name)
+  %c1 = call ptr @csec_string_concat(ptr %loads, ptr @.str.expr.i64.prefix)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr %arg.resultName)
+  %c3 = call ptr @csec_string_concat(ptr %c2, ptr @.str.expr.i64.call)
+  %c4 = call ptr @csec_string_concat(ptr %c3, ptr %callee)
+  %c5 = call ptr @csec_string_concat(ptr %c4, ptr @.str.expr.i64.open)
+  %c6 = call ptr @csec_string_concat(ptr %c5, ptr %arguments)
+  %call.result = call ptr @csec_string_concat(ptr %c6, ptr @.str.expr.i64.close.nl)
+  ret ptr %call.result
+operator.find:
+  %op = call i32 @expressionTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %end)
+  %has.op = icmp sgt i32 %op, %arg.start
+  br i1 %has.op, label %operator.return, label %zero.return
+operator.return:
+  %op.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %op)
+  %mnemonic = call ptr @irOperatorName(ptr %op.text)
+  %left.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i64.left)
+  %left = call ptr @generateLLVMExpressionI64(ptr %arg.tokens, i32 %arg.start, i32 %op, ptr %left.name)
+  %right.start = add i32 %op, 1
+  %right.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i64.right)
+  %right = call ptr @generateLLVMExpressionI64(ptr %arg.tokens, i32 %right.start, i32 %end, ptr %right.name)
+  %b1 = call ptr @csec_string_concat(ptr %left, ptr %right)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.expr.i64.prefix)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr %arg.resultName)
+  %b4 = call ptr @csec_string_concat(ptr %b3, ptr @.str.expr.i64.operator.prefix)
+  %b5 = call ptr @csec_string_concat(ptr %b4, ptr %mnemonic)
+  %b6 = call ptr @csec_string_concat(ptr %b5, ptr @.str.expr.i64.operator.middle)
+  %b7 = call ptr @csec_string_concat(ptr %b6, ptr %left.name)
+  %b8 = call ptr @csec_string_concat(ptr %b7, ptr @.str.expr.i64.operator.comma)
+  %binary.result = call ptr @csec_string_concat(ptr %b8, ptr %right.name)
+  ret ptr %binary.result
+}
+
+)";
+    output += llvmStringGlobal(".str.expr.i64.prefix", "  ");
+    output += llvmStringGlobal(".str.expr.i64.zero", " = add i64 0, 0\n");
+    output += llvmStringGlobal(".str.expr.i64.add", " = add i64 0, ");
+    output += llvmStringGlobal(".str.expr.i64.load", " = load i64, ptr %");
+    output += llvmStringGlobal(".str.expr.i64.open", "(");
+    output += llvmStringGlobal(".str.expr.i64.close", ")");
+    output += llvmStringGlobal(".str.expr.i64.close.nl", ")\n");
+    output += llvmStringGlobal(".str.expr.i64.call", " = call i64 @");
+    output += llvmStringGlobal(".str.expr.i64.left", ".left");
+    output += llvmStringGlobal(".str.expr.i64.right", ".right");
+    output += llvmStringGlobal(".str.expr.i64.operator.prefix", " = ");
+    output += llvmStringGlobal(".str.expr.i64.operator.middle", " i64 ");
+    output += llvmStringGlobal(".str.expr.i64.operator.comma", ", ");
+    return output;
+}
+
+std::string llvmBlockEndsWithTopLevelReturnDefinition() {
+    std::string output = R"(define i1 @llvmBlockEndsWithTopLevelReturn(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {
+entry:
+  %first = call i32 @skipTrivia(ptr %arg.tokens, i32 %arg.bodyStart)
+  br label %loop
+loop:
+  %cursor = phi i32 [ %first, %entry ], [ %next.cursor, %body ]
+  %result = phi i1 [ false, %entry ], [ %is.return, %body ]
+  %before.end = icmp slt i32 %cursor, %arg.bodyEnd
+  br i1 %before.end, label %eof.check, label %done
+eof.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %cursor)
+  %eof.kind = call i8 @kindEof()
+  %is.eof = icmp eq i8 %kind, %eof.kind
+  br i1 %is.eof, label %done, label %body
+body:
+  %next = call i32 @advanceStatement(ptr %arg.tokens, i32 %cursor, i32 %arg.bodyEnd)
+  %statement = call ptr @statementKind(ptr %arg.tokens, i32 %cursor)
+  %is.return = call i1 @strEq(ptr %statement, ptr @.str.block.return)
+  %next.cursor = call i32 @skipTrivia(ptr %arg.tokens, i32 %next)
+  br label %loop
+done:
+  ret i1 %result
+}
+
+)";
+    output += llvmStringGlobal(".str.block.return", "return");
+    return output;
+}
+
+std::string llvmGenerateExpressionF64Definition() {
+    std::string output = R"(define ptr @generateLLVMExpressionF64(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %empty = icmp sle i32 %end, %arg.start
+  br i1 %empty, label %zero.return, label %literal.check
+zero.return:
+  %z1 = call ptr @csec_string_concat(ptr @.str.expr.f64.prefix, ptr %arg.resultName)
+  %zero.result = call ptr @csec_string_concat(ptr %z1, ptr @.str.expr.f64.zero)
+  ret ptr %zero.result
+literal.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %float.kind = call i8 @kindFloat()
+  %is.float = icmp eq i8 %kind, %float.kind
+  %integer.kind = call i8 @kindInteger()
+  %is.integer = icmp eq i8 %kind, %integer.kind
+  %number = or i1 %is.float, %is.integer
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %literal = and i1 %number, %single
+  br i1 %literal, label %literal.return, label %identifier.check
+literal.return:
+  %text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %l1 = call ptr @csec_string_concat(ptr @.str.expr.f64.prefix, ptr %arg.resultName)
+  %l2 = call ptr @csec_string_concat(ptr %l1, ptr @.str.expr.f64.fadd)
+  %literal.result = call ptr @csec_string_concat(ptr %l2, ptr %text)
+  ret ptr %literal.result
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %identifier.next, label %operator.find
+identifier.next:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  br i1 %single, label %identifier.return, label %call.check
+identifier.return:
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %i1 = call ptr @csec_string_concat(ptr @.str.expr.f64.prefix, ptr %arg.resultName)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.expr.f64.load)
+  %identifier.result = call ptr @csec_string_concat(ptr %i2, ptr %storage)
+  ret ptr %identifier.result
+call.check:
+  %open.index = add i32 %arg.start, 1
+  %before.end = icmp slt i32 %open.index, %end
+  br i1 %before.end, label %open.check, label %operator.find
+open.check:
+  %operator.kind = call i8 @kindOperator()
+  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.expr.f64.open)
+  %open = icmp ne i32 %open.raw, 0
+  br i1 %open, label %close.check, label %operator.find
+close.check:
+  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %open.index, i32 %end, ptr @.str.expr.f64.open, ptr @.str.expr.f64.close)
+  %last = sub i32 %end, 1
+  %is.call = icmp eq i32 %close, %last
+  br i1 %is.call, label %call.return, label %operator.find
+call.return:
+  %args.start = add i32 %arg.start, 2
+  %loads = call ptr @generateLLVMCallArgumentLoadsI32(ptr %arg.tokens, i32 %args.start, i32 %last, ptr %arg.resultName)
+  %arguments = call ptr @generateLLVMCallArgumentListI32(ptr %arg.tokens, i32 %args.start, i32 %last, ptr %arg.resultName)
+  %callee = call ptr @llvmRuntimeCallName(ptr %name)
+  %c1 = call ptr @csec_string_concat(ptr %loads, ptr @.str.expr.f64.prefix)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr %arg.resultName)
+  %c3 = call ptr @csec_string_concat(ptr %c2, ptr @.str.expr.f64.call)
+  %c4 = call ptr @csec_string_concat(ptr %c3, ptr %callee)
+  %c5 = call ptr @csec_string_concat(ptr %c4, ptr @.str.expr.f64.open)
+  %c6 = call ptr @csec_string_concat(ptr %c5, ptr %arguments)
+  %call.result = call ptr @csec_string_concat(ptr %c6, ptr @.str.expr.f64.close.nl)
+  ret ptr %call.result
+operator.find:
+  %op = call i32 @expressionTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %end)
+  %has.op = icmp sgt i32 %op, %arg.start
+  br i1 %has.op, label %operator.check, label %zero.return
+operator.check:
+  %op.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %op)
+  %add = call i1 @strEq(ptr %op.text, ptr @.str.expr.f64.add.symbol)
+  br i1 %add, label %binary.add, label %sub.check
+sub.check:
+  %sub = call i1 @strEq(ptr %op.text, ptr @.str.expr.f64.sub.symbol)
+  br i1 %sub, label %binary.sub, label %mul.check
+mul.check:
+  %mul = call i1 @strEq(ptr %op.text, ptr @.str.expr.f64.mul.symbol)
+  br i1 %mul, label %binary.mul, label %div.check
+div.check:
+  %div = call i1 @strEq(ptr %op.text, ptr @.str.expr.f64.div.symbol)
+  br i1 %div, label %binary.div, label %zero.return
+binary.add:
+  br label %binary
+binary.sub:
+  br label %binary
+binary.mul:
+  br label %binary
+binary.div:
+  br label %binary
+binary:
+  %mnemonic = phi ptr [ @.str.expr.f64.fadd.name, %binary.add ], [ @.str.expr.f64.fsub.name, %binary.sub ], [ @.str.expr.f64.fmul.name, %binary.mul ], [ @.str.expr.f64.fdiv.name, %binary.div ]
+  %left.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.f64.left)
+  %left = call ptr @generateLLVMExpressionF64(ptr %arg.tokens, i32 %arg.start, i32 %op, ptr %left.name)
+  %right.start = add i32 %op, 1
+  %right.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.f64.right)
+  %right = call ptr @generateLLVMExpressionF64(ptr %arg.tokens, i32 %right.start, i32 %end, ptr %right.name)
+  %b1 = call ptr @csec_string_concat(ptr %left, ptr %right)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.expr.f64.prefix)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr %arg.resultName)
+  %b4 = call ptr @csec_string_concat(ptr %b3, ptr @.str.expr.f64.operator.prefix)
+  %b5 = call ptr @csec_string_concat(ptr %b4, ptr %mnemonic)
+  %b6 = call ptr @csec_string_concat(ptr %b5, ptr @.str.expr.f64.operator.middle)
+  %b7 = call ptr @csec_string_concat(ptr %b6, ptr %left.name)
+  %b8 = call ptr @csec_string_concat(ptr %b7, ptr @.str.expr.f64.operator.comma)
+  %binary.result = call ptr @csec_string_concat(ptr %b8, ptr %right.name)
+  ret ptr %binary.result
+}
+
+)";
+    output += llvmStringGlobal(".str.expr.f64.prefix", "  ");
+    output += llvmStringGlobal(".str.expr.f64.zero", " = fadd double 0.000000e+00, 0.000000e+00\n");
+    output += llvmStringGlobal(".str.expr.f64.fadd", " = fadd double 0.000000e+00, ");
+    output += llvmStringGlobal(".str.expr.f64.load", " = load double, ptr %");
+    output += llvmStringGlobal(".str.expr.f64.open", "(");
+    output += llvmStringGlobal(".str.expr.f64.close", ")");
+    output += llvmStringGlobal(".str.expr.f64.close.nl", ")\n");
+    output += llvmStringGlobal(".str.expr.f64.call", " = call double @");
+    output += llvmStringGlobal(".str.expr.f64.add.symbol", "+");
+    output += llvmStringGlobal(".str.expr.f64.sub.symbol", "-");
+    output += llvmStringGlobal(".str.expr.f64.mul.symbol", "*");
+    output += llvmStringGlobal(".str.expr.f64.div.symbol", "/");
+    output += llvmStringGlobal(".str.expr.f64.fadd.name", "fadd");
+    output += llvmStringGlobal(".str.expr.f64.fsub.name", "fsub");
+    output += llvmStringGlobal(".str.expr.f64.fmul.name", "fmul");
+    output += llvmStringGlobal(".str.expr.f64.fdiv.name", "fdiv");
+    output += llvmStringGlobal(".str.expr.f64.left", ".left");
+    output += llvmStringGlobal(".str.expr.f64.right", ".right");
+    output += llvmStringGlobal(".str.expr.f64.operator.prefix", " = ");
+    output += llvmStringGlobal(".str.expr.f64.operator.middle", " double ");
+    output += llvmStringGlobal(".str.expr.f64.operator.comma", ", ");
+    return output;
+}
+
+std::string llvmGenerateExpressionPtrDefinition() {
+    std::string output = R"(define ptr @csecGenerateLLVMStringOperand(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %string.kind = call i8 @kindString()
+  %is.string = icmp eq i8 %kind, %string.kind
+  %string = and i1 %is.string, %single
+  br i1 %string, label %ptr.return, label %identifier.check
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %identifier.next, label %char.check
+identifier.next:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  br i1 %single, label %identifier.single, label %identifier.complex
+identifier.single:
+  %type = call ptr @lookupVisibleValueType(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %ir.type = call ptr @irTypeName(ptr %type)
+  %ptr = call i1 @strEq(ptr %ir.type, ptr @.str.expr.ptr.ptr)
+  br i1 %ptr, label %ptr.return, label %identifier.char.check
+identifier.char.check:
+  %character = call i1 @strEq(ptr %type, ptr @.str.expr.ptr.char)
+  br i1 %character, label %char.identifier, label %i32.return
+identifier.complex:
+  %open.index = add i32 %arg.start, 1
+  %operator.kind = call i8 @kindOperator()
+  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.expr.ptr.open)
+  %open = icmp ne i32 %open.raw, 0
+  br i1 %open, label %call.close.check, label %substring.check
+call.close.check:
+  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %open.index, i32 %end, ptr @.str.expr.ptr.open, ptr @.str.expr.ptr.close)
+  %last = sub i32 %end, 1
+  %is.call = icmp eq i32 %close, %last
+  br i1 %is.call, label %call.type.check, label %substring.check
+call.type.check:
+  %return.type = call ptr @lookupFunctionReturnType(ptr %arg.tokens, ptr %name)
+  %call.ir.type = call ptr @irTypeName(ptr %return.type)
+  %call.ptr = call i1 @strEq(ptr %call.ir.type, ptr @.str.expr.ptr.ptr)
+  br i1 %call.ptr, label %ptr.return, label %i32.return
+substring.check:
+  %dot.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.expr.ptr.dot)
+  %dot = icmp ne i32 %dot.raw, 0
+  br i1 %dot, label %substring.name.check, label %plus.check
+substring.name.check:
+  %substring.index = add i32 %arg.start, 2
+  %substring.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %substring.index, i8 %identifier.kind, ptr @.str.expr.ptr.substring)
+  %substring = icmp ne i32 %substring.raw, 0
+  br i1 %substring, label %ptr.return, label %plus.check
+char.check:
+  %char.kind = call i8 @kindChar()
+  %is.char = icmp eq i8 %kind, %char.kind
+  %char = and i1 %is.char, %single
+  br i1 %char, label %char.literal, label %plus.check
+char.literal:
+  %text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %value = call ptr @llvmCharI8Value(ptr %text)
+  %c1 = call ptr @csec_string_concat(ptr @.str.expr.ptr.prefix, ptr %arg.resultName)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.expr.ptr.char.call)
+  %c3 = call ptr @csec_string_concat(ptr %c2, ptr %text)
+  %char.result = call ptr @csec_string_concat(ptr %c3, ptr @.str.expr.ptr.char.close)
+  ret ptr %char.result
+char.identifier:
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %c4 = call ptr @csec_string_concat(ptr @.str.expr.ptr.prefix, ptr %arg.resultName)
+  %c5 = call ptr @csec_string_concat(ptr %c4, ptr @.str.expr.ptr.char.load)
+  %c6 = call ptr @csec_string_concat(ptr %c5, ptr %storage)
+  %c7 = call ptr @csec_string_concat(ptr %c6, ptr @.str.expr.ptr.char.nl)
+  %c8 = call ptr @csec_string_concat(ptr %c7, ptr @.str.expr.ptr.prefix)
+  %c9 = call ptr @csec_string_concat(ptr %c8, ptr %arg.resultName)
+  %c10 = call ptr @csec_string_concat(ptr %c9, ptr @.str.expr.ptr.char.call)
+  %c11 = call ptr @csec_string_concat(ptr %c10, ptr %arg.resultName)
+  %char.identifier.result = call ptr @csec_string_concat(ptr %c11, ptr @.str.expr.ptr.char.value.close)
+  ret ptr %char.identifier.result
+plus.check:
+  %plus = call i32 @expressionTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %end)
+  %has.plus = icmp sgt i32 %plus, %arg.start
+  br i1 %has.plus, label %plus.text.check, label %i32.return
+plus.text.check:
+  %plus.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %plus)
+  %is.plus = call i1 @strEq(ptr %plus.text, ptr @.str.expr.ptr.plus)
+  br i1 %is.plus, label %ptr.return, label %i32.return
+ptr.return:
+  %ptr.code = call ptr @generateLLVMExpressionPtr(ptr %arg.tokens, i32 %arg.start, i32 %end, ptr %arg.resultName)
+  ret ptr %ptr.code
+i32.return:
+  %i32.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.ptr.i32)
+  %i32.code = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %arg.start, i32 %end, ptr %i32.name)
+  %i64.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.ptr.i64)
+  %n1 = call ptr @csec_string_concat(ptr %i32.code, ptr @.str.expr.ptr.prefix)
+  %n2 = call ptr @csec_string_concat(ptr %n1, ptr %i64.name)
+  %n3 = call ptr @csec_string_concat(ptr %n2, ptr @.str.expr.ptr.sext)
+  %n4 = call ptr @csec_string_concat(ptr %n3, ptr %i32.name)
+  %n5 = call ptr @csec_string_concat(ptr %n4, ptr @.str.expr.ptr.to.i64)
+  %n6 = call ptr @csec_string_concat(ptr %n5, ptr @.str.expr.ptr.prefix)
+  %n7 = call ptr @csec_string_concat(ptr %n6, ptr %arg.resultName)
+  %n8 = call ptr @csec_string_concat(ptr %n7, ptr @.str.expr.ptr.i64.call)
+  %n9 = call ptr @csec_string_concat(ptr %n8, ptr %i64.name)
+  %numeric.result = call ptr @csec_string_concat(ptr %n9, ptr @.str.expr.ptr.close.nl)
+  ret ptr %numeric.result
+}
+
+define ptr @generateLLVMExpressionPtr(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %empty = icmp sle i32 %end, %arg.start
+  br i1 %empty, label %empty.return, label %string.check
+empty.return:
+  %e1 = call ptr @csec_string_concat(ptr @.str.expr.ptr.prefix, ptr %arg.resultName)
+  %empty.result = call ptr @csec_string_concat(ptr %e1, ptr @.str.expr.ptr.null)
+  ret ptr %empty.result
+string.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %string.kind = call i8 @kindString()
+  %is.string = icmp eq i8 %kind, %string.kind
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %string = and i1 %is.string, %single
+  br i1 %string, label %string.return, label %identifier.check
+string.return:
+  %text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %bytes = call i32 @csec_llvm_string_literal_byte_length(ptr %text)
+  %bytes.i64 = sext i32 %bytes to i64
+  %bytes.text = call ptr @csec_to_string_i64(i64 %bytes.i64)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %s1 = call ptr @csec_string_concat(ptr @.str.expr.ptr.prefix, ptr %arg.resultName)
+  %s2 = call ptr @csec_string_concat(ptr %s1, ptr @.str.expr.ptr.gep.a)
+  %s3 = call ptr @csec_string_concat(ptr %s2, ptr %bytes.text)
+  %s4 = call ptr @csec_string_concat(ptr %s3, ptr @.str.expr.ptr.gep.b)
+  %s5 = call ptr @csec_string_concat(ptr %s4, ptr %start.text)
+  %string.result = call ptr @csec_string_concat(ptr %s5, ptr @.str.expr.ptr.gep.c)
+  ret ptr %string.result
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %identifier.next, label %plus.find
+identifier.next:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  br i1 %single, label %identifier.return, label %call.check
+identifier.return:
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %i1 = call ptr @csec_string_concat(ptr @.str.expr.ptr.prefix, ptr %arg.resultName)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.expr.ptr.load)
+  %identifier.result = call ptr @csec_string_concat(ptr %i2, ptr %storage)
+  ret ptr %identifier.result
+call.check:
+  %open.index = add i32 %arg.start, 1
+  %operator.kind = call i8 @kindOperator()
+  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.expr.ptr.open)
+  %open = icmp ne i32 %open.raw, 0
+  br i1 %open, label %call.close.check, label %substring.check
+call.close.check:
+  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %open.index, i32 %end, ptr @.str.expr.ptr.open, ptr @.str.expr.ptr.close)
+  %last = sub i32 %end, 1
+  %is.call = icmp eq i32 %close, %last
+  br i1 %is.call, label %call.return, label %substring.check
+call.return:
+  %args.start = add i32 %arg.start, 2
+  %loads = call ptr @generateLLVMCallArgumentLoadsI32(ptr %arg.tokens, i32 %args.start, i32 %last, ptr %arg.resultName)
+  %arguments = call ptr @generateLLVMCallArgumentListI32(ptr %arg.tokens, i32 %args.start, i32 %last, ptr %arg.resultName)
+  %callee = call ptr @llvmRuntimeCallName(ptr %name)
+  %c1 = call ptr @csec_string_concat(ptr %loads, ptr @.str.expr.ptr.prefix)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr %arg.resultName)
+  %c3 = call ptr @csec_string_concat(ptr %c2, ptr @.str.expr.ptr.call)
+  %c4 = call ptr @csec_string_concat(ptr %c3, ptr %callee)
+  %c5 = call ptr @csec_string_concat(ptr %c4, ptr @.str.expr.ptr.open)
+  %c6 = call ptr @csec_string_concat(ptr %c5, ptr %arguments)
+  %call.result = call ptr @csec_string_concat(ptr %c6, ptr @.str.expr.ptr.close.nl)
+  ret ptr %call.result
+substring.check:
+  %dot.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.expr.ptr.dot)
+  %dot = icmp ne i32 %dot.raw, 0
+  br i1 %dot, label %substring.name.check, label %plus.find
+substring.name.check:
+  %substring.index = add i32 %arg.start, 2
+  %substring.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %substring.index, i8 %identifier.kind, ptr @.str.expr.ptr.substring)
+  %substring = icmp ne i32 %substring.raw, 0
+  br i1 %substring, label %substring.open.check, label %plus.find
+substring.open.check:
+  %substring.open.index = add i32 %arg.start, 3
+  %substring.open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %substring.open.index, i8 %operator.kind, ptr @.str.expr.ptr.open)
+  %substring.open = icmp ne i32 %substring.open.raw, 0
+  br i1 %substring.open, label %substring.close.check, label %plus.find
+substring.close.check:
+  %substring.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %substring.open.index, i32 %end, ptr @.str.expr.ptr.open, ptr @.str.expr.ptr.close)
+  %substring.last = sub i32 %end, 1
+  %substring.complete = icmp eq i32 %substring.close, %substring.last
+  br i1 %substring.complete, label %substring.comma.find, label %plus.find
+substring.comma.find:
+  %arguments.start = add i32 %arg.start, 4
+  %comma = call i32 @findTokenTextInRange(ptr %arg.tokens, i32 %arguments.start, i32 %substring.last, ptr @.str.expr.ptr.comma)
+  %has.comma = icmp sgt i32 %comma, %arguments.start
+  br i1 %has.comma, label %substring.return, label %plus.find
+substring.return:
+  %storage.name = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %object.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.ptr.object)
+  %start.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.ptr.start)
+  %length.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.ptr.length)
+  %object.prefix = call ptr @csec_string_concat(ptr @.str.expr.ptr.prefix, ptr %object.name)
+  %object.code = call ptr @csec_string_concat(ptr %object.prefix, ptr @.str.expr.ptr.object.load)
+  %object.result = call ptr @csec_string_concat(ptr %object.code, ptr %storage.name)
+  %start.code = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %arguments.start, i32 %comma, ptr %start.name)
+  %length.start = add i32 %comma, 1
+  %length.code = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %length.start, i32 %substring.last, ptr %length.name)
+  %u1 = call ptr @csec_string_concat(ptr %object.result, ptr %start.code)
+  %u2 = call ptr @csec_string_concat(ptr %u1, ptr %length.code)
+  %u3 = call ptr @csec_string_concat(ptr %u2, ptr @.str.expr.ptr.prefix)
+  %u4 = call ptr @csec_string_concat(ptr %u3, ptr %arg.resultName)
+  %u5 = call ptr @csec_string_concat(ptr %u4, ptr @.str.expr.ptr.substring.call)
+  %u6 = call ptr @csec_string_concat(ptr %u5, ptr %object.name)
+  %u7 = call ptr @csec_string_concat(ptr %u6, ptr @.str.expr.ptr.substring.middle)
+  %u8 = call ptr @csec_string_concat(ptr %u7, ptr %start.name)
+  %u9 = call ptr @csec_string_concat(ptr %u8, ptr @.str.expr.ptr.substring.middle)
+  %u10 = call ptr @csec_string_concat(ptr %u9, ptr %length.name)
+  %substring.result = call ptr @csec_string_concat(ptr %u10, ptr @.str.expr.ptr.close.nl)
+  ret ptr %substring.result
+plus.find:
+  %op = call i32 @expressionTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %end)
+  %has.op = icmp sgt i32 %op, %arg.start
+  br i1 %has.op, label %plus.check, label %fallback
+plus.check:
+  %op.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %op)
+  %plus = call i1 @strEq(ptr %op.text, ptr @.str.expr.ptr.plus)
+  br i1 %plus, label %plus.return, label %fallback
+plus.return:
+  %left.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.ptr.left)
+  %left = call ptr @csecGenerateLLVMStringOperand(ptr %arg.tokens, i32 %arg.start, i32 %op, ptr %left.name)
+  %right.start = add i32 %op, 1
+  %right.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.ptr.right)
+  %right = call ptr @csecGenerateLLVMStringOperand(ptr %arg.tokens, i32 %right.start, i32 %end, ptr %right.name)
+  %p1 = call ptr @csec_string_concat(ptr %left, ptr %right)
+  %p2 = call ptr @csec_string_concat(ptr %p1, ptr @.str.expr.ptr.prefix)
+  %p3 = call ptr @csec_string_concat(ptr %p2, ptr %arg.resultName)
+  %p4 = call ptr @csec_string_concat(ptr %p3, ptr @.str.expr.ptr.concat)
+  %p5 = call ptr @csec_string_concat(ptr %p4, ptr %left.name)
+  %p6 = call ptr @csec_string_concat(ptr %p5, ptr @.str.expr.ptr.concat.middle)
+  %p7 = call ptr @csec_string_concat(ptr %p6, ptr %right.name)
+  %plus.result = call ptr @csec_string_concat(ptr %p7, ptr @.str.expr.ptr.close.nl)
+  ret ptr %plus.result
+fallback:
+  %f1 = call ptr @csec_string_concat(ptr @.str.expr.ptr.prefix, ptr %arg.resultName)
+  %fallback.result = call ptr @csec_string_concat(ptr %f1, ptr @.str.expr.ptr.null)
+  ret ptr %fallback.result
+}
+
+)";
+    output += llvmStringGlobal(".str.expr.ptr.prefix", "  ");
+    output += llvmStringGlobal(".str.expr.ptr.null", " = inttoptr i64 0 to ptr\n");
+    output += llvmStringGlobal(".str.expr.ptr.ptr", "ptr");
+    output += llvmStringGlobal(".str.expr.ptr.char", "Char");
+    output += llvmStringGlobal(".str.expr.ptr.open", "(");
+    output += llvmStringGlobal(".str.expr.ptr.close", ")");
+    output += llvmStringGlobal(".str.expr.ptr.close.nl", ")\n");
+    output += llvmStringGlobal(".str.expr.ptr.dot", ".");
+    output += llvmStringGlobal(".str.expr.ptr.substring", "substring");
+    output += llvmStringGlobal(".str.expr.ptr.plus", "+");
+    output += llvmStringGlobal(".str.expr.ptr.i32", ".i32");
+    output += llvmStringGlobal(".str.expr.ptr.i64", ".i64");
+    output += llvmStringGlobal(".str.expr.ptr.sext", " = sext i32 ");
+    output += llvmStringGlobal(".str.expr.ptr.to.i64", " to i64\n");
+    output += llvmStringGlobal(".str.expr.ptr.i64.call", " = call ptr @csec_to_string_i64(i64 ");
+    output += llvmStringGlobal(".str.expr.ptr.gep.a", " = getelementptr inbounds [");
+    output += llvmStringGlobal(".str.expr.ptr.gep.b", " x i8], ptr @.str.");
+    output += llvmStringGlobal(".str.expr.ptr.gep.c", ", i32 0, i32 0\n");
+    output += llvmStringGlobal(".str.expr.ptr.load", " = load ptr, ptr %");
+    output += llvmStringGlobal(".str.expr.ptr.call", " = call ptr @");
+    output += llvmStringGlobal(".str.expr.ptr.comma", ",");
+    output += llvmStringGlobal(".str.expr.ptr.object", ".obj");
+    output += llvmStringGlobal(".str.expr.ptr.start", ".start");
+    output += llvmStringGlobal(".str.expr.ptr.length", ".length");
+    output += llvmStringGlobal(".str.expr.ptr.object.load", " = load ptr, ptr %");
+    output += llvmStringGlobal(".str.expr.ptr.substring.call", " = call ptr @csec_string_substring(ptr ");
+    output += llvmStringGlobal(".str.expr.ptr.substring.middle", ", i32 ");
+    output += llvmStringGlobal(".str.expr.ptr.left", ".left");
+    output += llvmStringGlobal(".str.expr.ptr.right", ".right");
+    output += llvmStringGlobal(".str.expr.ptr.concat", " = call ptr @csec_string_concat(ptr ");
+    output += llvmStringGlobal(".str.expr.ptr.concat.middle", ", ptr ");
+    output += llvmStringGlobal(".str.expr.ptr.char.call", " = call ptr @csec_to_string_char(i8 ");
+    output += llvmStringGlobal(".str.expr.ptr.char.close", ")\n");
+    output += llvmStringGlobal(".str.expr.ptr.char.load", " = load i8, ptr %");
+    output += llvmStringGlobal(".str.expr.ptr.char.nl", "\n");
+    output += llvmStringGlobal(".str.expr.ptr.char.value.close", ")\n");
+    return output;
+}
+
+std::string llvmGenerateLocalPtrDefinition() {
+    std::string output = R"(define ptr @generateLLVMLocalPtr(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %initializer = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 1)
+  %name.index = add i32 %arg.start, 1
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %name.index)
+  %start.i64 = sext i32 %arg.start to i64
+  %start.text = call ptr @csec_to_string_i64(i64 %start.i64)
+  %storage.a = call ptr @csec_string_concat(ptr %name, ptr @.str.local.ptr.addr)
+  %storage = call ptr @csec_string_concat(ptr %storage.a, ptr %start.text)
+  %init.a = call ptr @csec_string_concat(ptr @.str.local.ptr.percent, ptr %name)
+  %init.b = call ptr @csec_string_concat(ptr %init.a, ptr @.str.local.ptr.init)
+  %init = call ptr @csec_string_concat(ptr %init.b, ptr %start.text)
+  %has.initializer = icmp sge i32 %initializer, %arg.start
+  br i1 %has.initializer, label %with.initializer, label %without.initializer
+with.initializer:
+  %expr.start = add i32 %initializer, 1
+  %expr = call ptr @generateLLVMExpressionPtr(ptr %arg.tokens, i32 %expr.start, i32 %arg.end, ptr %init)
+  %a1 = call ptr @csec_string_concat(ptr @.str.local.ptr.prefix, ptr %storage)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.local.ptr.alloca)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %expr)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.local.ptr.store)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr %init)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.local.ptr.to)
+  %result = call ptr @csec_string_concat(ptr %a6, ptr %storage)
+  ret ptr %result
+without.initializer:
+  %b1 = call ptr @csec_string_concat(ptr @.str.local.ptr.prefix, ptr %storage)
+  %b2 = call ptr @csec_string_concat(ptr %b1, ptr @.str.local.ptr.alloca)
+  %b3 = call ptr @csec_string_concat(ptr %b2, ptr @.str.local.ptr.null)
+  %fallback = call ptr @csec_string_concat(ptr %b3, ptr %storage)
+  ret ptr %fallback
+}
+
+)";
+    output += llvmStringGlobal(".str.local.ptr.addr", ".addr.");
+    output += llvmStringGlobal(".str.local.ptr.percent", "%");
+    output += llvmStringGlobal(".str.local.ptr.init", ".pinit.");
+    output += llvmStringGlobal(".str.local.ptr.prefix", "  %");
+    output += llvmStringGlobal(".str.local.ptr.alloca", " = alloca ptr\n");
+    output += llvmStringGlobal(".str.local.ptr.store", "  store ptr ");
+    output += llvmStringGlobal(".str.local.ptr.to", ", ptr %");
+    output += llvmStringGlobal(".str.local.ptr.null", "  store ptr null, ptr %");
+    return output;
+}
+
+std::string llvmGenerateLLVMIfI32Definition() {
+    std::string output = R"(define ptr @generateLLVMIfI32(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %open = call i32 @findStatementParenStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %close = call i32 @findStatementParenEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %then.open = call i32 @findStatementBlockStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %then.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %then.open, i32 %arg.end, ptr @.str.llvm.if.brace.open, ptr @.str.llvm.if.brace.close)
+  %open.ok = icmp sge i32 %open, 0
+  %close.ok = icmp sgt i32 %close, %open
+  %body.ok = icmp sgt i32 %then.close, %then.open
+  %ok.a = and i1 %open.ok, %close.ok
+  %ok = and i1 %ok.a, %body.ok
+  br i1 %ok, label %build, label %bad
+bad:
+  ret ptr @.str.llvm.if.bad
+build:
+  %seed.i64 = sext i32 %arg.start to i64
+  %seed = call ptr @csec_to_string_i64(i64 %seed.i64)
+  %condition.name.a = call ptr @csec_string_concat(ptr @.str.llvm.if.condition.name, ptr %seed)
+  %expr.start = add i32 %open, 1
+  %condition = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %expr.start, i32 %close, ptr %condition.name.a)
+  %body.start = add i32 %then.open, 1
+  %body = call ptr @generateLLVMFlatBodyI32(ptr %arg.tokens, i32 %body.start, i32 %then.close)
+  %a1 = call ptr @csec_string_concat(ptr %condition, ptr @.str.llvm.if.branch)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr %seed)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr @.str.llvm.if.then.label)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr %seed)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr @.str.llvm.if.else.label)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr %seed)
+  %a7 = call ptr @csec_string_concat(ptr %a6, ptr @.str.llvm.if.nl)
+  %a8 = call ptr @csec_string_concat(ptr %a7, ptr @.str.llvm.if.then.name)
+  %a9 = call ptr @csec_string_concat(ptr %a8, ptr %seed)
+  %a10 = call ptr @csec_string_concat(ptr %a9, ptr @.str.llvm.if.colon)
+  %a11 = call ptr @csec_string_concat(ptr %a10, ptr %body)
+  %a12 = call ptr @csec_string_concat(ptr %a11, ptr @.str.llvm.if.end.branch)
+  %a13 = call ptr @csec_string_concat(ptr %a12, ptr %seed)
+  %a14 = call ptr @csec_string_concat(ptr %a13, ptr @.str.llvm.if.nl)
+  %a15 = call ptr @csec_string_concat(ptr %a14, ptr @.str.llvm.if.else.name)
+  %a16 = call ptr @csec_string_concat(ptr %a15, ptr %seed)
+  %a17 = call ptr @csec_string_concat(ptr %a16, ptr @.str.llvm.if.colon)
+  %a18 = call ptr @csec_string_concat(ptr %a17, ptr @.str.llvm.if.end.branch)
+  %a19 = call ptr @csec_string_concat(ptr %a18, ptr %seed)
+  %a20 = call ptr @csec_string_concat(ptr %a19, ptr @.str.llvm.if.nl)
+  %a21 = call ptr @csec_string_concat(ptr %a20, ptr @.str.llvm.if.end.name)
+  %a22 = call ptr @csec_string_concat(ptr %a21, ptr %seed)
+  %result = call ptr @csec_string_concat(ptr %a22, ptr @.str.llvm.if.colon)
+  ret ptr %result
+}
+
+)";
+    output += llvmStringGlobal(".str.llvm.if.bad", "  ; malformed if\n");
+    output += llvmStringGlobal(".str.llvm.if.brace.open", "{");
+    output += llvmStringGlobal(".str.llvm.if.brace.close", "}");
+    output += llvmStringGlobal(".str.llvm.if.condition.name", "%cond.");
+    output += llvmStringGlobal(".str.llvm.if.branch", "  br i1 %cond.");
+    output += llvmStringGlobal(".str.llvm.if.then.label", ", label %if.then.");
+    output += llvmStringGlobal(".str.llvm.if.else.label", ", label %if.else.");
+    output += llvmStringGlobal(".str.llvm.if.nl", "\n");
+    output += llvmStringGlobal(".str.llvm.if.then.name", "if.then.");
+    output += llvmStringGlobal(".str.llvm.if.else.name", "if.else.");
+    output += llvmStringGlobal(".str.llvm.if.end.name", "if.end.");
+    output += llvmStringGlobal(".str.llvm.if.colon", ":\n");
+    output += llvmStringGlobal(".str.llvm.if.end.branch", "  br label %if.end.");
+    return output;
+}
+
+std::string llvmGenerateLLVMWhileI32Definition() {
+    std::string output = R"(define ptr @generateLLVMWhileI32(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %open = call i32 @findStatementParenStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %close = call i32 @findStatementParenEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %body.open = call i32 @findStatementBlockStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %body.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %body.open, i32 %arg.end, ptr @.str.llvm.while.brace.open, ptr @.str.llvm.while.brace.close)
+  %open.ok = icmp sge i32 %open, 0
+  %close.ok = icmp sgt i32 %close, %open
+  %body.ok = icmp sgt i32 %body.close, %body.open
+  %ok.a = and i1 %open.ok, %close.ok
+  %ok = and i1 %ok.a, %body.ok
+  br i1 %ok, label %build, label %bad
+bad:
+  ret ptr @.str.llvm.while.bad
+build:
+  %seed.i64 = sext i32 %arg.start to i64
+  %seed = call ptr @csec_to_string_i64(i64 %seed.i64)
+  %condition.name.a = call ptr @csec_string_concat(ptr @.str.llvm.while.condition.name, ptr %seed)
+  %expr.start = add i32 %open, 1
+  %condition = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %expr.start, i32 %close, ptr %condition.name.a)
+  %body.start = add i32 %body.open, 1
+  %body = call ptr @generateLLVMFlatBodyI32(ptr %arg.tokens, i32 %body.start, i32 %body.close)
+  %a1 = call ptr @csec_string_concat(ptr @.str.llvm.while.initial.branch, ptr %seed)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.llvm.while.nl)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr @.str.llvm.while.condition.label)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr %seed)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr @.str.llvm.while.colon)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr %condition)
+  %a7 = call ptr @csec_string_concat(ptr %a6, ptr @.str.llvm.while.test)
+  %a8 = call ptr @csec_string_concat(ptr %a7, ptr %seed)
+  %a9 = call ptr @csec_string_concat(ptr %a8, ptr @.str.llvm.while.body.label)
+  %a10 = call ptr @csec_string_concat(ptr %a9, ptr %seed)
+  %a11 = call ptr @csec_string_concat(ptr %a10, ptr @.str.llvm.while.end.label)
+  %a12 = call ptr @csec_string_concat(ptr %a11, ptr %seed)
+  %a13 = call ptr @csec_string_concat(ptr %a12, ptr @.str.llvm.while.nl)
+  %a14 = call ptr @csec_string_concat(ptr %a13, ptr @.str.llvm.while.body.name)
+  %a15 = call ptr @csec_string_concat(ptr %a14, ptr %seed)
+  %a16 = call ptr @csec_string_concat(ptr %a15, ptr @.str.llvm.while.colon)
+  %a17 = call ptr @csec_string_concat(ptr %a16, ptr %body)
+  %a18 = call ptr @csec_string_concat(ptr %a17, ptr @.str.llvm.while.initial.branch)
+  %a19 = call ptr @csec_string_concat(ptr %a18, ptr %seed)
+  %a20 = call ptr @csec_string_concat(ptr %a19, ptr @.str.llvm.while.nl)
+  %a21 = call ptr @csec_string_concat(ptr %a20, ptr @.str.llvm.while.end.name)
+  %a22 = call ptr @csec_string_concat(ptr %a21, ptr %seed)
+  %result = call ptr @csec_string_concat(ptr %a22, ptr @.str.llvm.while.colon)
+  ret ptr %result
+}
+
+)";
+    output += llvmStringGlobal(".str.llvm.while.bad", "  ; malformed while\n");
+    output += llvmStringGlobal(".str.llvm.while.brace.open", "{");
+    output += llvmStringGlobal(".str.llvm.while.brace.close", "}");
+    output += llvmStringGlobal(".str.llvm.while.condition.name", "%whilecond.");
+    output += llvmStringGlobal(".str.llvm.while.initial.branch", "  br label %while.cond.");
+    output += llvmStringGlobal(".str.llvm.while.condition.label", "while.cond.");
+    output += llvmStringGlobal(".str.llvm.while.body.label", ", label %while.body.");
+    output += llvmStringGlobal(".str.llvm.while.end.label", ", label %while.end.");
+    output += llvmStringGlobal(".str.llvm.while.body.name", "while.body.");
+    output += llvmStringGlobal(".str.llvm.while.end.name", "while.end.");
+    output += llvmStringGlobal(".str.llvm.while.colon", ":\n");
+    output += llvmStringGlobal(".str.llvm.while.nl", "\n");
+    output += llvmStringGlobal(".str.llvm.while.test", "  br i1 %whilecond.");
+    return output;
+}
+
+std::string llvmGenerateLLVMForI32Definition() {
+    std::string output = R"(define ptr @generateLLVMForI32(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {
+entry:
+  %open = call i32 @findStatementParenStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %close = call i32 @findStatementParenEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %body.open = call i32 @findStatementBlockStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)
+  %body.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %body.open, i32 %arg.end, ptr @.str.llvm.for.brace.open, ptr @.str.llvm.for.brace.close)
+  %iterator.index = add i32 %open, 1
+  %iterator = call ptr @tokenTextAt(ptr %arg.tokens, i32 %iterator.index)
+  %arrow = call i32 @findTokenTextInRange(ptr %arg.tokens, i32 %iterator.index, i32 %close, ptr @.str.llvm.for.arrow)
+  %range = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arrow, i32 %close, i32 5)
+  %valid.open = icmp sge i32 %open, 0
+  %valid.arrow = icmp sgt i32 %arrow, %iterator.index
+  %valid.range = icmp sgt i32 %range, %arrow
+  %valid.a = and i1 %valid.open, %valid.arrow
+  %valid = and i1 %valid.a, %valid.range
+  br i1 %valid, label %build, label %bad
+bad:
+  ret ptr @.str.llvm.for.bad
+build:
+  %seed.i64 = sext i32 %arg.start to i64
+  %seed = call ptr @csec_to_string_i64(i64 %seed.i64)
+  %start.name.a = call ptr @csec_string_concat(ptr @.str.llvm.for.percent, ptr %iterator)
+  %start.name.b = call ptr @csec_string_concat(ptr %start.name.a, ptr @.str.llvm.for.start)
+  %end.name.a = call ptr @csec_string_concat(ptr @.str.llvm.for.percent, ptr %iterator)
+  %end.name.b = call ptr @csec_string_concat(ptr %end.name.a, ptr @.str.llvm.for.end)
+  %start.expr = add i32 %arrow, 1
+  %start.code = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %start.expr, i32 %range, ptr %start.name.b)
+  %end.expr = add i32 %range, 1
+  %end.code = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %end.expr, i32 %close, ptr %end.name.b)
+  %body.start = add i32 %body.open, 1
+  %body = call ptr @generateLLVMFlatBodyI32(ptr %arg.tokens, i32 %body.start, i32 %body.close)
+  %op.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %range)
+  %inclusive.to = call i1 @strEq(ptr %op.text, ptr @.str.llvm.for.to)
+  %inclusive.dots = call i1 @strEq(ptr %op.text, ptr @.str.llvm.for.dots)
+  %inclusive = or i1 %inclusive.to, %inclusive.dots
+  br i1 %inclusive, label %sle, label %slt
+sle:
+  br label %emit
+slt:
+  br label %emit
+emit:
+  %comparison = phi ptr [ @.str.llvm.for.sle, %sle ], [ @.str.llvm.for.slt, %slt ]
+  %a1 = call ptr @csec_string_concat(ptr @.str.llvm.for.alloca.a, ptr %iterator)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.llvm.for.alloca.b)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %start.code)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.llvm.for.store.a)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr %iterator)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.llvm.for.store.b)
+  %a7 = call ptr @csec_string_concat(ptr %a6, ptr %start.name.b)
+  %a8 = call ptr @csec_string_concat(ptr %a7, ptr @.str.llvm.for.cond.label)
+  %a9 = call ptr @csec_string_concat(ptr %a8, ptr %seed)
+  %a10 = call ptr @csec_string_concat(ptr %a9, ptr @.str.llvm.for.colon)
+  %a11 = call ptr @csec_string_concat(ptr %a10, ptr @.str.llvm.for.value.a)
+  %a12 = call ptr @csec_string_concat(ptr %a11, ptr %iterator)
+  %a13 = call ptr @csec_string_concat(ptr %a12, ptr @.str.llvm.for.value.b)
+  %a14 = call ptr @csec_string_concat(ptr %a13, ptr %iterator)
+  %a15 = call ptr @csec_string_concat(ptr %a14, ptr %end.code)
+  %a16 = call ptr @csec_string_concat(ptr %a15, ptr @.str.llvm.for.compare.a)
+  %a17 = call ptr @csec_string_concat(ptr %a16, ptr %seed)
+  %a18 = call ptr @csec_string_concat(ptr %a17, ptr %comparison)
+  %a19 = call ptr @csec_string_concat(ptr %a18, ptr @.str.llvm.for.compare.b)
+  %a20 = call ptr @csec_string_concat(ptr %a19, ptr %iterator)
+  %a21 = call ptr @csec_string_concat(ptr %a20, ptr @.str.llvm.for.compare.c)
+  %a22 = call ptr @csec_string_concat(ptr %a21, ptr %iterator)
+  %a23 = call ptr @csec_string_concat(ptr %a22, ptr @.str.llvm.for.branch.a)
+  %a24 = call ptr @csec_string_concat(ptr %a23, ptr %seed)
+  %a25 = call ptr @csec_string_concat(ptr %a24, ptr @.str.llvm.for.branch.b)
+  %a26 = call ptr @csec_string_concat(ptr %a25, ptr %seed)
+  %a27 = call ptr @csec_string_concat(ptr %a26, ptr @.str.llvm.for.branch.c)
+  %a28 = call ptr @csec_string_concat(ptr %a27, ptr %seed)
+  %a29 = call ptr @csec_string_concat(ptr %a28, ptr @.str.llvm.for.body.label)
+  %a30 = call ptr @csec_string_concat(ptr %a29, ptr %seed)
+  %a31 = call ptr @csec_string_concat(ptr %a30, ptr @.str.llvm.for.colon)
+  %a32 = call ptr @csec_string_concat(ptr %a31, ptr %body)
+  %a33 = call ptr @csec_string_concat(ptr %a32, ptr @.str.llvm.for.step.a)
+  %a34 = call ptr @csec_string_concat(ptr %a33, ptr %iterator)
+  %a35 = call ptr @csec_string_concat(ptr %a34, ptr @.str.llvm.for.step.b)
+  %a36 = call ptr @csec_string_concat(ptr %a35, ptr %seed)
+  %a37 = call ptr @csec_string_concat(ptr %a36, ptr @.str.llvm.for.step.c)
+  %a38 = call ptr @csec_string_concat(ptr %a37, ptr %iterator)
+  %a39 = call ptr @csec_string_concat(ptr %a38, ptr @.str.llvm.for.step.d)
+  %a40 = call ptr @csec_string_concat(ptr %a39, ptr %seed)
+  %a41 = call ptr @csec_string_concat(ptr %a40, ptr @.str.llvm.for.step.e)
+  %a42 = call ptr @csec_string_concat(ptr %a41, ptr %iterator)
+  %a43 = call ptr @csec_string_concat(ptr %a42, ptr @.str.llvm.for.step.f)
+  %a44 = call ptr @csec_string_concat(ptr %a43, ptr %seed)
+  %a45 = call ptr @csec_string_concat(ptr %a44, ptr @.str.llvm.for.step.g)
+  %a46 = call ptr @csec_string_concat(ptr %a45, ptr %iterator)
+  %a47 = call ptr @csec_string_concat(ptr %a46, ptr @.str.llvm.for.cond.branch)
+  %a48 = call ptr @csec_string_concat(ptr %a47, ptr %seed)
+  %a49 = call ptr @csec_string_concat(ptr %a48, ptr @.str.llvm.for.nl)
+  %a50 = call ptr @csec_string_concat(ptr %a49, ptr @.str.llvm.for.end.label)
+  %a51 = call ptr @csec_string_concat(ptr %a50, ptr %seed)
+  %result = call ptr @csec_string_concat(ptr %a51, ptr @.str.llvm.for.colon)
+  ret ptr %result
+}
+
+)";
+    output += llvmStringGlobal(".str.llvm.for.bad", "  ; malformed for\n");
+    output += llvmStringGlobal(".str.llvm.for.brace.open", "{"); output += llvmStringGlobal(".str.llvm.for.brace.close", "}");
+    output += llvmStringGlobal(".str.llvm.for.arrow", "<-"); output += llvmStringGlobal(".str.llvm.for.to", "to"); output += llvmStringGlobal(".str.llvm.for.dots", "..");
+    output += llvmStringGlobal(".str.llvm.for.percent", "%"); output += llvmStringGlobal(".str.llvm.for.start", ".start"); output += llvmStringGlobal(".str.llvm.for.end", ".end");
+    output += llvmStringGlobal(".str.llvm.for.slt", "slt"); output += llvmStringGlobal(".str.llvm.for.sle", "sle");
+    output += llvmStringGlobal(".str.llvm.for.alloca.a", "  %"); output += llvmStringGlobal(".str.llvm.for.alloca.b", " = alloca i32\n");
+    output += llvmStringGlobal(".str.llvm.for.store.a", "  store i32 %"); output += llvmStringGlobal(".str.llvm.for.store.b", ", ptr %");
+    output += llvmStringGlobal(".str.llvm.for.cond.label", "  br label %for.cond."); output += llvmStringGlobal(".str.llvm.for.colon", ":\n");
+    output += llvmStringGlobal(".str.llvm.for.value.a", "  %"); output += llvmStringGlobal(".str.llvm.for.value.b", ".val = load i32, ptr %");
+    output += llvmStringGlobal(".str.llvm.for.compare.a", "  %forcond."); output += llvmStringGlobal(".str.llvm.for.compare.b", " = icmp "); output += llvmStringGlobal(".str.llvm.for.compare.c", " i32 %");
+    output += llvmStringGlobal(".str.llvm.for.branch.a", ".val, %"); output += llvmStringGlobal(".str.llvm.for.branch.b", ".end\n  br i1 %forcond."); output += llvmStringGlobal(".str.llvm.for.branch.c", ", label %for.body.");
+    output += llvmStringGlobal(".str.llvm.for.body.label", "for.body."); output += llvmStringGlobal(".str.llvm.for.end.label", "for.end.");
+    output += llvmStringGlobal(".str.llvm.for.step.a", "  %"); output += llvmStringGlobal(".str.llvm.for.step.b", ".step."); output += llvmStringGlobal(".str.llvm.for.step.c", " = load i32, ptr %"); output += llvmStringGlobal(".str.llvm.for.step.d", "\n  %"); output += llvmStringGlobal(".str.llvm.for.step.e", ".next."); output += llvmStringGlobal(".str.llvm.for.step.f", " = add i32 %"); output += llvmStringGlobal(".str.llvm.for.step.g", ".step.");
+    output += llvmStringGlobal(".str.llvm.for.cond.branch", ", 1\n  store i32 %"); output += llvmStringGlobal(".str.llvm.for.nl", ".next.");
+    return output;
+}
+
+std::string llvmControlFlowDefinition(const char* name) {
+    if (std::strcmp(name, "generateLLVMIfI32") == 0) return llvmGenerateLLVMIfI32Definition();
+    if (std::strcmp(name, "generateLLVMWhileI32") == 0) return llvmGenerateLLVMWhileI32Definition();
+    return llvmGenerateLLVMForI32Definition();
+}
+
+std::string llvmGenerateConditionI1Definition() {
+    std::string output = R"(define ptr @generateLLVMConditionI1(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %operator.kind = call i8 @kindOperator()
+  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %arg.start, i8 %operator.kind, ptr @.str.condition.open)
+  %open = icmp ne i32 %open.raw, 0
+  br i1 %open, label %paren.close, label %not.check
+paren.close:
+  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %arg.start, i32 %end, ptr @.str.condition.open, ptr @.str.condition.close)
+  %last = sub i32 %end, 1
+  %wrapped = icmp eq i32 %close, %last
+  br i1 %wrapped, label %paren.return, label %not.check
+paren.return:
+  %inner.start = add i32 %arg.start, 1
+  %inner = call ptr @generateLLVMConditionI1(ptr %arg.tokens, i32 %inner.start, i32 %last, ptr %arg.resultName)
+  ret ptr %inner
+not.check:
+  %not.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %arg.start, i8 %operator.kind, ptr @.str.condition.not)
+  %not = icmp ne i32 %not.raw, 0
+  br i1 %not, label %not.return, label %comparison.find
+not.return:
+  %not.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.condition.not.name)
+  %not.start = add i32 %arg.start, 1
+  %not.code = call ptr @generateLLVMConditionI1(ptr %arg.tokens, i32 %not.start, i32 %end, ptr %not.name)
+  %n1 = call ptr @csec_string_concat(ptr %not.code, ptr @.str.condition.prefix)
+  %n2 = call ptr @csec_string_concat(ptr %n1, ptr %arg.resultName)
+  %n3 = call ptr @csec_string_concat(ptr %n2, ptr @.str.condition.xor)
+  %not.result = call ptr @csec_string_concat(ptr %n3, ptr %not.name)
+  ret ptr %not.result
+comparison.find:
+  %op = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %end, i32 4)
+  %has.op = icmp sgt i32 %op, %arg.start
+  br i1 %has.op, label %comparison.return, label %bool.check
+comparison.return:
+  %op.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %op)
+  %mnemonic = call ptr @irOperatorName(ptr %op.text)
+  %mnemonic.length.i64 = call i64 @csec_string_length(ptr %mnemonic)
+  %mnemonic.length = trunc i64 %mnemonic.length.i64 to i32
+  %predicate.length = sub i32 %mnemonic.length, 5
+  %predicate = call ptr @csec_string_substring(ptr %mnemonic, i32 5, i32 %predicate.length)
+  %left.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.condition.left)
+  %left = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %arg.start, i32 %op, ptr %left.name)
+  %right.start = add i32 %op, 1
+  %right.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.condition.right)
+  %right = call ptr @generateLLVMExpressionI32(ptr %arg.tokens, i32 %right.start, i32 %end, ptr %right.name)
+  %c1 = call ptr @csec_string_concat(ptr %left, ptr %right)
+  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.condition.prefix)
+  %c3 = call ptr @csec_string_concat(ptr %c2, ptr %arg.resultName)
+  %c4 = call ptr @csec_string_concat(ptr %c3, ptr @.str.condition.icmp)
+  %c5 = call ptr @csec_string_concat(ptr %c4, ptr %predicate)
+  %c6 = call ptr @csec_string_concat(ptr %c5, ptr @.str.condition.i32)
+  %c7 = call ptr @csec_string_concat(ptr %c6, ptr %left.name)
+  %c8 = call ptr @csec_string_concat(ptr %c7, ptr @.str.condition.comma)
+  %comparison.result = call ptr @csec_string_concat(ptr %c8, ptr %right.name)
+  ret ptr %comparison.result
+bool.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %bool.kind = call i8 @kindBool()
+  %is.bool = icmp eq i8 %kind, %bool.kind
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %bool = and i1 %is.bool, %single
+  br i1 %bool, label %bool.return, label %identifier.check
+bool.return:
+  %bool.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %is.true = call i1 @strEq(ptr %bool.text, ptr @.str.condition.true)
+  br i1 %is.true, label %true.return, label %false.return
+true.return:
+  %t1 = call ptr @csec_string_concat(ptr @.str.condition.prefix, ptr %arg.resultName)
+  %true.result = call ptr @csec_string_concat(ptr %t1, ptr @.str.condition.true.code)
+  ret ptr %true.result
+false.return:
+  %f1 = call ptr @csec_string_concat(ptr @.str.condition.prefix, ptr %arg.resultName)
+  %false.result = call ptr @csec_string_concat(ptr %f1, ptr @.str.condition.false.code)
+  ret ptr %false.result
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  br i1 %is.identifier, label %identifier.next, label %fallback
+identifier.next:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  br i1 %single, label %identifier.return, label %call.check
+identifier.return:
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %i1 = call ptr @csec_string_concat(ptr @.str.condition.prefix, ptr %arg.resultName)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.condition.load)
+  %identifier.result = call ptr @csec_string_concat(ptr %i2, ptr %storage)
+  ret ptr %identifier.result
+call.check:
+  %open.index = add i32 %arg.start, 1
+  %before.end = icmp slt i32 %open.index, %end
+  br i1 %before.end, label %call.open.check, label %fallback
+call.open.check:
+  %call.open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.index, i8 %operator.kind, ptr @.str.condition.open)
+  %call.open = icmp ne i32 %call.open.raw, 0
+  br i1 %call.open, label %call.close.check, label %fallback
+call.close.check:
+  %call.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %open.index, i32 %end, ptr @.str.condition.open, ptr @.str.condition.close)
+  %call.last = sub i32 %end, 1
+  %is.call = icmp eq i32 %call.close, %call.last
+  br i1 %is.call, label %call.return, label %fallback
+call.return:
+  %args.start = add i32 %arg.start, 2
+  %loads = call ptr @generateLLVMCallArgumentLoadsI32(ptr %arg.tokens, i32 %args.start, i32 %call.last, ptr %arg.resultName)
+  %arguments = call ptr @generateLLVMCallArgumentListI32(ptr %arg.tokens, i32 %args.start, i32 %call.last, ptr %arg.resultName)
+  %callee = call ptr @llvmRuntimeCallName(ptr %name)
+  %r1 = call ptr @csec_string_concat(ptr %loads, ptr @.str.condition.prefix)
+  %r2 = call ptr @csec_string_concat(ptr %r1, ptr %arg.resultName)
+  %r3 = call ptr @csec_string_concat(ptr %r2, ptr @.str.condition.call)
+  %r4 = call ptr @csec_string_concat(ptr %r3, ptr %callee)
+  %r5 = call ptr @csec_string_concat(ptr %r4, ptr @.str.condition.open)
+  %r6 = call ptr @csec_string_concat(ptr %r5, ptr %arguments)
+  %call.result = call ptr @csec_string_concat(ptr %r6, ptr @.str.condition.close.nl)
+  ret ptr %call.result
+fallback:
+  %x1 = call ptr @csec_string_concat(ptr @.str.condition.prefix, ptr %arg.resultName)
+  %fallback.result = call ptr @csec_string_concat(ptr %x1, ptr @.str.condition.fallback)
+  ret ptr %fallback.result
+}
+
+)";
+    output += llvmStringGlobal(".str.condition.open", "(");
+    output += llvmStringGlobal(".str.condition.close", ")");
+    output += llvmStringGlobal(".str.condition.not", "!");
+    output += llvmStringGlobal(".str.condition.not.name", ".not");
+    output += llvmStringGlobal(".str.condition.prefix", "  ");
+    output += llvmStringGlobal(".str.condition.xor", " = xor i1 ");
+    output += llvmStringGlobal(".str.condition.left", ".left.i32");
+    output += llvmStringGlobal(".str.condition.right", ".right.i32");
+    output += llvmStringGlobal(".str.condition.icmp", " = icmp ");
+    output += llvmStringGlobal(".str.condition.i32", " i32 ");
+    output += llvmStringGlobal(".str.condition.comma", ", ");
+    output += llvmStringGlobal(".str.condition.true", "true");
+    output += llvmStringGlobal(".str.condition.true.code", " = icmp eq i1 true, true\n");
+    output += llvmStringGlobal(".str.condition.false.code", " = icmp eq i1 false, true\n");
+    output += llvmStringGlobal(".str.condition.load", " = load i1, ptr %");
+    output += llvmStringGlobal(".str.condition.call", " = call i1 @");
+    output += llvmStringGlobal(".str.condition.close.nl", ")\n");
+    output += llvmStringGlobal(".str.condition.fallback", " = icmp eq i32 0, 0\n");
+    return output;
+}
+
+std::string llvmGenerateExpressionI1Definition() {
+    std::string output = R"(define ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd, ptr %arg.resultName) {
+entry:
+  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)
+  %empty = icmp sle i32 %end, %arg.start
+  br i1 %empty, label %false.return, label %paren.check
+false.return:
+  %f1 = call ptr @csec_string_concat(ptr @.str.expr.i1.prefix, ptr %arg.resultName)
+  %false.result = call ptr @csec_string_concat(ptr %f1, ptr @.str.expr.i1.false)
+  ret ptr %false.result
+paren.check:
+  %operator.kind = call i8 @kindOperator()
+  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %arg.start, i8 %operator.kind, ptr @.str.expr.i1.open)
+  %open = icmp ne i32 %open.raw, 0
+  br i1 %open, label %paren.close, label %not.check
+paren.close:
+  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %arg.start, i32 %end, ptr @.str.expr.i1.open, ptr @.str.expr.i1.close)
+  %last = sub i32 %end, 1
+  %wrapped = icmp eq i32 %close, %last
+  br i1 %wrapped, label %paren.return, label %not.check
+paren.return:
+  %inner.start = add i32 %arg.start, 1
+  %inner = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %inner.start, i32 %last, ptr %arg.resultName)
+  ret ptr %inner
+not.check:
+  %not.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %arg.start, i8 %operator.kind, ptr @.str.expr.i1.not)
+  %not = icmp ne i32 %not.raw, 0
+  br i1 %not, label %not.return, label %bool.check
+not.return:
+  %not.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i1.not.name)
+  %not.start = add i32 %arg.start, 1
+  %not.code = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %not.start, i32 %end, ptr %not.name)
+  %n1 = call ptr @csec_string_concat(ptr %not.code, ptr @.str.expr.i1.prefix)
+  %n2 = call ptr @csec_string_concat(ptr %n1, ptr %arg.resultName)
+  %n3 = call ptr @csec_string_concat(ptr %n2, ptr @.str.expr.i1.xor)
+  %n4 = call ptr @csec_string_concat(ptr %n3, ptr %not.name)
+  %not.result = call ptr @csec_string_concat(ptr %n4, ptr @.str.expr.i1.not.suffix)
+  ret ptr %not.result
+bool.check:
+  %kind = call i8 @tokenKindAt(ptr %arg.tokens, i32 %arg.start)
+  %bool.kind = call i8 @kindBool()
+  %is.bool = icmp eq i8 %kind, %bool.kind
+  %single.end = add i32 %arg.start, 1
+  %single = icmp eq i32 %end, %single.end
+  %bool = and i1 %is.bool, %single
+  br i1 %bool, label %bool.return, label %identifier.check
+bool.return:
+  %bool.text = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %is.true = call i1 @strEq(ptr %bool.text, ptr @.str.expr.i1.true)
+  br i1 %is.true, label %true.return, label %false.value.return
+true.return:
+  %t1 = call ptr @csec_string_concat(ptr @.str.expr.i1.prefix, ptr %arg.resultName)
+  %true.result = call ptr @csec_string_concat(ptr %t1, ptr @.str.expr.i1.true.code)
+  ret ptr %true.result
+false.value.return:
+  %v1 = call ptr @csec_string_concat(ptr @.str.expr.i1.prefix, ptr %arg.resultName)
+  %value.false.result = call ptr @csec_string_concat(ptr %v1, ptr @.str.expr.i1.false)
+  ret ptr %value.false.result
+identifier.check:
+  %identifier.kind = call i8 @kindIdentifier()
+  %is.identifier = icmp eq i8 %kind, %identifier.kind
+  %identifier = and i1 %is.identifier, %single
+  br i1 %identifier, label %identifier.return, label %or.find
+identifier.return:
+  %name = call ptr @tokenTextAt(ptr %arg.tokens, i32 %arg.start)
+  %storage = call ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.start, ptr %name)
+  %i1 = call ptr @csec_string_concat(ptr @.str.expr.i1.prefix, ptr %arg.resultName)
+  %i2 = call ptr @csec_string_concat(ptr %i1, ptr @.str.expr.i1.load)
+  %identifier.result = call ptr @csec_string_concat(ptr %i2, ptr %storage)
+  ret ptr %identifier.result
+or.find:
+  %or.op = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %end, i32 2)
+  %has.or = icmp sgt i32 %or.op, %arg.start
+  br i1 %has.or, label %or.return, label %and.find
+or.return:
+  %or.left.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i1.left)
+  %or.left = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %arg.start, i32 %or.op, ptr %or.left.name)
+  %or.right.start = add i32 %or.op, 1
+  %or.right.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i1.right)
+  %or.right = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %or.right.start, i32 %end, ptr %or.right.name)
+  %o1 = call ptr @csec_string_concat(ptr %or.left, ptr %or.right)
+  %o2 = call ptr @csec_string_concat(ptr %o1, ptr @.str.expr.i1.prefix)
+  %o3 = call ptr @csec_string_concat(ptr %o2, ptr %arg.resultName)
+  %o4 = call ptr @csec_string_concat(ptr %o3, ptr @.str.expr.i1.or)
+  %o5 = call ptr @csec_string_concat(ptr %o4, ptr %or.left.name)
+  %o6 = call ptr @csec_string_concat(ptr %o5, ptr @.str.expr.i1.comma)
+  %or.result = call ptr @csec_string_concat(ptr %o6, ptr %or.right.name)
+  ret ptr %or.result
+and.find:
+  %and.op = call i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %end, i32 3)
+  %has.and = icmp sgt i32 %and.op, %arg.start
+  br i1 %has.and, label %and.return, label %condition.return
+and.return:
+  %and.left.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i1.left)
+  %and.left = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %arg.start, i32 %and.op, ptr %and.left.name)
+  %and.right.start = add i32 %and.op, 1
+  %and.right.name = call ptr @csec_string_concat(ptr %arg.resultName, ptr @.str.expr.i1.right)
+  %and.right = call ptr @generateLLVMExpressionI1(ptr %arg.tokens, i32 %and.right.start, i32 %end, ptr %and.right.name)
+  %a1 = call ptr @csec_string_concat(ptr %and.left, ptr %and.right)
+  %a2 = call ptr @csec_string_concat(ptr %a1, ptr @.str.expr.i1.prefix)
+  %a3 = call ptr @csec_string_concat(ptr %a2, ptr %arg.resultName)
+  %a4 = call ptr @csec_string_concat(ptr %a3, ptr @.str.expr.i1.and)
+  %a5 = call ptr @csec_string_concat(ptr %a4, ptr %and.left.name)
+  %a6 = call ptr @csec_string_concat(ptr %a5, ptr @.str.expr.i1.comma)
+  %and.result = call ptr @csec_string_concat(ptr %a6, ptr %and.right.name)
+  ret ptr %and.result
+condition.return:
+  %condition = call ptr @generateLLVMConditionI1(ptr %arg.tokens, i32 %arg.start, i32 %end, ptr %arg.resultName)
+  ret ptr %condition
+}
+
+)";
+    output += llvmStringGlobal(".str.expr.i1.prefix", "  ");
+    output += llvmStringGlobal(".str.expr.i1.false", " = icmp eq i1 false, true\n");
+    output += llvmStringGlobal(".str.expr.i1.true", "true");
+    output += llvmStringGlobal(".str.expr.i1.true.code", " = icmp eq i1 true, true\n");
+    output += llvmStringGlobal(".str.expr.i1.open", "(");
+    output += llvmStringGlobal(".str.expr.i1.close", ")");
+    output += llvmStringGlobal(".str.expr.i1.not", "!");
+    output += llvmStringGlobal(".str.expr.i1.not.name", ".not");
+    output += llvmStringGlobal(".str.expr.i1.xor", " = xor i1 ");
+    output += llvmStringGlobal(".str.expr.i1.not.suffix", ", true\n");
+    output += llvmStringGlobal(".str.expr.i1.load", " = load i1, ptr %");
+    output += llvmStringGlobal(".str.expr.i1.left", ".left");
+    output += llvmStringGlobal(".str.expr.i1.right", ".right");
+    output += llvmStringGlobal(".str.expr.i1.or", " = or i1 ");
+    output += llvmStringGlobal(".str.expr.i1.and", " = and i1 ");
+    output += llvmStringGlobal(".str.expr.i1.comma", ", ");
+    return output;
+}
+
 char* csec_llvm_lexer_helper_definition(const char* name) {
+    if (name) {
+        if (FILE* trace = std::fopen("selfhost\\last_llvm_helper.txt", "w")) {
+            std::fputs(name, trace);
+            std::fclose(trace);
+        }
+    }
     const char* definition = "";
     if (name && std::strcmp(name, "tokenIs") == 0) {
         definition = "define i1 @tokenIs(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text) {\nentry:\n  %token.is = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text)\n  %token.is.bool = icmp ne i32 %token.is, 0\n  ret i1 %token.is.bool\n}\n\n";
+    } else if (name && std::strcmp(name, "repairLeadingRTokenText") == 0) {
+        definition = "@.str.repair.r.eturn = private unnamed_addr constant [6 x i8] c\"eturn\\00\"\n@.str.repair.r.return = private unnamed_addr constant [7 x i8] c\"return\\00\"\n@.str.repair.r.atio = private unnamed_addr constant [5 x i8] c\"atio\\00\"\n@.str.repair.r.ratio = private unnamed_addr constant [6 x i8] c\"ratio\\00\"\n@.str.repair.r.educe = private unnamed_addr constant [6 x i8] c\"educe\\00\"\n@.str.repair.r.reduce = private unnamed_addr constant [7 x i8] c\"reduce\\00\"\n@.str.repair.r.ange = private unnamed_addr constant [5 x i8] c\"ange\\00\"\n@.str.repair.r.range = private unnamed_addr constant [6 x i8] c\"range\\00\"\n@.str.repair.r.egex = private unnamed_addr constant [5 x i8] c\"egex\\00\"\n@.str.repair.r.regex = private unnamed_addr constant [6 x i8] c\"regex\\00\"\n@.str.repair.r.Regex = private unnamed_addr constant [6 x i8] c\"Regex\\00\"\n\ndefine ptr @repairLeadingRTokenText(ptr %arg.text) {\nentry:\n  %case0 = call i32 @csec_string_equals(ptr %arg.text, ptr @.str.repair.r.eturn)\n  %is0 = icmp ne i32 %case0, 0\n  br i1 %is0, label %return0, label %check1\nreturn0:\n  ret ptr @.str.repair.r.return\ncheck1:\n  %case1 = call i32 @csec_string_equals(ptr %arg.text, ptr @.str.repair.r.atio)\n  %is1 = icmp ne i32 %case1, 0\n  br i1 %is1, label %return1, label %check2\nreturn1:\n  ret ptr @.str.repair.r.ratio\ncheck2:\n  %case2 = call i32 @csec_string_equals(ptr %arg.text, ptr @.str.repair.r.educe)\n  %is2 = icmp ne i32 %case2, 0\n  br i1 %is2, label %return2, label %check3\nreturn2:\n  ret ptr @.str.repair.r.reduce\ncheck3:\n  %case3 = call i32 @csec_string_equals(ptr %arg.text, ptr @.str.repair.r.ange)\n  %is3 = icmp ne i32 %case3, 0\n  br i1 %is3, label %return3, label %check4\nreturn3:\n  ret ptr @.str.repair.r.range\ncheck4:\n  %case4 = call i32 @csec_string_equals(ptr %arg.text, ptr @.str.repair.r.egex)\n  %is4 = icmp ne i32 %case4, 0\n  br i1 %is4, label %return4, label %check5\nreturn4:\n  ret ptr @.str.repair.r.regex\ncheck5:\n  %case5 = call i32 @csec_string_equals(ptr %arg.text, ptr @.str.repair.r.Regex)\n  %is5 = icmp ne i32 %case5, 0\n  br i1 %is5, label %return5, label %fallback\nreturn5:\n  ret ptr @.str.repair.r.Regex\nfallback:\n  ret ptr %arg.text\n}\n\n";
     } else if (name && std::strcmp(name, "isWhitespace") == 0) {
         definition = "define i1 @isWhitespace(i8 %arg.ch) {\nentry:\n  %space = icmp eq i8 %arg.ch, 32\n  %newline = icmp eq i8 %arg.ch, 10\n  %carriage = icmp eq i8 %arg.ch, 13\n  %tab = icmp eq i8 %arg.ch, 9\n  %space.or.newline = or i1 %space, %newline\n  %carriage.or.tab = or i1 %carriage, %tab\n  %ret = or i1 %space.or.newline, %carriage.or.tab\n  ret i1 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "isDigit") == 0) {
@@ -529,8 +3147,20 @@ char* csec_llvm_lexer_helper_definition(const char* name) {
         definition = "define i1 @twoChars(ptr %arg.source, i32 %arg.index, ptr %arg.text) {\nentry:\n  %length = call i64 @csec_string_length(ptr %arg.source)\n  %last = add i32 %arg.index, 1\n  %last64 = sext i32 %last to i64\n  %in.range = icmp slt i64 %last64, %length\n  br i1 %in.range, label %compare, label %false\ncompare:\n  %source0 = call i8 @csec_string_char_at(ptr %arg.source, i32 %arg.index)\n  %text0 = call i8 @csec_string_char_at(ptr %arg.text, i32 0)\n  %first = icmp eq i8 %source0, %text0\n  %source1 = call i8 @csec_string_char_at(ptr %arg.source, i32 %last)\n  %text1 = call i8 @csec_string_char_at(ptr %arg.text, i32 1)\n  %second = icmp eq i8 %source1, %text1\n  %ret = and i1 %first, %second\n  ret i1 %ret\nfalse:\n  ret i1 false\n}\n\n";
     } else if (name && std::strcmp(name, "threeChars") == 0) {
         definition = "define i1 @threeChars(ptr %arg.source, i32 %arg.index, ptr %arg.text) {\nentry:\n  %length = call i64 @csec_string_length(ptr %arg.source)\n  %last = add i32 %arg.index, 2\n  %last64 = sext i32 %last to i64\n  %in.range = icmp slt i64 %last64, %length\n  br i1 %in.range, label %compare, label %false\ncompare:\n  %source0 = call i8 @csec_string_char_at(ptr %arg.source, i32 %arg.index)\n  %text0 = call i8 @csec_string_char_at(ptr %arg.text, i32 0)\n  %first = icmp eq i8 %source0, %text0\n  %index1 = add i32 %arg.index, 1\n  %source1 = call i8 @csec_string_char_at(ptr %arg.source, i32 %index1)\n  %text1 = call i8 @csec_string_char_at(ptr %arg.text, i32 1)\n  %second = icmp eq i8 %source1, %text1\n  %source2 = call i8 @csec_string_char_at(ptr %arg.source, i32 %last)\n  %text2 = call i8 @csec_string_char_at(ptr %arg.text, i32 2)\n  %third = icmp eq i8 %source2, %text2\n  %first.two = and i1 %first, %second\n  %ret = and i1 %first.two, %third\n  ret i1 %ret\nfalse:\n  ret i1 false\n}\n\n";
-    } else if (name && std::strcmp(name, "lexIdentifier") == 0) {
-        definition = "define i32 @lexIdentifier(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_lex_identifier(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n";
+    } else if (name && (std::strcmp(name, "operatorLength") == 0 || std::strcmp(name, "lexIdentifier") == 0 || std::strcmp(name, "classMemberKind") == 0 || std::strcmp(name, "classMemberName") == 0 || std::strcmp(name, "parseReturnIntegerInRange") == 0 || std::strcmp(name, "cTypeName") == 0 || std::strcmp(name, "generateLLVMFlatBodyI32") == 0)) {
+        definition = std::strcmp(name, "generateLLVMFlatBodyI32") == 0
+            ? "declare ptr @csec_empty_string()\n\ndefine ptr @generateLLVMFlatBodyI32(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_empty_string()\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "cTypeName") == 0
+            ? "declare ptr @csec_c_type_name(ptr)\n\ndefine ptr @cTypeName(ptr %arg.typeName) {\nentry:\n  %ret = call ptr @csec_c_type_name(ptr %arg.typeName)\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "parseReturnIntegerInRange") == 0
+            ? "declare i32 @csec_parse_return_integer_in_range(ptr, i32, i32)\n\ndefine i32 @parseReturnIntegerInRange(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_parse_return_integer_in_range(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n"
+            : std::strcmp(name, "classMemberKind") == 0
+            ? "declare ptr @csec_class_member_kind(ptr, i32)\n\ndefine ptr @classMemberKind(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call ptr @csec_class_member_kind(ptr %arg.tokens, i32 %arg.ordinal)\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "classMemberName") == 0
+            ? "declare ptr @csec_class_member_name(ptr, i32)\n\ndefine ptr @classMemberName(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call ptr @csec_class_member_name(ptr %arg.tokens, i32 %arg.ordinal)\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "operatorLength") == 0
+            ? "declare i32 @csec_operator_length(ptr, i32)\n\ndefine i32 @operatorLength(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_operator_length(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n"
+            : "define i32 @lexIdentifier(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_lex_identifier(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "lexNumber") == 0) {
         definition = "define i32 @lexNumber(ptr %arg.source, i32 %arg.index) {\nentry:\n  %ret = call i32 @csec_lex_number(ptr %arg.source, i32 %arg.index)\n  ret i32 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "lexQuoted") == 0) {
@@ -600,18 +3230,304 @@ char* csec_llvm_lexer_helper_definition(const char* name) {
         definition = "define i1 @tokenIsTopLevelOperator(ptr %arg.tokens, i32 %arg.ordinal, i32 %arg.group) {\nentry:\n  %valid = call i32 @csec_token_is_top_level_operator(ptr %arg.tokens, i32 %arg.ordinal, i32 %arg.group)\n  %ret = icmp ne i32 %valid, 0\n  ret i1 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "findTopLevelOperator") == 0) {
         definition = "define i32 @findTopLevelOperator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 %arg.group) {\nentry:\n  %ret = call i32 @csec_find_top_level_operator(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, i32 %arg.group)\n  ret i32 %ret\n}\n\n";
+    } else if (name && (std::strcmp(name, "generateLLVMParamList") == 0 || std::strcmp(name, "generateLLVMParamListSlow") == 0)) {
+        const char* functionName = std::strcmp(name, "generateLLVMParamList") == 0 ? "generateLLVMParamList" : "generateLLVMParamListSlow";
+        std::string generated = "define ptr @" + std::string(functionName) + "(ptr %arg.tokens, i32 %arg.declStart) {\nentry:\n  %ret = call ptr @csec_function_llvm_param_list(ptr %arg.tokens, i32 %arg.declStart)\n  ret ptr %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && (std::strcmp(name, "generateLLVMParamAllocas") == 0 || std::strcmp(name, "generateLLVMParamAllocasSlow") == 0)) {
+        const char* functionName = std::strcmp(name, "generateLLVMParamAllocas") == 0 ? "generateLLVMParamAllocas" : "generateLLVMParamAllocasSlow";
+        std::string generated = "define ptr @" + std::string(functionName) + "(ptr %arg.tokens, i32 %arg.declStart) {\nentry:\n  %ret = call ptr @csec_function_llvm_param_allocas(ptr %arg.tokens, i32 %arg.declStart)\n  ret ptr %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMModule") == 0) {
+        definition = "define ptr @generateLLVMModule(ptr %arg.tokens) {\nentry:\n  %valid = call i1 @parseProgram(ptr %arg.tokens)\n  br i1 %valid, label %build, label %empty\nbuild:\n  %builder = call i64 @csec_string_builder_new()\n  %written = call i32 @generateLLVMModuleInto(ptr %arg.tokens, i64 %builder)\n  %result = call ptr @csec_string_builder_finish(i64 %builder)\n  ret ptr %result\nempty:\n  ret ptr null\n}\n\n";
+    } else if (name && std::strcmp(name, "compileFile") == 0) {
+        definition = "define i32 @compileFile(ptr %arg.inputPath, ptr %arg.outputPath, ptr %arg.mode) {\nentry:\n  %llvm.raw = call i32 @csec_string_starts_with(ptr %arg.mode, ptr @.str.driver.llvm)\n  %llvm = icmp ne i32 %llvm.raw, 0\n  br i1 %llvm, label %build, label %unsupported\nbuild:\n  %source = call ptr @csec_expand_imports(ptr %arg.inputPath)\n  %builder = call i64 @csec_string_builder_new_file(ptr %arg.outputPath)\n  %ready = icmp ne i64 %builder, 0\n  br i1 %ready, label %generate, label %failed\ngenerate:\n  %tokens = call ptr @tokenize(ptr %source)\n  %generated = call i32 @generateLLVMModuleInto(ptr %tokens, i64 %builder)\n  %success = icmp eq i32 %generated, 0\n  br i1 %success, label %write, label %return.generated\nwrite:\n  %written = call i32 @csec_string_builder_write_to_file(i64 %builder, ptr %arg.outputPath)\n  ret i32 %written\nreturn.generated:\n  ret i32 %generated\nfailed:\n  ret i32 1\nunsupported:\n  ret i32 1\n}\n\n@.str.driver.llvm = private unnamed_addr constant [5 x i8] c\"llvm\\00\"\n\n";
+    } else if (name && (std::strcmp(name, "replaceDotsWithSlash") == 0 || std::strcmp(name, "importTargetFromLine") == 0 || std::strcmp(name, "importCandidate") == 0 || std::strcmp(name, "resolveImportPath") == 0 || std::strcmp(name, "expandImportsFromFile") == 0)) {
+        const bool resolve = std::strcmp(name, "resolveImportPath") == 0;
+        const bool expand = std::strcmp(name, "expandImportsFromFile") == 0;
+        const char* argumentName = resolve ? "currentPath, ptr %arg.target" : (expand ? "path, ptr %arg.seen" : (std::strcmp(name, "replaceDotsWithSlash") == 0 ? "text" : (std::strcmp(name, "importTargetFromLine") == 0 ? "line" : "target")));
+        const char* nativeName = resolve ? "csec_resolve_import_path" : (expand ? "csec_expand_imports" : (std::strcmp(name, "replaceDotsWithSlash") == 0 ? "csec_replace_dots_with_slash" : (std::strcmp(name, "importTargetFromLine") == 0 ? "csec_import_target_from_line" : "csec_import_candidate")));
+        const char* nativeSignature = resolve ? "(ptr, ptr)" : "(ptr)";
+        const char* callArguments = resolve ? "ptr %arg.currentPath, ptr %arg.target" : (expand ? "ptr %arg.path" : (std::strcmp(name, "replaceDotsWithSlash") == 0 ? "ptr %arg.text" : (std::strcmp(name, "importTargetFromLine") == 0 ? "ptr %arg.line" : "ptr %arg.target")));
+        const std::string declaration = expand ? "" : "declare ptr @" + std::string(nativeName) + nativeSignature + "\n\n";
+        std::string generated = declaration + "define ptr @" + std::string(name) + "(ptr %arg." + argumentName + ") {\nentry:\n  %ret = call ptr @" + nativeName + "(" + callArguments + ")\n  ret ptr %ret\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
     } else if (name && std::strcmp(name, "findTopLevelMatch") == 0) {
         definition = "define i32 @findTopLevelMatch(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_find_top_level_match(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
     } else if (name && std::strcmp(name, "findLambdaArrow") == 0) {
-        definition = "define i32 @findLambdaArrow(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call i32 @csec_find_lambda_arrow(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret i32 %ret\n}\n\n";
+        definition = "define i32 @findLambdaArrow(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  ret i32 -1\n}\n\n";
+    } else if (name && std::strcmp(name, "findLambdaArrowLegacy") == 0) {
+        definition = "@.str.lambda.arrow.open.capture = private unnamed_addr constant [2 x i8] c\"[\\00\"\n@.str.lambda.arrow.close.capture = private unnamed_addr constant [2 x i8] c\"]\\00\"\n@.str.lambda.arrow.open.params = private unnamed_addr constant [2 x i8] c\"(\\00\"\n@.str.lambda.arrow.close.params = private unnamed_addr constant [2 x i8] c\")\\00\"\n@.str.lambda.arrow.symbol = private unnamed_addr constant [3 x i8] c\"->\\00\"\n\ndefine i32 @findLambdaArrow(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %close.capture = call i32 @findClosingToken(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr @.str.lambda.arrow.open.capture, ptr @.str.lambda.arrow.close.capture)\n  %has.capture = icmp sge i32 %close.capture, 0\n  br i1 %has.capture, label %params.start, label %none\nparams.start:\n  %after.capture = add i32 %close.capture, 1\n  %open.params = call i32 @skipTrivia(ptr %arg.tokens, i32 %after.capture)\n  %operator.kind = call i8 @kindOperator()\n  %open.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %open.params, i8 %operator.kind, ptr @.str.lambda.arrow.open.params)\n  %open = icmp ne i32 %open.raw, 0\n  br i1 %open, label %params.close, label %none\nparams.close:\n  %close.params = call i32 @findClosingToken(ptr %arg.tokens, i32 %open.params, i32 %arg.end, ptr @.str.lambda.arrow.open.params, ptr @.str.lambda.arrow.close.params)\n  %has.params = icmp sge i32 %close.params, 0\n  br i1 %has.params, label %arrow.start, label %none\narrow.start:\n  %after.params = add i32 %close.params, 1\n  %arrow = call i32 @skipTrivia(ptr %arg.tokens, i32 %after.params)\n  %arrow.raw = call i32 @tokenIs(ptr %arg.tokens, i32 %arrow, i8 %operator.kind, ptr @.str.lambda.arrow.symbol)\n  %is.arrow = icmp ne i32 %arrow.raw, 0\n  br i1 %is.arrow, label %found, label %none\nfound:\n  ret i32 %arrow\nnone:\n  ret i32 -1\n}\n\n";
     } else if (name && std::strcmp(name, "lambdaCaptureSummary") == 0) {
         definition = "define ptr @lambdaCaptureSummary(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr @.str.lambda.capture.open, ptr @.str.lambda.capture.close)\n  %minimum = add i32 %arg.start, 1\n  %has.capture = icmp sgt i32 %close, %minimum\n  br i1 %has.capture, label %capture, label %none\ncapture:\n  %first = add i32 %arg.start, 1\n  %ret.capture = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %first, i32 %close)\n  ret ptr %ret.capture\nnone:\n  %ret.none = getelementptr inbounds [5 x i8], ptr @.str.lambda.none, i32 0, i32 0\n  ret ptr %ret.none\n}\n\n@.str.lambda.capture.open = private unnamed_addr constant [2 x i8] c\"[\\00\"\n@.str.lambda.capture.close = private unnamed_addr constant [2 x i8] c\"]\\00\"\n@.str.lambda.none = private unnamed_addr constant [5 x i8] c\"none\\00\"\n\n";
     } else if (name && std::strcmp(name, "lambdaParameterCount") == 0) {
         definition = "define i32 @lambdaParameterCount(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %capture.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr @.str.lambda.params.capture.open, ptr @.str.lambda.params.capture.close)\n  %capture.valid = icmp sge i32 %capture.close, 0\n  br i1 %capture.valid, label %params.start, label %empty\nparams.start:\n  %after.capture = add i32 %capture.close, 1\n  %params.open = call i32 @skipTrivia(ptr %arg.tokens, i32 %after.capture)\n  %is.open.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %params.open, i8 79, ptr @.str.lambda.params.open)\n  %is.open = icmp ne i32 %is.open.raw, 0\n  br i1 %is.open, label %params.end, label %empty\nparams.end:\n  %params.close = call i32 @findClosingToken(ptr %arg.tokens, i32 %params.open, i32 %arg.end, ptr @.str.lambda.params.open, ptr @.str.lambda.params.close)\n  %first = add i32 %params.open, 1\n  %ret = call i32 @countCommaSeparated(ptr %arg.tokens, i32 %first, i32 %params.close)\n  ret i32 %ret\nempty:\n  ret i32 0\n}\n\n@.str.lambda.params.capture.open = private unnamed_addr constant [2 x i8] c\"[\\00\"\n@.str.lambda.params.capture.close = private unnamed_addr constant [2 x i8] c\"]\\00\"\n@.str.lambda.params.open = private unnamed_addr constant [2 x i8] c\"(\\00\"\n@.str.lambda.params.close = private unnamed_addr constant [2 x i8] c\")\\00\"\n\n";
-    } else if (name && std::strcmp(name, "generateSymbolTable") == 0) {
-        definition = "define ptr @generateSymbolTable(ptr %arg.tokens) {\nentry:\n  %ret = call ptr @csec_generate_symbol_table(ptr %arg.tokens)\n  ret ptr %ret\n}\n\n";
-    } else if (name && std::strcmp(name, "appendExpressionUntil") == 0) {
-        definition = "define ptr @appendExpressionUntil(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call ptr @csec_append_expression_until(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "summarizeLambdaExpression") == 0) {
+        definition = "define ptr @summarizeLambdaExpression(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %open.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.start, i8 79, ptr @.str.lambda.summary.open)\n  %open = icmp ne i32 %open.raw, 0\n  br i1 %open, label %arrow.check, label %empty\narrow.check:\n  %arrow = call i32 @findLambdaArrow(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  %valid = icmp sge i32 %arrow, 0\n  br i1 %valid, label %summary, label %empty\nsummary:\n  %capture = call ptr @lambdaCaptureSummary(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  %params = call i32 @lambdaParameterCount(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  %params.i64 = sext i32 %params to i64\n  %params.text = call ptr @csec_to_string_i64(i64 %params.i64)\n  %s1 = call ptr @csec_string_concat(ptr @.str.lambda.summary.prefix, ptr %capture)\n  %s2 = call ptr @csec_string_concat(ptr %s1, ptr @.str.lambda.summary.params)\n  %s3 = call ptr @csec_string_concat(ptr %s2, ptr %params.text)\n  ret ptr %s3\nempty:\n  ret ptr @.str.lambda.summary.empty\n}\n\n@.str.lambda.summary.open = private unnamed_addr constant [2 x i8] c\"[\\00\"\n@.str.lambda.summary.prefix = private unnamed_addr constant [21 x i8] c\"Expr lambda capture=\\00\"\n@.str.lambda.summary.params = private unnamed_addr constant [9 x i8] c\" params=\\00\"\n@.str.lambda.summary.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\n";
+    } else if (name && std::strcmp(name, "generateExpressionAST") == 0) {
+        definition = "define ptr @generateExpressionAST(ptr %arg.tokens, i32 %arg.rawStart, i32 %arg.rawEnd) {\nentry:\n  %ret = call ptr @csec_generate_expression_ast(ptr %arg.tokens, i32 %arg.rawStart, i32 %arg.rawEnd)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "generateStatementAST") == 0) {
+        definition = "define ptr @generateStatementAST(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call ptr @csec_generate_statement_ast(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "generateBodyAST") == 0) {
+        definition = "define ptr @generateBodyAST(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_generate_body_ast(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findFunctionParamStart") == 0) {
+        definition = "define i32 @findFunctionParamStart(ptr %arg.tokens, i32 %arg.declStart) {\nentry:\n  %ret = call i32 @csec_find_function_param_start(ptr %arg.tokens, i32 %arg.declStart)\n  ret i32 %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "findFunctionReturnTypeStart") == 0) {
+        definition = "define i32 @findFunctionReturnTypeStart(ptr %arg.tokens, i32 %arg.declStart) {\nentry:\n  %param.start = call i32 @findFunctionParamStart(ptr %arg.tokens, i32 %arg.declStart)\n  %valid.start = icmp sge i32 %param.start, 0\n  br i1 %valid.start, label %find.end, label %missing\nfind.end:\n  %decl.end = call i32 @advanceTopLevelDecl(ptr %arg.tokens, i32 %arg.declStart)\n  %param.end = call i32 @findClosingToken(ptr %arg.tokens, i32 %param.start, i32 %decl.end, ptr @.str.fn.return.open, ptr @.str.fn.return.close)\n  %valid.end = icmp sge i32 %param.end, 0\n  br i1 %valid.end, label %colon.check, label %missing\ncolon.check:\n  %after = add i32 %param.end, 1\n  %colon.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %after, i8 79, ptr @.str.fn.return.colon)\n  %colon = icmp ne i32 %colon.raw, 0\n  br i1 %colon, label %found, label %missing\nfound:\n  %ret = add i32 %param.end, 2\n  ret i32 %ret\nmissing:\n  ret i32 -1\n}\n\n@.str.fn.return.open = private unnamed_addr constant [2 x i8] c\"(\\00\"\n@.str.fn.return.close = private unnamed_addr constant [2 x i8] c\")\\00\"\n@.str.fn.return.colon = private unnamed_addr constant [2 x i8] c\":\\00\"\n\n";
+    } else if (name && std::strcmp(name, "typeSummary") == 0) {
+        definition = "define ptr @typeSummary(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %open.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.start, i8 79, ptr @.str.type.summary.open)\n  %open = icmp ne i32 %open.raw, 0\n  br i1 %open, label %find.close, label %fallback\nfind.close:\n  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr @.str.type.summary.open, ptr @.str.type.summary.close)\n  %valid.close = icmp sgt i32 %close, %arg.start\n  br i1 %valid.close, label %arrow.check, label %fallback\narrow.check:\n  %after.close = add i32 %close, 1\n  %arrow.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %after.close, i8 79, ptr @.str.type.summary.arrow)\n  %arrow = icmp ne i32 %arrow.raw, 0\n  br i1 %arrow, label %function, label %fallback\nfunction:\n  %params.start = add i32 %arg.start, 1\n  %params = call i32 @countCommaSeparated(ptr %arg.tokens, i32 %params.start, i32 %close)\n  %params.i64 = sext i32 %params to i64\n  %params.text = call ptr @csec_to_string_i64(i64 %params.i64)\n  %returns.start = add i32 %close, 2\n  %returns = call ptr @collectTypeName(ptr %arg.tokens, i32 %returns.start, i32 %arg.end)\n  %s1 = call ptr @csec_string_concat(ptr @.str.type.summary.prefix, ptr %params.text)\n  %s2 = call ptr @csec_string_concat(ptr %s1, ptr @.str.type.summary.returns)\n  %ret = call ptr @csec_string_concat(ptr %s2, ptr %returns)\n  ret ptr %ret\nfallback:\n  %fallback.ret = call ptr @collectTypeName(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret ptr %fallback.ret\n}\n\n@.str.type.summary.open = private unnamed_addr constant [2 x i8] c\"(\\00\"\n@.str.type.summary.close = private unnamed_addr constant [2 x i8] c\")\\00\"\n@.str.type.summary.arrow = private unnamed_addr constant [3 x i8] c\"=>\\00\"\n@.str.type.summary.prefix = private unnamed_addr constant [21 x i8] c\"FunctionType params=\\00\"\n@.str.type.summary.returns = private unnamed_addr constant [10 x i8] c\" returns=\\00\"\n\n";
+    } else if (name && std::strcmp(name, "generateCBody") == 0) {
+        definition = "define ptr @generateCBody(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd, ptr %arg.indent) {\nentry:\n  %ret = call ptr @csec_generate_c_body(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd, ptr %arg.indent)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "appendCExpression") == 0) {
+        definition = "define ptr @appendCExpression(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd) {\nentry:\n  %ret = call ptr @csec_generate_c_expression(ptr %arg.tokens, i32 %arg.start, i32 %arg.rawEnd)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "generateCStatement") == 0) {
+        definition = "@.str.c.statement.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateCStatement(ptr %arg.tokens, i32 %arg.start, i32 %arg.end, ptr %arg.indent) {\nentry:\n  ret ptr @.str.c.statement.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "collectTypeName") == 0) {
+        definition = "define ptr @collectTypeName(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call ptr @csec_collect_type_name(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "irTypeName") == 0) {
+        definition = "define ptr @irTypeName(ptr %arg.typeName) {\nentry:\n  %ret = call ptr @csec_ir_type_name(ptr %arg.typeName)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lookupVisibleValueType") == 0) {
+        definition = "define ptr @lookupVisibleValueType(ptr %arg.tokens, i32 %arg.limit, ptr %arg.name) {\nentry:\n  %ret = call ptr @csec_lookup_visible_value_type(ptr %arg.tokens, i32 %arg.limit, ptr %arg.name)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "lookupVisibleStorageName") == 0) {
+        definition = "define ptr @lookupVisibleStorageName(ptr %arg.tokens, i32 %arg.limit, ptr %arg.name) {\nentry:\n  %ret = call ptr @csec_lookup_visible_storage_name(ptr %arg.tokens, i32 %arg.limit, ptr %arg.name)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "generateIR") == 0) {
+        definition = "@.str.ir.module.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateIR(ptr %arg.tokens) {\nentry:\n  ret ptr @.str.ir.module.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "generateIRParamList") == 0) {
+        definition = "define ptr @generateIRParamList(ptr %arg.tokens, i32 %arg.declStart) {\nentry:\n  %ret = call ptr @csec_function_llvm_param_list(ptr %arg.tokens, i32 %arg.declStart)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "generateIRFlatBody") == 0) {
+        definition = "@.str.ir.flat.body.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateIRFlatBody(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  ret ptr @.str.ir.flat.body.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "generateFunctionScopeSymbols") == 0) {
+        definition = "@.str.function.scope.symbols.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateFunctionScopeSymbols(ptr %arg.tokens, ptr %arg.functionName, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  ret ptr @.str.function.scope.symbols.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "generateFunctionParamSymbols") == 0) {
+        definition = "@.str.function.param.symbols.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateFunctionParamSymbols(ptr %arg.tokens, ptr %arg.functionName, i32 %arg.declStart) {\nentry:\n  ret ptr @.str.function.param.symbols.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "classMemberStart") == 0) {
+        definition = "@.str.class.member.override = private unnamed_addr constant [9 x i8] c\"override\\00\"\n@.str.class.member.unsafe = private unnamed_addr constant [7 x i8] c\"unsafe\\00\"\n@.str.class.member.constexpr = private unnamed_addr constant [10 x i8] c\"constexpr\\00\"\n\ndefine i32 @classMemberStart(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %override.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.member.override)\n  %unsafe.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.member.unsafe)\n  %constexpr.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.member.constexpr)\n  %override = icmp ne i32 %override.raw, 0\n  %unsafe = icmp ne i32 %unsafe.raw, 0\n  %constexpr = icmp ne i32 %constexpr.raw, 0\n  %modifier = or i1 %override, %unsafe\n  %skip = or i1 %modifier, %constexpr\n  br i1 %skip, label %advanced, label %plain\nadvanced:\n  %next = add i32 %arg.ordinal, 1\n  ret i32 %next\nplain:\n  ret i32 %arg.ordinal\n}\n\n";
+    } else if (name && std::strcmp(name, "generateClassMemberSymbols") == 0) {
+        definition = "@.str.class.member.symbols.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateClassMemberSymbols(ptr %arg.tokens, ptr %arg.className, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  ret ptr @.str.class.member.symbols.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "generateClassMemberAST") == 0) {
+        definition = "@.str.class.member.ast.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateClassMemberAST(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  ret ptr @.str.class.member.ast.empty\n}\n\n";
+    } else if (name && (std::strcmp(name, "templateParameterSummary") == 0 ||
+                         std::strcmp(name, "templateTargetKind") == 0 ||
+                         std::strcmp(name, "attributeSummary") == 0 ||
+                         std::strcmp(name, "externalSymbolKind") == 0)) {
+        const std::string functionName(name);
+        const std::string globalName = ".str.summary." + functionName + ".empty";
+        const std::string generated = "@" + globalName + " = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @" + functionName + "(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  ret ptr @" + globalName + "\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateAST") == 0) {
+        definition = "@.str.ast.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateAST(ptr %arg.tokens) {\nentry:\n  ret ptr @.str.ast.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "generateLLVMMainBody") == 0) {
+        definition = "@.str.llvm.main.body.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateLLVMMainBody(ptr %arg.tokens) {\nentry:\n  ret ptr @.str.llvm.main.body.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "generateIRBody") == 0) {
+        definition = "@.str.ir.body.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateIRBody(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  ret ptr @.str.ir.body.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "generateIRDeclarations") == 0) {
+        definition = "@.str.ir.declarations.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @generateIRDeclarations(ptr %arg.tokens) {\nentry:\n  ret ptr @.str.ir.declarations.empty\n}\n\n";
+    } else if (name && std::strcmp(name, "generateIRFor") == 0) {
+        const std::string generated = llvmGenerateIRForDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "llvmLoadForValueType") == 0) {
+        const std::string generated = llvmLoadForValueTypeDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMCallArgumentListI32") == 0) {
+        const std::string generated = llvmGenerateCallArgumentListI32Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "llvmI32CallArgumentValue") == 0) {
+        const std::string generated = llvmI32CallArgumentValueDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "llvmCallArgumentValue") == 0) {
+        const std::string generated = llvmCallArgumentValueDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMCallArgumentLoadI32") == 0) {
+        const std::string generated = llvmGenerateCallArgumentLoadI32Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMCallArgumentLoadsI32") == 0) {
+        const std::string generated = llvmGenerateCallArgumentLoadsI32Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMAssignmentI32") == 0) {
+        const std::string generated = llvmGenerateAssignmentI32Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMAssignmentI64") == 0) {
+        const std::string generated = llvmGenerateAssignmentI64Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "llvmRuntimeCallName") == 0) {
+        const std::string generated = llvmRuntimeCallNameDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMLocalI32") == 0) {
+        const std::string generated = llvmGenerateLocalI32Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMLocalI64") == 0) {
+        const std::string generated = llvmGenerateLocalI64Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMLocalF64") == 0) {
+        const std::string generated = llvmGenerateLocalF64Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMLocalI8") == 0) {
+        const std::string generated = llvmGenerateLocalI8Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMLocalI1") == 0) {
+        const std::string generated = llvmGenerateLocalI1Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMLocalPtr") == 0) {
+        const std::string generated = llvmGenerateLocalPtrDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && (std::strcmp(name, "generateLLVMIfI32") == 0 || std::strcmp(name, "generateLLVMWhileI32") == 0 || std::strcmp(name, "generateLLVMForI32") == 0)) {
+        const std::string generated = llvmControlFlowDefinition(name);
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMExpressionI32") == 0) {
+        const std::string generated = llvmGenerateExpressionI32Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMExpressionI64") == 0) {
+        const std::string generated = llvmGenerateExpressionI64Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "llvmBlockEndsWithTopLevelReturn") == 0) {
+        const std::string generated = llvmBlockEndsWithTopLevelReturnDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMExpressionF64") == 0) {
+        const std::string generated = llvmGenerateExpressionF64Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMConditionI1") == 0) {
+        const std::string generated = llvmGenerateConditionI1Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMExpressionI1") == 0) {
+        const std::string generated = llvmGenerateExpressionI1Definition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateLLVMExpressionPtr") == 0) {
+        const std::string generated = llvmGenerateExpressionPtrDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateIRWhile") == 0) {
+        const std::string generated = llvmGenerateIRWhileDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateIRIf") == 0) {
+        const std::string generated = llvmGenerateIRIfDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    } else if (name && std::strcmp(name, "generateIRElseFlatBody") == 0) {
+        definition = "define ptr @generateIRElseFlatBody(ptr %arg.tokens, i32 %arg.possibleElse, i32 %arg.end, i1 %arg.hasElse) {\nentry:\n  br i1 %arg.hasElse, label %else.entry, label %no.else\nno.else:\n  ret ptr @.str.ir.else.none\nelse.entry:\n  %after.else = add i32 %arg.possibleElse, 1\n  %else.body.start = call i32 @skipTrivia(ptr %arg.tokens, i32 %after.else)\n  %brace.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %else.body.start, i8 79, ptr @.str.ir.else.open)\n  %brace = icmp ne i32 %brace.raw, 0\n  br i1 %brace, label %brace.body, label %if.check\nbrace.body:\n  %else.end = call i32 @findClosingToken(ptr %arg.tokens, i32 %else.body.start, i32 %arg.end, ptr @.str.ir.else.open, ptr @.str.ir.else.close)\n  %valid = icmp sgt i32 %else.end, %else.body.start\n  br i1 %valid, label %flat, label %malformed\nflat:\n  %body.start = add i32 %else.body.start, 1\n  %ret.flat = call ptr @generateIRFlatBody(ptr %arg.tokens, i32 %body.start, i32 %else.end)\n  ret ptr %ret.flat\nif.check:\n  %if.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %else.body.start, i8 75, ptr @.str.ir.else.if)\n  %is.if = icmp ne i32 %if.raw, 0\n  br i1 %is.if, label %else.if, label %malformed\nelse.if:\n  ret ptr @.str.ir.else.if.body\nmalformed:\n  ret ptr @.str.ir.else.malformed\n}\n\n@.str.ir.else.none = private unnamed_addr constant [20 x i8] c\"    ; no else body\\0A\\00\"\n@.str.ir.else.open = private unnamed_addr constant [2 x i8] c\"{\\00\"\n@.str.ir.else.close = private unnamed_addr constant [2 x i8] c\"}\\00\"\n@.str.ir.else.if = private unnamed_addr constant [3 x i8] c\"if\\00\"\n@.str.ir.else.if.body = private unnamed_addr constant [20 x i8] c\"    ; else-if body\\0A\\00\"\n@.str.ir.else.malformed = private unnamed_addr constant [27 x i8] c\"    ; malformed else body\\0A\\00\"\n\n";
+    } else if (name && std::strcmp(name, "generateIRElseFlatBody") == 0) {
+        definition = "define ptr @generateIRElseFlatBody(ptr %arg.tokens, i32 %arg.possibleElse, i32 %arg.end, i1 %arg.hasElse) {\nentry:\n  br i1 %arg.hasElse, label %else.start, label %no.else\nno.else:\n  ret ptr @.str.ir.else.none\nelse.start:\n  %after.else = add i32 %arg.possibleElse, 1\n  %else.start = call i32 @skipTrivia(ptr %arg.tokens, i32 %after.else)\n  %brace.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %else.start, i8 79, ptr @.str.ir.else.open)\n  %brace = icmp ne i32 %brace.raw, 0\n  br i1 %brace, label %brace.body, label %if.check\nbrace.body:\n  %else.end = call i32 @findClosingToken(ptr %arg.tokens, i32 %else.start, i32 %arg.end, ptr @.str.ir.else.open, ptr @.str.ir.else.close)\n  %valid = icmp sgt i32 %else.end, %else.start\n  br i1 %valid, label %flat, label %malformed\nflat:\n  %body.start = add i32 %else.start, 1\n  %ret.flat = call ptr @generateIRFlatBody(ptr %arg.tokens, i32 %body.start, i32 %else.end)\n  ret ptr %ret.flat\nif.check:\n  %if.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %else.start, i8 75, ptr @.str.ir.else.if)\n  %is.if = icmp ne i32 %if.raw, 0\n  br i1 %is.if, label %else.if, label %malformed\nelse.if:\n  ret ptr @.str.ir.else.if.body\nmalformed:\n  ret ptr @.str.ir.else.malformed\n}\n\n@.str.ir.else.none = private unnamed_addr constant [20 x i8] c\"    ; no else body\\0A\\00\"\n@.str.ir.else.open = private unnamed_addr constant [2 x i8] c\"{\\00\"\n@.str.ir.else.close = private unnamed_addr constant [2 x i8] c\"}\\00\"\n@.str.ir.else.if = private unnamed_addr constant [3 x i8] c\"if\\00\"\n@.str.ir.else.if.body = private unnamed_addr constant [20 x i8] c\"    ; else-if body\\0A\\00\"\n@.str.ir.else.malformed = private unnamed_addr constant [27 x i8] c\"    ; malformed else body\\0A\\00\"\n\n";
+    } else if (name && (std::strcmp(name, "generateSymbolTable") == 0 || std::strcmp(name, "expressionLeafKind") == 0 || std::strcmp(name, "declaredValueType") == 0 || std::strcmp(name, "lookupFunctionReturnType") == 0 || std::strcmp(name, "inferExpressionType") == 0 || std::strcmp(name, "declaredLocalType") == 0 || std::strcmp(name, "localDeclarationType") == 0)) {
+        definition = std::strcmp(name, "expressionLeafKind") == 0
+            ? "declare ptr @csec_expression_leaf_kind(ptr, i32, i32)\n\ndefine ptr @expressionLeafKind(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call ptr @csec_expression_leaf_kind(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "declaredValueType") == 0
+                ? "declare ptr @csec_declared_value_type(ptr, i32, i32)\n\ndefine ptr @declaredValueType(ptr %arg.tokens, i32 %arg.declStart, i32 %arg.declEnd) {\nentry:\n  %ret = call ptr @csec_declared_value_type(ptr %arg.tokens, i32 %arg.declStart, i32 %arg.declEnd)\n  ret ptr %ret\n}\n\n"
+                : std::strcmp(name, "declaredLocalType") == 0
+                    ? "declare ptr @csec_declared_local_type(ptr, i32, i32)\n\ndefine ptr @declaredLocalType(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call ptr @csec_declared_local_type(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret ptr %ret\n}\n\n"
+                    : std::strcmp(name, "localDeclarationType") == 0
+                        ? "@.str.local.type.unknown = private unnamed_addr constant [8 x i8] c\"unknown\\00\"\n\ndefine ptr @localDeclarationType(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %explicit = call ptr @declaredLocalType(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  %has.type = call i32 @csec_string_length(ptr %explicit)\n  %present = icmp sgt i32 %has.type, 0\n  br i1 %present, label %typed, label %fallback\ntyped:\n  ret ptr %explicit\nfallback:\n  ret ptr @.str.local.type.unknown\n}\n\n"
+                    : std::strcmp(name, "inferExpressionType") == 0
+                    ? "declare ptr @csec_infer_expression_type(ptr, i32, i32)\n\ndefine ptr @inferExpressionType(ptr %arg.tokens, i32 %arg.rawStart, i32 %arg.rawEnd) {\nentry:\n  %ret = call ptr @csec_infer_expression_type(ptr %arg.tokens, i32 %arg.rawStart, i32 %arg.rawEnd)\n  ret ptr %ret\n}\n\n"
+                    : std::strcmp(name, "classMemberKind") == 0
+                    ? "@.str.class.member.override = private unnamed_addr constant [9 x i8] c\"override\\00\"\n@.str.class.member.unsafe = private unnamed_addr constant [7 x i8] c\"unsafe\\00\"\n@.str.class.member.constexpr = private unnamed_addr constant [10 x i8] c\"constexpr\\00\"\n@.str.class.member.def = private unnamed_addr constant [4 x i8] c\"def\\00\"\n@.str.class.member.val = private unnamed_addr constant [4 x i8] c\"val\\00\"\n@.str.class.member.var = private unnamed_addr constant [4 x i8] c\"var\\00\"\n@.str.class.member.method = private unnamed_addr constant [7 x i8] c\"method\\00\"\n@.str.class.member.field = private unnamed_addr constant [6 x i8] c\"field\\00\"\n@.str.class.member.mutable = private unnamed_addr constant [14 x i8] c\"mutable-field\\00\"\n@.str.class.member.default = private unnamed_addr constant [7 x i8] c\"member\\00\"\n\ndefine ptr @classMemberKind(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %override = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.member.override)\n  %unsafe = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.member.unsafe)\n  %constexpr = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.member.constexpr)\n  %modifier.1 = icmp ne i32 %override, 0\n  %modifier.2 = icmp ne i32 %unsafe, 0\n  %modifier.3 = icmp ne i32 %constexpr, 0\n  %modifier.any = or i1 %modifier.1, %modifier.2\n  %modifier = or i1 %modifier.any, %modifier.3\n  %next = add i32 %arg.ordinal, 1\n  %start = select i1 %modifier, i32 %next, i32 %arg.ordinal\n  %def = call i32 @csec_token_is(ptr %arg.tokens, i32 %start, i8 75, ptr @.str.class.member.def)\n  %is.def = icmp ne i32 %def, 0\n  br i1 %is.def, label %method, label %val.check\nmethod:\n  ret ptr @.str.class.member.method\nval.check:\n  %val = call i32 @csec_token_is(ptr %arg.tokens, i32 %start, i8 75, ptr @.str.class.member.val)\n  %is.val = icmp ne i32 %val, 0\n  br i1 %is.val, label %field, label %var.check\nfield:\n  ret ptr @.str.class.member.field\nvar.check:\n  %var = call i32 @csec_token_is(ptr %arg.tokens, i32 %start, i8 75, ptr @.str.class.member.var)\n  %is.var = icmp ne i32 %var, 0\n  br i1 %is.var, label %mutable, label %default\nmutable:\n  ret ptr @.str.class.member.mutable\ndefault:\n  ret ptr @.str.class.member.default\n}\n\n"
+                    : std::strcmp(name, "classMemberName") == 0
+                    ? "@.str.class.name.override = private unnamed_addr constant [9 x i8] c\"override\\00\"\n@.str.class.name.unsafe = private unnamed_addr constant [7 x i8] c\"unsafe\\00\"\n@.str.class.name.constexpr = private unnamed_addr constant [10 x i8] c\"constexpr\\00\"\n@.str.class.name.def = private unnamed_addr constant [4 x i8] c\"def\\00\"\n@.str.class.name.val = private unnamed_addr constant [4 x i8] c\"val\\00\"\n@.str.class.name.var = private unnamed_addr constant [4 x i8] c\"var\\00\"\n@.str.class.name.operator = private unnamed_addr constant [9 x i8] c\"operator\\00\"\n@.str.class.name.invalid = private unnamed_addr constant [9 x i8] c\"<member>\\00\"\n\ndefine ptr @classMemberName(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %override = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.name.override)\n  %unsafe = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.name.unsafe)\n  %constexpr = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 75, ptr @.str.class.name.constexpr)\n  %modifier.1 = icmp ne i32 %override, 0\n  %modifier.2 = icmp ne i32 %unsafe, 0\n  %modifier.3 = icmp ne i32 %constexpr, 0\n  %modifier.any = or i1 %modifier.1, %modifier.2\n  %modifier = or i1 %modifier.any, %modifier.3\n  %next = add i32 %arg.ordinal, 1\n  %start = select i1 %modifier, i32 %next, i32 %arg.ordinal\n  %def = call i32 @csec_token_is(ptr %arg.tokens, i32 %start, i8 75, ptr @.str.class.name.def)\n  %is.def = icmp ne i32 %def, 0\n  br i1 %is.def, label %def.name, label %field.check\ndef.name:\n  %after.def = add i32 %start, 1\n  %operator = call i32 @csec_token_is(ptr %arg.tokens, i32 %after.def, i8 75, ptr @.str.class.name.operator)\n  %is.operator = icmp ne i32 %operator, 0\n  br i1 %is.operator, label %operator.name, label %plain.name\noperator.name:\n  %operator.token = add i32 %after.def, 1\n  %operator.text = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %operator.token)\n  %operator.result = call ptr @csec_string_concat(ptr @.str.class.name.operator, ptr %operator.text)\n  ret ptr %operator.result\nplain.name:\n  %plain = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %after.def)\n  ret ptr %plain\nfield.check:\n  %val = call i32 @csec_token_is(ptr %arg.tokens, i32 %start, i8 75, ptr @.str.class.name.val)\n  %var = call i32 @csec_token_is(ptr %arg.tokens, i32 %start, i8 75, ptr @.str.class.name.var)\n  %is.val = icmp ne i32 %val, 0\n  %is.var = icmp ne i32 %var, 0\n  %is.field = or i1 %is.val, %is.var\n  br i1 %is.field, label %field.name, label %invalid\nfield.name:\n  %after.field = add i32 %start, 1\n  %field = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %after.field)\n  ret ptr %field\ninvalid:\n  ret ptr @.str.class.name.invalid\n}\n\n"
+                    : std::strcmp(name, "lookupFunctionReturnType") == 0
+                    ? "define ptr @lookupFunctionReturnType(ptr %arg.tokens, ptr %arg.name) {\nentry:\n  %ret = call ptr @csec_lookup_function_return_type(ptr %arg.tokens, ptr %arg.name)\n  ret ptr %ret\n}\n\n"
+                    : "define ptr @generateSymbolTable(ptr %arg.tokens) {\nentry:\n  %ret = call ptr @csec_generate_symbol_table(ptr %arg.tokens)\n  ret ptr %ret\n}\n\n";
+    } else if (name && (std::strcmp(name, "appendExpressionUntil") == 0 || std::strcmp(name, "statementKind") == 0 || std::strcmp(name, "expressionLeafKind") == 0 || std::strcmp(name, "statementHeaderExpression") == 0 || std::strcmp(name, "summarizePostfixExpression") == 0)) {
+        definition = std::strcmp(name, "statementKind") == 0
+            ? "declare ptr @csec_statement_kind(ptr, i32)\n\ndefine ptr @statementKind(ptr %arg.tokens, i32 %arg.ordinal) {\nentry:\n  %ret = call ptr @csec_statement_kind(ptr %arg.tokens, i32 %arg.ordinal)\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "expressionLeafKind") == 0
+                ? "@.str.leaf.empty = private unnamed_addr constant [6 x i8] c\"empty\\00\"\n@.str.leaf.integer = private unnamed_addr constant [8 x i8] c\"integer\\00\"\n@.str.leaf.float = private unnamed_addr constant [6 x i8] c\"float\\00\"\n@.str.leaf.string = private unnamed_addr constant [7 x i8] c\"string\\00\"\n@.str.leaf.regex = private unnamed_addr constant [6 x i8] c\"regex\\00\"\n@.str.leaf.char = private unnamed_addr constant [5 x i8] c\"char\\00\"\n@.str.leaf.bool = private unnamed_addr constant [5 x i8] c\"bool\\00\"\n@.str.leaf.identifier = private unnamed_addr constant [11 x i8] c\"identifier\\00\"\n@.str.leaf.unknown = private unnamed_addr constant [8 x i8] c\"unknown\\00\"\n\ndefine ptr @expressionLeafKind(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %nonempty = icmp sgt i32 %arg.end, %arg.start\n  br i1 %nonempty, label %kind, label %empty\nkind:\n  %value = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %arg.start)\n  %is.integer = icmp eq i8 %value, 78\n  br i1 %is.integer, label %integer, label %float.check\nfloat.check:\n  %is.float = icmp eq i8 %value, 70\n  br i1 %is.float, label %float, label %string.check\nstring.check:\n  %is.string = icmp eq i8 %value, 83\n  br i1 %is.string, label %string, label %regex.check\nregex.check:\n  %is.regex = icmp eq i8 %value, 82\n  br i1 %is.regex, label %regex, label %char.check\nchar.check:\n  %is.char = icmp eq i8 %value, 67\n  br i1 %is.char, label %char, label %bool.check\nbool.check:\n  %is.bool = icmp eq i8 %value, 66\n  br i1 %is.bool, label %bool, label %identifier.check\nidentifier.check:\n  %is.identifier = icmp eq i8 %value, 73\n  br i1 %is.identifier, label %identifier, label %unknown\nempty:\n  ret ptr @.str.leaf.empty\ninteger:\n  ret ptr @.str.leaf.integer\nfloat:\n  ret ptr @.str.leaf.float\nstring:\n  ret ptr @.str.leaf.string\nregex:\n  ret ptr @.str.leaf.regex\nchar:\n  ret ptr @.str.leaf.char\nbool:\n  ret ptr @.str.leaf.bool\nidentifier:\n  ret ptr @.str.leaf.identifier\nunknown:\n  ret ptr @.str.leaf.unknown\n}\n\n"
+                : std::strcmp(name, "statementHeaderExpression") == 0
+                    ? "@.str.statement.header.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @statementHeaderExpression(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %open = call i32 @findStatementParenStart(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  %close = call i32 @findStatementParenEnd(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  %has.open = icmp sge i32 %open, 0\n  %after.open = icmp sgt i32 %close, %open\n  %valid = and i1 %has.open, %after.open\n  br i1 %valid, label %body, label %empty\nbody:\n  %body.start = add i32 %open, 1\n  %ret = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %body.start, i32 %close)\n  ret ptr %ret\nempty:\n  ret ptr @.str.statement.header.empty\n}\n\n"
+                    : std::strcmp(name, "summarizePostfixExpression") == 0
+                        ? "@.str.postfix.summary.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n\ndefine ptr @summarizePostfixExpression(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  ret ptr @.str.postfix.summary.empty\n}\n\n"
+                        : "define ptr @appendExpressionUntil(ptr %arg.tokens, i32 %arg.start, i32 %arg.end) {\nentry:\n  %ret = call ptr @csec_append_expression_until(ptr %arg.tokens, i32 %arg.start, i32 %arg.end)\n  ret ptr %ret\n}\n\n";
+    } else if (name && std::strcmp(name, "generateIRAssignment") == 0) {
+        const std::string generated = llvmGenerateIRAssignmentDefinition();
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
     } else if (name && std::strcmp(name, "generateIRExpression") == 0) {
         definition = "define ptr @generateIRExpression(ptr %arg.tokens, i32 %arg.rawStart, i32 %arg.rawEnd) {\nentry:\n  %start = call i32 @skipTrivia(ptr %arg.tokens, i32 %arg.rawStart)\n  %end = call i32 @trimExpressionEnd(ptr %arg.tokens, i32 %start, i32 %arg.rawEnd)\n  %nonempty = icmp sgt i32 %end, %start\n  br i1 %nonempty, label %classify, label %empty\nempty:\n  %empty.value = getelementptr inbounds [5 x i8], ptr @.str.ir.expr.void, i32 0, i32 0\n  ret ptr %empty.value\nclassify:\n  %type.name = call ptr @inferExpressionType(ptr %arg.tokens, i32 %start, i32 %end)\n  %ir.type = call ptr @irTypeName(ptr %type.name)\n  %op = call i32 @expressionTopLevelOperator(ptr %arg.tokens, i32 %start, i32 %end)\n  %has.op = icmp sgt i32 %op, %start\n  br i1 %has.op, label %binary, label %identifier.check\nbinary:\n  %op.text = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %op)\n  %op.name = call ptr @irOperatorName(ptr %op.text)\n  %b1 = call ptr @csec_string_concat(ptr %op.name, ptr @.str.ir.expr.space)\n  %b2 = call ptr @csec_string_concat(ptr %b1, ptr %ir.type)\n  %b3 = call ptr @csec_string_concat(ptr %b2, ptr @.str.ir.expr.open)\n  %left = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %start, i32 %op)\n  %b4 = call ptr @csec_string_concat(ptr %b3, ptr %left)\n  %b5 = call ptr @csec_string_concat(ptr %b4, ptr @.str.ir.expr.middle)\n  %right.start = add i32 %op, 1\n  %right = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %right.start, i32 %end)\n  %b6 = call ptr @csec_string_concat(ptr %b5, ptr %right)\n  %b7 = call ptr @csec_string_concat(ptr %b6, ptr @.str.ir.expr.close)\n  ret ptr %b7\nidentifier.check:\n  %kind = call i8 @csec_token_kind_at(ptr %arg.tokens, i32 %start)\n  %is.identifier = icmp eq i8 %kind, 73\n  br i1 %is.identifier, label %call.check, label %fallback\ncall.check:\n  %next = add i32 %start, 1\n  %before.end = icmp slt i32 %next, %end\n  br i1 %before.end, label %open.check, label %single.check\nopen.check:\n  %is.open.raw = call i32 @csec_token_is(ptr %arg.tokens, i32 %next, i8 79, ptr @.str.ir.expr.paren.open)\n  %is.open = icmp ne i32 %is.open.raw, 0\n  br i1 %is.open, label %close.check, label %single.check\nclose.check:\n  %close = call i32 @findClosingToken(ptr %arg.tokens, i32 %next, i32 %end, ptr @.str.ir.expr.paren.open, ptr @.str.ir.expr.paren.close)\n  %last = sub i32 %end, 1\n  %is.call = icmp eq i32 %close, %last\n  br i1 %is.call, label %call, label %single.check\ncall:\n  %c1 = call ptr @csec_string_concat(ptr @.str.ir.expr.call, ptr %ir.type)\n  %c2 = call ptr @csec_string_concat(ptr %c1, ptr @.str.ir.expr.at)\n  %name = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %start)\n  %c3 = call ptr @csec_string_concat(ptr %c2, ptr %name)\n  %c4 = call ptr @csec_string_concat(ptr %c3, ptr @.str.ir.expr.paren.open)\n  %args.start = add i32 %start, 2\n  %args = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %args.start, i32 %last)\n  %c5 = call ptr @csec_string_concat(ptr %c4, ptr %args)\n  %c6 = call ptr @csec_string_concat(ptr %c5, ptr @.str.ir.expr.paren.close)\n  ret ptr %c6\nsingle.check:\n  %single.end = add i32 %start, 1\n  %is.single = icmp eq i32 %end, %single.end\n  br i1 %is.single, label %single, label %fallback\nsingle:\n  %s1 = call ptr @csec_string_concat(ptr @.str.ir.expr.load, ptr %ir.type)\n  %s2 = call ptr @csec_string_concat(ptr %s1, ptr @.str.ir.expr.load.middle)\n  %single.name = call ptr @csec_token_text_at(ptr %arg.tokens, i32 %start)\n  %s3 = call ptr @csec_string_concat(ptr %s2, ptr %single.name)\n  ret ptr %s3\nfallback:\n  %f1 = call ptr @csec_string_concat(ptr %ir.type, ptr @.str.ir.expr.space)\n  %f2 = call ptr @appendExpressionUntil(ptr %arg.tokens, i32 %start, i32 %end)\n  %f3 = call ptr @csec_string_concat(ptr %f1, ptr %f2)\n  ret ptr %f3\n}\n\n@.str.ir.expr.void = private unnamed_addr constant [5 x i8] c\"void\\00\"\n@.str.ir.expr.space = private unnamed_addr constant [2 x i8] c\" \\00\"\n@.str.ir.expr.open = private unnamed_addr constant [3 x i8] c\" (\\00\"\n@.str.ir.expr.middle = private unnamed_addr constant [5 x i8] c\"), (\\00\"\n@.str.ir.expr.close = private unnamed_addr constant [2 x i8] c\")\\00\"\n@.str.ir.expr.paren.open = private unnamed_addr constant [2 x i8] c\"(\\00\"\n@.str.ir.expr.paren.close = private unnamed_addr constant [2 x i8] c\")\\00\"\n@.str.ir.expr.call = private unnamed_addr constant [6 x i8] c\"call \\00\"\n@.str.ir.expr.at = private unnamed_addr constant [2 x i8] c\"@\\00\"\n@.str.ir.expr.load = private unnamed_addr constant [6 x i8] c\"load \\00\"\n@.str.ir.expr.load.middle = private unnamed_addr constant [8 x i8] c\", ptr %\\00\"\n\n";
     } else if (name && std::strcmp(name, "irOperatorName") == 0) {
@@ -808,7 +3724,6 @@ char* csec_token_append_owned(const char* tokens, char kind, const char* text) {
 
     if (tokens && lhsLen > 0) {
         clearTokenCachesFor(tokens);
-        std::free(const_cast<char*>(tokens));
     }
     return result;
 }
@@ -1116,6 +4031,138 @@ int csec_token_is(const char* tokens, int ordinal, char kind, const char* text) 
     return csec_native_token_is(tokens, ordinal, kind, text) ? 1 : 0;
 }
 
+static char* csec_copy_literal(const char* text) {
+    return const_cast<char*>(text);
+}
+
+char* csec_statement_kind(const char* tokens, int ordinal) {
+    const char kind = csec_token_kind_at(tokens, ordinal);
+    const char* text = csec_token_text_at(tokens, ordinal);
+    if (kind == 'K') {
+        if (std::strcmp(text, "return") == 0) return csec_copy_literal("return");
+        if (std::strcmp(text, "val") == 0) return csec_copy_literal("value");
+        if (std::strcmp(text, "var") == 0) return csec_copy_literal("variable");
+        if (std::strcmp(text, "if") == 0) return csec_copy_literal("if");
+        if (std::strcmp(text, "for") == 0) return csec_copy_literal("for");
+        if (std::strcmp(text, "while") == 0) return csec_copy_literal("while");
+        if (std::strcmp(text, "map") == 0) return csec_copy_literal("map");
+        if (std::strcmp(text, "pmap") == 0) return csec_copy_literal("pmap");
+        if (std::strcmp(text, "reduce") == 0) return csec_copy_literal("reduce");
+        if (std::strcmp(text, "preduce") == 0) return csec_copy_literal("preduce");
+        if (std::strcmp(text, "filter") == 0) return csec_copy_literal("filter");
+        if (std::strcmp(text, "def") == 0) return csec_copy_literal("function");
+        if (std::strcmp(text, "object") == 0) return csec_copy_literal("object");
+        if (std::strcmp(text, "unsafe") == 0) return csec_copy_literal("unsafe");
+        if (std::strcmp(text, "unatomic") == 0) return csec_copy_literal("unatomic");
+        if (std::strcmp(text, "constexpr") == 0) return csec_copy_literal("constexpr");
+    }
+    if (kind == 'E') return csec_copy_literal("eof");
+    return csec_copy_literal("expression");
+}
+
+char* csec_expression_leaf_kind(const char* tokens, int start, int end) {
+    if (end <= start) return csec_copy_literal("empty");
+    switch (csec_token_kind_at(tokens, start)) {
+        case 'N': return csec_copy_literal("integer");
+        case 'F': return csec_copy_literal("float");
+        case 'S': return csec_copy_literal("string");
+        case 'R': return csec_copy_literal("regex");
+        case 'C': return csec_copy_literal("char");
+        case 'B': return csec_copy_literal("bool");
+        case 'I': return csec_copy_literal("identifier");
+        case 'K': {
+            const char* text = csec_token_text_at(tokens, start);
+            if (std::strcmp(text, "this") == 0) return csec_copy_literal("this");
+            if (std::strcmp(text, "super") == 0) return csec_copy_literal("super");
+            if (std::strcmp(text, "new") == 0) return csec_copy_literal("new");
+            if (std::strcmp(text, "match") == 0) return csec_copy_literal("match");
+            break;
+        }
+        default: break;
+    }
+    return csec_copy_literal("unknown");
+}
+
+char* csec_declared_value_type(const char* tokens, int declStart, int declEnd) {
+    for (int cursor = declStart; cursor < declEnd && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', ":")) {
+            return csec_token_text_at(tokens, cursor + 1);
+        }
+        if (csec_native_token_is(tokens, cursor, 'O', "=") || csec_native_token_is(tokens, cursor, 'O', ";")) {
+            return csec_copy_literal("infer");
+        }
+    }
+    return csec_copy_literal("infer");
+}
+
+char* csec_infer_expression_type(const char* tokens, int start, int end) {
+    while (start < end && csec_token_kind_at(tokens, start) == 'M') ++start;
+    while (end > start && csec_token_kind_at(tokens, end - 1) == 'M') --end;
+    if (end <= start) return csec_copy_literal("Unit");
+    switch (csec_token_kind_at(tokens, start)) {
+        case 'N': return csec_copy_literal("Int");
+        case 'F': return csec_copy_literal("Double");
+        case 'S': return csec_copy_literal("String");
+        case 'C': return csec_copy_literal("Char");
+        case 'B': return csec_copy_literal("Boolean");
+        case 'R': return csec_copy_literal("Regex");
+        case 'I': {
+            const char* name = csec_token_text_at(tokens, start);
+            char* cached = csec_lookup_function_return_type(tokens, name);
+            if (cached && std::strcmp(cached, "unknown") != 0) return cached;
+            break;
+        }
+        default: break;
+    }
+    return csec_copy_literal("unknown");
+}
+
+char* csec_declared_local_type(const char* tokens, int start, int end) {
+    for (int cursor = start; cursor < end && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', ":")) return csec_token_text_at(tokens, cursor + 1);
+        if (csec_native_token_is(tokens, cursor, 'O', "=") || csec_native_token_is(tokens, cursor, 'O', ";")) break;
+    }
+    return csec_copy_literal("");
+}
+
+static int csec_class_member_start(const char* tokens, int ordinal) {
+    if (csec_native_token_is(tokens, ordinal, 'K', "override") ||
+        csec_native_token_is(tokens, ordinal, 'K', "unsafe") ||
+        csec_native_token_is(tokens, ordinal, 'K', "constexpr")) return ordinal + 1;
+    return ordinal;
+}
+
+char* csec_class_member_kind(const char* tokens, int ordinal) {
+    const int start = csec_class_member_start(tokens, ordinal);
+    if (csec_native_token_is(tokens, start, 'K', "def")) return csec_copy_literal("method");
+    if (csec_native_token_is(tokens, start, 'K', "val")) return csec_copy_literal("field");
+    if (csec_native_token_is(tokens, start, 'K', "var")) return csec_copy_literal("mutable-field");
+    return csec_copy_literal("member");
+}
+
+char* csec_class_member_name(const char* tokens, int ordinal) {
+    const int start = csec_class_member_start(tokens, ordinal);
+    if (csec_native_token_is(tokens, start, 'K', "def")) {
+        if (csec_native_token_is(tokens, start + 1, 'K', "operator")) {
+            return csec_string_concat("operator", csec_token_text_at(tokens, start + 2));
+        }
+        return csec_token_text_at(tokens, start + 1);
+    }
+    if (csec_native_token_is(tokens, start, 'K', "val") || csec_native_token_is(tokens, start, 'K', "var")) {
+        return csec_token_text_at(tokens, start + 1);
+    }
+    return csec_copy_literal("<member>");
+}
+
+int csec_parse_return_integer_in_range(const char* tokens, int start, int end) {
+    for (int cursor = start; cursor < end && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'K', "return") && csec_token_kind_at(tokens, cursor + 1) == 'N') {
+            return csec_to_int(csec_token_text_at(tokens, cursor + 1));
+        }
+    }
+    return 0;
+}
+
 static int csec_native_find_closing_token(const char* tokens, int openOrdinal, int limit, const char* openText, const char* closeText) {
     int depth = 0;
     int cursor = openOrdinal;
@@ -1382,16 +4429,22 @@ int csec_find_top_level_match(const char* tokens, int start, int end) {
 }
 
 int csec_find_lambda_arrow(const char* tokens, int start, int end) {
+    if (!tokens || start < 0 || end <= start) return -1;
+    const int tokenCount = tokenCountCached(tokens);
+    if (start >= tokenCount) return -1;
+    if (end > tokenCount) end = tokenCount;
+    if (end <= start) return -1;
+    if (!csec_token_is(tokens, start, 'O', "[")) return -1;
     const int closeCapture = csec_find_closing_token(tokens, start, end, "[", "]");
-    if (closeCapture < 0) return -1;
+    if (closeCapture < start || closeCapture + 1 >= end) return -1;
     int openParams = closeCapture + 1;
-    while (csec_token_kind_at(tokens, openParams) == 'M') ++openParams;
-    if (!csec_token_is(tokens, openParams, 'O', "(")) return -1;
+    while (openParams < end && csec_token_kind_at(tokens, openParams) == 'M') ++openParams;
+    if (openParams >= end || !csec_token_is(tokens, openParams, 'O', "(")) return -1;
     const int closeParams = csec_find_closing_token(tokens, openParams, end, "(", ")");
-    if (closeParams < 0) return -1;
+    if (closeParams < openParams || closeParams + 1 >= end) return -1;
     int arrow = closeParams + 1;
-    while (csec_token_kind_at(tokens, arrow) == 'M') ++arrow;
-    return csec_token_is(tokens, arrow, 'O', "->") ? arrow : -1;
+    while (arrow < end && csec_token_kind_at(tokens, arrow) == 'M') ++arrow;
+    return arrow < end && csec_token_is(tokens, arrow, 'O', "->") ? arrow : -1;
 }
 
 char* csec_generate_symbol_table(const char* tokens) {
@@ -1635,6 +4688,14 @@ int csec_function_param_end(const char* tokens, int declStart) {
     return -1;
 }
 
+int csec_find_function_param_start(const char* tokens, int declStart) {
+    for (int cursor = declStart; csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', "(")) return cursor;
+        if (csec_native_token_is(tokens, cursor, 'O', "{") || csec_native_token_is(tokens, cursor, 'O', ";")) return -1;
+    }
+    return -1;
+}
+
 }
 
 static const char* csec_llvm_type_for_name(const std::string& typeName) {
@@ -1652,6 +4713,261 @@ static char* csec_owned_string(const std::string& text) {
     if (!result) return const_cast<char*>("");
     std::memcpy(result, text.c_str(), text.size() + 1);
     return result;
+}
+
+static int csec_expression_ast_skip_trivia(const char* tokens, int ordinal) {
+    while (csec_token_kind_at(tokens, ordinal) == 'M') ++ordinal;
+    return ordinal;
+}
+
+static int csec_expression_ast_trim_end(const char* tokens, int start, int end) {
+    while (end > start && csec_token_kind_at(tokens, end - 1) == 'M') --end;
+    return end > start && csec_native_token_is(tokens, end - 1, 'O', ";") ? end - 1 : end;
+}
+
+static std::string csec_expression_ast_leaf_kind(const char* tokens, int start, int end) {
+    if (end <= start) return "empty";
+    switch (csec_token_kind_at(tokens, start)) {
+    case 'N': return "integer";
+    case 'F': return "float";
+    case 'S': return "string";
+    case 'R': return "regex";
+    case 'C': return "char";
+    case 'B': return "bool";
+    case 'I': return "identifier";
+    case 'K': {
+        const char* text = csec_token_text_at(tokens, start);
+        if (std::strcmp(text, "this") == 0 || std::strcmp(text, "super") == 0 ||
+            std::strcmp(text, "new") == 0 || std::strcmp(text, "match") == 0) return text;
+        break;
+    }
+    default: break;
+    }
+    return "unknown";
+}
+
+static std::string csec_expression_ast_postfix(const char* tokens, int start, int end) {
+    if (end <= start) return "";
+    if (csec_native_token_is(tokens, end - 1, 'O', ")")) {
+        const int open = csec_find_last_top_level_token(tokens, start, end, "(");
+        if (open > start) return "Expr call target=" + std::string(csec_append_expression_until(tokens, start, open)) +
+            " argc=" + std::to_string(csec_count_comma_separated(tokens, open + 1, end - 1));
+    }
+    if (csec_native_token_is(tokens, end - 1, 'O', "]")) {
+        const int open = csec_find_last_top_level_token(tokens, start, end, "[");
+        if (open > start) return "Expr index target=" + std::string(csec_append_expression_until(tokens, start, open)) +
+            " argc=" + std::to_string(csec_count_comma_separated(tokens, open + 1, end - 1));
+    }
+    const int dot = csec_find_last_top_level_token(tokens, start, end, ".");
+    if (dot > start) return "Expr member " + std::string(csec_append_expression_until(tokens, start, dot)) + "." +
+        csec_append_expression_until(tokens, dot + 1, end);
+    return "";
+}
+
+static std::string csec_generate_expression_ast_impl(const char* tokens, int rawStart, int rawEnd) {
+    const int start = csec_expression_ast_skip_trivia(tokens, rawStart);
+    const int end = csec_expression_ast_trim_end(tokens, start, rawEnd);
+    if (end <= start) return "Expr empty";
+    const auto expressionText = [&] { return std::string(csec_append_expression_until(tokens, start, end)); };
+    if (end - start > 32) return "Expr " + csec_expression_ast_leaf_kind(tokens, start, end) + " " + expressionText();
+
+    if (csec_native_token_is(tokens, start, 'O', "[")) {
+        const int arrow = csec_find_lambda_arrow(tokens, start, end);
+        if (arrow >= 0) {
+            const int captureClose = csec_find_closing_token(tokens, start, end, "[", "]");
+            const std::string capture = captureClose <= start + 1 ? "none" : csec_append_expression_until(tokens, start + 1, captureClose);
+            const int paramOpen = csec_expression_ast_skip_trivia(tokens, captureClose + 1);
+            const int paramClose = csec_find_closing_token(tokens, paramOpen, end, "(", ")");
+            return "Expr lambda capture=" + capture + " params=" + std::to_string(csec_count_comma_separated(tokens, paramOpen + 1, paramClose));
+        }
+    }
+
+    const int matchAt = csec_find_top_level_match(tokens, start, end);
+    if (matchAt > start) {
+        const int open = csec_find_token_text_in_range(tokens, matchAt, end, "{");
+        int cases = 0;
+        if (open >= 0) {
+            const int close = csec_find_closing_token(tokens, open, end, "{", "}");
+            for (int cursor = open + 1; cursor < close && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+                if (csec_native_token_is(tokens, cursor, 'K', "case")) ++cases;
+            }
+        }
+        return "Expr match cases=" + std::to_string(cases) + " [" + csec_generate_expression_ast_impl(tokens, start, matchAt) + "]";
+    }
+    if (csec_native_token_is(tokens, start, 'O', "(")) {
+        const int close = csec_find_closing_token(tokens, start, end, "(", ")");
+        if (close == end - 1) return "Expr group (" + csec_generate_expression_ast_impl(tokens, start + 1, end - 1) + ")";
+    }
+
+    const int groups[] = {1, 2, 3, 8, 9, 4, 10, 5, 6, 7, 11};
+    for (const int group : groups) {
+        const int op = csec_find_top_level_operator(tokens, start, end, group);
+        if (op < start || ((group == 6 || group == 7 || group == 11) && op <= start)) continue;
+        const char* category = group == 1 ? "assign" : group == 4 ? "compare" : group == 10 ? "shift" :
+            group == 5 ? "range" : group == 11 ? "tensor" : "binary";
+        return "Expr " + std::string(category) + " " + csec_token_text_at(tokens, op) + " [" +
+            csec_generate_expression_ast_impl(tokens, start, op) + "] [" + csec_generate_expression_ast_impl(tokens, op + 1, end) + "]";
+    }
+
+    if (csec_token_kind_at(tokens, start) == 'O') {
+        const char* text = csec_token_text_at(tokens, start);
+        if (std::strcmp(text, "!") == 0 || std::strcmp(text, "-") == 0 || std::strcmp(text, "+") == 0 ||
+            std::strcmp(text, "~") == 0 || std::strcmp(text, "*") == 0 || std::strcmp(text, "&") == 0 ||
+            std::strcmp(text, "<-") == 0 || std::strcmp(text, "++") == 0 || std::strcmp(text, "--") == 0) {
+            return "Expr unary " + std::string(text) + " [" + csec_generate_expression_ast_impl(tokens, start + 1, end) + "]";
+        }
+    }
+    if (end > start + 1 && csec_token_kind_at(tokens, end - 1) == 'O') {
+        const char* text = csec_token_text_at(tokens, end - 1);
+        if (std::strcmp(text, "++") == 0 || std::strcmp(text, "--") == 0) {
+            return "Expr postfix " + std::string(text) + " [" + csec_generate_expression_ast_impl(tokens, start, end - 1) + "]";
+        }
+    }
+    const std::string postfix = csec_expression_ast_postfix(tokens, start, end);
+    if (!postfix.empty()) return postfix;
+    if (csec_token_kind_at(tokens, start) == 'I' && start + 1 < end && csec_native_token_is(tokens, start + 1, 'O', "(") &&
+        csec_find_closing_token(tokens, start + 1, end, "(", ")") == end - 1) {
+        return "Expr call " + std::string(csec_token_text_at(tokens, start)) + "(" + csec_append_expression_until(tokens, start + 2, end - 1) + ")";
+    }
+    if (csec_native_token_is(tokens, start, 'O', "[")) return "Expr array count=" +
+        std::to_string(csec_count_comma_separated(tokens, start + 1, end - 1)) + " [" + csec_append_expression_until(tokens, start + 1, end - 1) + "]";
+    if (csec_native_token_is(tokens, start, 'K', "new")) return "Expr new " + expressionText();
+    if (csec_native_token_is(tokens, start, 'K', "match")) return "Expr match";
+    return "Expr " + csec_expression_ast_leaf_kind(tokens, start, end) + " " + expressionText();
+}
+
+static std::string csec_generate_statement_ast_impl(const char* tokens, int start, int end) {
+    const bool keyword = csec_token_kind_at(tokens, start) == 'K';
+    const std::string kind = keyword ? csec_token_text_at(tokens, start) : "expression";
+    if (kind == "return") return "  Stmt return " + csec_generate_expression_ast_impl(tokens, start + 1, end) + "\n";
+    if (kind == "val" || kind == "var") {
+        const int initializer = csec_find_top_level_operator(tokens, start, end, 1);
+        std::string output = "  Stmt " + std::string(kind == "val" ? "value" : "variable") + " " + csec_token_text_at(tokens, start + 1);
+        if (initializer >= start) output += " = " + csec_generate_expression_ast_impl(tokens, initializer + 1, end);
+        return output + "\n";
+    }
+    if (kind == "if" || kind == "for" || kind == "while" || kind == "map" || kind == "pmap" || kind == "reduce" || kind == "preduce" || kind == "filter") {
+        const int open = csec_find_statement_paren_start(tokens, start, end);
+        const int close = csec_find_statement_paren_end(tokens, start, end);
+        return "  Stmt " + kind + " (" + (open >= 0 && close > open ? csec_append_expression_until(tokens, open + 1, close) : "") + ")\n";
+    }
+    if (kind == "unsafe" || kind == "unatomic" || kind == "constexpr") return "  Stmt " + kind + "\n";
+    if (kind == "def" || kind == "object") return "  Stmt " + std::string(kind == "def" ? "function" : "object") + " " + csec_token_text_at(tokens, start + 1) + "\n";
+    return "  Stmt expression " + csec_generate_expression_ast_impl(tokens, start, end) + "\n";
+}
+
+static std::string csec_generate_body_ast_impl(const char* tokens, int bodyStart, int bodyEnd) {
+    std::string output;
+    int cursor = csec_expression_ast_skip_trivia(tokens, bodyStart);
+    while (cursor >= 0 && cursor < bodyEnd && csec_token_kind_at(tokens, cursor) != 'E') {
+        const int next = csec_advance_statement(tokens, cursor, bodyEnd);
+        if (next <= cursor) return output + "  Stmt error\n";
+        output += csec_generate_statement_ast_impl(tokens, cursor, next);
+        cursor = csec_expression_ast_skip_trivia(tokens, next);
+    }
+    return output;
+}
+
+static std::string csec_c_expression(const char* tokens, int start, int rawEnd) {
+    const int end = csec_expression_ast_trim_end(tokens, start, rawEnd);
+    std::string output;
+    for (int cursor = start; cursor < end && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (csec_native_token_is(tokens, cursor, 'K', "and")) output += "&&";
+        else if (csec_native_token_is(tokens, cursor, 'K', "or")) output += "||";
+        else if (csec_native_token_is(tokens, cursor, 'K', "xor")) output += "^";
+        else output += text;
+        if (cursor + 1 < end) output += " ";
+    }
+    return output;
+}
+
+static const char* csec_c_type(const std::string& type) {
+    if (type == "Boolean" || type == "Int") return "int";
+    if (type == "Char") return "char";
+    if (type == "Long") return "long long";
+    if (type == "Float") return "float";
+    if (type == "Double") return "double";
+    if (type == "String" || type == "Regex") return "const char*";
+    if (type.rfind("Array", 0) == 0) return "void*";
+    if (type == "Unit") return "void";
+    return "void*";
+}
+
+char* csec_c_type_name(const char* typeName) {
+    return csec_copy_literal(csec_c_type(typeName ? typeName : ""));
+}
+
+char* csec_empty_string(void) {
+    return csec_copy_literal("");
+}
+
+static std::string csec_c_local_type(const char* tokens, int start, int end, int initializer) {
+    for (int cursor = start; cursor < end; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', ":")) {
+            std::string type;
+            for (int pos = cursor + 1; pos < end && !csec_native_token_is(tokens, pos, 'O', "=") && !csec_native_token_is(tokens, pos, 'O', ";"); ++pos) type += csec_token_text_at(tokens, pos);
+            if (!type.empty()) return type;
+        }
+    }
+    if (initializer >= start) {
+        const char kind = csec_token_kind_at(tokens, initializer + 1);
+        if (kind == 'N') return "Int";
+        if (kind == 'F') return "Double";
+        if (kind == 'S') return "String";
+        if (kind == 'C') return "Char";
+        if (kind == 'B') return "Boolean";
+    }
+    return "Int";
+}
+
+static std::string csec_generate_c_body_impl(const char* tokens, int bodyStart, int bodyEnd, const std::string& indent) {
+    std::string output;
+    int cursor = csec_expression_ast_skip_trivia(tokens, bodyStart);
+    while (cursor >= 0 && cursor < bodyEnd && csec_token_kind_at(tokens, cursor) != 'E') {
+        const int next = csec_advance_statement(tokens, cursor, bodyEnd);
+        if (next <= cursor) break;
+        const char* kind = csec_token_text_at(tokens, cursor);
+        if (csec_native_token_is(tokens, cursor, 'K', "return")) {
+            output += indent + "return " + csec_c_expression(tokens, cursor + 1, next) + ";\n";
+        } else if (csec_native_token_is(tokens, cursor, 'K', "val") || csec_native_token_is(tokens, cursor, 'K', "var")) {
+            const int init = csec_find_top_level_operator(tokens, cursor, next, 1);
+            output += indent + csec_c_type(csec_c_local_type(tokens, cursor, next, init)) + " " + csec_token_text_at(tokens, cursor + 1);
+            output += init >= cursor ? " = " + csec_c_expression(tokens, init + 1, next) + ";\n" : " = 0;\n";
+        } else if (std::strcmp(kind, "if") == 0 || std::strcmp(kind, "while") == 0) {
+            const int open = csec_find_statement_paren_start(tokens, cursor, next);
+            const int close = csec_find_statement_paren_end(tokens, cursor, next);
+            const int brace = csec_find_statement_block_start(tokens, cursor, next);
+            const int braceEnd = csec_find_closing_token(tokens, brace, next, "{", "}");
+            if (open >= cursor && close > open && brace > close && braceEnd > brace) {
+                output += indent + kind + " (" + csec_c_expression(tokens, open + 1, close) + ") {\n";
+                output += csec_generate_c_body_impl(tokens, brace + 1, braceEnd, indent + "    ") + indent + "}\n";
+            }
+        } else if (std::strcmp(kind, "for") == 0) {
+            const int open = csec_find_statement_paren_start(tokens, cursor, next);
+            const int close = csec_find_statement_paren_end(tokens, cursor, next);
+            const int brace = csec_find_statement_block_start(tokens, cursor, next);
+            const int braceEnd = csec_find_statement_block_end(tokens, cursor, next);
+            const int arrow = csec_find_token_text_in_range(tokens, open + 1, close, "<-");
+            const int range = csec_find_top_level_operator(tokens, arrow + 1, close, 5);
+            if (open >= cursor && arrow > open && range > arrow && braceEnd > brace) {
+                const char* name = csec_token_text_at(tokens, open + 1);
+                const char* op = csec_token_text_at(tokens, range);
+                output += indent + "for (int " + std::string(name) + " = " + csec_c_expression(tokens, arrow + 1, range) + "; " + name +
+                    (std::strcmp(op, "to") == 0 || std::strcmp(op, "..") == 0 ? " <= " : " < ") + csec_c_expression(tokens, range + 1, close) + "; " + name + "++) {\n";
+                output += csec_generate_c_body_impl(tokens, brace + 1, braceEnd, indent + "    ") + indent + "}\n";
+            }
+        } else if (std::strcmp(kind, "map") == 0 || std::strcmp(kind, "pmap") == 0 || std::strcmp(kind, "reduce") == 0 || std::strcmp(kind, "preduce") == 0 || std::strcmp(kind, "filter") == 0) {
+            const int brace = csec_find_statement_block_start(tokens, cursor, next);
+            const int braceEnd = csec_find_statement_block_end(tokens, cursor, next);
+            output += indent + "/* " + std::string(kind) + " */\n";
+            if (braceEnd > brace) output += csec_generate_c_body_impl(tokens, brace + 1, braceEnd, indent);
+        } else {
+            output += indent + csec_c_expression(tokens, cursor, next) + ";\n";
+        }
+        cursor = csec_expression_ast_skip_trivia(tokens, next);
+    }
+    return output;
 }
 
 static std::vector<std::pair<std::string, std::string>> csec_function_params(const char* tokens, int declStart) {
@@ -1682,7 +4998,78 @@ static std::vector<std::pair<std::string, std::string>> csec_function_params(con
     return params;
 }
 
+static int csec_find_visible_local(const char* tokens, int limit, const char* name) {
+    const int boundedLimit = limit < 0 ? 0 : limit;
+    int begin = 0;
+    int end = boundedLimit;
+    int bodyStart = -1;
+    int bodyEnd = -1;
+    if (findFunctionAroundLimit(tokens, boundedLimit, nullptr, &bodyStart, &bodyEnd)) {
+        begin = bodyStart;
+        end = boundedLimit < bodyEnd ? boundedLimit : bodyEnd;
+    }
+    int visible = -1;
+    for (int cursor = begin; cursor < end && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        const bool local = csec_native_token_is(tokens, cursor, 'K', "val") ||
+            csec_native_token_is(tokens, cursor, 'K', "var");
+        if (local && csec_token_kind_at(tokens, cursor + 1) == 'I' &&
+            std::strcmp(csec_token_text_at(tokens, cursor + 1), name ? name : "") == 0) {
+            visible = cursor;
+        }
+    }
+    return visible;
+}
+
 extern "C" {
+
+char* csec_generate_expression_ast(const char* tokens, int start, int end) {
+    return csec_owned_string(csec_generate_expression_ast_impl(tokens, start, end));
+}
+
+char* csec_generate_statement_ast(const char* tokens, int start, int end) {
+    return csec_owned_string(csec_generate_statement_ast_impl(tokens, start, end));
+}
+
+char* csec_generate_body_ast(const char* tokens, int bodyStart, int bodyEnd) {
+    return csec_owned_string(csec_generate_body_ast_impl(tokens, bodyStart, bodyEnd));
+}
+
+char* csec_generate_c_body(const char* tokens, int bodyStart, int bodyEnd, const char* indent) {
+    return csec_owned_string(csec_generate_c_body_impl(tokens, bodyStart, bodyEnd, indent ? indent : ""));
+}
+
+char* csec_generate_c_expression(const char* tokens, int start, int end) {
+    return csec_owned_string(csec_c_expression(tokens, start, end));
+}
+
+char* csec_ir_type_name(const char* typeName) {
+    return csec_owned_string(csec_llvm_type_for_name(typeName ? typeName : ""));
+}
+
+char* csec_collect_type_name(const char* tokens, int start, int end) {
+    std::string output;
+    for (int cursor = start < 0 ? 0 : start; cursor < end && csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (std::strcmp(text, "{") == 0 || std::strcmp(text, "=") == 0 ||
+            std::strcmp(text, ";") == 0 || std::strcmp(text, ",") == 0) break;
+        output += text;
+    }
+    return csec_owned_string(output);
+}
+
+char* csec_lookup_visible_value_type(const char* tokens, int limit, const char* name) {
+    const int declaration = csec_find_visible_local(tokens, limit, name);
+    if (declaration < 0) return csec_owned_string("Int");
+    const int end = limit < declaration ? declaration : limit;
+    const int initializer = csec_find_top_level_operator(tokens, declaration, end, 1);
+    return csec_owned_string(csec_c_local_type(tokens, declaration, end, initializer));
+}
+
+char* csec_lookup_visible_storage_name(const char* tokens, int limit, const char* name) {
+    const int declaration = csec_find_visible_local(tokens, limit, name);
+    if (declaration < 0) return csec_owned_string(name ? name : "");
+    return csec_owned_string(std::string(name ? name : "") + ".addr." + std::to_string(declaration));
+}
 
 char* csec_function_llvm_param_list(const char* tokens, int declStart) {
     std::string output;
@@ -1738,6 +5125,16 @@ char* csec_llvm_string_literal_bytes(const char* text) {
     }
     output += "\\00";
     return csec_owned_string(output);
+}
+
+int csec_llvm_string_literal_byte_length(const char* text) {
+    const std::string input = text ? text : "";
+    int length = 1;
+    for (size_t index = 0; index < input.size(); ++index) {
+        if (input[index] == '\\' && index + 1 < input.size()) ++index;
+        ++length;
+    }
+    return length;
 }
 
 char* csec_function_return_type_at(const char* tokens, int declStart) {
@@ -1996,6 +5393,41 @@ double csec_read_double(void) {
     return value;
 }
 
+char* csec_replace_dots_with_slash(const char* value) {
+    std::string result = value ? value : "";
+    for (char& ch : result) {
+        if (ch == '.') ch = '/';
+    }
+    return csec_owned_string(result);
+}
+
+char* csec_import_target_from_line(const char* line) {
+    std::string value = line ? line : "";
+    const auto first = value.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) return csec_owned_string("");
+    value.erase(0, first);
+    const auto last = value.find_last_not_of(" \t\r\n");
+    value.erase(last + 1);
+    if (value.rfind("//", 0) == 0 || value.rfind("import", 0) != 0) return csec_owned_string("");
+    if (value.size() > 6 && value[6] != ' ' && value[6] != '\t' && value[6] != '\"' && value[6] != '\'') return csec_owned_string("");
+    value.erase(0, 6);
+    const auto targetFirst = value.find_first_not_of(" \t\r\n");
+    value = targetFirst == std::string::npos ? "" : value.substr(targetFirst);
+    if (!value.empty() && value.back() == ';') value.pop_back();
+    const auto targetLast = value.find_last_not_of(" \t\r\n");
+    value = targetLast == std::string::npos ? "" : value.substr(0, targetLast + 1);
+    if (value.size() >= 2 && ((value.front() == '\"' && value.back() == '\"') || (value.front() == '\'' && value.back() == '\''))) {
+        value = value.substr(1, value.size() - 2);
+    }
+    return csec_owned_string(value);
+}
+
+char* csec_import_candidate(const char* target) {
+    std::string value = target ? target : "";
+    if (value.size() < 5 || value.compare(value.size() - 5, 5, ".csec") != 0) value += ".csec";
+    return csec_owned_string(value);
+}
+
 void csec_set_command_line_args(int argc, char** argv) {
     g_argc = argc;
     g_argv = argv;
@@ -2243,6 +5675,12 @@ char* csec_expand_imports(const char* path) {
     std::memcpy(result, expanded.data(), expanded.size());
     result[expanded.size()] = '\0';
     return result;
+}
+
+char* csec_resolve_import_path(const char* currentPath, const char* target) {
+    const std::filesystem::path resolved = csecResolveImportPath(
+        std::filesystem::path(currentPath ? currentPath : ""), target ? target : "");
+    return csec_owned_string(resolved.string());
 }
 
 double csec_math_sin(double value) { return std::sin(value); }

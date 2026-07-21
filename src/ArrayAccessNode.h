@@ -63,6 +63,7 @@ public:
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
+    llvm::Value* codegenElementPointer();
     std::unique_ptr<Type> getType() override {
         if (!array) return std::make_unique<UnknownType>();
         auto resolvedArrayType = array->getType();

@@ -1,0 +1,6 @@
+def main(): Int {
+    val addOne = [=](x) -> {
+        return x + 1;
+    };
+    return addOne(41);
+}

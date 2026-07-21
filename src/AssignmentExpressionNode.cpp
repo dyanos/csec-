@@ -2,6 +2,7 @@
 #include "AssignmentExpressionNode.h"
 #include "ASTVisitor.h"
 #include "IdentifierNode.h"
+#include "ArrayAccessNode.h"
 #include "type_utils.h"
 
 #include <iostream>
@@ -35,12 +36,28 @@ llvm::Value* AssignmentExpressionNode::codegen() {
             }
         }
     }
+    else if (auto* access = dynamic_cast<ArrayAccessNode*>(left.get())) {
+        targetPtr = access->codegenElementPointer();
+        if (!targetPtr) {
+            std::cerr << "Error: Invalid array assignment target" << std::endl;
+            return nullptr;
+        }
+    }
 
     if (!targetPtr->getType()->isPointerTy()) {
         std::cerr << "Error: Left-hand side of assignment is not assignable" << std::endl;
         return nullptr;
     }
 
+    if (op == "+=" || op == "-=" || op == "*=" || op == "/=" || op == "%=") {
+        llvm::Type* valueType = rightValue->getType();
+        llvm::Value* oldValue = CodeGenerator::getInstance().builder.CreateLoad(valueType, targetPtr, "assign.old");
+        if (op == "+=") rightValue = CodeGenerator::getInstance().builder.CreateAdd(oldValue, rightValue, "assign.next");
+        else if (op == "-=") rightValue = CodeGenerator::getInstance().builder.CreateSub(oldValue, rightValue, "assign.next");
+        else if (op == "*=") rightValue = CodeGenerator::getInstance().builder.CreateMul(oldValue, rightValue, "assign.next");
+        else if (op == "/=") rightValue = CodeGenerator::getInstance().builder.CreateSDiv(oldValue, rightValue, "assign.next");
+        else rightValue = CodeGenerator::getInstance().builder.CreateSRem(oldValue, rightValue, "assign.next");
+    }
     CodeGenerator::getInstance().builder.CreateStore(rightValue, targetPtr);
     return rightValue;
 }

@@ -684,6 +684,17 @@ std::unique_ptr<ASTNode> Parser::parseExpression() {
         error("Expected expression");
     }
 
+    if (match(TokenType::OPERATOR, "=") || match(TokenType::OPERATOR, "<-")) {
+        std::string op = previous().value;
+        return std::make_unique<AssignmentExpressionNode>(std::move(expr), parseExpression(), op);
+    }
+    if (match(TokenType::OPERATOR, "+=") || match(TokenType::OPERATOR, "-=") ||
+        match(TokenType::OPERATOR, "*=") || match(TokenType::OPERATOR, "/=") ||
+        match(TokenType::OPERATOR, "%=")) {
+        const std::string op = previous().value;
+        return std::make_unique<AssignmentExpressionNode>(std::move(expr), parseExpression(), op);
+    }
+
 	if (match(TokenType::KEYWORD, "match")) {
 		auto matchNode = std::make_unique<MatchExpressionNode>();
 		matchNode->expression = std::move(expr);

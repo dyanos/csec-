@@ -74,6 +74,10 @@ llvm::Value* IdentifierNode::codegen() {
     if ((symbol->symbolType == SymbolType::VARIABLE || symbol->symbolType == SymbolType::FIELD) &&
         symbol->value->getType()->isPointerTy() &&
         isAddressLike) {
+        if (symbol->type && (symbol->type->getName() == "Array" ||
+            dynamic_cast<ArrayType*>(symbol->type.get()) != nullptr)) {
+            return symbol->value;
+        }
         if (symbol->type && symbol->type->getKind() == Type::Kind::CLASS) {
             if (isStructClassType(symbol->type.get())) {
                 return symbol->value;

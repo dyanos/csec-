@@ -1,0 +1,12 @@
+def main(): Int {
+    val size = 4;
+    val xs = new Int[size];
+    var i = 0;
+    while (i < size) {
+        xs[i] = i * 10;
+        i += 1;
+    }
+    xs[1] += 5;
+    val result = xs[3] + xs[1];
+    return result;
+}

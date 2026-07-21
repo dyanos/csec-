@@ -124,3 +124,34 @@ llvm::Value* ArrayAccessNode::codegen() {
 
     return currentValue;
 }
+
+llvm::Value* ArrayAccessNode::codegenElementPointer() {
+    auto& cg = CodeGenerator::getInstance();
+    if (!array) return nullptr;
+    llvm::Value* currentValue = array->codegen();
+    std::unique_ptr<Type> currentType = array->getType();
+    if (!currentValue || !currentType || indices.empty()) return nullptr;
+
+    for (size_t position = 0; position < indices.size(); ++position) {
+        ArrayIndexSpec* spec = indices[position].get();
+        if (!spec || spec->isSlice || !spec->index) return nullptr;
+        std::unique_ptr<Type> elementTypeInfo;
+        if (auto* arrayType = dynamic_cast<ArrayType*>(currentType.get())) {
+            if (arrayType->elementType) elementTypeInfo = arrayType->elementType->clone();
+        }
+        else if (auto* genericType = dynamic_cast<GenericType*>(currentType.get())) {
+            if (genericType->typeArguments.size() == 1 && genericType->typeArguments[0]) {
+                elementTypeInfo = genericType->typeArguments[0]->clone();
+            }
+        }
+        if (!elementTypeInfo) return nullptr;
+        llvm::Type* elementType = cg.getLLVMType(elementTypeInfo.get());
+        llvm::Value* indexValue = spec->index->codegen();
+        if (!elementType || !indexValue) return nullptr;
+        llvm::Value* element = cg.builder.CreateGEP(elementType, currentValue, indexValue, "arrayelem.addr");
+        if (position + 1 == indices.size()) return element;
+        currentValue = cg.builder.CreateLoad(elementType, element, "arrayelem.nested");
+        currentType = std::move(elementTypeInfo);
+    }
+    return nullptr;
+}

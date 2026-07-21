@@ -4,6 +4,7 @@
 #include "ASTVisitor.h"
 #include "ClassInstanceCreationNode.h"
 #include "ArrayCreationExpressionNode.h"
+#include "LambdaExpressionNode.h"
 #include "type_utils.h"
 
 #include <iostream>
@@ -65,7 +66,10 @@ llvm::Value* VariableDeclarationNode::codegen() {
     }
 
     if (this->type->getKind() == Type::Kind::UNKNOWN && initValue != nullptr) {
-        if (initValue->getType()->isIntegerTy(32)) {
+        if (auto* lambda = dynamic_cast<LambdaExpressionNode*>(initializer.get())) {
+            this->type = lambda->getType();
+        }
+        else if (initValue->getType()->isIntegerTy(32)) {
             this->type = std::make_unique<BasicType>("Int");
         }
         else if (initValue->getType()->isFloatTy()) {
@@ -130,6 +134,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
         !(isMutable && type && type->getName() == "Tensor") &&
         (dynamic_cast<ClassInstanceCreationNode*>(initializer.get()) != nullptr ||
          dynamic_cast<ArrayCreationExpressionNode*>(initializer.get()) != nullptr ||
+         dynamic_cast<FunctionType*>(type.get()) != nullptr ||
          (type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
          type->getKind() == Type::Kind::BOX);
 

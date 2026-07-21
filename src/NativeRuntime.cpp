@@ -3127,6 +3127,25 @@ char* csec_llvm_lexer_helper_definition(const char* name) {
         }
     }
     const char* definition = "";
+    char tokenKind = '\0';
+    if (name && std::strcmp(name, "kindIdentifier") == 0) tokenKind = 'I';
+    else if (name && std::strcmp(name, "kindKeyword") == 0) tokenKind = 'K';
+    else if (name && std::strcmp(name, "kindInteger") == 0) tokenKind = 'N';
+    else if (name && std::strcmp(name, "kindFloat") == 0) tokenKind = 'F';
+    else if (name && std::strcmp(name, "kindString") == 0) tokenKind = 'S';
+    else if (name && std::strcmp(name, "kindRegex") == 0) tokenKind = 'R';
+    else if (name && std::strcmp(name, "kindChar") == 0) tokenKind = 'C';
+    else if (name && std::strcmp(name, "kindBool") == 0) tokenKind = 'B';
+    else if (name && std::strcmp(name, "kindOperator") == 0) tokenKind = 'O';
+    else if (name && std::strcmp(name, "kindComment") == 0) tokenKind = 'M';
+    else if (name && std::strcmp(name, "kindEof") == 0) tokenKind = 'E';
+    if (tokenKind != '\0') {
+        std::string generated = "define i8 @" + std::string(name) + "() {\nentry:\n  ret i8 " + std::to_string(static_cast<unsigned char>(tokenKind)) + "\n}\n\n";
+        char* result = static_cast<char*>(std::malloc(generated.size() + 1));
+        if (!result) return nullptr;
+        std::memcpy(result, generated.c_str(), generated.size() + 1);
+        return result;
+    }
     if (name && std::strcmp(name, "tokenIs") == 0) {
         definition = "define i1 @tokenIs(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text) {\nentry:\n  %token.is = call i32 @csec_token_is(ptr %arg.tokens, i32 %arg.ordinal, i8 %arg.kind, ptr %arg.text)\n  %token.is.bool = icmp ne i32 %token.is, 0\n  ret i1 %token.is.bool\n}\n\n";
     } else if (name && std::strcmp(name, "repairLeadingRTokenText") == 0) {
@@ -3147,9 +3166,27 @@ char* csec_llvm_lexer_helper_definition(const char* name) {
         definition = "define i1 @twoChars(ptr %arg.source, i32 %arg.index, ptr %arg.text) {\nentry:\n  %length = call i64 @csec_string_length(ptr %arg.source)\n  %last = add i32 %arg.index, 1\n  %last64 = sext i32 %last to i64\n  %in.range = icmp slt i64 %last64, %length\n  br i1 %in.range, label %compare, label %false\ncompare:\n  %source0 = call i8 @csec_string_char_at(ptr %arg.source, i32 %arg.index)\n  %text0 = call i8 @csec_string_char_at(ptr %arg.text, i32 0)\n  %first = icmp eq i8 %source0, %text0\n  %source1 = call i8 @csec_string_char_at(ptr %arg.source, i32 %last)\n  %text1 = call i8 @csec_string_char_at(ptr %arg.text, i32 1)\n  %second = icmp eq i8 %source1, %text1\n  %ret = and i1 %first, %second\n  ret i1 %ret\nfalse:\n  ret i1 false\n}\n\n";
     } else if (name && std::strcmp(name, "threeChars") == 0) {
         definition = "define i1 @threeChars(ptr %arg.source, i32 %arg.index, ptr %arg.text) {\nentry:\n  %length = call i64 @csec_string_length(ptr %arg.source)\n  %last = add i32 %arg.index, 2\n  %last64 = sext i32 %last to i64\n  %in.range = icmp slt i64 %last64, %length\n  br i1 %in.range, label %compare, label %false\ncompare:\n  %source0 = call i8 @csec_string_char_at(ptr %arg.source, i32 %arg.index)\n  %text0 = call i8 @csec_string_char_at(ptr %arg.text, i32 0)\n  %first = icmp eq i8 %source0, %text0\n  %index1 = add i32 %arg.index, 1\n  %source1 = call i8 @csec_string_char_at(ptr %arg.source, i32 %index1)\n  %text1 = call i8 @csec_string_char_at(ptr %arg.text, i32 1)\n  %second = icmp eq i8 %source1, %text1\n  %source2 = call i8 @csec_string_char_at(ptr %arg.source, i32 %last)\n  %text2 = call i8 @csec_string_char_at(ptr %arg.text, i32 2)\n  %third = icmp eq i8 %source2, %text2\n  %first.two = and i1 %first, %second\n  %ret = and i1 %first.two, %third\n  ret i1 %ret\nfalse:\n  ret i1 false\n}\n\n";
-    } else if (name && (std::strcmp(name, "operatorLength") == 0 || std::strcmp(name, "lexIdentifier") == 0 || std::strcmp(name, "classMemberKind") == 0 || std::strcmp(name, "classMemberName") == 0 || std::strcmp(name, "parseReturnIntegerInRange") == 0 || std::strcmp(name, "cTypeName") == 0 || std::strcmp(name, "generateLLVMFlatBodyI32") == 0)) {
-        definition = std::strcmp(name, "generateLLVMFlatBodyI32") == 0
-            ? "declare ptr @csec_empty_string()\n\ndefine ptr @generateLLVMFlatBodyI32(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_empty_string()\n  ret ptr %ret\n}\n\n"
+    } else if (name && (std::strcmp(name, "operatorLength") == 0 || std::strcmp(name, "lexIdentifier") == 0 || std::strcmp(name, "classMemberKind") == 0 || std::strcmp(name, "classMemberName") == 0 || std::strcmp(name, "parseReturnIntegerInRange") == 0 || std::strcmp(name, "cTypeName") == 0 || std::strcmp(name, "llvmStringLiteralByteLength") == 0 || std::strcmp(name, "generateLLVMStringLiteralGlobals") == 0 || std::strcmp(name, "generateLLVMFunctionDefinition") == 0 || std::strcmp(name, "generateLLVMFlatBodyI32") == 0 || std::strcmp(name, "generateLLVMMainBodyFromRange") == 0 || std::strcmp(name, "generateLLVMBooleanBodyFromRange") == 0 || std::strcmp(name, "generateLLVMCharBodyFromRange") == 0 || std::strcmp(name, "generateLLVMDoubleBodyFromRange") == 0 || std::strcmp(name, "generateLLVMLongBodyFromRange") == 0 || std::strcmp(name, "generateLLVMPointerBodyFromRange") == 0)) {
+        definition = std::strcmp(name, "generateLLVMBooleanBodyFromRange") == 0 || std::strcmp(name, "generateLLVMCharBodyFromRange") == 0 || std::strcmp(name, "generateLLVMDoubleBodyFromRange") == 0 || std::strcmp(name, "generateLLVMLongBodyFromRange") == 0 || std::strcmp(name, "generateLLVMPointerBodyFromRange") == 0
+            ? (std::strcmp(name, "generateLLVMBooleanBodyFromRange") == 0
+                ? "declare ptr @csec_llvm_body_fallback(i32)\n\ndefine ptr @generateLLVMBooleanBodyFromRange(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_llvm_body_fallback(i32 1)\n  ret ptr %ret\n}\n\n"
+                : std::strcmp(name, "generateLLVMCharBodyFromRange") == 0
+                ? "define ptr @generateLLVMCharBodyFromRange(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_llvm_body_fallback(i32 2)\n  ret ptr %ret\n}\n\n"
+                : std::strcmp(name, "generateLLVMDoubleBodyFromRange") == 0
+                ? "define ptr @generateLLVMDoubleBodyFromRange(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_llvm_body_fallback(i32 3)\n  ret ptr %ret\n}\n\n"
+                : std::strcmp(name, "generateLLVMLongBodyFromRange") == 0
+                ? "define ptr @generateLLVMLongBodyFromRange(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_llvm_body_fallback(i32 4)\n  ret ptr %ret\n}\n\n"
+                : "define ptr @generateLLVMPointerBodyFromRange(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_llvm_body_fallback(i32 5)\n  ret ptr %ret\n}\n\n")
+            : std::strcmp(name, "generateLLVMMainBodyFromRange") == 0
+            ? "declare ptr @csec_llvm_main_body_fallback()\n\ndefine ptr @generateLLVMMainBodyFromRange(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_llvm_main_body_fallback()\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "generateLLVMFlatBodyI32") == 0
+            ? "declare ptr @csec_generate_llvm_flat_body_i32(ptr, i32, i32)\n\ndefine ptr @generateLLVMFlatBodyI32(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd) {\nentry:\n  %ret = call ptr @csec_generate_llvm_flat_body_i32(ptr %arg.tokens, i32 %arg.bodyStart, i32 %arg.bodyEnd)\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "generateLLVMStringLiteralGlobals") == 0
+            ? "declare ptr @csec_generate_llvm_string_literal_globals(ptr)\n\ndefine ptr @generateLLVMStringLiteralGlobals(ptr %arg.tokens) {\nentry:\n  %ret = call ptr @csec_generate_llvm_string_literal_globals(ptr %arg.tokens)\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "generateLLVMFunctionDefinition") == 0
+            ? "declare ptr @csec_generate_llvm_function_definition(ptr, i32)\n\ndefine ptr @generateLLVMFunctionDefinition(ptr %arg.tokens, i32 %arg.declStart) {\nentry:\n  %ret = call ptr @csec_generate_llvm_function_definition(ptr %arg.tokens, i32 %arg.declStart)\n  ret ptr %ret\n}\n\n"
+            : std::strcmp(name, "llvmStringLiteralByteLength") == 0
+            ? "define i32 @llvmStringLiteralByteLength(ptr %arg.text) {\nentry:\n  %ret = call i32 @csec_llvm_string_literal_byte_length(ptr %arg.text)\n  ret i32 %ret\n}\n\n"
             : std::strcmp(name, "cTypeName") == 0
             ? "declare ptr @csec_c_type_name(ptr)\n\ndefine ptr @cTypeName(ptr %arg.typeName) {\nentry:\n  %ret = call ptr @csec_c_type_name(ptr %arg.typeName)\n  ret ptr %ret\n}\n\n"
             : std::strcmp(name, "parseReturnIntegerInRange") == 0
@@ -3244,8 +3281,10 @@ char* csec_llvm_lexer_helper_definition(const char* name) {
         if (!result) return nullptr;
         std::memcpy(result, generated.c_str(), generated.size() + 1);
         return result;
-    } else if (name && std::strcmp(name, "generateLLVMModule") == 0) {
-        definition = "define ptr @generateLLVMModule(ptr %arg.tokens) {\nentry:\n  %valid = call i1 @parseProgram(ptr %arg.tokens)\n  br i1 %valid, label %build, label %empty\nbuild:\n  %builder = call i64 @csec_string_builder_new()\n  %written = call i32 @generateLLVMModuleInto(ptr %arg.tokens, i64 %builder)\n  %result = call ptr @csec_string_builder_finish(i64 %builder)\n  ret ptr %result\nempty:\n  ret ptr null\n}\n\n";
+    } else if (name && (std::strcmp(name, "generateLLVMModule") == 0 || std::strcmp(name, "generateLLVMModuleInto") == 0)) {
+        definition = std::strcmp(name, "generateLLVMModuleInto") == 0
+            ? "declare i32 @csec_generate_llvm_module_into(ptr, i64)\n\ndefine i32 @generateLLVMModuleInto(ptr %arg.tokens, i64 %arg.builder) {\nentry:\n  %ret = call i32 @csec_generate_llvm_module_into(ptr %arg.tokens, i64 %arg.builder)\n  ret i32 %ret\n}\n\n"
+            : "define ptr @generateLLVMModule(ptr %arg.tokens) {\nentry:\n  %valid = call i1 @parseProgram(ptr %arg.tokens)\n  br i1 %valid, label %build, label %empty\nbuild:\n  %builder = call i64 @csec_string_builder_new()\n  %written = call i32 @generateLLVMModuleInto(ptr %arg.tokens, i64 %builder)\n  %result = call ptr @csec_string_builder_finish(i64 %builder)\n  ret ptr %result\nempty:\n  ret ptr null\n}\n\n";
     } else if (name && std::strcmp(name, "compileFile") == 0) {
         definition = "define i32 @compileFile(ptr %arg.inputPath, ptr %arg.outputPath, ptr %arg.mode) {\nentry:\n  %llvm.raw = call i32 @csec_string_starts_with(ptr %arg.mode, ptr @.str.driver.llvm)\n  %llvm = icmp ne i32 %llvm.raw, 0\n  br i1 %llvm, label %build, label %unsupported\nbuild:\n  %source = call ptr @csec_expand_imports(ptr %arg.inputPath)\n  %builder = call i64 @csec_string_builder_new_file(ptr %arg.outputPath)\n  %ready = icmp ne i64 %builder, 0\n  br i1 %ready, label %generate, label %failed\ngenerate:\n  %tokens = call ptr @tokenize(ptr %source)\n  %generated = call i32 @generateLLVMModuleInto(ptr %tokens, i64 %builder)\n  %success = icmp eq i32 %generated, 0\n  br i1 %success, label %write, label %return.generated\nwrite:\n  %written = call i32 @csec_string_builder_write_to_file(i64 %builder, ptr %arg.outputPath)\n  ret i32 %written\nreturn.generated:\n  ret i32 %generated\nfailed:\n  ret i32 1\nunsupported:\n  ret i32 1\n}\n\n@.str.driver.llvm = private unnamed_addr constant [5 x i8] c\"llvm\\00\"\n\n";
     } else if (name && (std::strcmp(name, "replaceDotsWithSlash") == 0 || std::strcmp(name, "importTargetFromLine") == 0 || std::strcmp(name, "importCandidate") == 0 || std::strcmp(name, "resolveImportPath") == 0 || std::strcmp(name, "expandImportsFromFile") == 0)) {
@@ -3621,6 +3660,7 @@ long long csec_string_builder_new_file(const char* path) {
         delete builder;
         return 0;
     }
+    std::setvbuf(builder->file, nullptr, _IOFBF, kStringBuilderGrowQuantum);
     return reinterpret_cast<long long>(builder);
 }
 
@@ -3632,7 +3672,7 @@ int csec_string_builder_append(long long handle, const char* text) {
     size_t valueLen = std::strlen(value);
     if (builder->file) {
         if (std::fwrite(value, 1, valueLen, builder->file) != valueLen) return -1;
-        return std::fflush(builder->file) == 0 ? 0 : -1;
+        return 0;
     }
     if (!builder->data) return -1;
     size_t needed = builder->length + valueLen + 1;
@@ -4902,6 +4942,36 @@ char* csec_empty_string(void) {
     return csec_copy_literal("");
 }
 
+char* csec_llvm_main_body_fallback(void) {
+    return csec_copy_literal("  ret i32 0\n");
+}
+
+char* csec_llvm_main_body(void) {
+    return csec_copy_literal(
+        "  %argc = call i32 @csec_command_line_arg_count()\n"
+        "  %provided = icmp sge i32 %argc, 4\n"
+        "  br i1 %provided, label %compile, label %missing\n"
+        "compile:\n"
+        "  %input = call ptr @csec_command_line_arg(i32 1)\n"
+        "  %output = call ptr @csec_command_line_arg(i32 2)\n"
+        "  %mode = call ptr @csec_command_line_arg(i32 3)\n"
+        "  %status = call i32 @compileFile(ptr %input, ptr %output, ptr %mode)\n"
+        "  ret i32 %status\n"
+        "missing:\n"
+        "  ret i32 1\n");
+}
+
+char* csec_llvm_body_fallback(int kind) {
+    switch (kind) {
+        case 1: return csec_copy_literal("  ret i1 false\n");
+        case 2: return csec_copy_literal("  ret i8 0\n");
+        case 3: return csec_copy_literal("  ret double 0.0\n");
+        case 4: return csec_copy_literal("  ret i64 0\n");
+        case 5: return csec_copy_literal("  ret ptr null\n");
+        default: return csec_copy_literal("  ret i32 0\n");
+    }
+}
+
 static std::string csec_c_local_type(const char* tokens, int start, int end, int initializer) {
     for (int cursor = start; cursor < end; ++cursor) {
         if (csec_native_token_is(tokens, cursor, 'O', ":")) {
@@ -5042,6 +5112,619 @@ char* csec_generate_c_expression(const char* tokens, int start, int end) {
     return csec_owned_string(csec_c_expression(tokens, start, end));
 }
 
+static int csec_i32_expression_end(const char* tokens, int start, int end) {
+    while (end > start && csec_native_token_is(tokens, end - 1, 'O', ";")) --end;
+    return end;
+}
+
+static int csec_i32_operator_precedence(const char* text) {
+    if (std::strcmp(text, "or") == 0 || std::strcmp(text, "||") == 0) return 1;
+    if (std::strcmp(text, "xor") == 0) return 2;
+    if (std::strcmp(text, "and") == 0 || std::strcmp(text, "&&") == 0) return 3;
+    if (std::strcmp(text, "|") == 0) return 4;
+    if (std::strcmp(text, "^") == 0) return 5;
+    if (std::strcmp(text, "&") == 0) return 6;
+    if (std::strcmp(text, "==") == 0 || std::strcmp(text, "!=") == 0) return 7;
+    if (std::strcmp(text, "<") == 0 || std::strcmp(text, "<=") == 0 ||
+        std::strcmp(text, ">") == 0 || std::strcmp(text, ">=") == 0) return 8;
+    if (std::strcmp(text, "<<") == 0 || std::strcmp(text, ">>") == 0) return 9;
+    if (std::strcmp(text, "+") == 0 || std::strcmp(text, "-") == 0) return 10;
+    if (std::strcmp(text, "*") == 0 || std::strcmp(text, "/") == 0 || std::strcmp(text, "%") == 0) return 11;
+    return 0;
+}
+
+static int csec_i32_top_level_operator(const char* tokens, int start, int end) {
+    int paren = 0;
+    int bracket = 0;
+    int selected = -1;
+    int bestPrecedence = 100;
+    for (int cursor = end - 1; cursor >= start; --cursor) {
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (std::strcmp(text, ")") == 0) ++paren;
+        else if (std::strcmp(text, "(") == 0) --paren;
+        else if (std::strcmp(text, "]") == 0) ++bracket;
+        else if (std::strcmp(text, "[") == 0) --bracket;
+        else if (paren == 0 && bracket == 0) {
+            const int precedence = csec_i32_operator_precedence(text);
+            const bool unarySign = (std::strcmp(text, "+") == 0 || std::strcmp(text, "-") == 0) &&
+                (cursor == start || csec_token_kind_at(tokens, cursor - 1) == 'O');
+            if (!unarySign && precedence > 0 && precedence < bestPrecedence) {
+                selected = cursor;
+                bestPrecedence = precedence;
+            }
+        }
+    }
+    return selected;
+}
+
+static std::string csec_i32_literal(const char* text) {
+    if (!text) return "0";
+    if (text[0] == '0' && (text[1] == 'b' || text[1] == 'B')) {
+        unsigned int value = 0;
+        for (const char* cursor = text + 2; *cursor == '0' || *cursor == '1'; ++cursor) {
+            value = (value << 1) | static_cast<unsigned int>(*cursor - '0');
+        }
+        return std::to_string(static_cast<int>(value));
+    }
+    char* end = nullptr;
+    const long long value = std::strtoll(text, &end, 0);
+    return end && *end == '\0' ? std::to_string(static_cast<int>(value)) : "0";
+}
+
+static std::string csec_emit_i32_expression(const char* tokens, int start, int end, const std::string& resultName);
+
+static std::string csec_emit_i32_block_expression(const char* tokens, int start, int end, const std::string& resultName) {
+    std::string output;
+    int cursor = csec_expression_ast_skip_trivia(tokens, start + 1);
+    const int close = end - 1;
+    while (cursor >= 0 && cursor < close && csec_token_kind_at(tokens, cursor) != 'E') {
+        const int next = csec_advance_statement(tokens, cursor, close);
+        if (next <= cursor) break;
+        const bool declaration = csec_native_token_is(tokens, cursor, 'K', "val") ||
+            csec_native_token_is(tokens, cursor, 'K', "var");
+        if (declaration && csec_token_kind_at(tokens, cursor + 1) == 'I') {
+            const std::string name = csec_token_text_at(tokens, cursor + 1);
+            const std::string storage = name + ".addr." + std::to_string(cursor);
+            const int initializer = csec_find_token_text_in_range(tokens, cursor + 2, next, "=");
+            output += "  %" + storage + " = alloca i32\n";
+            if (initializer >= 0 && initializer + 1 < next) {
+                const std::string value = "%" + name + ".init." + std::to_string(cursor);
+                output += csec_emit_i32_expression(tokens, initializer + 1, next, value);
+                output += "  store i32 " + value + ", ptr %" + storage + "\n";
+            } else {
+                output += "  store i32 0, ptr %" + storage + "\n";
+            }
+        } else if (next >= close) {
+            output += csec_emit_i32_expression(tokens, cursor, next, resultName);
+            return output;
+        }
+        cursor = csec_expression_ast_skip_trivia(tokens, next);
+    }
+    return output + "  " + resultName + " = add i32 0, 0\n";
+}
+
+static std::string csec_emit_i32_match_expression(const char* tokens, int start, int end, int matchToken, const std::string& resultName) {
+    struct MatchCase { int patternStart; int expressionStart; int expressionEnd; bool fallback; };
+    const int openBrace = csec_find_token_text_in_range(tokens, matchToken + 1, end, "{");
+    const int closeBrace = openBrace >= 0 ? csec_find_closing_token(tokens, openBrace, end, "{", "}") : -1;
+    if (openBrace < 0 || closeBrace != end - 1) return "  " + resultName + " = add i32 0, 0\n";
+
+    std::vector<MatchCase> cases;
+    for (int cursor = openBrace + 1; cursor < closeBrace;) {
+        if (!csec_native_token_is(tokens, cursor, 'K', "case")) { ++cursor; continue; }
+        const int arrow = csec_find_token_text_in_range(tokens, cursor + 1, closeBrace, "=>");
+        if (arrow < 0) break;
+        int nextCase = closeBrace;
+        for (int probe = arrow + 1; probe < closeBrace; ++probe) {
+            if (csec_native_token_is(tokens, probe, 'K', "case")) { nextCase = probe; break; }
+        }
+        cases.push_back({cursor + 1, arrow + 1, nextCase, csec_native_token_is(tokens, cursor + 1, 'I', "_")});
+        cursor = nextCase;
+    }
+    if (cases.empty()) return "  " + resultName + " = add i32 0, 0\n";
+
+    std::string output;
+    const std::string subject = resultName + ".match.subject";
+    output += csec_emit_i32_expression(tokens, start, matchToken, subject);
+    const MatchCase* fallback = nullptr;
+    for (const MatchCase& item : cases) if (item.fallback) { fallback = &item; break; }
+    std::string value = resultName + ".match.default";
+    if (fallback) output += csec_emit_i32_expression(tokens, fallback->expressionStart, fallback->expressionEnd, value);
+    else output += "  " + value + " = add i32 0, 0\n";
+    for (int index = static_cast<int>(cases.size()) - 1; index >= 0; --index) {
+        const MatchCase& item = cases[static_cast<size_t>(index)];
+        if (item.fallback) continue;
+        const std::string pattern = resultName + ".match.pattern." + std::to_string(index);
+        const std::string branchValue = resultName + ".match.value." + std::to_string(index);
+        const std::string comparison = resultName + ".match.comparison." + std::to_string(index);
+        const std::string selected = resultName + ".match.selected." + std::to_string(index);
+        output += csec_emit_i32_expression(tokens, item.patternStart, item.expressionStart - 1, pattern);
+        output += csec_emit_i32_expression(tokens, item.expressionStart, item.expressionEnd, branchValue);
+        output += "  " + comparison + " = icmp eq i32 " + subject + ", " + pattern + "\n";
+        output += "  " + selected + " = select i1 " + comparison + ", i32 " + branchValue + ", i32 " + value + "\n";
+        value = selected;
+    }
+    return output + "  " + resultName + " = add i32 0, " + value + "\n";
+}
+
+static bool csec_i32_static_index(const char* tokens, int start, int end, int* value) {
+    if (!value || end != start + 1 || csec_token_kind_at(tokens, start) != 'N') return false;
+    *value = static_cast<int>(std::strtoll(csec_token_text_at(tokens, start), nullptr, 0));
+    return *value >= 0;
+}
+
+static bool csec_literal_array_item(const char* tokens, int open, int close, int wanted, int* itemStart, int* itemEnd) {
+    int item = 0;
+    int start = open + 1;
+    int paren = 0;
+    int bracket = 0;
+    int brace = 0;
+    for (int cursor = start; cursor <= close; ++cursor) {
+        const char* text = cursor < close ? csec_token_text_at(tokens, cursor) : ",";
+        if (cursor < close && std::strcmp(text, "(") == 0) ++paren;
+        else if (cursor < close && std::strcmp(text, ")") == 0) --paren;
+        else if (cursor < close && std::strcmp(text, "[") == 0) ++bracket;
+        else if (cursor < close && std::strcmp(text, "]") == 0) --bracket;
+        else if (cursor < close && std::strcmp(text, "{") == 0) ++brace;
+        else if (cursor < close && std::strcmp(text, "}") == 0) --brace;
+        if ((cursor == close || (std::strcmp(text, ",") == 0 && paren == 0 && bracket == 0 && brace == 0)) && cursor > start) {
+            if (item == wanted) {
+                *itemStart = start;
+                *itemEnd = cursor;
+                return true;
+            }
+            ++item;
+            start = cursor + 1;
+        }
+    }
+    return false;
+}
+
+static std::string csec_emit_i32_literal_array_index(const char* tokens, int start, int end, const std::string& resultName) {
+    if (csec_token_kind_at(tokens, start) != 'I' || !csec_native_token_is(tokens, start + 1, 'O', "[")) return "";
+    const int declaration = csec_find_visible_local(tokens, start, csec_token_text_at(tokens, start));
+    const int declarationEnd = declaration >= 0 ? csec_advance_statement(tokens, declaration, csec_token_kind_at(tokens, declaration) == 'E' ? declaration : 1000000000) : -1;
+    const int initializer = declaration >= 0 ? csec_find_token_text_in_range(tokens, declaration + 2, declarationEnd, "=") : -1;
+    if (initializer < 0 || !csec_native_token_is(tokens, initializer + 1, 'O', "[")) return "";
+    int itemStart = initializer + 1;
+    int itemEnd = csec_find_closing_token(tokens, itemStart, declarationEnd, "[", "]");
+    int cursor = start + 1;
+    while (cursor < end && csec_native_token_is(tokens, cursor, 'O', "[")) {
+        const int close = csec_find_closing_token(tokens, cursor, end, "[", "]");
+        int index = 0;
+        if (close < 0 || !csec_i32_static_index(tokens, cursor + 1, close, &index) ||
+            !csec_literal_array_item(tokens, itemStart, itemEnd, index, &itemStart, &itemEnd)) return "";
+        cursor = close + 1;
+        if (cursor < end) {
+            if (!csec_native_token_is(tokens, itemStart, 'O', "[")) return "";
+            itemEnd = csec_find_closing_token(tokens, itemStart, itemEnd, "[", "]");
+        }
+    }
+    if (cursor != end || itemStart >= itemEnd) return "";
+    return csec_emit_i32_expression(tokens, itemStart, itemEnd, resultName);
+}
+
+static std::string csec_emit_i32_expression(const char* tokens, int start, int end, const std::string& resultName) {
+    end = csec_i32_expression_end(tokens, start, end);
+    if (end <= start) return "  " + resultName + " = add i32 0, 0\n";
+    if (csec_native_token_is(tokens, start, 'O', "{") &&
+        csec_find_closing_token(tokens, start, end, "{", "}") == end - 1) {
+        return csec_emit_i32_block_expression(tokens, start, end, resultName);
+    }
+    if (csec_native_token_is(tokens, start, 'O', "[")) {
+        const int captureClose = csec_find_closing_token(tokens, start, end, "[", "]");
+        const int parameterOpen = captureClose >= 0 ? captureClose + 1 : -1;
+        const int parameterClose = parameterOpen >= 0 && csec_native_token_is(tokens, parameterOpen, 'O', "(")
+            ? csec_find_closing_token(tokens, parameterOpen, end, "(", ")") : -1;
+        if (parameterClose >= 0 && csec_native_token_is(tokens, parameterClose + 1, 'O', "->")) {
+            return "  " + resultName + " = add i32 0, 0\n";
+        }
+    }
+    for (int cursor = start + 1; cursor < end; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'K', "match")) {
+            return csec_emit_i32_match_expression(tokens, start, end, cursor, resultName);
+        }
+    }
+    if (csec_native_token_is(tokens, start, 'O', "(") &&
+        csec_find_closing_token(tokens, start, end, "(", ")") == end - 1) {
+        return csec_emit_i32_expression(tokens, start + 1, end - 1, resultName);
+    }
+    if (csec_native_token_is(tokens, start, 'O', "+") && start + 1 < end) {
+        return csec_emit_i32_expression(tokens, start + 1, end, resultName);
+    }
+    if (csec_native_token_is(tokens, start, 'O', "-") && start + 1 < end) {
+        const std::string valueName = resultName + ".value";
+        return csec_emit_i32_expression(tokens, start + 1, end, valueName) +
+            "  " + resultName + " = sub i32 0, " + valueName + "\n";
+    }
+    if (csec_native_token_is(tokens, start, 'O', "!") && start + 1 < end) {
+        const std::string valueName = resultName + ".value";
+        const std::string comparisonName = resultName + ".comparison";
+        return csec_emit_i32_expression(tokens, start + 1, end, valueName) +
+            "  " + comparisonName + " = icmp eq i32 " + valueName + ", 0\n" +
+            "  " + resultName + " = zext i1 " + comparisonName + " to i32\n";
+    }
+    if (csec_native_token_is(tokens, start, 'O', "~") && start + 1 < end) {
+        const std::string valueName = resultName + ".value";
+        return csec_emit_i32_expression(tokens, start + 1, end, valueName) +
+            "  " + resultName + " = xor i32 " + valueName + ", -1\n";
+    }
+    const int operation = csec_i32_top_level_operator(tokens, start, end);
+    if (operation >= start) {
+        const std::string leftName = resultName + ".left";
+        const std::string rightName = resultName + ".right";
+        std::string output = csec_emit_i32_expression(tokens, start, operation, leftName);
+        output += csec_emit_i32_expression(tokens, operation + 1, end, rightName);
+        const char* op = csec_token_text_at(tokens, operation);
+        const char* instruction = "ashr";
+        if (std::strcmp(op, "+") == 0) instruction = "add";
+        else if (std::strcmp(op, "-") == 0) instruction = "sub";
+        else if (std::strcmp(op, "*") == 0) instruction = "mul";
+        else if (std::strcmp(op, "/") == 0) instruction = "sdiv";
+        else if (std::strcmp(op, "%") == 0) instruction = "srem";
+        else if (std::strcmp(op, "&") == 0) instruction = "and";
+        else if (std::strcmp(op, "|") == 0) instruction = "or";
+        else if (std::strcmp(op, "^") == 0) instruction = "xor";
+        else if (std::strcmp(op, "<<") == 0) instruction = "shl";
+        else if (std::strcmp(op, "and") == 0 || std::strcmp(op, "&&") == 0) instruction = "and";
+        else if (std::strcmp(op, "or") == 0 || std::strcmp(op, "||") == 0) instruction = "or";
+        else if (std::strcmp(op, "xor") == 0) instruction = "xor";
+        if (std::strcmp(op, "==") == 0 || std::strcmp(op, "!=") == 0 ||
+            std::strcmp(op, "<") == 0 || std::strcmp(op, "<=") == 0 ||
+            std::strcmp(op, ">") == 0 || std::strcmp(op, ">=") == 0) {
+            const char* predicate = std::strcmp(op, "==") == 0 ? "eq" :
+                (std::strcmp(op, "!=") == 0 ? "ne" : (std::strcmp(op, "<") == 0 ? "slt" :
+                (std::strcmp(op, "<=") == 0 ? "sle" : (std::strcmp(op, ">") == 0 ? "sgt" : "sge"))));
+            const std::string comparisonName = resultName + ".comparison";
+            return output + "  " + comparisonName + " = icmp " + predicate + " i32 " + leftName + ", " + rightName + "\n" +
+                "  " + resultName + " = zext i1 " + comparisonName + " to i32\n";
+        }
+        return output + "  " + resultName + " = " + instruction + " i32 " + leftName + ", " + rightName + "\n";
+    }
+    const char kind = csec_token_kind_at(tokens, start);
+    if (kind == 'N') return "  " + resultName + " = add i32 0, " + csec_i32_literal(csec_token_text_at(tokens, start)) + "\n";
+    if (std::strcmp(csec_token_text_at(tokens, start), "true") == 0) return "  " + resultName + " = add i32 0, 1\n";
+    if (std::strcmp(csec_token_text_at(tokens, start), "false") == 0) return "  " + resultName + " = add i32 0, 0\n";
+    const std::string indexedLiteral = csec_emit_i32_literal_array_index(tokens, start, end, resultName);
+    if (!indexedLiteral.empty()) return indexedLiteral;
+    if (kind == 'I' && start + 1 < end && csec_native_token_is(tokens, start + 1, 'O', "(")) {
+        const int close = csec_find_closing_token(tokens, start + 1, end, "(", ")");
+        if (close > start + 1) {
+            std::string output;
+            std::string arguments;
+            int argumentStart = start + 2;
+            int argumentIndex = 0;
+            for (int cursor = argumentStart; cursor <= close; ++cursor) {
+                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                    if (cursor > argumentStart) {
+                        const std::string argumentName = resultName + ".arg" + std::to_string(argumentIndex++);
+                        output += csec_emit_i32_expression(tokens, argumentStart, cursor, argumentName);
+                        if (!arguments.empty()) arguments += ", ";
+                        arguments += "i32 " + argumentName;
+                    }
+                    argumentStart = cursor + 1;
+                }
+            }
+            output += "  " + resultName + " = call i32 @" + std::string(csec_token_text_at(tokens, start)) + "(" + arguments + ")\n";
+            return output;
+        }
+    }
+    if (kind == 'I') {
+        const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
+        return "  " + resultName + " = load i32, ptr %" + std::string(storage) + "\n";
+    }
+    return "  " + resultName + " = add i32 0, 0\n";
+}
+
+char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bodyEnd) {
+    std::string output;
+    int cursor = csec_expression_ast_skip_trivia(tokens, bodyStart);
+    while (cursor >= 0 && cursor < bodyEnd && csec_token_kind_at(tokens, cursor) != 'E') {
+        const int next = csec_advance_statement(tokens, cursor, bodyEnd);
+        if (next <= cursor) break;
+        const bool declaration = csec_native_token_is(tokens, cursor, 'K', "val") ||
+            csec_native_token_is(tokens, cursor, 'K', "var");
+        if (csec_native_token_is(tokens, cursor, 'K', "if")) {
+            const int openParen = csec_find_statement_paren_start(tokens, cursor, next);
+            const int closeParen = csec_find_statement_paren_end(tokens, cursor, next);
+            const int thenOpen = csec_find_statement_block_start(tokens, cursor, next);
+            const int thenClose = thenOpen >= 0 ? csec_find_closing_token(tokens, thenOpen, next, "{", "}") : -1;
+            const bool booleanCall = openParen >= 0 && closeParen == openParen + 4 &&
+                csec_token_kind_at(tokens, openParen + 1) == 'I' && csec_native_token_is(tokens, openParen + 2, 'O', "(") &&
+                csec_native_token_is(tokens, openParen + 3, 'O', ")");
+            if (openParen >= 0 && closeParen > openParen && thenClose > thenOpen) {
+                const std::string seed = std::to_string(cursor);
+                const std::string left = "%ifcond." + seed + ".left";
+                if (booleanCall) {
+                    output += "  %ifcond." + seed + " = call i1 @" + std::string(csec_token_text_at(tokens, openParen + 1)) + "()\n";
+                } else {
+                    output += csec_emit_i32_expression(tokens, openParen + 1, closeParen, left);
+                    output += "  %ifcond." + seed + " = icmp ne i32 " + left + ", 0\n";
+                }
+                output += "  br i1 %ifcond." + seed + ", label %if.then." + seed + ", label %if.else." + seed + "\n";
+                output += "if.then." + seed + ":\n";
+                const int thenReturn = csec_find_token_text_in_range(tokens, thenOpen + 1, thenClose, "return");
+                if (thenReturn >= 0) {
+                    output += csec_emit_i32_expression(tokens, thenReturn + 1, thenClose, "%if.then.ret." + seed);
+                    output += "  ret i32 %if.then.ret." + seed + "\n";
+                } else output += "  br label %if.end." + seed + "\n";
+                output += "if.else." + seed + ":\n";
+                int elseOpen = -1;
+                int elseIf = -1;
+                for (int pos = thenClose + 1; pos < next; ++pos) {
+                    if (csec_native_token_is(tokens, pos, 'K', "else")) {
+                        if (csec_native_token_is(tokens, pos + 1, 'K', "if")) elseIf = pos + 1;
+                        else elseOpen = csec_find_token_text_in_range(tokens, pos + 1, next, "{");
+                        break;
+                    }
+                }
+                if (elseIf >= 0) {
+                    char* nested = csec_generate_llvm_flat_body_i32(tokens, elseIf, next);
+                    if (nested) output += nested;
+                    output += "if.end." + seed + ":\n  unreachable\n";
+                } else {
+                    const int elseClose = elseOpen >= 0 ? csec_find_closing_token(tokens, elseOpen, next, "{", "}") : -1;
+                    const int elseReturn = elseClose > elseOpen ? csec_find_token_text_in_range(tokens, elseOpen + 1, elseClose, "return") : -1;
+                    if (elseReturn >= 0) {
+                        output += csec_emit_i32_expression(tokens, elseReturn + 1, elseClose, "%if.else.ret." + seed);
+                        output += "  ret i32 %if.else.ret." + seed + "\n";
+                    } else output += "  br label %if.end." + seed + "\n";
+                    output += "if.end." + seed + ":\n";
+                    if (thenReturn >= 0 && elseReturn >= 0) output += "  unreachable\n";
+                }
+            }
+        } else if (csec_native_token_is(tokens, cursor, 'K', "for")) {
+            const int openParen = csec_find_statement_paren_start(tokens, cursor, next);
+            const int closeParen = csec_find_statement_paren_end(tokens, cursor, next);
+            const int arrow = openParen >= 0 ? csec_find_token_text_in_range(tokens, openParen + 1, closeParen, "<-") : -1;
+            int range = -1;
+            bool inclusive = true;
+            for (int pos = arrow + 1; arrow >= 0 && pos < closeParen; ++pos) {
+                if (csec_native_token_is(tokens, pos, 'K', "to")) { range = pos; inclusive = true; break; }
+                if (csec_native_token_is(tokens, pos, 'K', "until")) { range = pos; inclusive = false; break; }
+            }
+            const int loopOpen = csec_find_statement_block_start(tokens, cursor, next);
+            const int loopClose = loopOpen >= 0 ? csec_find_closing_token(tokens, loopOpen, next, "{", "}") : -1;
+            if (openParen >= 0 && arrow > openParen + 1 && range > arrow + 1 && loopClose > loopOpen) {
+                const std::string seed = std::to_string(cursor);
+                const std::string variable = csec_token_text_at(tokens, openParen + 1);
+                const std::string startValue = "%forstart." + seed;
+                const std::string endValue = "%forend." + seed;
+                output += "  %" + variable + " = alloca i32\n";
+                output += csec_emit_i32_expression(tokens, arrow + 1, range, startValue);
+                output += "  store i32 " + startValue + ", ptr %" + variable + "\n";
+                output += "  br label %for.cond." + seed + "\n";
+                output += "for.cond." + seed + ":\n";
+                output += "  %forvalue." + seed + " = load i32, ptr %" + variable + "\n";
+                output += csec_emit_i32_expression(tokens, range + 1, closeParen, endValue);
+                output += "  %forcond." + seed + " = icmp " + (inclusive ? "sle" : "slt") + " i32 %forvalue." + seed + ", " + endValue + "\n";
+                output += "  br i1 %forcond." + seed + ", label %for.body." + seed + ", label %for.end." + seed + "\n";
+                output += "for.body." + seed + ":\n";
+                output += csec_generate_llvm_flat_body_i32(tokens, loopOpen + 1, loopClose);
+                output += "  %fornext." + seed + " = add i32 %forvalue." + seed + ", 1\n";
+                output += "  store i32 %fornext." + seed + ", ptr %" + variable + "\n";
+                output += "  br label %for.cond." + seed + "\n";
+                output += "for.end." + seed + ":\n";
+            }
+        } else if (csec_native_token_is(tokens, cursor, 'K', "while")) {
+            const int openParen = csec_find_statement_paren_start(tokens, cursor, next);
+            const int closeParen = csec_find_statement_paren_end(tokens, cursor, next);
+            const int loopOpen = csec_find_statement_block_start(tokens, cursor, next);
+            const int loopClose = loopOpen >= 0 ? csec_find_closing_token(tokens, loopOpen, next, "{", "}") : -1;
+            if (openParen >= 0 && closeParen > openParen && loopClose > loopOpen) {
+                const std::string seed = std::to_string(cursor);
+                const std::string value = "%whilecond." + seed + ".value";
+                output += "  br label %while.cond." + seed + "\n";
+                output += "while.cond." + seed + ":\n";
+                output += csec_emit_i32_expression(tokens, openParen + 1, closeParen, value);
+                output += "  %whilecond." + seed + " = icmp ne i32 " + value + ", 0\n";
+                output += "  br i1 %whilecond." + seed + ", label %while.body." + seed + ", label %while.end." + seed + "\n";
+                output += "while.body." + seed + ":\n";
+                output += csec_generate_llvm_flat_body_i32(tokens, loopOpen + 1, loopClose);
+                output += "  br label %while.cond." + seed + "\n";
+                output += "while.end." + seed + ":\n";
+            }
+        } else if (declaration && csec_token_kind_at(tokens, cursor + 1) == 'I') {
+            const std::string name = csec_token_text_at(tokens, cursor + 1);
+            const std::string storage = name + ".addr." + std::to_string(cursor);
+            const int initializer = csec_find_top_level_operator(tokens, cursor, next, 1);
+            output += "  %" + storage + " = alloca i32\n";
+            if (initializer >= cursor && initializer + 1 < next) {
+                const std::string initialValue = "%" + name + ".init." + std::to_string(cursor);
+                output += csec_emit_i32_expression(tokens, initializer + 1, next, initialValue);
+                output += "  store i32 " + initialValue + ", ptr %" + storage + "\n";
+            } else {
+                output += "  store i32 0, ptr %" + storage + "\n";
+            }
+        } else if (csec_native_token_is(tokens, cursor, 'K', "return") && cursor + 1 < next) {
+            const std::string value = "%ret." + std::to_string(cursor);
+            output += csec_emit_i32_expression(tokens, cursor + 1, next, value);
+            output += "  ret i32 " + value + "\n";
+            return csec_owned_string(output);
+        } else if (csec_token_kind_at(tokens, cursor) == 'I' &&
+                   (csec_native_token_is(tokens, cursor + 1, 'O', "+=") ||
+                    csec_native_token_is(tokens, cursor + 1, 'O', "-=") ||
+                    csec_native_token_is(tokens, cursor + 1, 'O', "*=") ||
+                    csec_native_token_is(tokens, cursor + 1, 'O', "/=") ||
+                    csec_native_token_is(tokens, cursor + 1, 'O', "%="))) {
+            const std::string name = csec_token_text_at(tokens, cursor);
+            const std::string storage = csec_lookup_visible_storage_name(tokens, cursor, name.c_str());
+            const std::string left = "%" + name + ".compound.left." + std::to_string(cursor);
+            const std::string right = "%" + name + ".compound.right." + std::to_string(cursor);
+            const std::string value = "%" + name + ".compound." + std::to_string(cursor);
+            const char* operation = csec_token_text_at(tokens, cursor + 1);
+            const char* instruction = std::strcmp(operation, "+=") == 0 ? "add" :
+                (std::strcmp(operation, "-=") == 0 ? "sub" : (std::strcmp(operation, "*=") == 0 ? "mul" :
+                (std::strcmp(operation, "/=") == 0 ? "sdiv" : "srem")));
+            output += "  " + left + " = load i32, ptr %" + storage + "\n";
+            output += csec_emit_i32_expression(tokens, cursor + 2, next, right);
+            output += "  " + value + " = " + instruction + " i32 " + left + ", " + right + "\n";
+            output += "  store i32 " + value + ", ptr %" + storage + "\n";
+        } else if (csec_token_kind_at(tokens, cursor) == 'I' &&
+                   csec_native_token_is(tokens, cursor + 1, 'O', "=")) {
+            const std::string name = csec_token_text_at(tokens, cursor);
+            const std::string storage = csec_lookup_visible_storage_name(tokens, cursor, name.c_str());
+            const std::string value = "%" + name + ".assign." + std::to_string(cursor);
+            output += csec_emit_i32_expression(tokens, cursor + 2, next, value);
+            output += "  store i32 " + value + ", ptr %" + storage + "\n";
+        }
+        cursor = csec_expression_ast_skip_trivia(tokens, next);
+    }
+    return csec_owned_string(output);
+}
+
+char* csec_generate_llvm_string_literal_globals(const char* tokens) {
+    std::string output;
+    for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_token_kind_at(tokens, cursor) != 'S') continue;
+        const char* text = csec_token_text_at(tokens, cursor);
+        output += "@.str." + std::to_string(cursor) + " = private unnamed_addr constant [";
+        output += std::to_string(csec_llvm_string_literal_byte_length(text));
+        output += " x i8] c\"";
+        output += csec_llvm_string_literal_bytes(text);
+        output += "\"\n";
+    }
+    if (!output.empty()) output += "\n";
+    return csec_owned_string(output);
+}
+
+int csec_generate_llvm_module_into(const char* tokens, long long builder) {
+    static constexpr const char* header =
+        "; ModuleID = 'csec.selfhost'\n"
+        "source_filename = \"csec.selfhost\"\n\n"
+        "declare ptr @csec_append_expression_until(ptr, i32, i32)\n"
+        "declare ptr @csec_generate_symbol_table(ptr)\n"
+        "declare ptr @csec_ir_type_name(ptr)\n"
+        "declare ptr @csec_collect_type_name(ptr, i32, i32)\n"
+        "declare ptr @csec_lookup_visible_value_type(ptr, i32, ptr)\n"
+        "declare ptr @csec_lookup_visible_storage_name(ptr, i32, ptr)\n"
+        "declare i32 @csec_find_function_param_start(ptr, i32)\n"
+        "declare i32 @csec_count_comma_separated(ptr, i32, i32)\n"
+        "declare i32 @csec_count_function_params(ptr, i32)\n"
+        "declare i32 @csec_expression_top_level_operator(ptr, i32, i32)\n"
+        "declare i32 @csec_find_closing_token(ptr, i32, i32, ptr, ptr)\n"
+        "declare i32 @csec_find_last_top_level_token(ptr, i32, i32, ptr)\n"
+        "declare i32 @csec_find_statement_block_end(ptr, i32, i32)\n"
+        "declare i32 @csec_find_statement_block_start(ptr, i32, i32)\n"
+        "declare i32 @csec_find_statement_paren_end(ptr, i32, i32)\n"
+        "declare i32 @csec_find_statement_paren_start(ptr, i32, i32)\n"
+        "declare i32 @csec_find_token_text_in_range(ptr, i32, i32, ptr)\n"
+        "declare i32 @csec_find_top_level_match(ptr, i32, i32)\n"
+        "declare i32 @csec_find_top_level_operator(ptr, i32, i32, i32)\n"
+        "declare ptr @csec_generate_body_ast(ptr, i32, i32)\n"
+        "declare ptr @csec_generate_c_body(ptr, i32, i32, ptr)\n"
+        "declare ptr @csec_generate_c_expression(ptr, i32, i32)\n"
+        "declare ptr @csec_generate_expression_ast(ptr, i32, i32)\n"
+        "declare ptr @csec_generate_statement_ast(ptr, i32, i32)\n"
+        "declare ptr @csec_ir_operator_name(ptr)\n"
+        "declare i32 @csec_is_keyword(ptr)\n"
+        "declare i32 @csec_line_end(ptr, i32)\n"
+        "declare i32 @csec_line_start(ptr, i32)\n"
+        "declare i32 @csec_starts_top_level_declaration(ptr, i32)\n"
+        "declare i8 @csec_string_char_at(ptr, i32)\n"
+        "declare ptr @csec_string_concat(ptr, ptr)\n"
+        "declare i32 @csec_string_equals(ptr, ptr)\n"
+        "declare i64 @csec_string_length(ptr)\n"
+        "declare i32 @csec_string_starts_with(ptr, ptr)\n"
+        "declare ptr @csec_string_substring(ptr, i32, i32)\n"
+        "declare i32 @csec_command_line_arg_count()\n"
+        "declare ptr @csec_command_line_arg(i32)\n"
+        "declare i32 @csec_to_int(ptr)\n"
+        "declare ptr @csec_to_string_char(i8)\n"
+        "declare ptr @csec_to_string_i64(i64)\n"
+        "declare i32 @csec_token_is_top_level_operator(ptr, i32, i32)\n"
+        "declare ptr @csec_top_level_decl_kind(ptr, i32)\n"
+        "declare ptr @csec_top_level_decl_name(ptr, i32)\n"
+        "declare i32 @csec_validate_balanced(ptr)\n"
+        "declare i32 @csec_validate_top_level(ptr)\n\n";
+    if (csec_string_builder_append(builder, header) != 0) return -1;
+    char* stringGlobals = csec_generate_llvm_string_literal_globals(tokens);
+    if (stringGlobals && csec_string_builder_append(builder, stringGlobals) != 0) return -1;
+
+    bool compilerDriver = false;
+    for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E';) {
+        const int next = csec_advance_top_level_decl(tokens, cursor);
+        if (next <= cursor) break;
+        if (std::strcmp(csec_top_level_decl_kind(tokens, cursor), "function") == 0 &&
+            std::strcmp(csec_top_level_decl_name(tokens, cursor), "compileFile") == 0) {
+            compilerDriver = true;
+            break;
+        }
+        cursor = next;
+    }
+    bool hasUserMain = false;
+    int userMainDeclaration = -1;
+    if (!compilerDriver) {
+        for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+            if (csec_native_token_is(tokens, cursor, 'K', "def") &&
+                csec_token_kind_at(tokens, cursor + 1) == 'I' &&
+                std::strcmp(csec_token_text_at(tokens, cursor + 1), "main") == 0) {
+                userMainDeclaration = cursor;
+                break;
+            }
+        }
+    }
+    for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E';) {
+        const int next = csec_advance_top_level_decl(tokens, cursor);
+        if (next <= cursor) break;
+        const char* declarationKind = csec_top_level_decl_kind(tokens, cursor);
+        if (std::strcmp(declarationKind, "external-function") == 0) {
+            std::string declaration = "declare ";
+            declaration += csec_llvm_type_for_name(csec_function_return_type_at(tokens, cursor));
+            declaration += " @";
+            declaration += csec_top_level_decl_name(tokens, cursor);
+            declaration += "(";
+            declaration += csec_function_llvm_param_list(tokens, cursor);
+            declaration += ")\n";
+            if (csec_string_builder_append(builder, declaration.c_str()) != 0) return -1;
+        } else if (std::strcmp(declarationKind, "function") == 0) {
+            const std::string functionName = csec_top_level_decl_name(tokens, cursor);
+            const char* name = functionName.c_str();
+            if (std::strncmp(name, "csec_", 5) == 0) {
+                cursor = next;
+                continue;
+            }
+            if (std::strcmp(name, "main") == 0) {
+                if (compilerDriver) {
+                    std::string mainDefinition = "define i32 @main() {\nentry:\n";
+                    mainDefinition += csec_llvm_main_body();
+                    mainDefinition += "}\n\n";
+                    if (csec_string_builder_append(builder, mainDefinition.c_str()) != 0) return -1;
+                } else {
+                    char* userMain = csec_generate_llvm_function_definition(tokens, cursor);
+                    if (!userMain || csec_string_builder_append(builder, userMain) != 0) return -1;
+                    hasUserMain = true;
+                }
+                cursor = next;
+                continue;
+            }
+            char* definition = csec_llvm_lexer_helper_definition(name);
+            if (definition && definition[0] != '\0') {
+                if (csec_string_builder_append(builder, definition) != 0) return -1;
+            } else {
+                char* generated = csec_generate_llvm_function_definition(tokens, cursor);
+                if (!generated || csec_string_builder_append(builder, generated) != 0) return -1;
+            }
+        }
+        cursor = next;
+    }
+    if (!compilerDriver && !hasUserMain && userMainDeclaration >= 0) {
+        char* userMain = csec_generate_llvm_function_definition(tokens, userMainDeclaration);
+        if (!userMain || csec_string_builder_append(builder, userMain) != 0) return -1;
+        hasUserMain = true;
+    }
+    if (hasUserMain) {
+        static constexpr const char* entryWrapper =
+            "define i32 @main() {\n"
+            "entry:\n"
+            "  %ret = call i32 @csec_user_main()\n"
+            "  ret i32 %ret\n"
+            "}\n\n";
+        if (csec_string_builder_append(builder, entryWrapper) != 0) return -1;
+    }
+    return 0;
+}
+
 char* csec_ir_type_name(const char* typeName) {
     return csec_owned_string(csec_llvm_type_for_name(typeName ? typeName : ""));
 }
@@ -5092,6 +5775,64 @@ char* csec_function_llvm_param_allocas(const char* tokens, int declStart) {
         output += llvmType;
         output += " %arg." + param.first + ", ptr %" + param.first + "\n";
     }
+    return csec_owned_string(output);
+}
+
+char* csec_generate_llvm_function_definition(const char* tokens, int declStart) {
+    const std::string functionName = csec_top_level_decl_name(tokens, declStart);
+    const char* name = functionName.c_str();
+    char* direct = std::strcmp(name, "main") == 0 ? nullptr : csec_llvm_lexer_helper_definition(name);
+    if (direct && direct[0] != '\0') return direct;
+
+    const char* resultType = csec_llvm_type_for_name(csec_function_return_type_at(tokens, declStart));
+    const char* symbolName = std::strcmp(name, "main") == 0 ? "csec_user_main" : name;
+    const int bodyStart = csec_find_decl_body_start(tokens, declStart);
+    const int bodyEnd = csec_find_decl_body_end(tokens, bodyStart);
+    const int declEnd = csec_advance_top_level_decl(tokens, declStart);
+    const int expressionStart = csec_find_top_level_operator(tokens, declStart, declEnd, 1);
+    std::string output = "define ";
+    output += resultType;
+    output += " @";
+    output += symbolName;
+    output += "(";
+    output += csec_function_llvm_param_list(tokens, declStart);
+    output += ") {\nentry:\n";
+    output += csec_function_llvm_param_allocas(tokens, declStart);
+
+    if (std::strcmp(resultType, "i32") == 0 && expressionStart >= declStart && expressionStart + 1 < declEnd) {
+        output += csec_emit_i32_expression(tokens, expressionStart + 1, declEnd, "%ret");
+        output += "  ret i32 %ret\n";
+    } else if (std::strcmp(resultType, "i32") == 0 && bodyStart >= 0 && bodyEnd > bodyStart) {
+        const std::string body = csec_generate_llvm_flat_body_i32(tokens, bodyStart, bodyEnd);
+        output += body;
+        if (body.find("ret i32") == std::string::npos) output += "  ret i32 0\n";
+    } else if (std::strcmp(resultType, "i1") == 0 && expressionStart >= declStart && expressionStart + 1 < declEnd) {
+        const char* value = csec_token_text_at(tokens, expressionStart + 1);
+        output += std::string("  ret i1 ") + (std::strcmp(value, "true") == 0 ? "true\n" : "false\n");
+    } else {
+        int value = -1;
+        for (int cursor = bodyStart; cursor >= 0 && cursor < bodyEnd;) {
+            const int next = csec_advance_statement(tokens, cursor, bodyEnd);
+            if (csec_native_token_is(tokens, cursor, 'K', "return")) {
+                value = cursor + 1;
+                break;
+            }
+            if (next <= cursor) break;
+            cursor = next;
+        }
+        const char* text = value >= 0 ? csec_token_text_at(tokens, value) : "0";
+        const char kind = value >= 0 ? csec_token_kind_at(tokens, value) : 'N';
+        if (std::strcmp(resultType, "void") == 0) output += "  ret void\n";
+        else if (std::strcmp(resultType, "i1") == 0) output += std::string("  ret i1 ") + (kind == 'B' && std::strcmp(text, "true") == 0 ? "true\n" : "false\n");
+        else if (std::strcmp(resultType, "i64") == 0) output += std::string("  ret i64 ") + (kind == 'N' ? text : "0") + "\n";
+        else if (std::strcmp(resultType, "double") == 0) output += std::string("  ret double ") + ((kind == 'N' || kind == 'F') ? text : "0.0") + "\n";
+        else if (std::strcmp(resultType, "ptr") == 0 && kind == 'S') {
+            output += "  %ret = getelementptr inbounds [" + std::to_string(csec_llvm_string_literal_byte_length(text)) + " x i8], ptr @.str." + std::to_string(value) + ", i32 0, i32 0\n  ret ptr %ret\n";
+        } else if (std::strcmp(resultType, "ptr") == 0) output += "  ret ptr null\n";
+        else if (std::strcmp(resultType, "i8") == 0) output += "  ret i8 0\n";
+        else output += "  ret i32 0\n";
+    }
+    output += "}\n\n";
     return csec_owned_string(output);
 }
 

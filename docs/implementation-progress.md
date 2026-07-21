@@ -20,15 +20,18 @@
   `055_class_many_methods.csec` exits with `62`.
 - Class methods also initialize and read `Int` fields declared with literal expressions in the
   class body. `053_objects_and_members.csec` executes with exit code `16`.
+- Classes with `Int` fields use a struct-backed pointer receiver in the self-host LLVM path, so
+  mutable field updates persist across calls. `056_class_field_types.csec` executes with exit
+  code `44` after two `increment()` calls.
 
 ## Still Incomplete
 
 - Lambda closures: explicit captures, by-reference captures, and self-host lambda lowering.
 - Arrays beyond the current `Int` flat-storage path: other element types, nested/dynamic shape
   semantics, array parameters/returns, bounds behavior, and general ownership.
-- Mutable class fields, mutation persistence across calls, inheritance, reference semantics,
-  and non-`Int` constructor state in the self-host LLVM emitter. Static object methods,
-  constructor-parameter-backed methods, and literal `Int` fields currently cover the `Int` path.
+- Inheritance, reference semantics, field access syntax, and non-`Int` constructor or field
+  state in the self-host LLVM emitter. `Int` constructor parameters and `Int` literal fields,
+  including mutable fields, currently use the class instance path.
 - Generic/template execution, enum/union/nullable/ownership behavior, rich string/char/float
   interactions, complete match patterns, iterable collection loops, and broad function ABI
   coverage.
@@ -66,4 +69,8 @@
   .\tests\positive\05_oop\053_objects_and_members.csec `
   .\selfhost\class_fields_selfhost_probe.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\class_fields_selfhost_probe.ll
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\05_oop\056_class_field_types.csec `
+  .\selfhost\class_mutable_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\class_mutable_selfhost_probe.ll
 ```

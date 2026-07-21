@@ -5218,6 +5218,33 @@ static std::vector<std::pair<std::string, std::pair<int, int>>> csec_class_i32_f
 }
 }
 
+static int csec_find_class_declaration(const char* tokens, const char* className) {
+    if (!className) return -1;
+    for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'K', "class") &&
+            csec_native_token_is(tokens, cursor + 1, 'I', className)) return cursor;
+    }
+    return -1;
+}
+
+static bool csec_class_uses_pointer_receiver(const char* tokens, int classStart) {
+    return !csec_class_i32_fields(tokens, classStart).empty();
+}
+
+static std::string csec_class_i32_layout(const char* tokens, int classStart) {
+    int count = 0;
+    for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
+        if (std::strcmp(csec_llvm_type_for_name(parameter.second.c_str()), "i32") == 0) ++count;
+    }
+    count += static_cast<int>(csec_class_i32_fields(tokens, classStart).size());
+    std::string layout;
+    for (int index = 0; index < count; ++index) {
+        if (index) layout += ", ";
+        layout += "i32";
+    }
+    return layout;
+}
+
 static std::string csec_class_method_definition(const char* tokens, int classStart, int methodStart) {
     const std::string className = csec_top_level_decl_name(tokens, classStart);
     const std::string methodName = csec_top_level_decl_name(tokens, methodStart);
@@ -5239,9 +5266,24 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
     const size_t paramsStart = open == std::string::npos ? std::string::npos : open + replacement.size();
     const size_t paramsEnd = paramsStart == std::string::npos ? std::string::npos : definition.find(") {\nentry:\n", paramsStart);
     if (paramsEnd == std::string::npos) return definition;
+    const bool pointerReceiver = csec_class_uses_pointer_receiver(tokens, classStart);
     std::string receiverParams;
     std::string receiverAllocas;
-    for (const auto& field : fields) {
+    int fieldIndex = 0;
+    if (pointerReceiver) {
+        receiverParams = "ptr %arg.this";
+        for (const auto& field : fields) {
+            if (std::strcmp(csec_llvm_type_for_name(field.second.c_str()), "i32") != 0) continue;
+            receiverAllocas += "  %" + field.first + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
+        }
+        for (const auto& field : declaredFields) {
+            receiverAllocas += "  %" + field.first + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
+            const size_t suffix = field.first.find(".addr.");
+            if (suffix != std::string::npos) {
+                receiverAllocas += "  %" + field.first.substr(0, suffix) + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex - 1) + "\n";
+            }
+        }
+    } else for (const auto& field : fields) {
         if (std::strcmp(csec_llvm_type_for_name(field.second.c_str()), "i32") != 0) return definition;
         if (!receiverParams.empty()) receiverParams += ", ";
         receiverParams += "i32 %arg.this." + field.first;
@@ -5253,6 +5295,7 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
     const size_t entry = definition.find("entry:\n");
     if (entry != std::string::npos) {
         for (const auto& field : declaredFields) {
+            if (pointerReceiver) continue;
             const std::string value = "%this." + field.first;
             receiverAllocas += "  %" + field.first + " = alloca i32\n";
             receiverAllocas += csec_emit_i32_expression(tokens, field.second.first, field.second.second, value);
@@ -5293,9 +5336,16 @@ static bool csec_emit_i32_instance_call(const char* tokens, int start, int end, 
             }
         }
     };
-    appendArguments(instanceStart + 3, constructorClose);
+    const char* className = csec_token_text_at(tokens, instanceStart + 1);
+    const int classStart = csec_find_class_declaration(tokens, className);
+    if (classStart >= 0 && csec_class_uses_pointer_receiver(tokens, classStart)) {
+        const std::string receiver = resultName + ".this";
+        const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
+        output += "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n";
+        arguments = "ptr " + receiver;
+    } else appendArguments(instanceStart + 3, constructorClose);
     appendArguments(start + 4, callClose);
-    output += "  " + resultName + " = call i32 @" + std::string(csec_token_text_at(tokens, instanceStart + 1)) +
+    output += "  " + resultName + " = call i32 @" + std::string(className) +
         "_" + csec_token_text_at(tokens, start + 2) + "(" + arguments + ")\n";
     return true;
 }
@@ -5792,6 +5842,41 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
             const int initializer = csec_find_top_level_operator(tokens, cursor, next, 1);
             if (csec_is_i32_array_initializer(tokens, initializer, next)) {
                 output += csec_emit_i32_array_local(tokens, cursor, next);
+            } else if (initializer >= cursor && csec_native_token_is(tokens, initializer + 1, 'K', "new") &&
+                       csec_token_kind_at(tokens, initializer + 2) == 'I' && csec_native_token_is(tokens, initializer + 3, 'O', "(")) {
+                const char* className = csec_token_text_at(tokens, initializer + 2);
+                const int classStart = csec_find_class_declaration(tokens, className);
+                const int constructorClose = csec_find_closing_token(tokens, initializer + 3, next, "(", ")");
+                if (classStart >= 0 && constructorClose >= initializer + 3 && csec_class_uses_pointer_receiver(tokens, classStart)) {
+                    const std::string object = name + ".object." + std::to_string(cursor);
+                    output += "  %" + object + " = alloca %class." + std::string(className) + "\n";
+                    output += "  %" + storage + " = alloca ptr\n";
+                    output += "  store ptr %" + object + ", ptr %" + storage + "\n";
+                    int fieldIndex = 0;
+                    int argumentStart = initializer + 4;
+                    for (int position = argumentStart; position <= constructorClose; ++position) {
+                        if (position == constructorClose || csec_native_token_is(tokens, position, 'O', ",")) {
+                            if (position > argumentStart) {
+                                const std::string value = "%" + name + ".ctor." + std::to_string(fieldIndex);
+                                const std::string field = "%" + name + ".field." + std::to_string(fieldIndex);
+                                output += csec_emit_i32_expression(tokens, argumentStart, position, value);
+                                output += "  " + field + " = getelementptr inbounds %class." + std::string(className) + ", ptr %" + object + ", i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
+                                output += "  store i32 " + value + ", ptr " + field + "\n";
+                            }
+                            argumentStart = position + 1;
+                        }
+                    }
+                    for (const auto& field : csec_class_i32_fields(tokens, classStart)) {
+                        const std::string value = "%" + name + ".init." + std::to_string(fieldIndex);
+                        const std::string slot = "%" + name + ".field." + std::to_string(fieldIndex);
+                        output += csec_emit_i32_expression(tokens, field.second.first, field.second.second, value);
+                        output += "  " + slot + " = getelementptr inbounds %class." + std::string(className) + ", ptr %" + object + ", i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
+                        output += "  store i32 " + value + ", ptr " + slot + "\n";
+                    }
+                } else {
+                    output += "  %" + storage + " = alloca i32\n";
+                    output += "  store i32 0, ptr %" + storage + "\n";
+                }
             } else {
                 output += "  %" + storage + " = alloca i32\n";
                 if (initializer >= cursor && initializer + 1 < next) {
@@ -5863,6 +5948,11 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
             const std::string value = "%" + name + ".assign." + std::to_string(cursor);
             output += csec_emit_i32_expression(tokens, cursor + 2, next, value);
             output += "  store i32 " + value + ", ptr %" + storage + "\n";
+        } else if (csec_token_kind_at(tokens, cursor) == 'I' && cursor + 3 < next &&
+                   csec_native_token_is(tokens, cursor + 1, 'O', ".") &&
+                   csec_token_kind_at(tokens, cursor + 2) == 'I' &&
+                   csec_native_token_is(tokens, cursor + 3, 'O', "(")) {
+            output += csec_emit_i32_expression(tokens, cursor, next, "%discard." + std::to_string(cursor));
         }
         cursor = csec_expression_ast_skip_trivia(tokens, next);
     }
@@ -5998,6 +6088,11 @@ int csec_generate_llvm_module_into(const char* tokens, long long builder) {
                 member = nextMember;
             }
         } else if (std::strcmp(declarationKind, "class") == 0) {
+            const std::string className = csec_top_level_decl_name(tokens, cursor);
+            if (csec_class_uses_pointer_receiver(tokens, cursor)) {
+                const std::string layout = csec_class_i32_layout(tokens, cursor);
+                if (layout.empty() || csec_string_builder_append(builder, ("%class." + className + " = type { " + layout + " }\n\n").c_str()) != 0) return -1;
+            }
             const int classBody = csec_find_decl_body_start(tokens, cursor);
             const int classEnd = csec_find_decl_body_end(tokens, classBody);
             // Expression-bodied methods do not always have a statement boundary before the

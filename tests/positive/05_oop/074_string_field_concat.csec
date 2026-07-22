@@ -1,0 +1,9 @@
+class Greeting(text: String) {
+    def loud(): String = text + "!"
+}
+
+def main(): Int {
+    val greeting = new Greeting("hello");
+    val text: String = greeting.loud();
+    return text.length;
+}

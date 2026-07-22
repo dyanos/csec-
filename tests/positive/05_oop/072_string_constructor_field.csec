@@ -1,0 +1,8 @@
+class Label(text: String) {
+    def length(): Int = text.length
+}
+
+def main(): Int {
+    val label = new Label("self-host");
+    return label.length();
+}

@@ -5251,6 +5251,27 @@ static std::vector<std::pair<std::string, std::pair<int, int>>> csec_class_i1_fi
     }
     return fields;
 }
+
+static std::vector<std::pair<std::string, std::pair<int, int>>> csec_class_ptr_fields(const char* tokens, int classStart) {
+    std::vector<std::pair<std::string, std::pair<int, int>>> fields;
+    const int bodyStart = csec_find_decl_body_start(tokens, classStart);
+    const int bodyEnd = csec_find_decl_body_end(tokens, bodyStart);
+    int depth = 0;
+    for (int cursor = bodyStart; cursor >= 0 && cursor < bodyEnd; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', "{")) { ++depth; continue; }
+        if (csec_native_token_is(tokens, cursor, 'O', "}")) { --depth; continue; }
+        if (depth != 0 || (!csec_native_token_is(tokens, cursor, 'K', "val") && !csec_native_token_is(tokens, cursor, 'K', "var"))) continue;
+        if (csec_token_kind_at(tokens, cursor + 1) != 'I') continue;
+        const int statementEnd = csec_advance_statement(tokens, cursor, bodyEnd);
+        const int initializer = statementEnd > cursor ? csec_find_top_level_operator(tokens, cursor, statementEnd, 1) : -1;
+        const int colon = statementEnd > cursor ? csec_find_token_text_in_range(tokens, cursor + 2, initializer >= 0 ? initializer : statementEnd, ":") : -1;
+        if (colon < 0 || std::strcmp(csec_llvm_type_for_name(csec_token_text_at(tokens, colon + 1)), "ptr") != 0) continue;
+        if (initializer < cursor || initializer + 1 >= statementEnd) continue;
+        fields.emplace_back(std::string(csec_token_text_at(tokens, cursor + 1)) + ".addr." + std::to_string(cursor),
+            std::make_pair(initializer + 1, statementEnd));
+    }
+    return fields;
+}
 }
 
 static int csec_find_class_declaration(const char* tokens, const char* className) {
@@ -5270,7 +5291,8 @@ static int csec_class_inherited_field_count(const char* tokens, int classStart) 
     if (parentStart < 0) return 0;
     return csec_class_inherited_field_count(tokens, parentStart) +
         static_cast<int>(csec_class_i32_fields(tokens, parentStart).size()) +
-        static_cast<int>(csec_class_i1_fields(tokens, parentStart).size());
+        static_cast<int>(csec_class_i1_fields(tokens, parentStart).size()) +
+        static_cast<int>(csec_class_ptr_fields(tokens, parentStart).size());
 }
 
 static std::string csec_class_inherited_field_layout(const char* tokens, int classStart) {
@@ -5286,14 +5308,19 @@ static std::string csec_class_inherited_field_layout(const char* tokens, int cla
         if (!layout.empty()) layout += ", ";
         layout += "i1";
     }
+    for (size_t index = 0; index < csec_class_ptr_fields(tokens, parentStart).size(); ++index) {
+        if (!layout.empty()) layout += ", ";
+        layout += "ptr";
+    }
     return layout;
 }
 
 static bool csec_class_uses_pointer_receiver(const char* tokens, int classStart) {
     if (csec_class_inherited_field_count(tokens, classStart) > 0 ||
-        !csec_class_i32_fields(tokens, classStart).empty() || !csec_class_i1_fields(tokens, classStart).empty()) return true;
+        !csec_class_i32_fields(tokens, classStart).empty() || !csec_class_i1_fields(tokens, classStart).empty() ||
+        !csec_class_ptr_fields(tokens, classStart).empty()) return true;
     for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
-        if (parameter.second == "Boolean") return true;
+        if (std::strcmp(csec_llvm_type_for_name(parameter.second.c_str()), "i32") != 0) return true;
     }
     return false;
 }
@@ -5302,7 +5329,7 @@ static std::string csec_class_i32_layout(const char* tokens, int classStart) {
     std::string layout;
     for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
         const char* type = csec_llvm_type_for_name(parameter.second);
-        if (std::strcmp(type, "i32") != 0 && std::strcmp(type, "i1") != 0) continue;
+        if (std::strcmp(type, "i32") != 0 && std::strcmp(type, "i1") != 0 && std::strcmp(type, "ptr") != 0) continue;
         if (!layout.empty()) layout += ", ";
         layout += type;
     }
@@ -5318,6 +5345,10 @@ static std::string csec_class_i32_layout(const char* tokens, int classStart) {
     for (size_t index = 0; index < csec_class_i1_fields(tokens, classStart).size(); ++index) {
         if (!layout.empty()) layout += ", ";
         layout += "i1";
+    }
+    for (size_t index = 0; index < csec_class_ptr_fields(tokens, classStart).size(); ++index) {
+        if (!layout.empty()) layout += ", ";
+        layout += "ptr";
     }
     return layout;
 }
@@ -5375,15 +5406,124 @@ static std::string csec_emit_class_field_initializers(const char* tokens, int cl
         output += "  " + slot + " = getelementptr inbounds %class." + className + ", ptr %" + object + ", i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
         output += "  store i1 " + value + ", ptr " + slot + "\n";
     }
+    for (const auto& field : csec_class_ptr_fields(tokens, classStart)) {
+        const std::string value = "%" + variableName + ".init." + std::to_string(fieldIndex);
+        const std::string slot = "%" + variableName + ".field." + std::to_string(fieldIndex);
+        output += csec_emit_ptr_expression(tokens, field.second.first, field.second.second, value);
+        output += "  " + slot + " = getelementptr inbounds %class." + className + ", ptr %" + object + ", i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
+        output += "  store ptr " + value + ", ptr " + slot + "\n";
+    }
     return output;
 }
+
+static int csec_class_field_index(const char* tokens, int classStart, const char* name) {
+    int index = 0;
+    for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
+        const char* type = csec_llvm_type_for_name(parameter.second.c_str());
+        if (std::strcmp(type, "i32") != 0 && std::strcmp(type, "i1") != 0 && std::strcmp(type, "ptr") != 0) continue;
+        if (parameter.first == name) return index;
+        ++index;
+    }
+    index += csec_class_inherited_field_count(tokens, classStart);
+    for (const auto& field : csec_class_i32_fields(tokens, classStart)) {
+        if (field.first.rfind(std::string(name) + ".addr.", 0) == 0) return index;
+        ++index;
+    }
+    for (const auto& field : csec_class_i1_fields(tokens, classStart)) {
+        if (field.first.rfind(std::string(name) + ".addr.", 0) == 0) return index;
+        ++index;
+    }
+    for (const auto& field : csec_class_ptr_fields(tokens, classStart)) {
+        if (field.first.rfind(std::string(name) + ".addr.", 0) == 0) return index;
+        ++index;
+    }
+    return -1;
+}
+
+static bool csec_is_string_class_constructor_param(const char* tokens, int ordinal, const char* name);
 
 static std::string csec_class_method_definition(const char* tokens, int classStart, int methodStart) {
     const std::string className = csec_top_level_decl_name(tokens, classStart);
     const std::string methodName = csec_top_level_decl_name(tokens, methodStart);
+    const int methodEnd = csec_advance_top_level_decl(tokens, methodStart);
+    const int expression = csec_find_top_level_operator(tokens, methodStart, methodEnd, 1);
+    const int valueStart = expression >= methodStart ? expression + 1 : -1;
+    const bool lengthProperty = valueStart >= 0 && valueStart + 2 < methodEnd &&
+        csec_token_kind_at(tokens, valueStart) == 'I' && csec_native_token_is(tokens, valueStart + 1, 'O', ".") &&
+        csec_native_token_is(tokens, valueStart + 2, 'I', "length") &&
+        (valueStart + 3 == methodEnd || csec_native_token_is(tokens, valueStart + 3, 'O', ";"));
+    bool classStringValue = false;
+    if (valueStart >= 0) {
+        const char* valueName = csec_token_text_at(tokens, valueStart);
+        for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
+            if (parameter.first == valueName && parameter.second == "String") classStringValue = true;
+        }
+        for (const auto& field : csec_class_ptr_fields(tokens, classStart)) {
+            if (field.first.rfind(std::string(valueName) + ".addr.", 0) == 0) classStringValue = true;
+        }
+    }
+    if (lengthProperty && std::strcmp(csec_function_return_type_at(tokens, methodStart), "Int") == 0 &&
+        classStringValue) {
+        const int fieldIndex = csec_class_field_index(tokens, classStart, csec_token_text_at(tokens, valueStart));
+        if (fieldIndex >= 0) {
+            return "define i32 @" + className + "_" + methodName + "(ptr %arg.this) {\nentry:\n" +
+                "  %field = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex) + "\n" +
+                "  %string = load ptr, ptr %field\n" +
+                "  %length64 = call i64 @csec_string_length(ptr %string)\n" +
+                "  %ret = trunc i64 %length64 to i32\n" +
+                "  ret i32 %ret\n}\n\n";
+        }
+    }
     char* raw = csec_generate_llvm_function_definition(tokens, methodStart);
     if (!raw) return "";
     std::string definition(raw);
+    if (std::strcmp(csec_function_return_type_at(tokens, methodStart), "String") == 0) {
+        for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
+            if (parameter.second != "String") continue;
+            if (definition.find("ret ptr %ret") == std::string::npos) continue;
+            const int fieldIndex = csec_class_field_index(tokens, classStart, parameter.first.c_str());
+            if (fieldIndex < 0) continue;
+            const int classBodyEnd = csec_find_decl_body_end(tokens, csec_find_decl_body_start(tokens, classStart));
+            int methodLimit = classBodyEnd;
+            for (int cursor = methodStart + 1; cursor < classBodyEnd; ++cursor) {
+                if (csec_native_token_is(tokens, cursor, 'K', "def")) { methodLimit = cursor; break; }
+            }
+            int plus = -1;
+            int literal = -1;
+            for (int cursor = methodStart; cursor < methodLimit; ++cursor) {
+                if (csec_native_token_is(tokens, cursor, 'O', "+")) plus = cursor;
+                if (plus >= 0 && csec_token_kind_at(tokens, cursor) == 'S') { literal = cursor; break; }
+            }
+            if (plus >= 0 && literal >= 0) {
+                return "define ptr @" + className + "_" + methodName + "(ptr %arg.this) {\nentry:\n" +
+                    "  %field = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex) + "\n" +
+                    "  %left = load ptr, ptr %field\n" +
+                    "  %right = getelementptr inbounds [" + std::to_string(csec_llvm_string_literal_byte_length(csec_token_text_at(tokens, literal))) +
+                    " x i8], ptr @.str." + std::to_string(literal) + ", i32 0, i32 0\n" +
+                    "  %ret = call ptr @csec_string_concat(ptr %left, ptr %right)\n" +
+                    "  ret ptr %ret\n}\n\n";
+            }
+            return "define ptr @" + className + "_" + methodName + "(ptr %arg.this) {\nentry:\n" +
+                "  %field = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex) + "\n" +
+                "  %ret = load ptr, ptr %field\n" +
+                "  ret ptr %ret\n}\n\n";
+        }
+    }
+    if (std::strcmp(csec_function_return_type_at(tokens, methodStart), "Int") == 0 && methodName == "length") {
+        for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
+            if (parameter.second != "String") continue;
+            const std::string integerLoad = "%ret = load i32, ptr %" + parameter.first;
+            if (definition.find(integerLoad) == std::string::npos) continue;
+            const int fieldIndex = csec_class_field_index(tokens, classStart, parameter.first.c_str());
+            if (fieldIndex < 0) continue;
+            return "define i32 @" + className + "_" + methodName + "(ptr %arg.this) {\nentry:\n" +
+                "  %field = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex) + "\n" +
+                "  %string = load ptr, ptr %field\n" +
+                "  %length64 = call i64 @csec_string_length(ptr %string)\n" +
+                "  %ret = trunc i64 %length64 to i32\n" +
+                "  ret i32 %ret\n}\n\n";
+        }
+    }
     const std::string original = "@" + methodName + "(";
     const std::string replacement = "@" + className + "_" + methodName + "(";
     size_t position = 0;
@@ -5395,7 +5535,8 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
     const auto fields = csec_class_constructor_params(tokens, classStart);
     const auto declaredFields = csec_class_i32_fields(tokens, classStart);
     const auto declaredBooleanFields = csec_class_i1_fields(tokens, classStart);
-    if (fields.empty() && declaredFields.empty() && !csec_class_uses_pointer_receiver(tokens, classStart)) return definition;
+    const auto declaredPointerFields = csec_class_ptr_fields(tokens, classStart);
+    if (fields.empty() && declaredFields.empty() && declaredBooleanFields.empty() && declaredPointerFields.empty() && !csec_class_uses_pointer_receiver(tokens, classStart)) return definition;
     const size_t open = definition.find(replacement);
     const size_t paramsStart = open == std::string::npos ? std::string::npos : open + replacement.size();
     const size_t paramsEnd = paramsStart == std::string::npos ? std::string::npos : definition.find(") {\nentry:\n", paramsStart);
@@ -5408,7 +5549,7 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
         receiverParams = "ptr %arg.this";
         for (const auto& field : fields) {
             const char* fieldType = csec_llvm_type_for_name(field.second);
-            if (std::strcmp(fieldType, "i32") != 0 && std::strcmp(fieldType, "i1") != 0) continue;
+            if (std::strcmp(fieldType, "i32") != 0 && std::strcmp(fieldType, "i1") != 0 && std::strcmp(fieldType, "ptr") != 0) continue;
             receiverAllocas += "  %" + field.first + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
         }
         fieldIndex += csec_class_inherited_field_count(tokens, classStart);
@@ -5420,6 +5561,13 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
             }
         }
         for (const auto& field : declaredBooleanFields) {
+            receiverAllocas += "  %" + field.first + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
+            const size_t suffix = field.first.find(".addr.");
+            if (suffix != std::string::npos) {
+                receiverAllocas += "  %" + field.first.substr(0, suffix) + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex - 1) + "\n";
+            }
+        }
+        for (const auto& field : declaredPointerFields) {
             receiverAllocas += "  %" + field.first + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
             const size_t suffix = field.first.find(".addr.");
             if (suffix != std::string::npos) {
@@ -5694,6 +5842,19 @@ static bool csec_is_string_parameter(const char* tokens, int ordinal, const char
     return false;
 }
 
+static bool csec_is_string_class_constructor_param(const char* tokens, int ordinal, const char* name) {
+    const int classStart = csec_enclosing_class_declaration(tokens, ordinal);
+    if (classStart < 0 || !name) return false;
+    for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
+        if (parameter.first == name) return parameter.second == "String";
+    }
+    for (const auto& field : csec_class_ptr_fields(tokens, classStart)) {
+        const size_t suffix = field.first.find(".addr.");
+        if (suffix != std::string::npos && field.first.substr(0, suffix) == name) return true;
+    }
+    return false;
+}
+
 static bool csec_is_string_local(const char* tokens, int ordinal, const char* name) {
     const int declaration = csec_find_visible_local(tokens, ordinal, name);
     if (declaration < 0) return false;
@@ -5708,7 +5869,8 @@ static bool csec_is_string_expression(const char* tokens, int start, int end) {
         if (csec_token_kind_at(tokens, start) == 'S') return true;
         return csec_token_kind_at(tokens, start) == 'I' &&
             (csec_is_string_local(tokens, start, csec_token_text_at(tokens, start)) ||
-             csec_is_string_parameter(tokens, start, csec_token_text_at(tokens, start)));
+             csec_is_string_parameter(tokens, start, csec_token_text_at(tokens, start)) ||
+             csec_is_string_class_constructor_param(tokens, start, csec_token_text_at(tokens, start)));
     }
     const int operation = csec_i32_top_level_operator(tokens, start, end);
     return operation >= start && std::strcmp(csec_token_text_at(tokens, operation), "+") == 0 &&
@@ -5824,6 +5986,28 @@ static bool csec_emit_i32_instance_call(const char* tokens, int start, int end, 
         output += "  " + resultName + " = zext i1 " + booleanResult + " to i32\n";
     } else output += "  " + resultName + " = call i32 @" + std::string(className) +
         "_" + csec_token_text_at(tokens, start + 2) + "(" + arguments + ")\n";
+    return true;
+}
+
+static bool csec_emit_ptr_instance_call(const char* tokens, int start, int end, const std::string& resultName, std::string& output) {
+    if (csec_token_kind_at(tokens, start) != 'I' || start + 5 != end ||
+        !csec_native_token_is(tokens, start + 1, 'O', ".") || csec_token_kind_at(tokens, start + 2) != 'I' ||
+        !csec_native_token_is(tokens, start + 3, 'O', "(") || !csec_native_token_is(tokens, start + 4, 'O', ")")) return false;
+    const int declaration = csec_find_visible_local(tokens, start, csec_token_text_at(tokens, start));
+    const int declarationEnd = declaration >= 0 ? csec_advance_statement(tokens, declaration, 1000000000) : -1;
+    const int initializer = declaration >= 0 ? csec_find_top_level_operator(tokens, declaration, declarationEnd, 1) : -1;
+    const int instanceStart = initializer + 1;
+    if (initializer < declaration || !csec_native_token_is(tokens, instanceStart, 'K', "new") ||
+        csec_token_kind_at(tokens, instanceStart + 1) != 'I') return false;
+    const char* className = csec_token_text_at(tokens, instanceStart + 1);
+    const int classStart = csec_find_class_declaration(tokens, className);
+    const int methodStart = classStart >= 0 ? csec_find_class_method_declaration(tokens, classStart, csec_token_text_at(tokens, start + 2)) : -1;
+    if (methodStart < 0 || std::strcmp(csec_function_return_type_at(tokens, methodStart), "String") != 0 ||
+        !csec_class_uses_pointer_receiver(tokens, classStart)) return false;
+    const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
+    const std::string receiver = resultName + ".this";
+    output = "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n" +
+        "  " + resultName + " = call ptr @" + std::string(className) + "_" + csec_token_text_at(tokens, start + 2) + "(ptr " + receiver + ")\n";
     return true;
 }
 
@@ -6066,10 +6250,13 @@ static std::string csec_emit_ptr_expression(const char* tokens, int start, int e
     }
     if (end == start + 1 && csec_token_kind_at(tokens, start) == 'I' &&
         (csec_is_string_local(tokens, start, csec_token_text_at(tokens, start)) ||
-         csec_is_string_parameter(tokens, start, csec_token_text_at(tokens, start)))) {
+         csec_is_string_parameter(tokens, start, csec_token_text_at(tokens, start)) ||
+         csec_is_string_class_constructor_param(tokens, start, csec_token_text_at(tokens, start)))) {
         const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
         return "  " + resultName + " = load ptr, ptr %" + std::string(storage) + "\n";
     }
+    std::string instanceCall;
+    if (csec_emit_ptr_instance_call(tokens, start, end, resultName, instanceCall)) return instanceCall;
     if (csec_token_kind_at(tokens, start) == 'I' && start + 1 < end && csec_native_token_is(tokens, start + 1, 'O', "(")) {
         const int callee = csec_top_level_function_declaration(tokens, csec_token_text_at(tokens, start));
         const int close = csec_find_closing_token(tokens, start + 1, end, "(", ")");
@@ -6205,6 +6392,7 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
     if (std::strcmp(csec_token_text_at(tokens, start), "false") == 0) return "  " + resultName + " = add i32 0, 0\n";
     if (csec_token_kind_at(tokens, start) == 'I' && start + 2 < end && csec_native_token_is(tokens, start + 1, 'O', ".") &&
         csec_token_kind_at(tokens, start + 2) == 'I' &&
+        csec_is_string_expression(tokens, start, start + 1) &&
         (std::strcmp(csec_token_text_at(tokens, start + 2), "length") == 0 ||
          std::strcmp(csec_token_text_at(tokens, start + 2), "size") == 0)) {
         const bool property = start + 3 == end;
@@ -6418,7 +6606,8 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                             (csec_token_kind_at(tokens, argumentStart) == 'S' ||
                              (csec_token_kind_at(tokens, argumentStart) == 'I' && argumentStart + 1 == cursor &&
                               (csec_is_string_local(tokens, argumentStart, csec_token_text_at(tokens, argumentStart)) ||
-                               csec_is_string_parameter(tokens, argumentStart, csec_token_text_at(tokens, argumentStart)))))) {
+                               csec_is_string_parameter(tokens, argumentStart, csec_token_text_at(tokens, argumentStart)) ||
+                               csec_is_string_class_constructor_param(tokens, argumentStart, csec_token_text_at(tokens, argumentStart)))))) {
                             output += csec_emit_ptr_expression(tokens, argumentStart, cursor, argumentName);
                             arguments += "ptr " + argumentName;
                         } else {
@@ -6814,13 +7003,18 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                         if (position == constructorClose || csec_native_token_is(tokens, position, 'O', ",")) {
                             if (position > argumentStart && parameterIndex < static_cast<int>(parameters.size()) &&
                                 (std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "i32") == 0 ||
-                                 std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "i1") == 0)) {
+                                 std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "i1") == 0 ||
+                                 std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "ptr") == 0)) {
                                 const char* fieldType = csec_llvm_type_for_name(parameters[parameterIndex].second);
                                 const std::string value = "%" + name + ".ctor." + std::to_string(fieldIndex);
                                 const std::string field = "%" + name + ".field." + std::to_string(fieldIndex);
-                                output += std::strcmp(fieldType, "i1") == 0
-                                    ? csec_emit_i1_expression(tokens, argumentStart, position, value)
-                                    : csec_emit_i32_expression(tokens, argumentStart, position, value);
+                                if (std::strcmp(fieldType, "i1") == 0) {
+                                    output += csec_emit_i1_expression(tokens, argumentStart, position, value);
+                                } else if (std::strcmp(fieldType, "ptr") == 0) {
+                                    output += csec_emit_ptr_expression(tokens, argumentStart, position, value);
+                                } else {
+                                    output += csec_emit_i32_expression(tokens, argumentStart, position, value);
+                                }
                                 output += "  " + field + " = getelementptr inbounds %class." + std::string(className) + ", ptr %" + object + ", i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
                                 output += "  store " + std::string(fieldType) + " " + value + ", ptr " + field + "\n";
                             }

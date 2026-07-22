@@ -53,6 +53,14 @@
   `142_string_equality_execution.csec` exits with `42`.
 - String concatenation lowers through `csec_string_concat`, and `String` functions return `ptr`
   values that can initialize String locals. `143_string_concat_and_return.csec` exits with `6`.
+- Class layouts and pointer receivers support `String` constructor parameters and `String` fields.
+  `072_string_constructor_field.csec` stores a String constructor value, invokes an instance
+  method, and exits with `9` after lowering the field read through `ptr` storage.
+- String-valued instance methods return class-backed pointer fields through the pointer ABI.
+  `073_string_field_return.csec` returns a String from an instance method, initializes a String
+  local from that call, and exits with `7`.
+- String instance methods can concatenate a class-backed String field with a literal through
+  `csec_string_concat`. `074_string_field_concat.csec` exits with `6`.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -182,6 +190,24 @@
   .\tests\positive\05_oop\071_inherited_boolean_field.csec `
   .\selfhost\inherited_boolean_selfhost_probe.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\inherited_boolean_selfhost_probe.ll
+
+# Self-host String constructor field and instance method path (intentional return: 9)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\05_oop\072_string_constructor_field.csec `
+  .\selfhost\string_constructor_field_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_constructor_field_selfhost_probe.ll
+
+# Self-host String field return and caller-local initialization path (intentional return: 7)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\05_oop\073_string_field_return.csec `
+  .\selfhost\string_field_return_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_field_return_selfhost_probe.ll
+
+# Self-host String field concatenation in an instance method (intentional return: 6)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\05_oop\074_string_field_concat.csec `
+  .\selfhost\string_field_concat_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_field_concat_probe.ll
 
 # Self-host by-reference lambda capture path (intentional return: 12)
 .\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `

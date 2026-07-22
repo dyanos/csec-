@@ -1,0 +1,9 @@
+class Message(text: String) {
+    def value(): String = text
+}
+
+def main(): Int {
+    val message = new Message("runtime");
+    val text: String = message.value();
+    return text.length;
+}

@@ -1,0 +1,13 @@
+def invoke(f: (Int) => Int, x: Int): Int {
+    return f(x);
+}
+
+def main(): Int {
+    var total = 10;
+    val addToTotal = [&](x) -> {
+        total = total + x;
+        return total;
+    };
+    invoke(addToTotal, 1);
+    return invoke(addToTotal, 1);
+}

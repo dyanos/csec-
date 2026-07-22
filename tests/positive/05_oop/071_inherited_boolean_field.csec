@@ -1,0 +1,21 @@
+class Base() {
+    var enabled: Boolean = true;
+
+    def isEnabled(): Boolean {
+        return enabled;
+    }
+}
+
+class Child() extends Base {
+    def inheritedEnabled(): Boolean {
+        return super.isEnabled();
+    }
+}
+
+def main(): Int {
+    val value = new Child();
+    if (value.inheritedEnabled()) {
+        return 42;
+    }
+    return 0;
+}

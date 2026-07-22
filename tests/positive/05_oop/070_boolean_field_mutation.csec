@@ -1,0 +1,21 @@
+class Switch() {
+    var enabled: Boolean = false;
+
+    def enable(): Boolean {
+        enabled = true;
+        return enabled;
+    }
+
+    def isEnabled(): Boolean {
+        return enabled;
+    }
+}
+
+def main(): Int {
+    val value = new Switch();
+    value.enable();
+    if (value.isEnabled()) {
+        return 42;
+    }
+    return 0;
+}

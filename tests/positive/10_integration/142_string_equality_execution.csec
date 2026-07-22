@@ -1,0 +1,11 @@
+def isHello(text: String): Boolean {
+    return text == "hello";
+}
+
+def main(): Int {
+    val text = "hello";
+    if (isHello(text) and text != "world") {
+        return 42;
+    }
+    return 0;
+}

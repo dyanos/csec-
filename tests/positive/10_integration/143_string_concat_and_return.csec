@@ -1,0 +1,8 @@
+def join(left: String, right: String): String {
+    return left + right;
+}
+
+def main(): Int {
+    val combined: String = join("hello", "!");
+    return combined.length;
+}

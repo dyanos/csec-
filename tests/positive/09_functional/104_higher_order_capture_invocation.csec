@@ -1,0 +1,11 @@
+def apply(f: (Int) => Int, x: Int): Int {
+    return f(x);
+}
+
+def main(): Int {
+    val offset = 1;
+    val addOffset = [=](x) -> {
+        return x + offset;
+    };
+    return apply(addOffset, 41);
+}

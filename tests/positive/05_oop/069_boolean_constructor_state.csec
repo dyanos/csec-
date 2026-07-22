@@ -1,0 +1,13 @@
+class Gate(enabled: Boolean) {
+    def isOpen(): Boolean {
+        return enabled;
+    }
+}
+
+def main(): Int {
+    val gate = new Gate(true);
+    if (gate.isOpen()) {
+        return 42;
+    }
+    return 0;
+}

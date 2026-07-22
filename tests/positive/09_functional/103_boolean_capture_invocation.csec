@@ -1,0 +1,10 @@
+def main(): Int {
+    val threshold = 40;
+    val isAbove = [=](x) -> {
+        return x > threshold;
+    };
+    if (isAbove(42)) {
+        return 42;
+    }
+    return 0;
+}

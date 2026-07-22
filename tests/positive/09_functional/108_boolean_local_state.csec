@@ -1,0 +1,14 @@
+def invert(value: Boolean): Boolean {
+    var local: Boolean = value;
+    local = !local;
+    return local;
+}
+
+def main(): Int {
+    var flag: Boolean = false;
+    flag = invert(flag);
+    if (flag) {
+        return 42;
+    }
+    return 0;
+}

@@ -1,0 +1,10 @@
+def negate(value: Boolean): Boolean {
+    return !value;
+}
+
+def main(): Int {
+    if (negate(false)) {
+        return 42;
+    }
+    return 0;
+}

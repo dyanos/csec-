@@ -1,0 +1,8 @@
+def count(text: String): Int {
+    return text.length;
+}
+
+def main(): Int {
+    val text = "hello";
+    return count(text) + text.size();
+}

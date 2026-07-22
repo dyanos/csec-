@@ -1,0 +1,14 @@
+def applyPred(f: (Int) => Boolean, x: Int): Boolean {
+    return f(x);
+}
+
+def main(): Int {
+    val threshold = 40;
+    val isAbove = [=](x) -> {
+        return x > threshold;
+    };
+    if (applyPred(isAbove, 42)) {
+        return 42;
+    }
+    return 0;
+}

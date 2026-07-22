@@ -1,0 +1,8 @@
+def pairSum(values: Vector[Int]): Int {
+    return values[0] + values[1];
+}
+
+def main(): Int {
+    val values = [19, 23, 99];
+    return pairSum(values);
+}

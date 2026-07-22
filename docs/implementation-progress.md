@@ -9,6 +9,9 @@
 - Dynamic `Int` arrays support `new Int[size]`, runtime indexing, element reads, writes, and
   compound assignments. The native compiler and self-host LLVM path both execute
   `tests/positive/04_collections/050_dynamic_array_indexing.csec` with exit code `45`.
+- `Vector[Int]` parameters now use the pointer ABI at call sites, and indexed reads inside the
+  callee use the same flat `Int` array storage. `057_vector_parameter_indexing.csec` exits with
+  `42` through the self-host LLVM path.
 - Non-capturing `Int -> Int` lambdas lower to hidden LLVM functions in both native and self-host
   compilation. The regression fixture `tests/positive/09_functional/095_lambda_invocation.csec`
   exits with `42` on both paths.
@@ -24,6 +27,32 @@
 - Binary `Int, Int -> Int` function-type parameters correctly preserve nested parameter commas,
   lower to function pointers, and invoke them indirectly. `100_higher_order_binary_lambda_invocation.csec`
   exits with `42`.
+- Higher-order calls compose unary lambda values without losing the nested indirect-call result.
+  `101_higher_order_compose_invocation.csec` exits with `41`.
+- `Boolean`-returning lambda functions and function-type parameters now retain their `i1` ABI
+  through hidden lambda definitions, direct higher-order calls, and indirect calls. The result is
+  widened only when an `Int` control-flow path needs it. `102_higher_order_boolean_lambda_invocation.csec`
+  exits with `42`.
+- Explicit by-value captures also work for directly invoked `Boolean` lambdas.
+  `103_boolean_capture_invocation.csec` exits with `42`.
+- Lambda values now use a `{ code, environment }` closure ABI. It preserves captured `Int`
+  values through higher-order calls for both `Int` and `Boolean` function signatures.
+  `104_higher_order_capture_invocation.csec` and
+  `105_higher_order_boolean_capture_invocation.csec` both exit with `42`.
+- By-reference captures use pointer fields in that same closure environment, preserving mutation
+  across higher-order calls. `106_higher_order_by_reference_capture_invocation.csec` exits with
+  `12`.
+- Ordinary `Boolean` parameters and return values preserve the LLVM `i1` ABI through direct
+  calls and control-flow conditions. `107_boolean_parameter_and_return.csec` exits with `42`.
+- Local `Boolean` declarations and assignments now use `i1` storage in both `Int` and
+  `Boolean` function bodies. `108_boolean_local_state.csec` exits with `42`.
+- String locals and parameters use pointer storage in the self-host LLVM path. `length` and
+  `size()` lower through `csec_string_length`; `141_string_length_execution.csec` exits with
+  `10`.
+- String `==` and `!=` lower through `csec_string_equals` for literals, locals, and parameters.
+  `142_string_equality_execution.csec` exits with `42`.
+- String concatenation lowers through `csec_string_concat`, and `String` functions return `ptr`
+  values that can initialize String locals. `143_string_concat_and_return.csec` exits with `6`.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -43,11 +72,18 @@
   declared parent class. `064_this_and_super_paths.csec` executes with exit code `1`.
 - Static objects support literal `Int` fields and expression-bodied methods. Together with mixed
   String/Int constructor classes, `059_class_object_mix.csec` executes with exit code `8113`.
+- Struct-backed class receivers now support `Boolean` constructor state and `Boolean` instance
+  method returns with `i1` slots and calls. `069_boolean_constructor_state.csec` exits with `42`.
+- Direct class-body `Boolean` fields support literal initialization, assignment in a Boolean
+  method body, and persistent reads across calls. `070_boolean_field_mutation.csec` exits with
+  `42`.
+- Child class layouts carry inherited `Boolean` field slots, and `super` calls preserve their
+  `i1` result ABI. `071_inherited_boolean_field.csec` exits with `42`.
 
 ## Still Incomplete
 
-- Lambda closures: non-`Int` signatures, broader higher-order ABI coverage, and closure
-  environment ownership.
+- Lambda closures: non-`Int` signatures beyond the verified `Boolean` return ABI, broader
+  higher-order ABI coverage, and closure environment ownership.
 - Arrays beyond the current `Int` flat-storage path: other element types, nested/dynamic shape
   semantics, array parameters/returns, bounds behavior, and general ownership.
 - Reference semantics beyond the current stack-backed instance path, general field access syntax,
@@ -70,6 +106,12 @@
   .\tests\positive\04_collections\050_dynamic_array_indexing.csec `
   .\selfhost\dynamic_array_selfhost.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\dynamic_array_selfhost.ll
+
+# Self-host Vector[Int] parameter and indexed-read path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\04_collections\057_vector_parameter_indexing.csec `
+  .\selfhost\vector_parameter_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\vector_parameter_selfhost_probe.ll
 
 # Self-host static object method path (the program intentionally returns 85)
 .\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
@@ -123,6 +165,24 @@
   .\selfhost\inheritance_mutable_selfhost_probe.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\inheritance_mutable_selfhost_probe.ll
 
+# Self-host Boolean class constructor and instance method path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\05_oop\069_boolean_constructor_state.csec `
+  .\selfhost\boolean_class_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\boolean_class_selfhost_probe.ll
+
+# Self-host mutable Boolean class field path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\05_oop\070_boolean_field_mutation.csec `
+  .\selfhost\boolean_field_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\boolean_field_selfhost_probe.ll
+
+# Self-host inherited Boolean field and super-call path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\05_oop\071_inherited_boolean_field.csec `
+  .\selfhost\inherited_boolean_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\inherited_boolean_selfhost_probe.ll
+
 # Self-host by-reference lambda capture path (intentional return: 12)
 .\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
   .\tests\positive\09_functional\098_lambda_by_reference_invocation.csec `
@@ -140,4 +200,68 @@
   .\tests\positive\09_functional\100_higher_order_binary_lambda_invocation.csec `
   .\selfhost\higher_order_binary_selfhost_probe.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\higher_order_binary_selfhost_probe.ll
+
+# Self-host composed higher-order lambda path (intentional return: 41)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\09_functional\101_higher_order_compose_invocation.csec `
+  .\selfhost\higher_order_compose_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\higher_order_compose_selfhost_probe.ll
+
+# Self-host Boolean higher-order lambda path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\09_functional\102_higher_order_boolean_lambda_invocation.csec `
+  .\selfhost\higher_order_boolean_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\higher_order_boolean_selfhost_probe.ll
+
+# Self-host direct Boolean capture lambda path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\09_functional\103_boolean_capture_invocation.csec `
+  .\selfhost\boolean_capture_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\boolean_capture_selfhost_probe.ll
+
+# Self-host captured closure higher-order paths (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\09_functional\104_higher_order_capture_invocation.csec `
+  .\selfhost\closure_int_hof_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\closure_int_hof_probe.ll
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\09_functional\105_higher_order_boolean_capture_invocation.csec `
+  .\selfhost\closure_bool_hof_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\closure_bool_hof_probe.ll
+
+# Self-host by-reference closure higher-order path (intentional return: 12)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\09_functional\106_higher_order_by_reference_capture_invocation.csec `
+  .\selfhost\closure_byref_hof_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\closure_byref_hof_probe.ll
+
+# Self-host Boolean parameter and return ABI path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\09_functional\107_boolean_parameter_and_return.csec `
+  .\selfhost\boolean_param_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\boolean_param_selfhost_probe.ll
+
+# Self-host Boolean local declaration and assignment path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\09_functional\108_boolean_local_state.csec `
+  .\selfhost\boolean_local_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\boolean_local_selfhost_probe.ll
+
+# Self-host String local, parameter, length and size path (intentional return: 10)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\141_string_length_execution.csec `
+  .\selfhost\string_length_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_length_selfhost_probe.ll
+
+# Self-host String equality and inequality path (intentional return: 42)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\142_string_equality_execution.csec `
+  .\selfhost\string_equality_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_equality_selfhost_probe.ll
+
+# Self-host String concatenation and return-value path (intentional return: 6)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\143_string_concat_and_return.csec `
+  .\selfhost\string_concat_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_concat_selfhost_probe.ll
 ```

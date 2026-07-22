@@ -1,0 +1,13 @@
+def applyPred(f: (Int) => Boolean, x: Int): Boolean {
+    return f(x);
+}
+
+def main(): Int {
+    val isEven = [=](x) -> {
+        return x % 2 == 0;
+    };
+    if (applyPred(isEven, 42)) {
+        return 42;
+    }
+    return 0;
+}

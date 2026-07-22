@@ -1,0 +1,9 @@
+def main(): Int {
+    var total = 10;
+    val addToTotal = [&](x) -> {
+        total = total + x;
+        return total;
+    };
+    addToTotal(1);
+    return addToTotal(1);
+}

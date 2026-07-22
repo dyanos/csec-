@@ -1,0 +1,10 @@
+def applyBinary(f: (Int, Int) => Int, a: Int, b: Int): Int {
+    return f(a, b);
+}
+
+def main(): Int {
+    val add = [=](x, y) -> {
+        return x + y;
+    };
+    return applyBinary(add, 20, 22);
+}

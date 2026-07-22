@@ -1,0 +1,13 @@
+def compose(f: (Int) => Int, g: (Int) => Int, x: Int): Int {
+    return f(g(x));
+}
+
+def main(): Int {
+    val addOne = [=](x) -> {
+        return x + 1;
+    };
+    val double = [=](x) -> {
+        return x * 2;
+    };
+    return compose(addOne, double, 20);
+}

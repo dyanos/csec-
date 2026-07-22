@@ -1,0 +1,7 @@
+def main(): Int {
+    val offset = 10;
+    val addOffset = [=](x) -> {
+        return x + offset;
+    };
+    return addOffset(32);
+}

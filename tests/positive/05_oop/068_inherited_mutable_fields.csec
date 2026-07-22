@@ -1,0 +1,20 @@
+class Base(value: Int) {
+    var count: Int = 1;
+
+    def current(): Int {
+        return value + count;
+    }
+}
+
+class Child(value: Int) extends Base {
+    var bonus: Int = 2;
+
+    def inherited(): Int {
+        return super.current() + bonus;
+    }
+}
+
+def main(): Int {
+    val child = new Child(10);
+    return child.inherited();
+}

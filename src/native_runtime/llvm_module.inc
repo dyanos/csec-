@@ -20,6 +20,12 @@ static std::string csec_emit_typed_return(const char* tokens, int start, int end
     if (std::strcmp(resultType, "i1") == 0) {
         return csec_emit_i1_expression(tokens, start, end, value) + "  ret i1 " + value + "\n";
     }
+    if (std::strcmp(resultType, "double") == 0) {
+        return csec_emit_f64_expression(tokens, start, end, value) + "  ret double " + value + "\n";
+    }
+    if (std::strcmp(resultType, "float") == 0) {
+        return csec_emit_f32_expression(tokens, start, end, value) + "  ret float " + value + "\n";
+    }
     return csec_emit_i32_expression(tokens, start, end, value) + "  ret i32 " + value + "\n";
 }
 
@@ -405,162 +411,11 @@ static std::string csec_generate_llvm_flat_body_i1(const char* tokens, int bodyS
 }
 
 static std::string csec_generate_llvm_flat_body_float(const char* tokens, int bodyStart, int bodyEnd) {
-    std::string output;
-    for (int cursor = csec_expression_ast_skip_trivia(tokens, bodyStart); cursor >= 0 && cursor < bodyEnd;) {
-        const int next = csec_advance_statement(tokens, cursor, bodyEnd);
-        if (next <= cursor) break;
-        if (csec_native_token_is(tokens, cursor, 'K', "if")) {
-            const int openParen = csec_find_statement_paren_start(tokens, cursor, next);
-            const int closeParen = csec_find_statement_paren_end(tokens, cursor, next);
-            const int thenOpen = csec_find_statement_block_start(tokens, cursor, next);
-            const int thenClose = thenOpen >= 0 ? csec_find_closing_token(tokens, thenOpen, next, "{", "}") : -1;
-            if (openParen >= 0 && closeParen > openParen && thenClose > thenOpen) {
-                const std::string seed = std::to_string(cursor);
-                const std::string condition = "%float.if." + seed;
-                output += csec_emit_i1_expression(tokens, openParen + 1, closeParen, condition);
-                output += "  br i1 " + condition + ", label %float.if.then." + seed + ", label %float.if.else." + seed + "\n";
-                output += "float.if.then." + seed + ":\n";
-                const std::string thenBody = csec_generate_llvm_flat_body_float(tokens, thenOpen + 1, thenClose);
-                output += thenBody;
-                const bool thenReturns = thenBody.find("ret float") != std::string::npos;
-                if (!thenReturns) output += "  br label %float.if.end." + seed + "\n";
-                output += "float.if.else." + seed + ":\n";
-                int elseOpen = -1;
-                for (int pos = thenClose + 1; pos < next; ++pos) {
-                    if (csec_native_token_is(tokens, pos, 'K', "else")) {
-                        elseOpen = csec_find_token_text_in_range(tokens, pos + 1, next, "{");
-                        break;
-                    }
-                }
-                const int elseClose = elseOpen >= 0 ? csec_find_closing_token(tokens, elseOpen, next, "{", "}") : -1;
-                const std::string elseBody = elseClose > elseOpen
-                    ? csec_generate_llvm_flat_body_float(tokens, elseOpen + 1, elseClose) : "";
-                output += elseBody;
-                const bool elseReturns = elseBody.find("ret float") != std::string::npos;
-                if (!elseReturns) output += "  br label %float.if.end." + seed + "\n";
-                if (!thenReturns || !elseReturns) output += "float.if.end." + seed + ":\n";
-            }
-        } else if (csec_native_token_is(tokens, cursor, 'K', "while")) {
-            const int openParen = csec_find_statement_paren_start(tokens, cursor, next);
-            const int closeParen = csec_find_statement_paren_end(tokens, cursor, next);
-            const int loopOpen = csec_find_statement_block_start(tokens, cursor, next);
-            const int loopClose = loopOpen >= 0 ? csec_find_closing_token(tokens, loopOpen, next, "{", "}") : -1;
-            if (openParen >= 0 && closeParen > openParen && loopClose > loopOpen) {
-                const std::string seed = std::to_string(cursor);
-                output += "  br label %float.while.cond." + seed + "\n";
-                output += "float.while.cond." + seed + ":\n";
-                output += csec_emit_i1_expression(tokens, openParen + 1, closeParen, "%float.while." + seed);
-                output += "  br i1 %float.while." + seed + ", label %float.while.body." + seed + ", label %float.while.end." + seed + "\n";
-                output += "float.while.body." + seed + ":\n";
-                const std::string loopBody = csec_generate_llvm_flat_body_float(tokens, loopOpen + 1, loopClose);
-                output += loopBody;
-                if (loopBody.find("ret float") == std::string::npos) output += "  br label %float.while.cond." + seed + "\n";
-                output += "float.while.end." + seed + ":\n";
-            }
-        } else if (csec_native_token_is(tokens, cursor, 'K', "return") && cursor + 1 < next) {
-            const std::string value = "%ret." + std::to_string(cursor);
-            output += csec_emit_f32_expression(tokens, cursor + 1, next, value);
-            output += "  ret float " + value + "\n";
-            return output;
-        }
-        if ((csec_native_token_is(tokens, cursor, 'K', "val") || csec_native_token_is(tokens, cursor, 'K', "var")) &&
-            csec_token_kind_at(tokens, cursor + 1) == 'I') {
-            const std::string name = csec_token_text_at(tokens, cursor + 1);
-            const std::string storage = name + ".addr." + std::to_string(cursor);
-            const int initializer = csec_find_top_level_operator(tokens, cursor, next, 1);
-            if (csec_c_local_type(tokens, cursor, next, initializer) == "Float") {
-                output += "  %" + storage + " = alloca float\n";
-                if (initializer >= cursor && initializer + 1 < next) {
-                    const std::string value = "%" + name + ".init." + std::to_string(cursor);
-                    output += csec_emit_f32_expression(tokens, initializer + 1, next, value);
-                    output += "  store float " + value + ", ptr %" + storage + "\n";
-                } else output += "  store float 0.000000e+00, ptr %" + storage + "\n";
-            }
-        } else if (csec_token_kind_at(tokens, cursor) == 'I' && csec_native_token_is(tokens, cursor + 1, 'O', "=")) {
-            const std::string name = csec_token_text_at(tokens, cursor);
-            const std::string storage = csec_lookup_visible_storage_name(tokens, cursor, name.c_str());
-            const std::string value = "%" + name + ".assign." + std::to_string(cursor);
-            output += csec_emit_f32_expression(tokens, cursor + 2, next, value);
-            output += "  store float " + value + ", ptr %" + storage + "\n";
-        }
-        cursor = csec_expression_ast_skip_trivia(tokens, next);
-    }
-    return output;
+    return csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "float");
 }
 
 static std::string csec_generate_llvm_flat_body_double(const char* tokens, int bodyStart, int bodyEnd) {
-    std::string output;
-    for (int cursor = csec_expression_ast_skip_trivia(tokens, bodyStart); cursor >= 0 && cursor < bodyEnd;) {
-        const int next = csec_advance_statement(tokens, cursor, bodyEnd);
-        if (next <= cursor) break;
-        if (csec_native_token_is(tokens, cursor, 'K', "if")) {
-            const int open = csec_find_statement_paren_start(tokens, cursor, next);
-            const int close = csec_find_statement_paren_end(tokens, cursor, next);
-            const int thenOpen = csec_find_statement_block_start(tokens, cursor, next);
-            const int thenClose = thenOpen >= 0 ? csec_find_closing_token(tokens, thenOpen, next, "{", "}") : -1;
-            if (open >= 0 && close > open && thenClose > thenOpen) {
-                const std::string seed = std::to_string(cursor);
-                output += csec_emit_i1_expression(tokens, open + 1, close, "%double.if." + seed);
-                output += "  br i1 %double.if." + seed + ", label %double.if.then." + seed + ", label %double.if.else." + seed + "\n";
-                output += "double.if.then." + seed + ":\n";
-                const std::string thenBody = csec_generate_llvm_flat_body_double(tokens, thenOpen + 1, thenClose);
-                output += thenBody;
-                const bool thenReturns = thenBody.find("ret double") != std::string::npos;
-                if (!thenReturns) output += "  br label %double.if.end." + seed + "\n";
-                output += "double.if.else." + seed + ":\n";
-                int elseOpen = -1;
-                for (int pos = thenClose + 1; pos < next; ++pos) if (csec_native_token_is(tokens, pos, 'K', "else")) { elseOpen = csec_find_token_text_in_range(tokens, pos + 1, next, "{"); break; }
-                const int elseClose = elseOpen >= 0 ? csec_find_closing_token(tokens, elseOpen, next, "{", "}") : -1;
-                const std::string elseBody = elseClose > elseOpen ? csec_generate_llvm_flat_body_double(tokens, elseOpen + 1, elseClose) : "";
-                output += elseBody;
-                const bool elseReturns = elseBody.find("ret double") != std::string::npos;
-                if (!elseReturns) output += "  br label %double.if.end." + seed + "\n";
-                if (!thenReturns || !elseReturns) output += "double.if.end." + seed + ":\n";
-            }
-        } else if (csec_native_token_is(tokens, cursor, 'K', "while")) {
-            const int open = csec_find_statement_paren_start(tokens, cursor, next);
-            const int close = csec_find_statement_paren_end(tokens, cursor, next);
-            const int loopOpen = csec_find_statement_block_start(tokens, cursor, next);
-            const int loopClose = loopOpen >= 0 ? csec_find_closing_token(tokens, loopOpen, next, "{", "}") : -1;
-            if (open >= 0 && close > open && loopClose > loopOpen) {
-                const std::string seed = std::to_string(cursor);
-                output += "  br label %double.while.cond." + seed + "\n";
-                output += "double.while.cond." + seed + ":\n";
-                output += csec_emit_i1_expression(tokens, open + 1, close, "%double.while." + seed);
-                output += "  br i1 %double.while." + seed + ", label %double.while.body." + seed + ", label %double.while.end." + seed + "\n";
-                output += "double.while.body." + seed + ":\n";
-                const std::string loopBody = csec_generate_llvm_flat_body_double(tokens, loopOpen + 1, loopClose);
-                output += loopBody;
-                if (loopBody.find("ret double") == std::string::npos) output += "  br label %double.while.cond." + seed + "\n";
-                output += "double.while.end." + seed + ":\n";
-            }
-        } else if (csec_native_token_is(tokens, cursor, 'K', "return") && cursor + 1 < next) {
-            const std::string value = "%ret." + std::to_string(cursor);
-            output += csec_emit_f64_expression(tokens, cursor + 1, next, value);
-            output += "  ret double " + value + "\n";
-            return output;
-        } else if ((csec_native_token_is(tokens, cursor, 'K', "val") || csec_native_token_is(tokens, cursor, 'K', "var")) && csec_token_kind_at(tokens, cursor + 1) == 'I') {
-            const std::string name = csec_token_text_at(tokens, cursor + 1);
-            const std::string storage = name + ".addr." + std::to_string(cursor);
-            const int initializer = csec_find_top_level_operator(tokens, cursor, next, 1);
-            if (csec_c_local_type(tokens, cursor, next, initializer) == "Double") {
-                output += "  %" + storage + " = alloca double\n";
-                if (initializer >= cursor && initializer + 1 < next) {
-                    const std::string value = "%" + name + ".init." + std::to_string(cursor);
-                    output += csec_emit_f64_expression(tokens, initializer + 1, next, value);
-                    output += "  store double " + value + ", ptr %" + storage + "\n";
-                } else output += "  store double 0.000000e+00, ptr %" + storage + "\n";
-            }
-        } else if (csec_token_kind_at(tokens, cursor) == 'I' && csec_native_token_is(tokens, cursor + 1, 'O', "=")) {
-            const std::string name = csec_token_text_at(tokens, cursor);
-            const std::string storage = csec_lookup_visible_storage_name(tokens, cursor, name.c_str());
-            const std::string value = "%" + name + ".assign." + std::to_string(cursor);
-            output += csec_emit_f64_expression(tokens, cursor + 2, next, value);
-            output += "  store double " + value + ", ptr %" + storage + "\n";
-        }
-        cursor = csec_expression_ast_skip_trivia(tokens, next);
-    }
-    return output;
+    return csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "double");
 }
 
 char* csec_generate_llvm_string_literal_globals(const char* tokens) {

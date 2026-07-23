@@ -1,0 +1,32 @@
+def scaled(count: Int): Float {
+    var total: Float = 0.0;
+    var cursor: Int = 0;
+    val label: String = "step";
+    while (cursor < count) {
+        total = total + 1.5;
+        cursor = cursor + 1;
+    }
+    if (label.length == 4) {
+        return total;
+    }
+    return 0.0;
+}
+
+def scaledDouble(count: Int): Double {
+    var total: Double = 0.0;
+    var cursor: Int = 0;
+    while (cursor < count) {
+        total = total + 2.5;
+        cursor = cursor + 1;
+    }
+    return total;
+}
+
+def main(): Int {
+    val a: Float = scaled(4);
+    val b: Double = scaledDouble(4);
+    if (a > 5.9 and a < 6.1 and b > 9.9 and b < 10.1) {
+        return 0;
+    }
+    return 1;
+}

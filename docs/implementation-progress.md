@@ -163,8 +163,14 @@
   their declared types instead of being allocated as `i1`. `174_string_body_control_flow.csec`
   exits with `0` on both paths.
 - Statement lowering is shared across result types through `csec_generate_llvm_flat_body_typed`;
-  only the `return` path differs per type. Nested `if`/`else if` chains now chain their `if.end`
-  blocks together instead of emitting empty or unreachable blocks.
+  only the `return` path differs per type. The `i32`, `i1`, `ptr`, `float`, and `double`
+  generators all delegate to it, so every result type gets the same local-type dispatch, arrays,
+  loops, and discarded calls. Nested `if`/`else if` chains now chain their `if.end` blocks
+  together instead of emitting empty or unreachable blocks.
+- `Float`- and `Double`-returning bodies keep the declared type of every local. They previously
+  allocated only their own result type, so an `Int` or `String` local in a `Float` body was
+  dropped and later references pointed at an alloca that was never emitted.
+  `175_float_body_control_flow.csec` exits with `0` on both paths.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -241,6 +247,10 @@ steps.
   .\tests\positive\10_integration\174_string_body_control_flow.csec `
   .\selfhost\string_body_selfhost_probe.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\string_body_selfhost_probe.ll
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\175_float_body_control_flow.csec `
+  .\selfhost\float_body_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\float_body_selfhost_probe.ll
 
 # Self-host bootstrap fixed point: regenerating the compiler must reproduce stage 6 exactly
 .\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `

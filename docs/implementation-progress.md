@@ -2,7 +2,10 @@
 
 ## Verified
 
-- The self-host compiler reaches an LLVM fixed point (stage 5 and stage 6 are byte-identical).
+- The checked-in `nativeflow_stage5_current.ll` and `nativeflow_stage6_current.ll` are
+  byte-identical, so the compiler reached an LLVM fixed point when those artifacts were
+  produced. That fixed point no longer reproduces against the current native runtime — see
+  "Self-Host Bootstrap Status" below.
 - Integer expressions, comparisons, boolean operations, calls, control flow, range loops,
   literal arrays with static indexing, imports, and common return paths execute through the
   self-host LLVM path.
@@ -135,6 +138,24 @@
 - `Byte` now preserves its direct compiler `i8` ABI through self-host function parameters and
   returns, local storage, arithmetic, calls, and comparisons. The direct and self-host LLVM paths
   both execute `167_byte_execution.csec` with exit code `0`.
+- `Long` arrays and `Vector[Long]` now use stack-backed LLVM `i64` element storage for
+  `new Long[n]` (also `Natural` and `Integer`), indexed assignment, indexed reads, parameter
+  calls, comparisons, and forwarding an array pointer through a function return. `Long`-returning
+  block bodies lower their `return` expression instead of falling back to a literal. The direct
+  compiler and self-host LLVM paths both execute `171_long_array_execution.csec` and
+  `173_long_vector_return_execution.csec` with exit code `0`.
+- Call arguments split on commas that sit outside every nested group, so a nested call such as
+  `addPair(addPair(1, 2), addPair(3, 4))` no longer splices the inner arguments into the outer
+  call. The same depth-aware split applies to array literals, array dimension lists, and
+  constructor argument lists. `172_nested_call_execution.csec` exits with `0` on both paths.
+- Integer literal arrays without a type annotation stay `Int` arrays; they were previously given
+  `i16` element storage and read back as `i32`. `Vector[Short]`, `Vector[Long]`,
+  `Vector[Natural]`, and `Vector[Integer]` annotations select the narrower or wider element
+  storage for a literal initializer. This restores `057_vector_parameter_indexing.csec` (`42`)
+  and `154_vector_return_execution.csec` (`0`).
+- `String` arguments passed to `Boolean`-returning functions keep the pointer ABI at the call
+  site instead of being truncated to `i32`. This restores `142_string_equality_execution.csec`
+  (`42`), which previously faulted.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -162,13 +183,31 @@
 - Child class layouts carry inherited `Boolean` field slots, and `super` calls preserve their
   `i1` result ABI. `071_inherited_boolean_field.csec` exits with `42`.
 
+## Self-Host Bootstrap Status
+
+Recompiling `selfhost/csec_compiler.csec` with `nativeflow_stage5_current.ll` no longer
+reproduces `nativeflow_stage6_current.ll`; the native runtime has moved ahead of those
+checked-in artifacts. The regenerated stage-6 module is not yet loadable, and the current
+blocker is `generateLLVMVoidBodyFromRange` (`selfhost/csec_compiler.csec:4610`):
+
+- `String`-returning functions with a multi-statement body only lower their first `return`
+  expression. Local declarations, loops, and branches before that `return` are dropped, so the
+  emitted module references allocas that were never written (`use of undefined value
+  '%builder.addr.…'`).
+- `runtime_services.inc` has flat-body generators for `i32`, `i1`, `float`, and `double`
+  result types, but none for `ptr`. Adding `csec_generate_llvm_flat_body_ptr` is the next step;
+  further blockers may follow behind it.
+
 ## Still Incomplete
 
+- `String`-returning function bodies beyond a single `return` expression, and with them the
+  self-host bootstrap fixed point (see above).
 - Lambda closures: non-`Int` signatures beyond the verified `Boolean` return ABI, broader
   higher-order ABI coverage, and closure environment ownership.
-- Arrays beyond the current `Int`/`Boolean`/`Float`/`Double`/`String` flat-storage path: other element types,
-  nested/dynamic shape semantics, newly-created array returns, bounds behavior, and general
-  ownership.
+- Arrays beyond the current `Int`/`Boolean`/`Byte`/`Char`/`Short`/`Long`/`Float`/`Double`/`String`
+  flat-storage path: other element types, nested/dynamic shape semantics, newly-created array
+  returns, bounds behavior, and general ownership.
+- Unannotated float literal arrays default to `Float` storage rather than `Double`.
 - Reference semantics beyond the current stack-backed instance path, general field access syntax,
   and non-`Int` constructor or field state in the self-host LLVM emitter. `Int` inheritance,
   including struct-backed parent fields and `super` dispatch, is supported.
@@ -178,7 +217,25 @@
 
 ## Validation Commands
 
+The native runtime (`System.Native.dll`) must be rebuilt and copied next to `csec++.exe` after
+any change under `src/native_runtime/`; `build_runtime.bat` at the repository root does both
+steps.
+
 ```powershell
+# Self-host Long array, Vector[Long] forwarding, and nested call paths (intentional return: 0)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\171_long_array_execution.csec `
+  .\selfhost\long_array_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\long_array_selfhost_probe.ll
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\173_long_vector_return_execution.csec `
+  .\selfhost\long_vector_return_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\long_vector_return_selfhost_probe.ll
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\172_nested_call_execution.csec `
+  .\selfhost\nested_call_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nested_call_selfhost_probe.ll
+
 # Native dynamic array path
 .\x64\Debug\csec++.exe --emit-ir -o .\selfhost\dynamic_array_check.ll `
   .\tests\positive\04_collections\050_dynamic_array_indexing.csec

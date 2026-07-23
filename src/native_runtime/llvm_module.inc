@@ -153,6 +153,8 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                 output += csec_emit_i8_array_local(tokens, cursor, next);
             } else if (csec_is_i16_array_initializer(tokens, initializer, next)) {
                 output += csec_emit_i16_array_local(tokens, cursor, next);
+            } else if (csec_is_i64_array_initializer(tokens, initializer, next)) {
+                output += csec_emit_i64_array_local(tokens, cursor, next);
             } else if (csec_is_f32_array_initializer(tokens, initializer, next)) {
                 output += csec_emit_f32_array_local(tokens, cursor, next);
             } else if (csec_is_f64_array_initializer(tokens, initializer, next)) {
@@ -176,7 +178,7 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                     const auto parameters = csec_class_constructor_params(tokens, classStart);
                     int argumentStart = initializer + 4;
                     for (int position = argumentStart; position <= constructorClose; ++position) {
-                        if (position == constructorClose || csec_native_token_is(tokens, position, 'O', ",")) {
+                        if (position == constructorClose || csec_is_argument_separator(tokens, constructorClose, position)) {
                             if (position > argumentStart && parameterIndex < static_cast<int>(parameters.size()) &&
                                 (std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "i32") == 0 ||
                                  std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "i1") == 0 ||
@@ -269,12 +271,13 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
             const bool booleanArray = csec_visible_i1_array(tokens, cursor, csec_token_text_at(tokens, cursor));
             const bool charArray = csec_visible_i8_array(tokens, cursor, csec_token_text_at(tokens, cursor));
             const bool shortArray = csec_visible_i16_array(tokens, cursor, csec_token_text_at(tokens, cursor));
+            const bool longArray = csec_visible_i64_array(tokens, cursor, csec_token_text_at(tokens, cursor));
             const bool floatArray = csec_visible_f32_array(tokens, cursor, csec_token_text_at(tokens, cursor));
             const bool doubleArray = csec_visible_f64_array(tokens, cursor, csec_token_text_at(tokens, cursor));
             const bool pointerArray = csec_visible_ptr_array(tokens, cursor, csec_token_text_at(tokens, cursor));
             if (close > cursor + 1 && (std::strcmp(assignment, "=") == 0 || compound) &&
-                (csec_visible_i32_array(tokens, cursor, csec_token_text_at(tokens, cursor)) || booleanArray || charArray || shortArray || floatArray || doubleArray || pointerArray) &&
-                (!booleanArray || !compound) && (!charArray || !compound) && (!shortArray || !compound) && (!floatArray || !compound) && (!doubleArray || !compound) && (!pointerArray || !compound)) {
+                (csec_visible_i32_array(tokens, cursor, csec_token_text_at(tokens, cursor)) || booleanArray || charArray || shortArray || longArray || floatArray || doubleArray || pointerArray) &&
+                (!booleanArray || !compound) && (!charArray || !compound) && (!shortArray || !compound) && (!longArray || !compound) && (!floatArray || !compound) && (!doubleArray || !compound) && (!pointerArray || !compound)) {
                 const std::string name = csec_token_text_at(tokens, cursor);
                 const std::string storage = csec_lookup_visible_storage_name(tokens, cursor, name.c_str());
                 const std::string seed = std::to_string(cursor);
@@ -284,14 +287,15 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                 const std::string rhs = "%" + name + ".rhs." + seed;
                 output += csec_emit_i32_expression(tokens, cursor + 2, close, index);
                 output += "  " + data + " = load ptr, ptr %" + storage + "\n";
-                output += "  " + element + " = getelementptr inbounds " + std::string(booleanArray ? "i1" : (charArray ? "i8" : (shortArray ? "i16" : (floatArray ? "float" : (doubleArray ? "double" : (pointerArray ? "ptr" : "i32")))))) + ", ptr " + data + ", i32 " + index + "\n";
+                output += "  " + element + " = getelementptr inbounds " + std::string(booleanArray ? "i1" : (charArray ? "i8" : (shortArray ? "i16" : (longArray ? "i64" : (floatArray ? "float" : (doubleArray ? "double" : (pointerArray ? "ptr" : "i32"))))))) + ", ptr " + data + ", i32 " + index + "\n";
                 output += booleanArray ? csec_emit_i1_expression(tokens, close + 2, next, rhs)
                     : (charArray ? csec_emit_i8_expression(tokens, close + 2, next, rhs)
                     : (shortArray ? csec_emit_i16_expression(tokens, close + 2, next, rhs)
+                    : (longArray ? csec_emit_i64_expression(tokens, close + 2, next, rhs)
                     : (floatArray ? csec_emit_f32_expression(tokens, close + 2, next, rhs)
                     : (doubleArray ? csec_emit_f64_expression(tokens, close + 2, next, rhs)
                     : (pointerArray ? csec_emit_ptr_expression(tokens, close + 2, next, rhs)
-                                    : csec_emit_i32_expression(tokens, close + 2, next, rhs))))));
+                                    : csec_emit_i32_expression(tokens, close + 2, next, rhs)))))));
                 if (compound) {
                     const std::string old = "%" + name + ".old." + seed;
                     const std::string value = "%" + name + ".next." + seed;
@@ -301,7 +305,7 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                     output += "  " + old + " = load i32, ptr " + element + "\n";
                     output += "  " + value + " = " + instruction + " i32 " + old + ", " + rhs + "\n";
                     output += "  store i32 " + value + ", ptr " + element + "\n";
-                } else output += std::string("  store ") + (booleanArray ? "i1 " : (charArray ? "i8 " : (shortArray ? "i16 " : (floatArray ? "float " : (doubleArray ? "double " : (pointerArray ? "ptr " : "i32 ")))))) + rhs + ", ptr " + element + "\n";
+                } else output += std::string("  store ") + (booleanArray ? "i1 " : (charArray ? "i8 " : (shortArray ? "i16 " : (longArray ? "i64 " : (floatArray ? "float " : (doubleArray ? "double " : (pointerArray ? "ptr " : "i32 "))))))) + rhs + ", ptr " + element + "\n";
             }
         } else if (csec_token_kind_at(tokens, cursor) == 'I' &&
                    (csec_native_token_is(tokens, cursor + 1, 'O', "+=") ||

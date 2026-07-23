@@ -186,6 +186,17 @@ static bool csec_visible_i8_array(const char* tokens, int limit, const char* nam
         type == "Vector[Char]" || type == "Array[Char]" || type == "Vector[Byte]" || type == "Array[Byte]";
 }
 
+// An integer literal array is only a Short array when the declaration says so; without an
+// annotation `val values = [19, 23]` stays an Int array.
+static bool csec_declared_vector_element_is(const char* tokens, int initializer, const char* elementName) {
+    return initializer >= 4 &&
+        csec_native_token_is(tokens, initializer - 1, 'O', "]") &&
+        csec_native_token_is(tokens, initializer - 2, 'I', elementName) &&
+        csec_native_token_is(tokens, initializer - 3, 'O', "[") &&
+        (csec_native_token_is(tokens, initializer - 4, 'I', "Vector") ||
+         csec_native_token_is(tokens, initializer - 4, 'I', "Array"));
+}
+
 static bool csec_is_i16_array_initializer(const char* tokens, int initializer, int end) {
     if (initializer < 0 || initializer + 1 >= end) return false;
     if (csec_native_token_is(tokens, initializer + 1, 'K', "new")) {
@@ -193,7 +204,8 @@ static bool csec_is_i16_array_initializer(const char* tokens, int initializer, i
             csec_native_token_is(tokens, initializer + 3, 'O', "[");
     }
     return csec_native_token_is(tokens, initializer + 1, 'O', "[") && initializer + 2 < end &&
-        csec_token_kind_at(tokens, initializer + 2) == 'N';
+        csec_token_kind_at(tokens, initializer + 2) == 'N' &&
+        csec_declared_vector_element_is(tokens, initializer, "Short");
 }
 
 static bool csec_visible_i16_array(const char* tokens, int limit, const char* name) {
@@ -203,6 +215,33 @@ static bool csec_visible_i16_array(const char* tokens, int limit, const char* na
     const int initializer = csec_find_token_text_in_range(tokens, declaration + 2, declarationEnd, "=");
     const std::string type = csec_c_local_type(tokens, declaration, declarationEnd, initializer);
     return csec_is_i16_array_initializer(tokens, initializer, declarationEnd) || type == "Vector[Short]" || type == "Array[Short]";
+}
+
+static bool csec_is_i64_array_initializer(const char* tokens, int initializer, int end) {
+    if (initializer < 0 || initializer + 1 >= end) return false;
+    if (csec_native_token_is(tokens, initializer + 1, 'K', "new")) {
+        return (csec_native_token_is(tokens, initializer + 2, 'I', "Long") ||
+                csec_native_token_is(tokens, initializer + 2, 'I', "Natural") ||
+                csec_native_token_is(tokens, initializer + 2, 'I', "Integer")) &&
+            csec_native_token_is(tokens, initializer + 3, 'O', "[");
+    }
+    return csec_native_token_is(tokens, initializer + 1, 'O', "[") && initializer + 2 < end &&
+        csec_token_kind_at(tokens, initializer + 2) == 'N' &&
+        (csec_declared_vector_element_is(tokens, initializer, "Long") ||
+         csec_declared_vector_element_is(tokens, initializer, "Natural") ||
+         csec_declared_vector_element_is(tokens, initializer, "Integer"));
+}
+
+static bool csec_visible_i64_array(const char* tokens, int limit, const char* name) {
+    const int declaration = csec_find_visible_local(tokens, limit, name);
+    if (declaration < 0) return csec_is_i64_array_parameter(tokens, limit, name);
+    const int declarationEnd = csec_advance_statement(tokens, declaration, 1000000000);
+    const int initializer = csec_find_token_text_in_range(tokens, declaration + 2, declarationEnd, "=");
+    const std::string type = csec_c_local_type(tokens, declaration, declarationEnd, initializer);
+    return csec_is_i64_array_initializer(tokens, initializer, declarationEnd) ||
+        type == "Vector[Long]" || type == "Array[Long]" ||
+        type == "Vector[Natural]" || type == "Array[Natural]" ||
+        type == "Vector[Integer]" || type == "Array[Integer]";
 }
 
 static bool csec_is_f32_array_initializer(const char* tokens, int initializer, int end) {
@@ -326,6 +365,22 @@ static std::string csec_emit_i16_array_index(const char* tokens, int start, int 
         "  " + resultName + " = load i16, ptr " + element + "\n";
 }
 
+static std::string csec_emit_i64_array_index(const char* tokens, int start, int end, const std::string& resultName) {
+    if (csec_token_kind_at(tokens, start) != 'I' || !csec_native_token_is(tokens, start + 1, 'O', "[") ||
+        !csec_visible_i64_array(tokens, start, csec_token_text_at(tokens, start))) return "";
+    const int close = csec_find_closing_token(tokens, start + 1, end, "[", "]");
+    if (close < 0 || close + 1 != end) return "";
+    const std::string name = csec_token_text_at(tokens, start);
+    const std::string storage = csec_lookup_visible_storage_name(tokens, start, name.c_str());
+    const std::string index = resultName + ".index";
+    const std::string data = resultName + ".data";
+    const std::string element = resultName + ".element";
+    return csec_emit_i32_expression(tokens, start + 2, close, index) +
+        "  " + data + " = load ptr, ptr %" + storage + "\n" +
+        "  " + element + " = getelementptr inbounds i64, ptr " + data + ", i32 " + index + "\n" +
+        "  " + resultName + " = load i64, ptr " + element + "\n";
+}
+
 static std::string csec_emit_f32_array_index(const char* tokens, int start, int end, const std::string& resultName) {
     if (csec_token_kind_at(tokens, start) != 'I' || !csec_native_token_is(tokens, start + 1, 'O', "[") ||
         !csec_visible_f32_array(tokens, start, csec_token_text_at(tokens, start))) return "";
@@ -391,7 +446,7 @@ static std::string csec_emit_i32_array_local(const char* tokens, int declaration
     int itemStart = open + 1;
     int itemIndex = 0;
     for (int cursor = itemStart; cursor <= close; ++cursor) {
-        if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
             if (cursor > itemStart) {
                 const std::string value = "%" + name + ".size." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
                 if (allocated) {
@@ -417,7 +472,7 @@ static std::string csec_emit_i32_array_local(const char* tokens, int declaration
         itemStart = open + 1;
         itemIndex = 0;
         for (int cursor = itemStart; cursor <= close; ++cursor) {
-            if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > itemStart) {
                     const std::string value = "%" + name + ".item." + std::to_string(declaration) + "." + std::to_string(itemIndex);
                     const std::string element = "%" + name + ".element." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
@@ -449,7 +504,7 @@ static std::string csec_emit_i1_array_local(const char* tokens, int declaration,
     int itemStart = open + 1;
     int itemIndex = 0;
     for (int cursor = itemStart; cursor <= close; ++cursor) {
-        if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
             if (cursor > itemStart && allocated) {
                 const std::string value = "%" + name + ".size." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
                 output += csec_emit_i32_expression(tokens, itemStart, cursor, value);
@@ -473,7 +528,7 @@ static std::string csec_emit_i1_array_local(const char* tokens, int declaration,
         itemStart = open + 1;
         itemIndex = 0;
         for (int cursor = itemStart; cursor <= close; ++cursor) {
-            if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > itemStart) {
                     const std::string value = "%" + name + ".item." + std::to_string(declaration) + "." + std::to_string(itemIndex);
                     const std::string element = "%" + name + ".element." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
@@ -505,7 +560,7 @@ static std::string csec_emit_i8_array_local(const char* tokens, int declaration,
     int itemStart = open + 1;
     int itemIndex = 0;
     for (int cursor = itemStart; cursor <= close; ++cursor) {
-        if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
             if (cursor > itemStart && allocated) {
                 const std::string value = "%" + name + ".size." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
                 output += csec_emit_i32_expression(tokens, itemStart, cursor, value);
@@ -529,7 +584,7 @@ static std::string csec_emit_i8_array_local(const char* tokens, int declaration,
         itemStart = open + 1;
         itemIndex = 0;
         for (int cursor = itemStart; cursor <= close; ++cursor) {
-            if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > itemStart) {
                     const std::string value = "%" + name + ".item." + std::to_string(declaration) + "." + std::to_string(itemIndex);
                     const std::string element = "%" + name + ".element." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
@@ -561,7 +616,7 @@ static std::string csec_emit_i16_array_local(const char* tokens, int declaration
     int itemStart = open + 1;
     int itemIndex = 0;
     for (int cursor = itemStart; cursor <= close; ++cursor) {
-        if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
             if (cursor > itemStart && allocated) {
                 const std::string value = "%" + name + ".size." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
                 output += csec_emit_i32_expression(tokens, itemStart, cursor, value);
@@ -585,13 +640,69 @@ static std::string csec_emit_i16_array_local(const char* tokens, int declaration
         itemStart = open + 1;
         itemIndex = 0;
         for (int cursor = itemStart; cursor <= close; ++cursor) {
-            if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > itemStart) {
                     const std::string value = "%" + name + ".item." + std::to_string(declaration) + "." + std::to_string(itemIndex);
                     const std::string element = "%" + name + ".element." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
                     output += csec_emit_i16_expression(tokens, itemStart, cursor, value);
                     output += "  " + element + " = getelementptr inbounds i16, ptr " + data + ", i32 " + std::to_string(itemIndex - 1) + "\n";
                     output += "  store i16 " + value + ", ptr " + element + "\n";
+                }
+                itemStart = cursor + 1;
+            }
+        }
+    }
+    return output;
+}
+
+static std::string csec_emit_i64_array_local(const char* tokens, int declaration, int end) {
+    const std::string name = csec_token_text_at(tokens, declaration + 1);
+    const std::string storage = name + ".addr." + std::to_string(declaration);
+    const int initializer = csec_find_top_level_operator(tokens, declaration, end, 1);
+    const int valueStart = initializer + 1;
+    const bool allocated = csec_native_token_is(tokens, valueStart, 'K', "new");
+    const int open = allocated ? valueStart + 2 : valueStart;
+    const int close = csec_find_closing_token(tokens, open, end, "[", "]");
+    if (initializer < declaration || close < open) return "";
+
+    std::string output = "  %" + storage + " = alloca ptr\n";
+    const std::string countBase = "%" + name + ".count." + std::to_string(declaration);
+    std::string count = countBase;
+    if (allocated) output += "  " + count + " = add i32 0, 1\n";
+    int itemStart = open + 1;
+    int itemIndex = 0;
+    for (int cursor = itemStart; cursor <= close; ++cursor) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
+            if (cursor > itemStart && allocated) {
+                const std::string value = "%" + name + ".size." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
+                output += csec_emit_i32_expression(tokens, itemStart, cursor, value);
+                const std::string nextCount = countBase + "." + std::to_string(itemIndex);
+                output += "  " + nextCount + " = mul i32 " + count + ", " + value + "\n";
+                count = nextCount;
+            }
+            itemStart = cursor + 1;
+        }
+    }
+    if (!allocated) {
+        int countItems = 0;
+        for (int cursor = open + 1; cursor < close; ++cursor) if (csec_native_token_is(tokens, cursor, 'O', ",")) ++countItems;
+        if (close > open + 1) ++countItems;
+        output += "  " + count + " = add i32 0, " + std::to_string(countItems) + "\n";
+    }
+    const std::string data = "%" + name + ".data." + std::to_string(declaration);
+    output += "  " + data + " = alloca i64, i32 " + count + "\n";
+    output += "  store ptr " + data + ", ptr %" + storage + "\n";
+    if (!allocated) {
+        itemStart = open + 1;
+        itemIndex = 0;
+        for (int cursor = itemStart; cursor <= close; ++cursor) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
+                if (cursor > itemStart) {
+                    const std::string value = "%" + name + ".item." + std::to_string(declaration) + "." + std::to_string(itemIndex);
+                    const std::string element = "%" + name + ".element." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
+                    output += csec_emit_i64_expression(tokens, itemStart, cursor, value);
+                    output += "  " + element + " = getelementptr inbounds i64, ptr " + data + ", i32 " + std::to_string(itemIndex - 1) + "\n";
+                    output += "  store i64 " + value + ", ptr " + element + "\n";
                 }
                 itemStart = cursor + 1;
             }
@@ -617,7 +728,7 @@ static std::string csec_emit_f32_array_local(const char* tokens, int declaration
     int itemStart = open + 1;
     int itemIndex = 0;
     for (int cursor = itemStart; cursor <= close; ++cursor) {
-        if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
             if (cursor > itemStart && allocated) {
                 const std::string value = "%" + name + ".size." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
                 output += csec_emit_i32_expression(tokens, itemStart, cursor, value);
@@ -641,7 +752,7 @@ static std::string csec_emit_f32_array_local(const char* tokens, int declaration
         itemStart = open + 1;
         itemIndex = 0;
         for (int cursor = itemStart; cursor <= close; ++cursor) {
-            if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > itemStart) {
                     const std::string value = "%" + name + ".item." + std::to_string(declaration) + "." + std::to_string(itemIndex);
                     const std::string element = "%" + name + ".element." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
@@ -673,7 +784,7 @@ static std::string csec_emit_f64_array_local(const char* tokens, int declaration
     int itemStart = open + 1;
     int itemIndex = 0;
     for (int cursor = itemStart; cursor <= close; ++cursor) {
-        if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
             if (cursor > itemStart && allocated) {
                 const std::string value = "%" + name + ".size." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
                 output += csec_emit_i32_expression(tokens, itemStart, cursor, value);
@@ -697,7 +808,7 @@ static std::string csec_emit_f64_array_local(const char* tokens, int declaration
         itemStart = open + 1;
         itemIndex = 0;
         for (int cursor = itemStart; cursor <= close; ++cursor) {
-            if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > itemStart) {
                     const std::string value = "%" + name + ".item." + std::to_string(declaration) + "." + std::to_string(itemIndex);
                     const std::string element = "%" + name + ".element." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
@@ -728,7 +839,7 @@ static std::string csec_emit_ptr_array_local(const char* tokens, int declaration
     int itemStart = open + 1;
     int itemIndex = 0;
     for (int cursor = itemStart; cursor <= close; ++cursor) {
-        if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
             if (cursor > itemStart && allocated) {
                 const std::string value = "%" + name + ".size." + std::to_string(declaration) + "." + std::to_string(itemIndex++);
                 output += csec_emit_i32_expression(tokens, itemStart, cursor, value);
@@ -752,7 +863,7 @@ static std::string csec_emit_ptr_array_local(const char* tokens, int declaration
         itemStart = open + 1;
         itemIndex = 0;
         for (int cursor = itemStart; cursor <= close; ++cursor) {
-            if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > itemStart) {
                     const std::string value = "%" + name + ".item." + std::to_string(declaration) + "." + std::to_string(itemIndex);
                     const std::string element = "%" + name + ".element." + std::to_string(declaration) + "." + std::to_string(itemIndex++);

@@ -30,6 +30,7 @@ static std::string csec_emit_ptr_expression(const char* tokens, int start, int e
          csec_visible_i1_array(tokens, start, csec_token_text_at(tokens, start)) ||
          csec_visible_i8_array(tokens, start, csec_token_text_at(tokens, start)) ||
          csec_visible_i16_array(tokens, start, csec_token_text_at(tokens, start)) ||
+         csec_visible_i64_array(tokens, start, csec_token_text_at(tokens, start)) ||
          csec_visible_f32_array(tokens, start, csec_token_text_at(tokens, start)) ||
          csec_visible_f64_array(tokens, start, csec_token_text_at(tokens, start)) ||
          csec_visible_ptr_array(tokens, start, csec_token_text_at(tokens, start)))) {
@@ -75,7 +76,7 @@ static std::string csec_emit_ptr_expression(const char* tokens, int start, int e
             std::string output, arguments;
             int argumentStart = start + 2, index = 0;
             for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > argumentStart) {
                         const std::string argument = resultName + ".arg" + std::to_string(index++);
                         const bool pointerArgument = index - 1 < static_cast<int>(parameters.size()) &&
@@ -269,6 +270,10 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
     if (!indexedShortArray.empty()) {
         return indexedShortArray + "  " + resultName + " = sext i16 " + resultName + ".short to i32\n";
     }
+    const std::string indexedLongArray = csec_emit_i64_array_index(tokens, start, end, resultName + ".long");
+    if (!indexedLongArray.empty()) {
+        return indexedLongArray + "  " + resultName + " = trunc i64 " + resultName + ".long to i32\n";
+    }
     if (csec_token_kind_at(tokens, start) == 'C' && start + 1 == end) {
         const std::string character = resultName + ".char";
         return csec_emit_i8_expression(tokens, start, end, character) +
@@ -336,7 +341,7 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
             int argumentStart = start + 4;
             int argumentIndex = 0;
             for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > argumentStart) {
                         const std::string argumentName = resultName + ".arg" + std::to_string(argumentIndex++);
                         output += csec_emit_i32_expression(tokens, argumentStart, cursor, argumentName);
@@ -359,7 +364,7 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
             int argumentStart = start + 2;
             int argumentIndex = 0;
             for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > argumentStart) {
                         const std::string argumentName = resultName + ".arg" + std::to_string(argumentIndex++);
                         output += csec_emit_i32_expression(tokens, argumentStart, cursor, argumentName);
@@ -407,7 +412,7 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                 int argumentStart = start + 2;
                 int argumentIndex = 0;
                 for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                    if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                    if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                         if (cursor > argumentStart) {
                             const std::string argumentName = resultName + ".arg" + std::to_string(argumentIndex++);
                             output += csec_emit_i32_expression(tokens, argumentStart, cursor, argumentName);
@@ -433,7 +438,7 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
             int argumentStart = start + 2;
             int argumentIndex = 0;
             for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > argumentStart) {
                         if (!arguments.empty()) arguments += ", ";
                         const bool functionArgument = argumentIndex < static_cast<int>(parameters.size()) && parameters[argumentIndex].second == "(";
@@ -474,7 +479,7 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
             int argumentStart = start + 2;
             int argumentIndex = 0;
             for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > argumentStart) {
                         const std::string argumentName = resultName + ".arg" + std::to_string(argumentIndex);
                         const bool pointerArgument = argumentIndex < static_cast<int>(parameters.size()) &&
@@ -574,7 +579,7 @@ static std::string csec_emit_f32_expression(const char* tokens, int start, int e
             std::string output, arguments;
             int itemStart = start + 2, index = 0;
             for (int cursor = itemStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > itemStart) {
                         const std::string value = resultName + ".arg" + std::to_string(index);
                         const bool floating = index < static_cast<int>(parameters.size()) && parameters[index].second == "Float";
@@ -615,7 +620,7 @@ static std::string csec_emit_f32_expression(const char* tokens, int start, int e
                 }
                 int itemStart = start + 4, index = 0;
                 for (int cursor = itemStart; cursor <= close; ++cursor) {
-                    if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                    if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                         if (cursor > itemStart) {
                             const std::string value = resultName + ".arg" + std::to_string(index);
                             const bool floating = index < static_cast<int>(parameters.size()) && parameters[index].second == "Float";
@@ -675,7 +680,7 @@ static std::string csec_emit_f64_expression(const char* tokens, int start, int e
             std::string output, arguments;
             int itemStart = start + 2, index = 0;
             for (int cursor = itemStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > itemStart) {
                         const std::string value = resultName + ".arg" + std::to_string(index);
                         const bool floating = index < static_cast<int>(parameters.size()) && parameters[index].second == "Double";
@@ -716,7 +721,7 @@ static std::string csec_emit_f64_expression(const char* tokens, int start, int e
                 }
                 int itemStart = start + 4, index = 0;
                 for (int cursor = itemStart; cursor <= close; ++cursor) {
-                    if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                    if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                         if (cursor > itemStart) {
                         const std::string value = resultName + ".arg" + std::to_string(index);
                         const bool doubleArgument = index < static_cast<int>(parameters.size()) && parameters[index].second == "Double";
@@ -742,6 +747,8 @@ static std::string csec_emit_f64_expression(const char* tokens, int start, int e
 static std::string csec_emit_i64_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = add i64 0, 0\n";
+    const std::string indexedArray = csec_emit_i64_array_index(tokens, start, end, resultName);
+    if (!indexedArray.empty()) return indexedArray;
     if (csec_native_token_is(tokens, start, 'O', "(") && csec_find_closing_token(tokens, start, end, "(", ")") == end - 1)
         return csec_emit_i64_expression(tokens, start + 1, end - 1, resultName);
     const int operation = csec_i32_top_level_operator(tokens, start, end);
@@ -772,9 +779,23 @@ static std::string csec_emit_i64_expression(const char* tokens, int start, int e
         const int callee = csec_top_level_function_declaration(tokens, csec_token_text_at(tokens, start));
         const int close = csec_find_closing_token(tokens, start + 1, end, "(", ")");
         if (callee >= 0 && close == end - 1 && csec_is_i64_type_name(csec_function_return_type_at(tokens, callee))) {
-            std::string output, arguments; int itemStart = start + 2;
-            for (int cursor = itemStart; cursor <= close; ++cursor) if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
-                if (cursor > itemStart) { const std::string value = resultName + ".arg" + std::to_string(itemStart); output += csec_emit_i64_expression(tokens, itemStart, cursor, value); arguments += (arguments.empty() ? "" : ", ") + std::string("i64 ") + value; }
+            const auto parameters = csec_function_params(tokens, callee);
+            std::string output, arguments; int itemStart = start + 2; int index = 0;
+            for (int cursor = itemStart; cursor <= close; ++cursor) if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
+                if (cursor > itemStart) {
+                    const std::string value = resultName + ".arg" + std::to_string(itemStart);
+                    const bool pointer = index < static_cast<int>(parameters.size()) &&
+                        (parameters[index].second == "Vector" || parameters[index].second == "Array");
+                    if (pointer) {
+                        const char* storage = csec_lookup_visible_storage_name(tokens, itemStart, csec_token_text_at(tokens, itemStart));
+                        output += "  " + value + " = load ptr, ptr %" + std::string(storage) + "\n";
+                        arguments += (arguments.empty() ? "" : ", ") + std::string("ptr ") + value;
+                    } else {
+                        output += csec_emit_i64_expression(tokens, itemStart, cursor, value);
+                        arguments += (arguments.empty() ? "" : ", ") + std::string("i64 ") + value;
+                    }
+                    ++index;
+                }
                 itemStart = cursor + 1;
             }
             return output + "  " + resultName + " = call i64 @" + std::string(csec_token_text_at(tokens, start)) + "(" + arguments + ")\n";
@@ -832,7 +853,7 @@ static std::string csec_emit_i8_expression(const char* tokens, int start, int en
             int argumentStart = start + 2;
             int index = 0;
             for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > argumentStart) {
                         const std::string value = resultName + ".arg" + std::to_string(index);
                         const bool pointer = index < static_cast<int>(parameters.size()) &&
@@ -884,7 +905,7 @@ static std::string csec_emit_i16_expression(const char* tokens, int start, int e
             std::string output, arguments;
             int argumentStart = start + 2;
             int index = 0;
-            for (int cursor = argumentStart; cursor <= close; ++cursor) if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            for (int cursor = argumentStart; cursor <= close; ++cursor) if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > argumentStart) {
                     const std::string value = resultName + ".arg" + std::to_string(index);
                     const bool pointer = index < static_cast<int>(parameters.size()) &&
@@ -1012,7 +1033,7 @@ static std::string csec_emit_i1_expression(const char* tokens, int start, int en
             std::string output, arguments;
             int argumentStart = start + 2, index = 0;
             for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                     if (cursor > argumentStart) {
                         const std::string value = resultName + ".arg" + std::to_string(index++);
                         output += csec_emit_i32_expression(tokens, argumentStart, cursor, value);
@@ -1068,7 +1089,7 @@ static std::string csec_emit_i1_expression(const char* tokens, int start, int en
                     arguments = "ptr " + environment;
                     int argumentStart = start + 2, index = 0;
                     for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                        if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                             if (cursor > argumentStart) {
                                 const std::string value = resultName + ".arg" + std::to_string(index++);
                                 output += csec_emit_i32_expression(tokens, argumentStart, cursor, value);
@@ -1090,7 +1111,7 @@ static std::string csec_emit_i1_expression(const char* tokens, int start, int en
                 std::string output, arguments;
                 int argumentStart = start + 2, index = 0;
                 for (int cursor = argumentStart; cursor <= close; ++cursor) {
-                    if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                    if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                         if (cursor > argumentStart) {
                             if (!arguments.empty()) arguments += ", ";
                             const bool functionArgument = index < static_cast<int>(parameters.size()) && parameters[index].second == "(";
@@ -1110,9 +1131,14 @@ static std::string csec_emit_i1_expression(const char* tokens, int start, int en
                                     csec_token_kind_at(tokens, argumentStart) == 'I' && argumentStart + 1 == cursor &&
                                     (csec_visible_i32_array(tokens, argumentStart, csec_token_text_at(tokens, argumentStart)) ||
                                      csec_visible_i1_array(tokens, argumentStart, csec_token_text_at(tokens, argumentStart)));
+                                const bool pointerArgument = index < static_cast<int>(parameters.size()) &&
+                                    std::strcmp(csec_llvm_type_for_name(parameters[index].second), "ptr") == 0;
                                 if (arrayArgument) {
                                     const char* storage = csec_lookup_visible_storage_name(tokens, argumentStart, csec_token_text_at(tokens, argumentStart));
                                     output += "  " + value + " = load ptr, ptr %" + std::string(storage) + "\n";
+                                    arguments += "ptr " + value;
+                                } else if (pointerArgument) {
+                                    output += csec_emit_ptr_expression(tokens, argumentStart, cursor, value);
                                     arguments += "ptr " + value;
                                 } else {
                                     output += booleanArgument
@@ -1152,7 +1178,7 @@ static std::string csec_emit_i1_expression(const char* tokens, int start, int en
                 }
                 int itemStart = start + 4, index = 0;
                 for (int cursor = itemStart; cursor <= close; ++cursor) {
-                    if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+                    if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                         if (cursor > itemStart) {
                             const std::string value = resultName + ".arg" + std::to_string(index);
                             const bool floating = index < static_cast<int>(parameters.size()) && parameters[index].second == "Float";

@@ -1,0 +1,16 @@
+def addPair(left: Int, right: Int): Int {
+    return left + right;
+}
+
+def scale(value: Int, factor: Int): Int {
+    return value * factor;
+}
+
+def main(): Int {
+    val nested = addPair(addPair(1, 2), addPair(3, 4));
+    val mixed = scale(addPair(2, 3), addPair(1, 1));
+    if (nested == 10 and mixed == 10) {
+        return 0;
+    }
+    return 1;
+}

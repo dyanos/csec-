@@ -21,6 +21,24 @@ int csec_token_is(const char* tokens, int ordinal, char kind, const char* text) 
     return csec_native_token_is(tokens, ordinal, kind, text) ? 1 : 0;
 }
 
+// A comma separates arguments of the call closing at `close` only when it sits outside every
+// nested group, so `outer(inner(1, 2), 3)` keeps `inner(1, 2)` as a single argument.
+static bool csec_is_argument_separator(const char* tokens, int close, int ordinal) {
+    if (!csec_native_token_is(tokens, ordinal, 'O', ",")) return false;
+    int depth = 0;
+    for (int cursor = ordinal + 1; cursor < close; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', "(") || csec_native_token_is(tokens, cursor, 'O', "[") ||
+            csec_native_token_is(tokens, cursor, 'O', "{")) {
+            ++depth;
+        } else if (csec_native_token_is(tokens, cursor, 'O', ")") || csec_native_token_is(tokens, cursor, 'O', "]") ||
+                   csec_native_token_is(tokens, cursor, 'O', "}")) {
+            if (depth == 0) return false;
+            --depth;
+        }
+    }
+    return depth == 0;
+}
+
 static char* csec_copy_literal(const char* text) {
     return const_cast<char*>(text);
 }

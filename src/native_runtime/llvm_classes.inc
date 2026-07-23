@@ -91,6 +91,7 @@ static bool csec_visible_f32_array(const char* tokens, int limit, const char* na
 static bool csec_visible_f64_array(const char* tokens, int limit, const char* name);
 static bool csec_visible_ptr_array(const char* tokens, int limit, const char* name);
 static bool csec_visible_i16_array(const char* tokens, int limit, const char* name);
+static bool csec_visible_i64_array(const char* tokens, int limit, const char* name);
 
 static std::vector<std::pair<std::string, std::string>> csec_class_constructor_params(const char* tokens, int classStart) {
     std::vector<std::pair<std::string, std::string>> params;
@@ -763,6 +764,23 @@ static bool csec_is_i16_array_parameter(const char* tokens, int ordinal, const c
     return false;
 }
 
+static bool csec_is_i64_array_parameter(const char* tokens, int ordinal, const char* name) {
+    const int function = csec_enclosing_function_declaration(tokens, ordinal);
+    const int paramEnd = function >= 0 ? csec_function_param_end(tokens, function) : -1;
+    if (paramEnd < 0 || !name) return false;
+    for (int cursor = function; cursor < paramEnd; ++cursor) {
+        if (csec_token_kind_at(tokens, cursor) != 'I' || std::strcmp(csec_token_text_at(tokens, cursor), name) != 0 ||
+            !csec_native_token_is(tokens, cursor + 1, 'O', ":") ||
+            !(csec_native_token_is(tokens, cursor + 2, 'I', "Vector") || csec_native_token_is(tokens, cursor + 2, 'I', "Array"))) continue;
+        return csec_native_token_is(tokens, cursor + 3, 'O', "[") &&
+            (csec_native_token_is(tokens, cursor + 4, 'I', "Long") ||
+             csec_native_token_is(tokens, cursor + 4, 'I', "Natural") ||
+             csec_native_token_is(tokens, cursor + 4, 'I', "Integer")) &&
+            csec_native_token_is(tokens, cursor + 5, 'O', "]");
+    }
+    return false;
+}
+
 static bool csec_is_f32_array_parameter(const char* tokens, int ordinal, const char* name) {
     const int function = csec_enclosing_function_declaration(tokens, ordinal);
     const int paramEnd = function >= 0 ? csec_function_param_end(tokens, function) : -1;
@@ -1087,7 +1105,7 @@ static bool csec_emit_i32_instance_call(const char* tokens, int start, int end, 
     int argumentIndex = 0;
     auto appendArguments = [&](int first, int close) {
         for (int cursor = first, itemStart = first; cursor <= close; ++cursor) {
-            if (cursor == close || csec_native_token_is(tokens, cursor, 'O', ",")) {
+            if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
                 if (cursor > itemStart) {
                     const std::string value = resultName + ".arg" + std::to_string(argumentIndex++);
                     output += csec_emit_i32_expression(tokens, itemStart, cursor, value);

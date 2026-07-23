@@ -36,6 +36,23 @@ char* csec_generate_llvm_function_definition(const char* tokens, int declStart) 
     } else if (std::strcmp(resultType, "i64") == 0 && expressionStart >= declStart && expressionStart + 1 < declEnd) {
         output += csec_emit_i64_expression(tokens, expressionStart + 1, declEnd, "%ret");
         output += "  ret i64 %ret\n";
+    } else if (std::strcmp(resultType, "i64") == 0 && bodyStart >= 0 && bodyEnd > bodyStart) {
+        int returnValue = -1;
+        int returnEnd = -1;
+        for (int cursor = bodyStart; cursor < bodyEnd;) {
+            const int next = csec_advance_statement(tokens, cursor, bodyEnd);
+            if (csec_native_token_is(tokens, cursor, 'K', "return")) {
+                returnValue = cursor + 1;
+                returnEnd = next;
+                break;
+            }
+            if (next <= cursor) break;
+            cursor = next;
+        }
+        if (returnValue >= 0) {
+            output += csec_emit_i64_expression(tokens, returnValue, returnEnd, "%ret");
+            output += "  ret i64 %ret\n";
+        } else output += "  ret i64 0\n";
     } else if (std::strcmp(resultType, "i16") == 0 && expressionStart >= declStart && expressionStart + 1 < declEnd) {
         output += csec_emit_i16_expression(tokens, expressionStart + 1, declEnd, "%ret");
         output += "  ret i16 %ret\n";

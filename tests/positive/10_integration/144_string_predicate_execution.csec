@@ -1,0 +1,7 @@
+def main(): Int {
+    val text: String = "csec-runtime";
+    if (text.startsWith("csec") and text.endsWith("time") and text.contains("run") and !text.isEmpty()) {
+        return text.indexOf("runtime") + 35;
+    }
+    return 0;
+}

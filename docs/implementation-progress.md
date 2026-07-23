@@ -61,6 +61,16 @@
   local from that call, and exits with `7`.
 - String instance methods can concatenate a class-backed String field with a literal through
   `csec_string_concat`. `074_string_field_concat.csec` exits with `6`.
+- String predicate members `isEmpty`, `contains`, `startsWith`, and `endsWith`, plus `indexOf`,
+  lower through the runtime pointer ABI. `144_string_predicate_execution.csec` exits with `40`.
+- String transformation members `trim`, `toUpper`, `toLower`, `substring`, and `toString` return
+  pointer values that initialize String locals. `145_string_transform_execution.csec` exits with
+  `10`.
+- `String.charAt` lowers its `i8` runtime result into the `Int` expression ABI.
+  `146_string_char_at_execution.csec` exits with `69`.
+- Untyped String-transform locals retain the pointer ABI, and `println` lowers String and `Int`
+  arguments to the native output runtime. The existing `120_string_members.csec` integration
+  fixture now executes through the self-host LLVM path with exit code `0`.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -290,4 +300,28 @@
   .\tests\positive\10_integration\143_string_concat_and_return.csec `
   .\selfhost\string_concat_selfhost_probe.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\string_concat_selfhost_probe.ll
+
+# Self-host String predicate and index member path (intentional return: 40)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\144_string_predicate_execution.csec `
+  .\selfhost\string_predicate_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_predicate_probe.ll
+
+# Self-host String transform member path (intentional return: 10)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\145_string_transform_execution.csec `
+  .\selfhost\string_transform_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_transform_probe.ll
+
+# Self-host String character access path (intentional return: 69)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\146_string_char_at_execution.csec `
+  .\selfhost\string_char_at_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_char_at_probe.ll
+
+# Self-host full String-member and println integration path (intentional return: 0)
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\120_string_members.csec `
+  .\selfhost\string_members_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_members_probe.ll
 ```

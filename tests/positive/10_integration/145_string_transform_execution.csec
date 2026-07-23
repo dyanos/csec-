@@ -1,0 +1,8 @@
+def main(): Int {
+    val trimmed: String = " AbCd ".trim();
+    val upper: String = trimmed.toUpper();
+    val lower: String = upper.toLower();
+    val slice: String = lower.substring(1, 2);
+    val copy: String = slice.toString();
+    return trimmed.length + upper.length + copy.length;
+}

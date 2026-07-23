@@ -1,0 +1,4 @@
+def main(): Int {
+    val text: String = "CSEC";
+    return text.charAt(2);
+}

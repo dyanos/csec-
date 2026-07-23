@@ -177,6 +177,11 @@
   empty struct layout, which aborted generation of the entire module. `Long`-returning instance
   methods also lower through the class-method call path, which only `Int`, `Boolean`, `String`,
   `Float`, and `Double` had. `176_wide_class_field_execution.csec` exits with `0` on both paths.
+- Class bodies also declare `Long`, `Natural`, `Integer`, `Float`, `Double`, `Short`, and `Byte`
+  fields directly. They take layout slots, receive their declared initializers, and keep their
+  width through reads and assignments inside methods, so mutation persists across calls.
+  `Long`-, `Short`-, and `Byte`-returning block bodies lower their whole body rather than only
+  the first `return`. `177_declared_wide_field_execution.csec` exits with `0` on both paths.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -224,14 +229,17 @@
 - Unannotated float literal arrays default to `Float` storage rather than `Double`.
 - Reference semantics beyond the current stack-backed instance path, and general field access
   syntax. `Int` inheritance, including struct-backed parent fields and `super` dispatch, is
-  supported, as is scalar constructor state of every width. Class bodies still only declare
-  `Int`, `Boolean`, and `String` fields directly; wider declared fields are not yet laid out.
-- Returning a newly created array from a function works through the self-host path but not the
-  direct compiler, which fails to emit IR for it.
-- `match` expressions do not execute through either path.
+  supported, as is scalar constructor and declared-field state of every width.
+- Returning a newly created array executes correctly through the self-host path. The direct
+  compiler rejects `Vector[Int]` as a return type for `new Int[n]` with "declared to return
+  'Vector' but returns 'Array'", and with the return type spelled `Array[Int]` it compiles but
+  produces the wrong value.
 - Generic/template execution, enum/union/nullable/ownership behavior, rich string/char
-  interactions, complete match patterns, iterable collection loops, broad function ABI coverage,
-  and mixed numeric conversion semantics remain incomplete.
+  interactions, iterable collection loops, broad function ABI coverage, and mixed numeric
+  conversion semantics remain incomplete. Literal `Int` `match` expressions with a `_` fallback
+  do execute: `034_match_expressions.csec`, `038_match_many_cases.csec`, and
+  `045_match_as_expression.csec` agree between the direct and self-host paths. Richer patterns
+  than literal cases are untested.
 
 ## Validation Commands
 

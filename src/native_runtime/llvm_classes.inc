@@ -175,6 +175,33 @@ static std::vector<std::pair<std::string, std::pair<int, int>>> csec_class_ptr_f
     }
     return fields;
 }
+
+// Declared class-body fields whose LLVM type is wider than the i32/i1/ptr slots handled above:
+// Long, Natural, Integer, Float, Double, Short, and Byte. The third element carries the LLVM
+// type so the layout, receiver pointers, and initializers all agree on the slot width.
+static std::vector<std::pair<std::string, std::pair<std::pair<int, int>, std::string>>>
+csec_class_wide_fields(const char* tokens, int classStart) {
+    std::vector<std::pair<std::string, std::pair<std::pair<int, int>, std::string>>> fields;
+    const int bodyStart = csec_find_decl_body_start(tokens, classStart);
+    const int bodyEnd = csec_find_decl_body_end(tokens, bodyStart);
+    int depth = 0;
+    for (int cursor = bodyStart; cursor >= 0 && cursor < bodyEnd; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', "{")) { ++depth; continue; }
+        if (csec_native_token_is(tokens, cursor, 'O', "}")) { --depth; continue; }
+        if (depth != 0 || (!csec_native_token_is(tokens, cursor, 'K', "val") && !csec_native_token_is(tokens, cursor, 'K', "var"))) continue;
+        if (csec_token_kind_at(tokens, cursor + 1) != 'I') continue;
+        const int statementEnd = csec_advance_statement(tokens, cursor, bodyEnd);
+        const int initializer = statementEnd > cursor ? csec_find_top_level_operator(tokens, cursor, statementEnd, 1) : -1;
+        const int colon = statementEnd > cursor ? csec_find_token_text_in_range(tokens, cursor + 2, initializer >= 0 ? initializer : statementEnd, ":") : -1;
+        if (colon < 0) continue;
+        const std::string type = csec_llvm_type_for_name(csec_token_text_at(tokens, colon + 1));
+        if (type == "i32" || type == "i1" || type == "ptr") continue;
+        if (initializer < cursor || initializer + 1 >= statementEnd) continue;
+        fields.emplace_back(std::string(csec_token_text_at(tokens, cursor + 1)) + ".addr." + std::to_string(cursor),
+            std::make_pair(std::make_pair(initializer + 1, statementEnd), type));
+    }
+    return fields;
+}
 }
 
 static int csec_find_class_declaration(const char* tokens, const char* className) {
@@ -195,7 +222,8 @@ static int csec_class_inherited_field_count(const char* tokens, int classStart) 
     return csec_class_inherited_field_count(tokens, parentStart) +
         static_cast<int>(csec_class_i32_fields(tokens, parentStart).size()) +
         static_cast<int>(csec_class_i1_fields(tokens, parentStart).size()) +
-        static_cast<int>(csec_class_ptr_fields(tokens, parentStart).size());
+        static_cast<int>(csec_class_ptr_fields(tokens, parentStart).size()) +
+        static_cast<int>(csec_class_wide_fields(tokens, parentStart).size());
 }
 
 static std::string csec_class_inherited_field_layout(const char* tokens, int classStart) {
@@ -215,13 +243,18 @@ static std::string csec_class_inherited_field_layout(const char* tokens, int cla
         if (!layout.empty()) layout += ", ";
         layout += "ptr";
     }
+    for (const auto& field : csec_class_wide_fields(tokens, parentStart)) {
+        if (!layout.empty()) layout += ", ";
+        layout += field.second.second;
+    }
     return layout;
 }
 
 static bool csec_class_uses_pointer_receiver(const char* tokens, int classStart) {
     if (csec_class_inherited_field_count(tokens, classStart) > 0 ||
         !csec_class_i32_fields(tokens, classStart).empty() || !csec_class_i1_fields(tokens, classStart).empty() ||
-        !csec_class_ptr_fields(tokens, classStart).empty()) return true;
+        !csec_class_ptr_fields(tokens, classStart).empty() ||
+        !csec_class_wide_fields(tokens, classStart).empty()) return true;
     for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
         if (std::strcmp(csec_llvm_type_for_name(parameter.second.c_str()), "i32") != 0) return true;
     }
@@ -253,6 +286,10 @@ static std::string csec_class_i32_layout(const char* tokens, int classStart) {
     for (size_t index = 0; index < csec_class_ptr_fields(tokens, classStart).size(); ++index) {
         if (!layout.empty()) layout += ", ";
         layout += "ptr";
+    }
+    for (const auto& field : csec_class_wide_fields(tokens, classStart)) {
+        if (!layout.empty()) layout += ", ";
+        layout += field.second.second;
     }
     return layout;
 }
@@ -317,14 +354,27 @@ static std::string csec_emit_class_field_initializers(const char* tokens, int cl
         output += "  " + slot + " = getelementptr inbounds %class." + className + ", ptr %" + object + ", i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
         output += "  store ptr " + value + ", ptr " + slot + "\n";
     }
+    for (const auto& field : csec_class_wide_fields(tokens, classStart)) {
+        const std::string value = "%" + variableName + ".init." + std::to_string(fieldIndex);
+        const std::string slot = "%" + variableName + ".field." + std::to_string(fieldIndex);
+        const std::string& type = field.second.second;
+        const int from = field.second.first.first;
+        const int to = field.second.first.second;
+        if (type == "i64") output += csec_emit_i64_expression(tokens, from, to, value);
+        else if (type == "double") output += csec_emit_f64_expression(tokens, from, to, value);
+        else if (type == "float") output += csec_emit_f32_expression(tokens, from, to, value);
+        else if (type == "i16") output += csec_emit_i16_expression(tokens, from, to, value);
+        else output += csec_emit_i8_expression(tokens, from, to, value);
+        output += "  " + slot + " = getelementptr inbounds %class." + className + ", ptr %" + object + ", i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
+        output += "  store " + type + " " + value + ", ptr " + slot + "\n";
+    }
     return output;
 }
 
 static int csec_class_field_index(const char* tokens, int classStart, const char* name) {
     int index = 0;
+    // Every constructor parameter takes a layout slot, so every one advances the index.
     for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
-        const char* type = csec_llvm_type_for_name(parameter.second.c_str());
-        if (std::strcmp(type, "i32") != 0 && std::strcmp(type, "i1") != 0 && std::strcmp(type, "ptr") != 0) continue;
         if (parameter.first == name) return index;
         ++index;
     }
@@ -341,7 +391,35 @@ static int csec_class_field_index(const char* tokens, int classStart, const char
         if (field.first.rfind(std::string(name) + ".addr.", 0) == 0) return index;
         ++index;
     }
+    for (const auto& field : csec_class_wide_fields(tokens, classStart)) {
+        if (field.first.rfind(std::string(name) + ".addr.", 0) == 0) return index;
+        ++index;
+    }
     return -1;
+}
+
+// LLVM type of a constructor parameter or declared field of the class enclosing `ordinal`.
+// Returns an empty string when the name is not a field of that class.
+static std::string csec_class_field_llvm_type(const char* tokens, int ordinal, const char* name) {
+    const int classStart = csec_enclosing_class_declaration(tokens, ordinal);
+    if (classStart < 0 || !name) return "";
+    for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
+        if (parameter.first == name) return csec_llvm_type_for_name(parameter.second);
+    }
+    const std::string prefix = std::string(name) + ".addr.";
+    for (const auto& field : csec_class_i32_fields(tokens, classStart)) {
+        if (field.first.rfind(prefix, 0) == 0) return "i32";
+    }
+    for (const auto& field : csec_class_i1_fields(tokens, classStart)) {
+        if (field.first.rfind(prefix, 0) == 0) return "i1";
+    }
+    for (const auto& field : csec_class_ptr_fields(tokens, classStart)) {
+        if (field.first.rfind(prefix, 0) == 0) return "ptr";
+    }
+    for (const auto& field : csec_class_wide_fields(tokens, classStart)) {
+        if (field.first.rfind(prefix, 0) == 0) return field.second.second;
+    }
+    return "";
 }
 
 static bool csec_is_string_class_constructor_param(const char* tokens, int ordinal, const char* name);
@@ -472,6 +550,13 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
             }
         }
         for (const auto& field : declaredPointerFields) {
+            receiverAllocas += "  %" + field.first + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
+            const size_t suffix = field.first.find(".addr.");
+            if (suffix != std::string::npos) {
+                receiverAllocas += "  %" + field.first.substr(0, suffix) + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex - 1) + "\n";
+            }
+        }
+        for (const auto& field : csec_class_wide_fields(tokens, classStart)) {
             receiverAllocas += "  %" + field.first + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
             const size_t suffix = field.first.find(".addr.");
             if (suffix != std::string::npos) {

@@ -1,0 +1,26 @@
+class Tally() {
+    var total: Long = 0;
+    var ratio: Double = 0.0;
+
+    def bump(): Long {
+        total = total + 2147483650;
+        return total;
+    }
+
+    def scale(): Double {
+        ratio = ratio + 1.5;
+        return ratio;
+    }
+}
+
+def main(): Int {
+    val tally = new Tally();
+    val first: Long = tally.bump();
+    val second: Long = tally.bump();
+    val ratio: Double = tally.scale();
+
+    if (first == 2147483650 and second == 4294967300 and ratio > 1.4 and ratio < 1.6) {
+        return 0;
+    }
+    return 1;
+}

@@ -26,6 +26,15 @@ static std::string csec_emit_typed_return(const char* tokens, int start, int end
     if (std::strcmp(resultType, "float") == 0) {
         return csec_emit_f32_expression(tokens, start, end, value) + "  ret float " + value + "\n";
     }
+    if (std::strcmp(resultType, "i64") == 0) {
+        return csec_emit_i64_expression(tokens, start, end, value) + "  ret i64 " + value + "\n";
+    }
+    if (std::strcmp(resultType, "i16") == 0) {
+        return csec_emit_i16_expression(tokens, start, end, value) + "  ret i16 " + value + "\n";
+    }
+    if (std::strcmp(resultType, "i8") == 0) {
+        return csec_emit_i8_expression(tokens, start, end, value) + "  ret i8 " + value + "\n";
+    }
     return csec_emit_i32_expression(tokens, start, end, value) + "  ret i32 " + value + "\n";
 }
 
@@ -383,6 +392,23 @@ static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bo
                 csec_is_string_parameter(tokens, cursor, name.c_str()) ||
                 csec_is_pointer_local(tokens, cursor, name.c_str()) ||
                 csec_is_pointer_parameter(tokens, cursor, name.c_str());
+            // A name that is neither a local nor a parameter may be a field of the enclosing
+            // class, in which case the slot width comes from the class layout.
+            const std::string fieldType =
+                (boolean || pointer || floating || doubling || csec_find_visible_local(tokens, cursor, name.c_str()) >= 0)
+                    ? std::string() : csec_class_field_llvm_type(tokens, cursor, name.c_str());
+            if (!fieldType.empty() && fieldType != "i32") {
+                if (fieldType == "i64") output += csec_emit_i64_expression(tokens, cursor + 2, next, value);
+                else if (fieldType == "double") output += csec_emit_f64_expression(tokens, cursor + 2, next, value);
+                else if (fieldType == "float") output += csec_emit_f32_expression(tokens, cursor + 2, next, value);
+                else if (fieldType == "i16") output += csec_emit_i16_expression(tokens, cursor + 2, next, value);
+                else if (fieldType == "i1") output += csec_emit_i1_expression(tokens, cursor + 2, next, value);
+                else if (fieldType == "ptr") output += csec_emit_ptr_expression(tokens, cursor + 2, next, value);
+                else output += csec_emit_i8_expression(tokens, cursor + 2, next, value);
+                output += "  store " + fieldType + " " + value + ", ptr %" + storage + "\n";
+                cursor = csec_expression_ast_skip_trivia(tokens, next);
+                continue;
+            }
             output += boolean ? csec_emit_i1_expression(tokens, cursor + 2, next, value)
                 : (pointer ? csec_emit_ptr_expression(tokens, cursor + 2, next, value)
                 : (doubling ? csec_emit_f64_expression(tokens, cursor + 2, next, value)
@@ -423,6 +449,18 @@ static std::string csec_generate_llvm_flat_body_float(const char* tokens, int bo
 
 static std::string csec_generate_llvm_flat_body_double(const char* tokens, int bodyStart, int bodyEnd) {
     return csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "double");
+}
+
+static std::string csec_generate_llvm_flat_body_i64(const char* tokens, int bodyStart, int bodyEnd) {
+    return csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "i64");
+}
+
+static std::string csec_generate_llvm_flat_body_i16(const char* tokens, int bodyStart, int bodyEnd) {
+    return csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "i16");
+}
+
+static std::string csec_generate_llvm_flat_body_i8(const char* tokens, int bodyStart, int bodyEnd) {
+    return csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "i8");
 }
 
 char* csec_generate_llvm_string_literal_globals(const char* tokens) {

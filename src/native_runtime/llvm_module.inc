@@ -215,10 +215,7 @@ static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bo
                     int argumentStart = initializer + 4;
                     for (int position = argumentStart; position <= constructorClose; ++position) {
                         if (position == constructorClose || csec_is_argument_separator(tokens, constructorClose, position)) {
-                            if (position > argumentStart && parameterIndex < static_cast<int>(parameters.size()) &&
-                                (std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "i32") == 0 ||
-                                 std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "i1") == 0 ||
-                                 std::strcmp(csec_llvm_type_for_name(parameters[parameterIndex].second), "ptr") == 0)) {
+                            if (position > argumentStart && parameterIndex < static_cast<int>(parameters.size())) {
                                 const char* fieldType = csec_llvm_type_for_name(parameters[parameterIndex].second);
                                 const std::string value = "%" + name + ".ctor." + std::to_string(fieldIndex);
                                 const std::string field = "%" + name + ".field." + std::to_string(fieldIndex);
@@ -226,6 +223,16 @@ static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bo
                                     output += csec_emit_i1_expression(tokens, argumentStart, position, value);
                                 } else if (std::strcmp(fieldType, "ptr") == 0) {
                                     output += csec_emit_ptr_expression(tokens, argumentStart, position, value);
+                                } else if (std::strcmp(fieldType, "i64") == 0) {
+                                    output += csec_emit_i64_expression(tokens, argumentStart, position, value);
+                                } else if (std::strcmp(fieldType, "double") == 0) {
+                                    output += csec_emit_f64_expression(tokens, argumentStart, position, value);
+                                } else if (std::strcmp(fieldType, "float") == 0) {
+                                    output += csec_emit_f32_expression(tokens, argumentStart, position, value);
+                                } else if (std::strcmp(fieldType, "i16") == 0) {
+                                    output += csec_emit_i16_expression(tokens, argumentStart, position, value);
+                                } else if (std::strcmp(fieldType, "i8") == 0) {
+                                    output += csec_emit_i8_expression(tokens, argumentStart, position, value);
                                 } else {
                                     output += csec_emit_i32_expression(tokens, argumentStart, position, value);
                                 }

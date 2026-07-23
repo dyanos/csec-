@@ -801,6 +801,45 @@ static std::string csec_emit_i64_expression(const char* tokens, int start, int e
             return output + "  " + resultName + " = call i64 @" + std::string(csec_token_text_at(tokens, start)) + "(" + arguments + ")\n";
         }
     }
+    if (csec_token_kind_at(tokens, start) == 'I' && start + 3 < end && csec_native_token_is(tokens, start + 1, 'O', ".") &&
+        csec_token_kind_at(tokens, start + 2) == 'I' && csec_native_token_is(tokens, start + 3, 'O', "(")) {
+        const int close = csec_find_closing_token(tokens, start + 3, end, "(", ")");
+        const int declaration = csec_find_visible_local(tokens, start, csec_token_text_at(tokens, start));
+        const int declarationEnd = declaration >= 0 ? csec_advance_statement(tokens, declaration, 1000000000) : -1;
+        const int initializer = declaration >= 0 ? csec_find_top_level_operator(tokens, declaration, declarationEnd, 1) : -1;
+        if (close == end - 1 && initializer >= declaration && csec_native_token_is(tokens, initializer + 1, 'K', "new") &&
+            csec_token_kind_at(tokens, initializer + 2) == 'I') {
+            const std::string className = csec_token_text_at(tokens, initializer + 2);
+            const int classStart = csec_find_class_declaration(tokens, className.c_str());
+            const int method = classStart >= 0 ? csec_find_class_method_declaration(tokens, classStart, csec_token_text_at(tokens, start + 2)) : -1;
+            if (method >= 0 && csec_is_i64_type_name(csec_function_return_type_at(tokens, method))) {
+                const auto parameters = csec_function_params(tokens, method);
+                std::string output, arguments;
+                if (csec_class_uses_pointer_receiver(tokens, classStart)) {
+                    const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
+                    const std::string receiver = resultName + ".this";
+                    output += "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n";
+                    arguments = "ptr " + receiver;
+                }
+                int itemStart = start + 4, index = 0;
+                for (int cursor = itemStart; cursor <= close; ++cursor) {
+                    if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
+                        if (cursor > itemStart) {
+                            const std::string value = resultName + ".arg" + std::to_string(index);
+                            const bool wide = index < static_cast<int>(parameters.size()) && csec_is_i64_type_name(parameters[index].second);
+                            output += wide ? csec_emit_i64_expression(tokens, itemStart, cursor, value)
+                                           : csec_emit_i32_expression(tokens, itemStart, cursor, value);
+                            if (!arguments.empty()) arguments += ", ";
+                            arguments += std::string(wide ? "i64 " : "i32 ") + value;
+                            ++index;
+                        }
+                        itemStart = cursor + 1;
+                    }
+                }
+                return output + "  " + resultName + " = call i64 @" + className + "_" + csec_token_text_at(tokens, start + 2) + "(" + arguments + ")\n";
+            }
+        }
+    }
     return "  " + resultName + " = add i64 0, 0\n";
 }
 

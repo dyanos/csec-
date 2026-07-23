@@ -230,11 +230,12 @@ static bool csec_class_uses_pointer_receiver(const char* tokens, int classStart)
 
 static std::string csec_class_i32_layout(const char* tokens, int classStart) {
     std::string layout;
+    // Every constructor parameter takes a slot, whatever its scalar type. Skipping the wider
+    // ones used to leave a class such as `Counter(start: Long)` with an empty layout, which the
+    // module generator treats as a hard error.
     for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
-        const char* type = csec_llvm_type_for_name(parameter.second);
-        if (std::strcmp(type, "i32") != 0 && std::strcmp(type, "i1") != 0 && std::strcmp(type, "ptr") != 0) continue;
         if (!layout.empty()) layout += ", ";
-        layout += type;
+        layout += csec_llvm_type_for_name(parameter.second);
     }
     const std::string inherited = csec_class_inherited_field_layout(tokens, classStart);
     if (!inherited.empty()) {
@@ -450,9 +451,9 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
     int fieldIndex = 0;
     if (pointerReceiver) {
         receiverParams = "ptr %arg.this";
+        // Every constructor parameter occupies a layout slot, so emit a pointer for each one.
+        // Skipping the wider types here would misalign the indices of the fields that follow.
         for (const auto& field : fields) {
-            const char* fieldType = csec_llvm_type_for_name(field.second);
-            if (std::strcmp(fieldType, "i32") != 0 && std::strcmp(fieldType, "i1") != 0 && std::strcmp(fieldType, "ptr") != 0) continue;
             receiverAllocas += "  %" + field.first + " = getelementptr inbounds %class." + className + ", ptr %arg.this, i32 0, i32 " + std::to_string(fieldIndex++) + "\n";
         }
         fieldIndex += csec_class_inherited_field_count(tokens, classStart);

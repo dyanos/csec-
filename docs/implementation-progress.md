@@ -171,6 +171,12 @@
   allocated only their own result type, so an `Int` or `String` local in a `Float` body was
   dropped and later references pointed at an alloca that was never emitted.
   `175_float_body_control_flow.csec` exits with `0` on both paths.
+- Class constructor parameters of every scalar type get a layout slot, so `Long`, `Natural`,
+  `Integer`, `Float`, `Double`, `Short`, and `Byte` constructor state is stored and read back
+  through the pointer receiver. A class such as `Counter(start: Long)` previously produced an
+  empty struct layout, which aborted generation of the entire module. `Long`-returning instance
+  methods also lower through the class-method call path, which only `Int`, `Boolean`, `String`,
+  `Float`, and `Double` had. `176_wide_class_field_execution.csec` exits with `0` on both paths.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -216,9 +222,13 @@
   flat-storage path: other element types, nested/dynamic shape semantics, newly-created array
   returns, bounds behavior, and general ownership.
 - Unannotated float literal arrays default to `Float` storage rather than `Double`.
-- Reference semantics beyond the current stack-backed instance path, general field access syntax,
-  and non-`Int` constructor or field state in the self-host LLVM emitter. `Int` inheritance,
-  including struct-backed parent fields and `super` dispatch, is supported.
+- Reference semantics beyond the current stack-backed instance path, and general field access
+  syntax. `Int` inheritance, including struct-backed parent fields and `super` dispatch, is
+  supported, as is scalar constructor state of every width. Class bodies still only declare
+  `Int`, `Boolean`, and `String` fields directly; wider declared fields are not yet laid out.
+- Returning a newly created array from a function works through the self-host path but not the
+  direct compiler, which fails to emit IR for it.
+- `match` expressions do not execute through either path.
 - Generic/template execution, enum/union/nullable/ownership behavior, rich string/char
   interactions, complete match patterns, iterable collection loops, broad function ABI coverage,
   and mixed numeric conversion semantics remain incomplete.
@@ -251,6 +261,10 @@ steps.
   .\tests\positive\10_integration\175_float_body_control_flow.csec `
   .\selfhost\float_body_selfhost_probe.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\float_body_selfhost_probe.ll
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\176_wide_class_field_execution.csec `
+  .\selfhost\wide_class_field_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\wide_class_field_selfhost_probe.ll
 
 # Self-host bootstrap fixed point: regenerating the compiler must reproduce stage 6 exactly
 .\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `

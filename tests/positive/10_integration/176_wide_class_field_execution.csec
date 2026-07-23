@@ -1,0 +1,24 @@
+class Counter(start: Long) {
+    def value(): Long {
+        return start;
+    }
+}
+
+class Measure(width: Float, depth: Double) {
+    def area(): Double {
+        return depth;
+    }
+}
+
+def main(): Int {
+    val counter = new Counter(2147483653);
+    val total: Long = counter.value();
+
+    val measure = new Measure(1.5, 2.5);
+    val depth: Double = measure.area();
+
+    if (total == 2147483653 and depth > 2.4 and depth < 2.6) {
+        return 0;
+    }
+    return 1;
+}

@@ -1,0 +1,14 @@
+def second(values: Vector[Byte]): Byte {
+    return values[1];
+}
+
+def main(): Int {
+    val values = new Byte[2];
+    values[0] = 6;
+    values[1] = 42;
+    val selected: Byte = second(values);
+    if (selected == 42) {
+        return 0;
+    }
+    return 1;
+}

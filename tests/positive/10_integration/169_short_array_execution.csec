@@ -1,0 +1,17 @@
+def identity(values: Vector[Short]): Vector[Short] = values;
+
+def second(values: Vector[Short]): Short {
+    return values[1];
+}
+
+def main(): Int {
+    val values = new Short[2];
+    values[0] = 1024;
+    values[1] = 2048;
+    val forwarded: Vector[Short] = identity(values);
+    val selected: Short = second(forwarded);
+    if (selected == 2048) {
+        return 0;
+    }
+    return 1;
+}

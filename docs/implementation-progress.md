@@ -117,6 +117,13 @@
   integer condition ABI. `Vector[Char]` forwarding also preserves the underlying array pointer on
   return. The direct compiler and self-host LLVM paths both execute
   `161_char_array_execution.csec` and `162_char_vector_return_execution.csec` with exit code `0`.
+- `Short` arrays now preserve their LLVM `i16` element ABI for `new Short[n]`, indexed
+  assignment, `Vector[Short]` forwarding, Short-returning indexed reads, and comparisons. The
+  direct compiler and self-host LLVM paths both execute `169_short_array_execution.csec` with
+  exit code `0`.
+- `Byte` arrays and `Vector[Byte]` now share the `Char` `i8` element ABI for allocation,
+  indexed writes and reads, parameter calls, and comparisons. The self-host LLVM path executes
+  `170_byte_array_execution.csec` with exit code `0`.
 - `Long` values now preserve their LLVM `i64` ABI for 32-bit-overflowing integer literals, local
   storage, arithmetic, direct function calls, and comparisons. The direct compiler and self-host
   LLVM paths both execute `163_long_execution.csec` with exit code `0`.

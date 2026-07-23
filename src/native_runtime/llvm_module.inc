@@ -1,4 +1,30 @@
-char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bodyEnd) {
+// A generated block is closed only when its last instruction is a terminator. Testing for a
+// `ret` anywhere in the body is not enough: a nested `if` that returns from one arm still
+// leaves its own `if.end` label open, and that block still needs a branch.
+static bool csec_body_is_terminated(const std::string& body) {
+    const size_t last = body.find_last_not_of('\n');
+    if (last == std::string::npos) return false;
+    const size_t lineStart = body.rfind('\n', last) == std::string::npos ? 0 : body.rfind('\n', last) + 1;
+    const std::string line = body.substr(lineStart, last - lineStart + 1);
+    return line.compare(0, 6, "  ret ") == 0 || line.compare(0, 5, "  br ") == 0 ||
+        line == "  unreachable";
+}
+
+// Emits `return <expression>` for whichever result type the enclosing function declares. Only
+// the return paths differ between result types; every other statement lowers identically.
+static std::string csec_emit_typed_return(const char* tokens, int start, int end,
+                                          const char* resultType, const std::string& value) {
+    if (std::strcmp(resultType, "ptr") == 0) {
+        return csec_emit_ptr_expression(tokens, start, end, value) + "  ret ptr " + value + "\n";
+    }
+    if (std::strcmp(resultType, "i1") == 0) {
+        return csec_emit_i1_expression(tokens, start, end, value) + "  ret i1 " + value + "\n";
+    }
+    return csec_emit_i32_expression(tokens, start, end, value) + "  ret i32 " + value + "\n";
+}
+
+static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bodyStart, int bodyEnd,
+                                                      const char* resultType) {
     std::string output;
     int cursor = csec_expression_ast_skip_trivia(tokens, bodyStart);
     while (cursor >= 0 && cursor < bodyEnd && csec_token_kind_at(tokens, cursor) != 'E') {
@@ -27,11 +53,10 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                 }
                 output += "  br i1 %ifcond." + seed + ", label %if.then." + seed + ", label %if.else." + seed + "\n";
                 output += "if.then." + seed + ":\n";
-                const int thenReturn = csec_find_token_text_in_range(tokens, thenOpen + 1, thenClose, "return");
-                if (thenReturn >= 0) {
-                    output += csec_emit_i32_expression(tokens, thenReturn + 1, thenClose, "%if.then.ret." + seed);
-                    output += "  ret i32 %if.then.ret." + seed + "\n";
-                } else output += "  br label %if.end." + seed + "\n";
+                const std::string thenBody = csec_generate_llvm_flat_body_typed(tokens, thenOpen + 1, thenClose, resultType);
+                output += thenBody;
+                const bool thenReturn = csec_body_is_terminated(thenBody);
+                if (!thenReturn) output += "  br label %if.end." + seed + "\n";
                 output += "if.else." + seed + ":\n";
                 int elseOpen = -1;
                 int elseIf = -1;
@@ -43,18 +68,23 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                     }
                 }
                 if (elseIf >= 0) {
-                    char* nested = csec_generate_llvm_flat_body_i32(tokens, elseIf, next);
-                    if (nested) output += nested;
-                    output += "if.end." + seed + ":\n  unreachable\n";
+                    // The nested `else if` ends at its own `if.end` label, so chain that block
+                    // into this one instead of assuming the whole chain is unreachable.
+                    const std::string elseBody = csec_generate_llvm_flat_body_typed(tokens, elseIf, next, resultType);
+                    output += elseBody;
+                    const bool elseReturn = csec_body_is_terminated(elseBody);
+                    if (!elseReturn) output += "  br label %if.end." + seed + "\n";
+                    output += "if.end." + seed + ":\n";
+                    if (thenReturn && elseReturn) output += "  unreachable\n";
                 } else {
                     const int elseClose = elseOpen >= 0 ? csec_find_closing_token(tokens, elseOpen, next, "{", "}") : -1;
-                    const int elseReturn = elseClose > elseOpen ? csec_find_token_text_in_range(tokens, elseOpen + 1, elseClose, "return") : -1;
-                    if (elseReturn >= 0) {
-                        output += csec_emit_i32_expression(tokens, elseReturn + 1, elseClose, "%if.else.ret." + seed);
-                        output += "  ret i32 %if.else.ret." + seed + "\n";
-                    } else output += "  br label %if.end." + seed + "\n";
+                    const std::string elseBody = elseClose > elseOpen
+                        ? csec_generate_llvm_flat_body_typed(tokens, elseOpen + 1, elseClose, resultType) : "";
+                    output += elseBody;
+                    const bool elseReturn = csec_body_is_terminated(elseBody);
+                    if (!elseReturn) output += "  br label %if.end." + seed + "\n";
                     output += "if.end." + seed + ":\n";
-                    if (thenReturn >= 0 && elseReturn >= 0) output += "  unreachable\n";
+                    if (thenReturn && elseReturn) output += "  unreachable\n";
                 }
             }
         } else if (csec_native_token_is(tokens, cursor, 'K', "for")) {
@@ -84,7 +114,7 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                 output += "  %forcond." + seed + " = icmp " + (inclusive ? "sle" : "slt") + " i32 %forvalue." + seed + ", " + endValue + "\n";
                 output += "  br i1 %forcond." + seed + ", label %for.body." + seed + ", label %for.end." + seed + "\n";
                 output += "for.body." + seed + ":\n";
-                output += csec_generate_llvm_flat_body_i32(tokens, loopOpen + 1, loopClose);
+                output += csec_generate_llvm_flat_body_typed(tokens, loopOpen + 1, loopClose, resultType);
                 output += "  %fornext." + seed + " = add i32 %forvalue." + seed + ", 1\n";
                 output += "  store i32 %fornext." + seed + ", ptr %" + variable + "\n";
                 output += "  br label %for.cond." + seed + "\n";
@@ -108,7 +138,7 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                 }
                 output += "  br i1 %whilecond." + seed + ", label %while.body." + seed + ", label %while.end." + seed + "\n";
                 output += "while.body." + seed + ":\n";
-                output += csec_generate_llvm_flat_body_i32(tokens, loopOpen + 1, loopClose);
+                output += csec_generate_llvm_flat_body_typed(tokens, loopOpen + 1, loopClose, resultType);
                 output += "  br label %while.cond." + seed + "\n";
                 output += "while.end." + seed + ":\n";
             }
@@ -259,9 +289,8 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
             }
         } else if (csec_native_token_is(tokens, cursor, 'K', "return") && cursor + 1 < next) {
             const std::string value = "%ret." + std::to_string(cursor);
-            output += csec_emit_i32_expression(tokens, cursor + 1, next, value);
-            output += "  ret i32 " + value + "\n";
-            return csec_owned_string(output);
+            output += csec_emit_typed_return(tokens, cursor + 1, next, resultType, value);
+            return output;
         } else if (csec_token_kind_at(tokens, cursor) == 'I' &&
                    csec_native_token_is(tokens, cursor + 1, 'O', "[")) {
             const int close = csec_find_closing_token(tokens, cursor + 1, next, "[", "]");
@@ -337,11 +366,16 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
                 csec_is_float_parameter(tokens, cursor, name.c_str());
             const bool doubling = csec_is_double_local(tokens, cursor, name.c_str()) ||
                 csec_is_double_parameter(tokens, cursor, name.c_str());
+            const bool pointer = csec_is_string_local(tokens, cursor, name.c_str()) ||
+                csec_is_string_parameter(tokens, cursor, name.c_str()) ||
+                csec_is_pointer_local(tokens, cursor, name.c_str()) ||
+                csec_is_pointer_parameter(tokens, cursor, name.c_str());
             output += boolean ? csec_emit_i1_expression(tokens, cursor + 2, next, value)
+                : (pointer ? csec_emit_ptr_expression(tokens, cursor + 2, next, value)
                 : (doubling ? csec_emit_f64_expression(tokens, cursor + 2, next, value)
                 : (floating ? csec_emit_f32_expression(tokens, cursor + 2, next, value)
-                            : csec_emit_i32_expression(tokens, cursor + 2, next, value)));
-            output += std::string("  store ") + (boolean ? "i1 " : (doubling ? "double " : (floating ? "float " : "i32 "))) + value + ", ptr %" + storage + "\n";
+                            : csec_emit_i32_expression(tokens, cursor + 2, next, value))));
+            output += std::string("  store ") + (boolean ? "i1 " : (pointer ? "ptr " : (doubling ? "double " : (floating ? "float " : "i32 ")))) + value + ", ptr %" + storage + "\n";
         } else if (!csec_emit_println_statement(tokens, cursor, next).empty()) {
             output += csec_emit_println_statement(tokens, cursor, next);
         } else if (csec_token_kind_at(tokens, cursor) == 'I' && cursor + 3 < next &&
@@ -355,7 +389,19 @@ char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bo
         }
         cursor = csec_expression_ast_skip_trivia(tokens, next);
     }
-    return csec_owned_string(output);
+    return output;
+}
+
+char* csec_generate_llvm_flat_body_i32(const char* tokens, int bodyStart, int bodyEnd) {
+    return csec_owned_string(csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "i32"));
+}
+
+static std::string csec_generate_llvm_flat_body_ptr(const char* tokens, int bodyStart, int bodyEnd) {
+    return csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "ptr");
+}
+
+static std::string csec_generate_llvm_flat_body_i1(const char* tokens, int bodyStart, int bodyEnd) {
+    return csec_generate_llvm_flat_body_typed(tokens, bodyStart, bodyEnd, "i1");
 }
 
 static std::string csec_generate_llvm_flat_body_float(const char* tokens, int bodyStart, int bodyEnd) {

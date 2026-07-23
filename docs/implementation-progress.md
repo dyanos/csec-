@@ -2,10 +2,11 @@
 
 ## Verified
 
-- The checked-in `nativeflow_stage5_current.ll` and `nativeflow_stage6_current.ll` are
-  byte-identical, so the compiler reached an LLVM fixed point when those artifacts were
-  produced. That fixed point no longer reproduces against the current native runtime — see
-  "Self-Host Bootstrap Status" below.
+- The self-host compiler reaches an LLVM fixed point. Recompiling `selfhost/csec_compiler.csec`
+  with `nativeflow_stage5_current.ll` reproduces `nativeflow_stage6_current.ll` byte-for-byte,
+  and the regenerated compiler reproduces itself again. The regenerated compiler also passes the
+  whole execution fixture list below, so the fixed point is functional and not just
+  self-reproducing.
 - Integer expressions, comparisons, boolean operations, calls, control flow, range loops,
   literal arrays with static indexing, imports, and common return paths execute through the
   self-host LLVM path.
@@ -156,6 +157,14 @@
 - `String` arguments passed to `Boolean`-returning functions keep the pointer ABI at the call
   site instead of being truncated to `i32`. This restores `142_string_equality_execution.csec`
   (`42`), which previously faulted.
+- `String`-returning functions lower their whole body, not just the first `return` expression.
+  Local declarations, assignments, `if`/`else if` chains, and loops that precede a `return` are
+  now emitted. `Boolean`-returning bodies share the same statement lowering, so their locals keep
+  their declared types instead of being allocated as `i1`. `174_string_body_control_flow.csec`
+  exits with `0` on both paths.
+- Statement lowering is shared across result types through `csec_generate_llvm_flat_body_typed`;
+  only the `return` path differs per type. Nested `if`/`else if` chains now chain their `if.end`
+  blocks together instead of emitting empty or unreachable blocks.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -183,25 +192,18 @@
 - Child class layouts carry inherited `Boolean` field slots, and `super` calls preserve their
   `i1` result ABI. `071_inherited_boolean_field.csec` exits with `42`.
 
-## Self-Host Bootstrap Status
+## Known Gaps in the Direct Compiler
 
-Recompiling `selfhost/csec_compiler.csec` with `nativeflow_stage5_current.ll` no longer
-reproduces `nativeflow_stage6_current.ll`; the native runtime has moved ahead of those
-checked-in artifacts. The regenerated stage-6 module is not yet loadable, and the current
-blocker is `generateLLVMVoidBodyFromRange` (`selfhost/csec_compiler.csec:4610`):
-
-- `String`-returning functions with a multi-statement body only lower their first `return`
-  expression. Local declarations, loops, and branches before that `return` are dropped, so the
-  emitted module references allocas that were never written (`use of undefined value
-  '%builder.addr.…'`).
-- `runtime_services.inc` has flat-body generators for `i32`, `i1`, `float`, and `double`
-  result types, but none for `ptr`. Adding `csec_generate_llvm_flat_body_ptr` is the next step;
-  further blockers may follow behind it.
+- `String` `==` and `!=` lower to an LLVM pointer comparison in the direct compiler rather than
+  a `csec_string_equals` call, so equal strings held in distinct globals compare unequal.
+  `142_string_equality_execution.csec` returns `0` instead of `42` through `--emit-ir`; it is
+  correct through the self-host path. `BinaryExpressionNode.cpp` handles `String` for `+` but
+  has no `String` case in its comparison branch. This was not fixed here because the direct
+  compiler needs LLVM headers to build and they are not present in this checkout, so the change
+  could not be compiled or verified.
 
 ## Still Incomplete
 
-- `String`-returning function bodies beyond a single `return` expression, and with them the
-  self-host bootstrap fixed point (see above).
 - Lambda closures: non-`Int` signatures beyond the verified `Boolean` return ABI, broader
   higher-order ABI coverage, and closure environment ownership.
 - Arrays beyond the current `Int`/`Boolean`/`Byte`/`Char`/`Short`/`Long`/`Float`/`Double`/`String`
@@ -235,6 +237,16 @@ steps.
   .\tests\positive\10_integration\172_nested_call_execution.csec `
   .\selfhost\nested_call_selfhost_probe.ll llvm
 .\x64\Debug\csec++.exe --run-ir .\selfhost\nested_call_selfhost_probe.ll
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\tests\positive\10_integration\174_string_body_control_flow.csec `
+  .\selfhost\string_body_selfhost_probe.ll llvm
+.\x64\Debug\csec++.exe --run-ir .\selfhost\string_body_selfhost_probe.ll
+
+# Self-host bootstrap fixed point: regenerating the compiler must reproduce stage 6 exactly
+.\x64\Debug\csec++.exe --run-ir .\selfhost\nativeflow_stage5_current.ll -- `
+  .\selfhost\csec_compiler.csec .\selfhost\stage6_check.ll llvm
+Compare-Object (Get-Content .\selfhost\stage6_check.ll) `
+  (Get-Content .\selfhost\nativeflow_stage6_current.ll)
 
 # Native dynamic array path
 .\x64\Debug\csec++.exe --emit-ir -o .\selfhost\dynamic_array_check.ll `

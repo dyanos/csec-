@@ -1,0 +1,36 @@
+def pick(value: Int): String {
+    var result: String = "";
+    if (value == 1) {
+        result = "one";
+    }
+    else if (value == 2) {
+        result = "two";
+    }
+    else if (value == 3) {
+        result = "three";
+    }
+    if (result.length > 0) {
+        return result;
+    }
+    return "none";
+}
+
+def describe(value: Int): String {
+    var cursor: Int = 0;
+    var label: String = "";
+    while (cursor < value) {
+        label = label + "x";
+        cursor = cursor + 1;
+    }
+    return label;
+}
+
+def main(): Int {
+    val chosen: String = pick(3);
+    val fallback: String = pick(9);
+    val repeated: String = describe(4);
+    if (chosen.length == 5 and fallback.length == 4 and repeated.length == 4) {
+        return 0;
+    }
+    return 1;
+}

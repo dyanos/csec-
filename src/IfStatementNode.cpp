@@ -44,7 +44,7 @@ llvm::Value* IfStatementNode::codegen() {
         std::cerr << "Warning: if constexpr condition is not a compile-time constant, falling back to runtime branch" << std::endl;
     }
 
-    if (conditionValue->getType()->isIntegerTy()) {
+    if (!conditionValue->getType()->isIntegerTy(1) && conditionValue->getType()->isIntegerTy()) {
         conditionValue = cg.builder.CreateICmpNE(
             conditionValue, llvm::ConstantInt::get(cg.context, llvm::APInt(conditionValue->getType()->getIntegerBitWidth(), 0)), "ifcond");
     }

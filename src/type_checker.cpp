@@ -19,6 +19,19 @@ bool isTensorLikeType(const std::unique_ptr<Type>& type) {
     return name == "Tensor" || name.rfind("Tensor$", 0) == 0;
 }
 
+bool isI64IntegerAlias(const std::unique_ptr<Type>& type) {
+    if (!type) return false;
+    const std::string name = type->getName();
+    return name == "Long" || name == "Natural" || name == "Integer";
+}
+
+bool isIntegerTypeName(const std::unique_ptr<Type>& type) {
+    if (!type) return false;
+    const std::string name = type->getName();
+    return name == "Byte" || name == "Short" || name == "Int" ||
+           name == "Long" || name == "Natural" || name == "Integer";
+}
+
 std::unique_ptr<Type> collectionElementType(const std::unique_ptr<Type>& type) {
     if (!type) return std::make_unique<UnknownType>();
     if (auto* arrType = dynamic_cast<ArrayType*>(type.get())) {
@@ -353,6 +366,7 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
                      !((node.type->getName() == "Bool" && initType->getName() == "Boolean") ||
                        (node.type->getName() == "Boolean" && initType->getName() == "Bool")) &&
                      !(node.type->isIntegerTy() && initType->isIntegerTy()) &&
+                     !(isI64IntegerAlias(node.type) && isIntegerTypeName(initType)) &&
                      !(node.type->isDoubleTy() && initType->isFloatTy()) &&
                      !((node.type->isDoubleTy() || node.type->getName() == "Real") &&
                        (initType->isIntegerTy() || initType->isFloatTy() || initType->isDoubleTy())) &&
@@ -410,7 +424,9 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
             if (isResolvedType(node.returnType) && isResolvedType(bodyType) &&
                 !node.returnType->isVoidTy() &&
                 !node.returnType->equals(bodyType) &&
-                !(isTensorLikeType(node.returnType) && isTensorLikeType(bodyType))) {
+                !(isIntegerTypeName(node.returnType) && isIntegerTypeName(bodyType)) &&
+                !(isTensorLikeType(node.returnType) && isTensorLikeType(bodyType)) &&
+                !(isI64IntegerAlias(node.returnType) && isI64IntegerAlias(bodyType))) {
                 reportError(
                     "Type error: Function '" + node.name + "' declared to return '" +
                     node.returnType->getName() + "' but returns '" + bodyType->getName() + "'");

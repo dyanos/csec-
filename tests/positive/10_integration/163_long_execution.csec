@@ -1,0 +1,9 @@
+def add(left: Long, right: Long): Long = left + right;
+
+def main(): Int {
+    val result: Long = add(2147483648, 7);
+    if (result == 2147483655) {
+        return 0;
+    }
+    return 1;
+}

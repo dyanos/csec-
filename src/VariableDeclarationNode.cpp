@@ -173,6 +173,12 @@ llvm::Value* VariableDeclarationNode::codegen() {
         return nullptr;
     }
 
+    initValue = coerceBoxValue(initValue, varType);
+    if (!initValue || initValue->getType() != varType) {
+        std::cerr << "Error: Variable initializer for '" << name << "' has incompatible LLVM type" << std::endl;
+        return nullptr;
+    }
+
     auto* currentSymbol = cg.symbolTable.getCurrentSymbol();
     if (currentSymbol && currentSymbol->symbolType == SymbolType::NAMESPACE) {
         llvm::Constant* globalInit = llvm::dyn_cast<llvm::Constant>(initValue);

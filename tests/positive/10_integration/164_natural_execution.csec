@@ -1,0 +1,10 @@
+def grow(value: Natural): Natural = value + 5;
+
+def main(): Int {
+    val value: Natural = 2147483648;
+    val result: Natural = grow(value);
+    if (result == 2147483653) {
+        return 0;
+    }
+    return 1;
+}

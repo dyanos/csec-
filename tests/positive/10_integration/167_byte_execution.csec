@@ -1,0 +1,10 @@
+def bump(value: Byte): Byte = value + 1;
+
+def main(): Int {
+    val value: Byte = 6;
+    val result: Byte = bump(value);
+    if (result == 7) {
+        return 0;
+    }
+    return 1;
+}

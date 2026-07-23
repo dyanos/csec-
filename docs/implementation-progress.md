@@ -98,6 +98,10 @@
 - `Float` arrays now use stack-backed LLVM `float` storage for `new Float[n]`, indexed reads,
   indexed assignment, Float comparisons, and `Vector[Float]` parameter calls. The native and
   self-host LLVM paths both execute `155_float_array_execution.csec` with exit code `0`.
+- `Vector[Float]` and `Vector[Double]` parameter forwarding preserve pointer storage when a
+  function return initializes an explicitly typed local. The caller can index the returned vector;
+  the native and self-host LLVM paths both execute `159_float_vector_return_execution.csec` and
+  `160_double_vector_return_execution.csec` with exit code `0`.
 - `Double` arrays now use stack-backed LLVM `double` storage for `new Double[n]`, indexed reads,
   indexed assignment, Double comparisons, and `Vector[Double]` parameter calls. The self-host
   and direct compiler LLVM paths both execute `156_double_array_execution.csec` with exit code
@@ -108,6 +112,22 @@
   function return types, preserving pointer return values without an explicit annotation. The direct
   compiler and self-host LLVM paths both execute `157_string_array_execution.csec` with exit code
   `0`.
+- `Char` arrays now preserve their LLVM `i8` element ABI for `new Char[n]`, indexed assignment,
+  `Vector[Char]` parameter reads, Char-returning calls, and comparisons after widening to the
+  integer condition ABI. `Vector[Char]` forwarding also preserves the underlying array pointer on
+  return. The direct compiler and self-host LLVM paths both execute
+  `161_char_array_execution.csec` and `162_char_vector_return_execution.csec` with exit code `0`.
+- `Long` values now preserve their LLVM `i64` ABI for 32-bit-overflowing integer literals, local
+  storage, arithmetic, direct function calls, and comparisons. The direct compiler and self-host
+  LLVM paths both execute `163_long_execution.csec` with exit code `0`.
+- `Natural` and `Integer` now share the `Long` `i64` ABI in the self-host LLVM generator for
+  function parameters and returns, local storage, arithmetic, calls, and comparisons.
+  The direct parser also recognizes both as basic types, rather than class names. The direct and
+  self-host LLVM paths both generate and execute `164_natural_execution.csec` and
+  `165_integer_execution.csec` with exit code `0`, including values above the signed `Int` range.
+- `Byte` now preserves its direct compiler `i8` ABI through self-host function parameters and
+  returns, local storage, arithmetic, calls, and comparisons. The direct and self-host LLVM paths
+  both execute `167_byte_execution.csec` with exit code `0`.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.

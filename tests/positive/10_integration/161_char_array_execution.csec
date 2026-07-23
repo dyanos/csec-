@@ -1,0 +1,16 @@
+def identity(value: Char): Char = value;
+
+def second(values: Vector[Char]): Char {
+    return values[1];
+}
+
+def main(): Int {
+    val values = new Char[2];
+    values[0] = identity('A');
+    values[1] = 'Z';
+    val selected = second(values);
+    if (selected == 'Z') {
+        return 0;
+    }
+    return 1;
+}

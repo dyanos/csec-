@@ -57,6 +57,8 @@ std::unique_ptr<Type> Parser::parseType() {
 			typeName == "Boolean" ||
 			typeName == "Bool" ||
 			typeName == "Long" ||
+			typeName == "Natural" ||
+			typeName == "Integer" ||
 			typeName == "Short" ||
 			typeName == "Byte" ||
 			typeName == "String") {

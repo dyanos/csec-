@@ -910,6 +910,26 @@ llvm::Value* BinaryExpressionNode::codegen() {
             rightValue = coerceNumericValue(rightValue, targetType);
         }
 
+        if (leftValue->getType() != rightValue->getType()) {
+            llvm::Type* targetType = nullptr;
+            if (leftValue->getType()->isIntegerTy() && rightValue->getType()->isIntegerTy()) {
+                targetType = llvm::Type::getInt64Ty(cg.context);
+            }
+            else if (leftValue->getType()->isFloatingPointTy() && rightValue->getType()->isFloatingPointTy()) {
+                targetType = (leftValue->getType()->isDoubleTy() || rightValue->getType()->isDoubleTy())
+                    ? llvm::Type::getDoubleTy(cg.context)
+                    : llvm::Type::getFloatTy(cg.context);
+            }
+            if (targetType) {
+                leftValue = coerceNumericValue(leftValue, targetType);
+                rightValue = coerceNumericValue(rightValue, targetType);
+            }
+        }
+        if (leftValue->getType() != rightValue->getType()) {
+            std::cerr << "Type error: Comparison operands have incompatible LLVM types" << std::endl;
+            return nullptr;
+        }
+
         const bool isFloatCompare = leftValue->getType()->isFloatingPointTy();
         if (isFloatCompare) {
             if (op == ">") return cg.builder.CreateFCmpOGT(leftValue, rightValue, "gttmp");

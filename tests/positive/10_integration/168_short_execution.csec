@@ -1,0 +1,10 @@
+def bump(value: Short): Short = value + 1;
+
+def main(): Int {
+    val value: Short = 1024;
+    val result: Short = bump(value);
+    if (result == 1025) {
+        return 0;
+    }
+    return 1;
+}

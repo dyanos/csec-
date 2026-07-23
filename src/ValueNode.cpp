@@ -6,6 +6,7 @@
 #include "token.h"
 
 #include <iostream>
+#include <limits>
 
 #include <llvm/IR/Constants.h>
 
@@ -18,7 +19,11 @@ llvm::Value* ValueNode::codegen() {
 
 	try {
 		if (valueType == TokenType::INTEGER_LITERAL) {
-			return llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), std::stoi(value));
+			const long long parsed = std::stoll(value, nullptr, 0);
+			const bool requiresLong = parsed < std::numeric_limits<int>::min() ||
+				parsed > std::numeric_limits<int>::max();
+			return llvm::ConstantInt::get(requiresLong ? llvm::Type::getInt64Ty(cg.context)
+				: llvm::Type::getInt32Ty(cg.context), parsed, true);
 		}
 		else if (valueType == TokenType::FLOAT_LITERAL) {
 			return llvm::ConstantFP::get(llvm::Type::getFloatTy(cg.context), std::stof(value));
@@ -86,7 +91,14 @@ std::unique_ptr<Type> ValueNode::getType() {
 	case TokenType::HEX_LITERAL:
 	case TokenType::BINARY_LITERAL:
 	case TokenType::OCTAL_LITERAL:
-		type = std::make_unique<BasicType>(std::string("Int"));
+		try {
+			const long long parsed = std::stoll(value, nullptr, 0);
+			type = std::make_unique<BasicType>(parsed < std::numeric_limits<int>::min() ||
+				parsed > std::numeric_limits<int>::max() ? "Long" : "Int");
+		}
+		catch (const std::exception&) {
+			type = std::make_unique<BasicType>(std::string("Int"));
+		}
 		break;
 	case TokenType::FLOAT_LITERAL:
 		type = std::make_unique<BasicType>(std::string("Float"));

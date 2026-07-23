@@ -1297,4 +1297,3 @@ static std::string csec_generate_llvm_flat_body_i1(const char* tokens, int bodyS
     }
     return output;
 }
-

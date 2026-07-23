@@ -1139,4 +1139,3 @@ static bool csec_emit_ptr_instance_call(const char* tokens, int start, int end, 
         "  " + resultName + " = call ptr @" + std::string(className) + "_" + csec_token_text_at(tokens, start + 2) + "(ptr " + receiver + ")\n";
     return true;
 }
-

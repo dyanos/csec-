@@ -926,4 +926,3 @@ char csec_token_kind_at(const char* tokens, int ordinal) {
     int start = starts[static_cast<size_t>(ordinal)];
     return value[start] == '\0' ? 'E' : value[start];
 }
-

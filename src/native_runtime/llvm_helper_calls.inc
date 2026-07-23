@@ -1005,4 +1005,3 @@ operator.return:
     output += llvmStringGlobal(".str.expr.i64.operator.comma", ", ");
     return output;
 }
-

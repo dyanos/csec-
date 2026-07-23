@@ -766,4 +766,3 @@ static std::string csec_emit_ptr_array_local(const char* tokens, int declaration
     }
     return output;
 }
-

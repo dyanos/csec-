@@ -1123,4 +1123,3 @@ static int csec_i32_expression_end(const char* tokens, int start, int end) {
     while (end > start && csec_native_token_is(tokens, end - 1, 'O', ";")) --end;
     return end;
 }
-

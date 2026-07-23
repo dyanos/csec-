@@ -1045,4 +1045,3 @@ temporary.return:
 @.str.i32.callarg.arg = private unnamed_addr constant [5 x i8] c".arg\00"
 )I32CALLARGLLVM";
 }
-

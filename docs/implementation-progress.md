@@ -71,6 +71,18 @@
 - Untyped String-transform locals retain the pointer ABI, and `println` lowers String and `Int`
   arguments to the native output runtime. The existing `120_string_members.csec` integration
   fixture now executes through the self-host LLVM path with exit code `0`.
+- `Float` expressions now use LLVM `float` values end-to-end for literals, unary negation,
+  `+`, `-`, `*`, `/`, direct calls, pointer-receiver class method calls, local storage, and
+  comparisons in `Int` and `Boolean` control-flow conditions. Float-returning bodies support
+  nested `if` and `while` CFG lowering with Float local assignment. `147_float_execution.csec`,
+  `148_float_class_execution.csec`, and `112_basic_math_class.csec` all execute through the
+  self-host LLVM path with exit code `0`.
+- `Double` expressions now preserve their `double` ABI for literals, unary negation, arithmetic,
+  direct and class-method calls, local storage, and Boolean control-flow conditions. Double-
+  returning bodies support `if`/`while` CFG lowering with Double local assignment.
+  `149_double_execution.csec`, `150_double_class_execution.csec`, and
+  `151_double_control_flow_execution.csec` execute through the self-host LLVM path with exit
+  code `0`.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -107,9 +119,9 @@
 - Reference semantics beyond the current stack-backed instance path, general field access syntax,
   and non-`Int` constructor or field state in the self-host LLVM emitter. `Int` inheritance,
   including struct-backed parent fields and `super` dispatch, is supported.
-- Generic/template execution, enum/union/nullable/ownership behavior, rich string/char/float
-  interactions, complete match patterns, iterable collection loops, and broad function ABI
-  coverage.
+- Generic/template execution, enum/union/nullable/ownership behavior, rich string/char
+  interactions, complete match patterns, iterable collection loops, broad function ABI coverage,
+  and mixed numeric conversion semantics remain incomplete.
 
 ## Validation Commands
 

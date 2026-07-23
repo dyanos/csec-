@@ -1,0 +1,9 @@
+def scale(value: Float): Float = value * 2.5;
+
+def main(): Int {
+    val result: Float = scale(2.0);
+    if (result == 5.0) {
+        return 0;
+    }
+    return 1;
+}

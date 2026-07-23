@@ -1,0 +1,17 @@
+def floorPositive(value: Double): Double {
+    var whole: Double = 0.0;
+    if (value >= 0.0) {
+        while (whole + 1.0 <= value) {
+            whole = whole + 1.0;
+        }
+        return whole;
+    }
+    return 0.0 - 1.0;
+}
+
+def main(): Int {
+    if (floorPositive(3.9) == 3.0 and floorPositive(0.0 - 2.0) == (0.0 - 1.0)) {
+        return 0;
+    }
+    return 1;
+}

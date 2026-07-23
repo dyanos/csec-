@@ -1,0 +1,12 @@
+class Scale() {
+    def twice(value: Double): Double = value * 2.0;
+}
+
+def main(): Int {
+    val scale = new Scale();
+    val result: Double = scale.twice(2.5);
+    if (result == 5.0) {
+        return 0;
+    }
+    return 1;
+}

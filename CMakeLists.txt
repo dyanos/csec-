@@ -278,6 +278,9 @@ list(REMOVE_ITEM PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/NativeRuntime.
 file(GLOB PROJECT_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
 )
+file(GLOB NATIVE_RUNTIME_MODULES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/native_runtime/*.inc"
+)
 
 set(ALL_FILES
     ${PROJECT_SOURCES}
@@ -295,7 +298,9 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 add_library(csec_native_runtime SHARED
     "src/NativeRuntime.cpp"
     "src/NativeRuntime.h"
+    ${NATIVE_RUNTIME_MODULES}
 )
+source_group("Native Runtime" FILES ${NATIVE_RUNTIME_MODULES})
 target_compile_features(csec_native_runtime PRIVATE cxx_std_17)
 target_compile_definitions(csec_native_runtime PRIVATE CSEC_NATIVE_RUNTIME_BUILD)
 find_package(Threads REQUIRED)

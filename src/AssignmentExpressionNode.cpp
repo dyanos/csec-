@@ -49,10 +49,25 @@ llvm::Value* AssignmentExpressionNode::codegen() {
         return nullptr;
     }
 
+    llvm::Type* targetType = CodeGenerator::getInstance().getLLVMType(left->getType().get());
+    rightValue = coerceValueToLLVMType(rightValue, targetType);
+    if (!rightValue || !targetType || rightValue->getType() != targetType) {
+        std::cerr << "Type error: Assignment value does not match its target type" << std::endl;
+        return nullptr;
+    }
+
     if (op == "+=" || op == "-=" || op == "*=" || op == "/=" || op == "%=") {
-        llvm::Type* valueType = rightValue->getType();
-        llvm::Value* oldValue = CodeGenerator::getInstance().builder.CreateLoad(valueType, targetPtr, "assign.old");
-        if (op == "+=") rightValue = CodeGenerator::getInstance().builder.CreateAdd(oldValue, rightValue, "assign.next");
+        llvm::Value* oldValue = CodeGenerator::getInstance().builder.CreateLoad(targetType, targetPtr, "assign.old");
+        if (targetType->isFloatingPointTy()) {
+            if (op == "+=") rightValue = CodeGenerator::getInstance().builder.CreateFAdd(oldValue, rightValue, "assign.next");
+            else if (op == "-=") rightValue = CodeGenerator::getInstance().builder.CreateFSub(oldValue, rightValue, "assign.next");
+            else if (op == "*=") rightValue = CodeGenerator::getInstance().builder.CreateFMul(oldValue, rightValue, "assign.next");
+            else if (op == "/=") rightValue = CodeGenerator::getInstance().builder.CreateFDiv(oldValue, rightValue, "assign.next");
+            else {
+                std::cerr << "Type error: Remainder assignment is not supported for floating-point values" << std::endl;
+                return nullptr;
+            }
+        } else if (op == "+=") rightValue = CodeGenerator::getInstance().builder.CreateAdd(oldValue, rightValue, "assign.next");
         else if (op == "-=") rightValue = CodeGenerator::getInstance().builder.CreateSub(oldValue, rightValue, "assign.next");
         else if (op == "*=") rightValue = CodeGenerator::getInstance().builder.CreateMul(oldValue, rightValue, "assign.next");
         else if (op == "/=") rightValue = CodeGenerator::getInstance().builder.CreateSDiv(oldValue, rightValue, "assign.next");

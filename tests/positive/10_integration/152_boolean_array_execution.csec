@@ -1,0 +1,15 @@
+def allEnabled(): Boolean {
+    val flags = [true, false, true];
+    val dynamic = new Boolean[2];
+    flags[1] = true;
+    dynamic[0] = true;
+    dynamic[1] = true;
+    return flags[0] and flags[1] and flags[2] and dynamic[0] and dynamic[1];
+}
+
+def main(): Int {
+    if (allEnabled()) {
+        return 0;
+    }
+    return 1;
+}

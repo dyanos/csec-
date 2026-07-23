@@ -1,0 +1,12 @@
+def allEnabled(values: Vector[Boolean]): Boolean {
+    return values[0] and values[1] and values[2];
+}
+
+def main(): Int {
+    val flags = [true, false, true];
+    flags[1] = true;
+    if (allEnabled(flags)) {
+        return 0;
+    }
+    return 1;
+}

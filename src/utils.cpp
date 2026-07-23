@@ -65,7 +65,11 @@ std::string join(std::vector<std::string> vec, const std::string& separator)
 
 bool isPrimitiveType(const std::string& type)
 {
-	std::vector<std::string> primitiveTypes = { "byte", "char", "word", "short", "int", "float", "double", "string" };
+	std::vector<std::string> primitiveTypes = {
+        "byte", "char", "word", "short", "int", "float", "double", "string",
+        "Byte", "Char", "Word", "Short", "Int", "Float", "Double", "String",
+        "Boolean", "Bool", "Long", "Natural", "Integer", "Real"
+    };
 	if (std::find(primitiveTypes.begin(), primitiveTypes.end(), type) != primitiveTypes.end()) {
 		return true;
 	}

@@ -1,0 +1,12 @@
+def identity(values: Vector[Float]): Vector[Float] = values;
+
+def main(): Int {
+    val values = new Float[2];
+    values[0] = 1.25;
+    values[1] = 2.5;
+    val forwarded: Vector[Float] = identity(values);
+    if (forwarded[0] + forwarded[1] == 3.75) {
+        return 0;
+    }
+    return 1;
+}

@@ -1,0 +1,10 @@
+def identity(values: Vector[Int]): Vector[Int] = values;
+
+def main(): Int {
+    val source = [7, 11, 13];
+    val forwarded: Vector[Int] = identity(source);
+    if (forwarded[1] == 11) {
+        return 0;
+    }
+    return 1;
+}

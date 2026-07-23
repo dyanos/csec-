@@ -83,6 +83,31 @@
   `149_double_execution.csec`, `150_double_class_execution.csec`, and
   `151_double_control_flow_execution.csec` execute through the self-host LLVM path with exit
   code `0`.
+- Boolean arrays now lower to stack-backed LLVM `i1` storage for literal and `new Boolean[n]`
+  declarations, indexed loads, indexed assignment, and `Vector[Boolean]` parameter calls inside
+  Int- and Boolean-returning functions. `152_boolean_array_execution.csec` and
+  `153_boolean_vector_parameter_execution.csec` execute through the self-host LLVM path with exit
+  code `0`.
+- `Vector[Int]` values now preserve their pointer ABI when forwarding a parameter through a
+  function return and storing that result in an explicitly typed local. The returned vector can be
+  indexed by the caller; `154_vector_return_execution.csec` executes through the self-host LLVM
+  path with exit code `0`.
+- `Vector[String]` parameter forwarding also preserves the existing pointer storage on return.
+  The caller can infer the returned vector element type when indexing it; the native and self-host
+  LLVM paths both execute `158_string_vector_return_execution.csec` with exit code `0`.
+- `Float` arrays now use stack-backed LLVM `float` storage for `new Float[n]`, indexed reads,
+  indexed assignment, Float comparisons, and `Vector[Float]` parameter calls. The native and
+  self-host LLVM paths both execute `155_float_array_execution.csec` with exit code `0`.
+- `Double` arrays now use stack-backed LLVM `double` storage for `new Double[n]`, indexed reads,
+  indexed assignment, Double comparisons, and `Vector[Double]` parameter calls. The self-host
+  and direct compiler LLVM paths both execute `156_double_array_execution.csec` with exit code
+  `0`.
+- `String` arrays now use stack-backed LLVM pointer storage for `new String[n]`, indexed reads,
+  indexed assignment, and `Vector[String]` calls that return a String element. Canonical primitive
+  names are also recognized during direct array creation. Local call initializers infer declared
+  function return types, preserving pointer return values without an explicit annotation. The direct
+  compiler and self-host LLVM paths both execute `157_string_array_execution.csec` with exit code
+  `0`.
 - Struct-backed class inheritance preserves ancestor `Int` field layout and dispatches
   `super.method()` with the same receiver pointer. `068_inherited_mutable_fields.csec` exits
   with `13`.
@@ -114,8 +139,9 @@
 
 - Lambda closures: non-`Int` signatures beyond the verified `Boolean` return ABI, broader
   higher-order ABI coverage, and closure environment ownership.
-- Arrays beyond the current `Int` flat-storage path: other element types, nested/dynamic shape
-  semantics, array parameters/returns, bounds behavior, and general ownership.
+- Arrays beyond the current `Int`/`Boolean`/`Float`/`Double`/`String` flat-storage path: other element types,
+  nested/dynamic shape semantics, newly-created array returns, bounds behavior, and general
+  ownership.
 - Reference semantics beyond the current stack-backed instance path, general field access syntax,
   and non-`Int` constructor or field state in the self-host LLVM emitter. `Int` inheritance,
   including struct-backed parent fields and `super` dispatch, is supported.

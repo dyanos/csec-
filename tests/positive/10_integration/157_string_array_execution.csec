@@ -1,0 +1,14 @@
+def second(values: Vector[String]): String {
+    return values[1];
+}
+
+def main(): Int {
+    val values = new String[2];
+    values[0] = "alpha";
+    values[1] = "beta";
+    val selected = second(values);
+    if (selected.length == 4) {
+        return 0;
+    }
+    return 1;
+}

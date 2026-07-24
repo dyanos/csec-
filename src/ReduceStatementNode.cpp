@@ -57,6 +57,11 @@ llvm::Value* ReduceStatementNode::codegen() {
     llvm::Value* arrayPtr = iterableExpr->codegen();
     if (!arrayPtr) return nullptr;
 
+    // The iterable may be a runtime-length collection result (from `map`/`filter`) bound directly
+    // as its element-base pointer. Capture that pointer before any decay so we can recover its
+    // recorded length.
+    llvm::Value* srcPtr = arrayPtr;
+
     auto iterType = iterableExpr->getType();
     if (!iterType) return nullptr;
 
@@ -100,10 +105,20 @@ llvm::Value* ReduceStatementNode::codegen() {
         arrayPtr = cg.builder.CreateInBoundsGEP(llvmArrayTy, arrayPtr, { zero, zero }, "reduce_arr_decay");
     }
 
-    if (!elementType || !sizeKnown || arraySize < 0) {
+    // A recorded runtime length lets us reduce over a collection result whose static size is
+    // unknown (`filter`) or over-allocated, iterating the surviving-element count instead.
+    llvm::Value* runtimeLen = nullptr;
+    auto lenIt = cg.arrayRuntimeLength.find(srcPtr);
+    if (lenIt != cg.arrayRuntimeLength.end()) {
+        runtimeLen = lenIt->second;
+    }
+
+    if (!elementType || (!sizeKnown && !runtimeLen) || arraySize < 0) {
         std::cerr << "Error: Cannot determine array element type or size for reduce" << std::endl;
         return nullptr;
     }
+
+    llvm::Value* boundValue = runtimeLen ? runtimeLen : cg.builder.getInt32(arraySize);
 
     // Evaluate initial value and create accumulator
     llvm::Value* initValue = initialValue ? initialValue->codegen() : nullptr;
@@ -150,7 +165,7 @@ llvm::Value* ReduceStatementNode::codegen() {
     // Condition
     cg.builder.SetInsertPoint(condBB);
     llvm::Value* counter = cg.builder.CreateLoad(cg.builder.getInt32Ty(), counterPtr, "i");
-    llvm::Value* cond = cg.builder.CreateICmpSLT(counter, cg.builder.getInt32(arraySize), "reducecmp");
+    llvm::Value* cond = cg.builder.CreateICmpSLT(counter, boundValue, "reducecmp");
     cg.builder.CreateCondBr(cond, bodyBB, afterBB);
 
     // Body

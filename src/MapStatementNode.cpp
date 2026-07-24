@@ -154,5 +154,9 @@ llvm::Value* MapStatementNode::codegen() {
     cg.builder.SetInsertPoint(afterBB);
     cg.symbolTable.exitScope();
 
+    // Record the result length so a downstream collection op can iterate the right count even
+    // though the bare pointer carries none. `map` preserves the source length.
+    cg.arrayRuntimeLength[resultPtr] = cg.builder.getInt32(arraySize);
+
     return resultPtr;
 }

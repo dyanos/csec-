@@ -173,5 +173,11 @@ llvm::Value* FilterStatementNode::codegen() {
     cg.builder.SetInsertPoint(afterBB);
     cg.symbolTable.exitScope();
 
+    // The result buffer is over-allocated to the source size but only the first `count` elements
+    // survived the predicate. Record that runtime count so a downstream collection op iterates the
+    // surviving elements rather than the padded source length.
+    llvm::Value* survivingCount = cg.builder.CreateLoad(cg.builder.getInt32Ty(), countPtr, "filter_len");
+    cg.arrayRuntimeLength[resultPtr] = survivingCount;
+
     return resultPtr;
 }

@@ -7,6 +7,7 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <vector>
+#include <unordered_map>
 
 class CodeGenerator {
 public:
@@ -28,6 +29,13 @@ public:
     SymbolTable symbolTable;
     // 현재 namespace 또는 클래스, function(or method), block 등을 의미(상위 심볼의 정보도 검색되어야 하는 조건이 있음), nullptr이면 전역 스코프
 	Symbol* currentSymbol; // non-owning, owned by SymbolTable
+
+    // Runtime element counts for collection results whose length is not encoded in their static
+    // type. `filter` produces a buffer over-allocated to the source size but valid only for the
+    // surviving-element count; `map` produces a statically sized buffer. Keyed by the result
+    // pointer so a downstream `preduce`/`map`/`filter` iterating that pointer can use the real
+    // length instead of the (unknown or over-allocated) static size. Non-owning LLVM values.
+    std::unordered_map<llvm::Value*, llvm::Value*> arrayRuntimeLength;
 
     llvm::LLVMContext& getContext() { return context; }
 

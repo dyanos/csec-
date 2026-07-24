@@ -8,6 +8,8 @@
 #include "CallExpressionNode.h"
 #include "FunctionCallNode.h"
 #include "LambdaExpressionNode.h"
+#include "MapStatementNode.h"
+#include "FilterStatementNode.h"
 #include "type_utils.h"
 
 #include <iostream>
@@ -150,6 +152,11 @@ llvm::Value* VariableDeclarationNode::codegen() {
         (dynamic_cast<ClassInstanceCreationNode*>(initializer.get()) != nullptr ||
          dynamic_cast<ArrayCreationExpressionNode*>(initializer.get()) != nullptr ||
          dynamic_cast<ArrayLiteralNode*>(initializer.get()) != nullptr ||
+         // `map`/`filter` yield a bare element-base pointer (a runtime-length collection buffer);
+         // bind it directly like an array literal instead of trying to store it into an aggregate
+         // slot, which would fail the LLVM type match and leave the variable unbound.
+         dynamic_cast<MapStatementNode*>(initializer.get()) != nullptr ||
+         dynamic_cast<FilterStatementNode*>(initializer.get()) != nullptr ||
          dynamic_cast<FunctionType*>(type.get()) != nullptr ||
          (type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
          type->getKind() == Type::Kind::BOX ||

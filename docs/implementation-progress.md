@@ -280,9 +280,19 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   bailed, which exposed a hang: the pmap capture walk (`collectPMapCaptures`) had no
   `PMapStatementNode` case, so an inner pmap's free variables were not captured and the outlined
   outer function referenced them across frames. Adding that case fixes `055_nested_pmap_shape`
-  (no longer hangs). `preduce`/`map`/`filter` still compute wrong results natively
-  (`056_preduce_variants` is `85`, not the expected `143`) — but that is a pre-existing gap on
-  both paths (`056` is also wrong through the self-host path), independent of array literals.
+  (no longer hangs).
+- `map`/`filter` results bound to a local now feed a downstream `preduce` correctly in the direct
+  compiler, so `056_preduce_variants` returns `143` (was `85`). Two problems were fixed: (1)
+  `val squares = map(...)` failed to bind because a `map`/`filter` result is a bare element-base
+  pointer that did not match the declared array LLVM type, leaving the variable undefined — those
+  initializers now bind directly like an array literal; and (2) the bare pointer carries no length,
+  so a consuming `preduce` recovered a size of zero (`filter`'s result type has no static size at
+  all, and its surviving count is dynamic). `map`/`filter` now record a runtime element count in a
+  `CodeGenerator.arrayRuntimeLength` sidecar keyed by the result pointer (`map` keeps the source
+  length; `filter` records the count of elements that passed the predicate), and
+  `ReduceStatementNode` uses that runtime length as its loop bound when present. The self-host path
+  still computes `056` incorrectly; this fix is direct-compiler-only (no emitter or fixed-point
+  change).
 - Class inheritance now works in the direct compiler. `this` is bound to the class type during
   type checking so `this.field` and `this.method()`/`super.method()` resolve to real types;
   `AccessFieldNode::codegen` reads the field value (with a pointer accessor for assignment

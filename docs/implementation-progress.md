@@ -281,6 +281,24 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   A complete fix spans the type checker (enclosing-class resolution, receiver-aware method
   matching), field-read loading, and super dispatch.
 
+## Operator and Method Overloading (Self-Host Gap)
+
+Operator overloading and overload/override resolution are not yet implemented in the self-host
+emitter, and the generated modules are invalid, so `116_operator_overload_class`,
+`117_method_overloading`, `118_method_overriding`, and `119_operator_overloading_and_overriding`
+fail through the self-host path (they run through the direct compiler, whose `println`-and-return
+bodies exit `0`):
+
+- An operator method emits an unquoted operator character in its LLVM name
+  (`@Counter_operator+`), which is a syntax error; operator names need mangling or quoting.
+- Overloaded methods emit the same LLVM name for every overload (two `@Formatter_show`
+  definitions), a duplicate-symbol collision; overloads need name mangling by parameter type.
+- Operator use is not dispatched to the operator method: `counter + 4` lowers to an integer add
+  rather than a call to `Counter_operator+`.
+
+A complete fix needs parameter-type name mangling at definitions and call sites plus operator
+dispatch.
+
 ## Still Incomplete
 
 - Lambda closures: non-`Int` signatures beyond the verified `Boolean` return ABI, broader

@@ -374,10 +374,12 @@ emitter paths hardened first; until then the guard is reverted to keep the boots
 - Reference semantics beyond the current stack-backed instance path, and general field access
   syntax. `Int` inheritance, including struct-backed parent fields and `super` dispatch, is
   supported, as is scalar constructor and declared-field state of every width.
-- Returning a newly created array executes correctly through the self-host path. The direct
-  compiler rejects `Vector[Int]` as a return type for `new Int[n]` with "declared to return
-  'Vector' but returns 'Array'", and with the return type spelled `Array[Int]` it compiles but
-  produces the wrong value.
+- Returning a newly created array now executes correctly through the direct compiler as well as the
+  self-host path. `178_new_array_return_execution` (`Array[Int]` return) and
+  `154_vector_return_execution` (`Vector[Int]` parameter/return) both return the expected values,
+  and a `Vector[Int]` return of `new Int[n]` reads back correctly (`v[0] + v[1]`). The earlier
+  "declared to return 'Vector' but returns 'Array'" rejection and wrong-value behavior no longer
+  reproduce — the array-literal/`new T[n]` direct-binding work fixed it.
 - Generic/template execution, enum/union/nullable/ownership behavior, rich string/char
   interactions, iterable collection loops, broad function ABI coverage, and mixed numeric
   conversion semantics remain incomplete. Literal `Int` `match` expressions with a `_` fallback

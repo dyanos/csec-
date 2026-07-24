@@ -310,10 +310,21 @@ through the String lowering. `117_method_overloading` exits `0`, and
 `185_method_overload_dispatch_execution` verifies through its exit code that overloads differing
 only by parameter type (`size(Int)` and `size(String)`, both returning Int) dispatch correctly.
 
-Method overriding through inheritance is still incomplete (`118_method_overriding`,
-`119_operator_overloading_and_overriding`): a call to an overridden method that returns a String
-built from an `Int` (`"child=" + value`) produces an empty result, so those fixtures print
-incorrectly even though their `println`-and-return-`0` bodies exit `0`.
+Method overriding through inheritance works. An overridden method dispatches on the instance's
+own class, and `118_method_overriding` prints `2`, `child=7`, and `child=ready` correctly.
+Operator overloading composes with overriding and with overloaded operators: `119_operator_over`
+`loading_and_overriding` prints `5`, `base+ok`, `14`, and `scaled+ok`, dispatching each `+` to the
+Int or String operator of the instance's class (including the overriding subclass).
+
+`String` concatenation now accepts a numeric operand on either side: `"count=" + count` and the
+chain `"a" + 1 + "b"` stringify the integer through `csec_to_string_i64` before concatenating.
+`csec_is_string_expression` treats a `+` as a string concatenation when either operand is a
+string, and instance operator expressions returning String are recognized so untyped contexts
+route them through the String lowering. `186_string_int_concat_execution` exits `0`.
+
+Overloaded operator methods that read scalar-receiver constructor state are still not passed that
+state (the operator dispatch, like the method-call dispatch, only forwards a pointer receiver or
+none).
 
 ## Still Incomplete
 

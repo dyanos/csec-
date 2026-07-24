@@ -1061,9 +1061,22 @@ static bool csec_is_string_expression(const char* tokens, int start, int end) {
         }
     }
     const int operation = csec_i32_top_level_operator(tokens, start, end);
-    return operation >= start && std::strcmp(csec_token_text_at(tokens, operation), "+") == 0 &&
-        csec_is_string_expression(tokens, start, operation) &&
-        csec_is_string_expression(tokens, operation + 1, end);
+    // A `+` is a string concatenation when either operand is a string; the numeric side is
+    // stringified during lowering. This also makes a chain such as `"a" + 1 + "b"` a string.
+    if (operation >= start && std::strcmp(csec_token_text_at(tokens, operation), "+") == 0 &&
+        (csec_is_string_expression(tokens, start, operation) ||
+         csec_is_string_expression(tokens, operation + 1, end))) return true;
+    // `instance <op> operand` is a String expression when the instance's class defines an
+    // operator<op> returning String.
+    if (operation >= start && start + 1 == operation && csec_token_kind_at(tokens, start) == 'I') {
+        const int classStart = csec_local_instance_class(tokens, start, csec_token_text_at(tokens, start));
+        if (classStart >= 0) {
+            const std::string operatorMethod = std::string("operator") + csec_token_text_at(tokens, operation);
+            const int method = csec_resolve_class_method_by_args(tokens, classStart, operatorMethod.c_str(), operation + 1, end);
+            if (method >= 0 && std::strcmp(csec_function_return_type_at(tokens, method), "String") == 0) return true;
+        }
+    }
+    return false;
 }
 
 static bool csec_function_parameter_returns_boolean(const char* tokens, int ordinal, const char* name) {

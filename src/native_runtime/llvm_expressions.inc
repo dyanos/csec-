@@ -3,12 +3,65 @@ static std::string csec_emit_ptr_expression(const char* tokens, int start, int e
     const std::string indexedArray = csec_emit_ptr_array_index(tokens, start, end, resultName);
     if (!indexedArray.empty()) return indexedArray;
     const int operation = csec_i32_top_level_operator(tokens, start, end);
+    // Operator overloading returning String: `instance <op> operand` where the instance's class
+    // defines an `operator<op>` returning String. Handled before string concatenation so the
+    // instance is dispatched rather than mistaken for a concatenation operand.
+    if (operation >= start && start + 1 == operation && csec_token_kind_at(tokens, start) == 'I') {
+        const int classStart = csec_local_instance_class(tokens, start, csec_token_text_at(tokens, start));
+        if (classStart >= 0) {
+            const std::string operatorMethod = std::string("operator") + csec_token_text_at(tokens, operation);
+            const int method = csec_resolve_class_method_by_args(tokens, classStart, operatorMethod.c_str(), operation + 1, end);
+            if (method >= 0 && std::strcmp(csec_function_return_type_at(tokens, method), "String") == 0) {
+                std::string output;
+                std::string arguments;
+                if (csec_class_uses_pointer_receiver(tokens, classStart)) {
+                    const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
+                    const std::string receiver = resultName + ".oprecv";
+                    output += "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n";
+                    arguments = "ptr " + receiver;
+                }
+                const auto parameters = csec_function_params(tokens, method);
+                const std::string operandValue = resultName + ".oparg";
+                const std::string operandType = parameters.empty() ? std::string("Int") : parameters.back().second;
+                if (std::strcmp(csec_llvm_type_for_name(operandType), "ptr") == 0) {
+                    output += csec_emit_ptr_expression(tokens, operation + 1, end, operandValue);
+                    arguments += (arguments.empty() ? "" : ", ") + std::string("ptr ") + operandValue;
+                } else {
+                    output += csec_emit_i32_expression(tokens, operation + 1, end, operandValue);
+                    arguments += (arguments.empty() ? "" : ", ") + std::string("i32 ") + operandValue;
+                }
+                return output + "  " + resultName + " = call ptr @" +
+                    csec_class_method_symbol(tokens, classStart, method) + "(" + arguments + ")\n";
+            }
+        }
+    }
     if (operation >= start && csec_native_token_is(tokens, operation, 'O', "+") &&
         csec_is_string_expression(tokens, start, operation) && csec_is_string_expression(tokens, operation + 1, end)) {
         const std::string left = resultName + ".left";
         const std::string right = resultName + ".right";
         return csec_emit_ptr_expression(tokens, start, operation, left) +
             csec_emit_ptr_expression(tokens, operation + 1, end, right) +
+            "  " + resultName + " = call ptr @csec_string_concat(ptr " + left + ", ptr " + right + ")\n";
+    }
+    // `String + <integer>` (or the reverse): stringify the integer side with csec_to_string_i64,
+    // then concatenate. Only fires when exactly one side is a string, so String + String above
+    // and purely numeric additions are unaffected.
+    if (operation >= start && csec_native_token_is(tokens, operation, 'O', "+") &&
+        (csec_is_string_expression(tokens, start, operation) != csec_is_string_expression(tokens, operation + 1, end))) {
+        const std::string left = resultName + ".left";
+        const std::string right = resultName + ".right";
+        auto stringifySide = [&](int from, int to, const std::string& name) -> std::string {
+            if (csec_is_string_expression(tokens, from, to)) {
+                return csec_emit_ptr_expression(tokens, from, to, name);
+            }
+            const std::string narrow = name + ".i32";
+            const std::string wide = name + ".i64";
+            return csec_emit_i32_expression(tokens, from, to, narrow) +
+                "  " + wide + " = sext i32 " + narrow + " to i64\n" +
+                "  " + name + " = call ptr @csec_to_string_i64(i64 " + wide + ")\n";
+        };
+        return stringifySide(start, operation, left) +
+            stringifySide(operation + 1, end, right) +
             "  " + resultName + " = call ptr @csec_string_concat(ptr " + left + ", ptr " + right + ")\n";
     }
     if (end == start + 1 && csec_token_kind_at(tokens, start) == 'S') {
@@ -178,7 +231,7 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                 const int classStart = csec_find_class_declaration(tokens, className.c_str());
                 const std::string operatorMethod = std::string("operator") + op;
                 const int method = classStart >= 0 ?
-                    csec_find_class_method_declaration(tokens, classStart, operatorMethod.c_str()) : -1;
+                    csec_resolve_class_method_by_args(tokens, classStart, operatorMethod.c_str(), operation + 1, end) : -1;
                 if (method >= 0 && std::strcmp(csec_function_return_type_at(tokens, method), "Int") == 0) {
                     std::string output;
                     std::string arguments;
@@ -192,8 +245,8 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                     output += csec_emit_i32_expression(tokens, operation + 1, end, operandValue);
                     if (!arguments.empty()) arguments += ", ";
                     arguments += "i32 " + operandValue;
-                    return output + "  " + resultName + " = call i32 @" + className + "_" +
-                        csec_mangle_method_name(operatorMethod) + "(" + arguments + ")\n";
+                    return output + "  " + resultName + " = call i32 @" +
+                        csec_class_method_symbol(tokens, classStart, method) + "(" + arguments + ")\n";
                 }
             }
         }

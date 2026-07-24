@@ -1,0 +1,12 @@
+def render(count: Int): String {
+    return "count=" + count;
+}
+
+def main(): Int {
+    val label: String = render(7);
+    val mixed: String = "a" + 1 + "b";
+    if (label == "count=7" and mixed.length == 3) {
+        return 0;
+    }
+    return 1;
+}

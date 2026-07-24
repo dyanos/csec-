@@ -16,11 +16,26 @@ llvm::Value* ArrayCreationExpressionNode::codegen() {
         array_size = CodeGenerator::getInstance().builder.CreateMul(array_size, sizes[i]->codegen());
     }
 
+    auto& cg = CodeGenerator::getInstance();
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+
+    // Arrays are heap allocated, not stack allocated, so a `new T[n]` value can escape the
+    // function that created it (for example by being returned). A stack `alloca` would leave the
+    // caller holding a pointer into a freed frame.
+    auto heapAllocate = [&](llvm::Type* elementType) -> llvm::Value* {
+        const llvm::DataLayout& dl = cg.module->getDataLayout();
+        uint64_t elementBytes = dl.getTypeAllocSize(elementType);
+        llvm::Value* count = cg.builder.CreateZExtOrTrunc(array_size, i64Ty, "array.count");
+        llvm::Value* bytes = cg.builder.CreateMul(
+            count, llvm::ConstantInt::get(i64Ty, elementBytes), "array.bytes");
+        return cg.builder.CreateCall(cg.mallocFunction, bytes, typeName);
+    };
+
     // primitive type인지, class type인지 확인, template type인지 확인
     if (isPrimitiveType(typeName)) {
 		BasicType basicType(typeName);
-        llvm::Type* type = CodeGenerator::getInstance().getLLVMType(&basicType);
-        return CodeGenerator::getInstance().builder.CreateAlloca(type, array_size, typeName);
+        llvm::Type* type = cg.getLLVMType(&basicType);
+        return heapAllocate(type);
     }
 
     // Template Class인지 확인은 나중에 코드 추가되면...
@@ -37,8 +52,8 @@ llvm::Value* ArrayCreationExpressionNode::codegen() {
     // 클래스 타입 가져오기
     auto* classType = static_cast<llvm::StructType*>(classSymbol->classType);
 
-    // 메모리 할당
-    llvm::Value* allocatedMemory = CodeGenerator::getInstance().builder.CreateAlloca(classType, array_size, typeName);
+    // 메모리 할당 (heap, so the array can escape via return)
+    llvm::Value* allocatedMemory = heapAllocate(classType);
 
     // 객체 초기화 (생성자 호출)
     std::string constructorName = typeName + "_constructor";

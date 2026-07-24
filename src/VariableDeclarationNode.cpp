@@ -4,6 +4,8 @@
 #include "ASTVisitor.h"
 #include "ClassInstanceCreationNode.h"
 #include "ArrayCreationExpressionNode.h"
+#include "CallExpressionNode.h"
+#include "FunctionCallNode.h"
 #include "LambdaExpressionNode.h"
 #include "type_utils.h"
 
@@ -128,6 +130,18 @@ llvm::Value* VariableDeclarationNode::codegen() {
         initValue = coerceValueToLLVMType(initValue, valueType);
     }
 
+    // An array or vector local initialized from a function call holds the returned array pointer.
+    // Bind it directly (rather than into a pointer slot) so indexing can GEP on the pointer
+    // without an intervening load, the same representation a `new T[n]` initializer produces.
+    // This is restricted to call initializers so that array literals, which the parallel
+    // collection lowering represents through a slot, keep their existing representation.
+    const bool arrayVectorFromCall = type &&
+        (type->getKind() == Type::Kind::ARRAY ||
+         (type->getKind() == Type::Kind::GENERIC &&
+          (type->getName() == "Array" || type->getName() == "Vector"))) &&
+        (dynamic_cast<CallExpressionNode*>(initializer.get()) != nullptr ||
+         dynamic_cast<FunctionCallNode*>(initializer.get()) != nullptr);
+
     const bool bindPointerBackedValueDirectly =
         initValue &&
         initValue->getType()->isPointerTy() &&
@@ -136,7 +150,8 @@ llvm::Value* VariableDeclarationNode::codegen() {
          dynamic_cast<ArrayCreationExpressionNode*>(initializer.get()) != nullptr ||
          dynamic_cast<FunctionType*>(type.get()) != nullptr ||
          (type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
-         type->getKind() == Type::Kind::BOX);
+         type->getKind() == Type::Kind::BOX ||
+         arrayVectorFromCall);
 
     if (bindPointerBackedValueDirectly) {
         cg.symbolTable.addSymbol(

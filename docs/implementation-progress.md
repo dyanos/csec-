@@ -142,6 +142,12 @@
 - `Byte` now preserves its direct compiler `i8` ABI through self-host function parameters and
   returns, local storage, arithmetic, calls, and comparisons. The direct and self-host LLVM paths
   both execute `167_byte_execution.csec` with exit code `0`.
+- `new T[n]` heap allocates the array in the direct compiler instead of stack allocating it, so
+  an array created in a function and returned stays valid in the caller. An array or vector local
+  initialized from a function call binds the returned pointer directly, so indexing it does not
+  read through an extra pointer slot. `178_new_array_return_execution.csec` builds an `Array[Int]`
+  in a callee, returns it, and indexes it in `main`; it exits with `0` on both paths. (The
+  self-host emitter already heap-allocated and indexed correctly.)
 - `Long` arrays and `Vector[Long]` now use stack-backed LLVM `i64` element storage for
   `new Long[n]` (also `Natural` and `Integer`), indexed assignment, indexed reads, parameter
   calls, comparisons, and forwarding an array pointer through a function return. `Long`-returning
@@ -231,13 +237,16 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
 
 ## Known Gaps in the Direct Compiler
 
-- Returning a newly created array is broken two ways. The type checker rejects `Vector[Int]` as
-  the return type for a `new Int[n]` value ("declared to return 'Vector' but returns 'Array'").
-  Spelled `Array[Int]` it compiles but returns the wrong value, because array codegen (a) stack
-  allocates the array with `alloca` and then returns a pointer to it, a use-after-return once the
-  callee stack frame is gone, and (b) indexing an array held in a `ptr` local emits
-  `getelementptr` on the address of the local instead of loading the pointer first. The self-host
-  path handles array returns correctly, so this is a direct-compiler-only gap.
+- The type checker rejects `Vector[Int]` as the return type for a `new Int[n]` value ("declared
+  to return 'Vector' but returns 'Array'"); the value must be spelled `Array[Int]`. `Vector` and
+  `Array` are otherwise interchangeable, so this is a missing-alias check rather than a real type
+  error.
+- Passing an array literal as a `Vector`/`Array` parameter and indexing it in the callee returns
+  the wrong value in the direct compiler (`057_vector_parameter_indexing.csec` returns `0`
+  instead of `42` through `--emit-ir`); it is correct through the self-host path.
+- `152_boolean_array_execution.csec` returns `1` instead of `0` through the direct compiler; it
+  is correct through the self-host path. The other scalar array-execution fixtures
+  (`155`–`171`) run correctly on both paths.
 
 ## Still Incomplete
 

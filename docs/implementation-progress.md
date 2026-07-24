@@ -148,6 +148,12 @@
   read through an extra pointer slot. `178_new_array_return_execution.csec` builds an `Array[Int]`
   in a callee, returns it, and indexes it in `main`; it exits with `0` on both paths. (The
   self-host emitter already heap-allocated and indexed correctly.)
+- `Vector` and `Array` are recognized as the same flat array type by the type checker, so a
+  function may declare `Vector[T]` and return a `new T[n]` (typed `Array[T]`) value, and a local
+  declared one way may be initialized from the other. `179_vector_return_alias_execution.csec`
+  exits with `0` on both paths. Relaxing this check also resolved map/reduce/filter element types
+  in `050_collection_in_function.csec`, which now compiles and runs (`0`) through the direct
+  compiler.
 - `Long` arrays and `Vector[Long]` now use stack-backed LLVM `i64` element storage for
   `new Long[n]` (also `Natural` and `Integer`), indexed assignment, indexed reads, parameter
   calls, comparisons, and forwarding an array pointer through a function return. `Long`-returning
@@ -237,10 +243,6 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
 
 ## Known Gaps in the Direct Compiler
 
-- The type checker rejects `Vector[Int]` as the return type for a `new Int[n]` value ("declared
-  to return 'Vector' but returns 'Array'"); the value must be spelled `Array[Int]`. `Vector` and
-  `Array` are otherwise interchangeable, so this is a missing-alias check rather than a real type
-  error.
 - Passing an array literal as a `Vector`/`Array` parameter and indexing it in the callee returns
   the wrong value in the direct compiler (`057_vector_parameter_indexing.csec` returns `0`
   instead of `42` through `--emit-ir`); it is correct through the self-host path.

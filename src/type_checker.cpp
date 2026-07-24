@@ -38,11 +38,34 @@ std::unique_ptr<Type> collectionElementType(const std::unique_ptr<Type>& type) {
         return arrType->elementType ? arrType->elementType->clone() : std::make_unique<UnknownType>();
     }
     if (auto* genType = dynamic_cast<GenericType*>(type.get())) {
-        if (genType->baseType && genType->baseType->getName() == "Array" && !genType->typeArguments.empty()) {
+        const std::string base = genType->baseType ? genType->baseType->getName() : "";
+        if ((base == "Array" || base == "Vector") && !genType->typeArguments.empty()) {
             return genType->typeArguments[0] ? genType->typeArguments[0]->clone() : std::make_unique<UnknownType>();
         }
     }
     return std::make_unique<UnknownType>();
+}
+
+// Vector and Array are interchangeable spellings of the same flat array type. A `new T[n]`
+// value is typed Array, so a function declared to return Vector[T] (or the reverse) is not a
+// type error as long as the element types agree.
+bool isArrayVectorType(const std::unique_ptr<Type>& type) {
+    if (!type) return false;
+    if (type->getKind() == Type::Kind::ARRAY) return true;
+    if (auto* genType = dynamic_cast<GenericType*>(type.get())) {
+        const std::string base = genType->baseType ? genType->baseType->getName() : "";
+        return base == "Array" || base == "Vector";
+    }
+    return false;
+}
+
+bool isArrayVectorAlias(const std::unique_ptr<Type>& a, const std::unique_ptr<Type>& b) {
+    if (!isArrayVectorType(a) || !isArrayVectorType(b)) return false;
+    auto elementA = collectionElementType(a);
+    auto elementB = collectionElementType(b);
+    if (!isResolvedType(elementA) || !isResolvedType(elementB)) return true;
+    return elementA->equals(elementB) ||
+        (isIntegerTypeName(elementA) && isIntegerTypeName(elementB));
 }
 
 FunctionSymbol* ensureFunctionSymbol(FunctionDeclarationNode& node) {
@@ -372,6 +395,7 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
                        (initType->isIntegerTy() || initType->isFloatTy() || initType->isDoubleTy())) &&
                      !canInitializeOwnershipType(node.type.get(), initType.get()) &&
                      !(isTensorLikeType(node.type) && isTensorLikeType(initType)) &&
+                     !isArrayVectorAlias(node.type, initType) &&
                      !initType->isSubtypeOf(node.type) &&
                      !node.type->isSubtypeOf(initType)) {
                 reportError(
@@ -426,7 +450,8 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
                 !node.returnType->equals(bodyType) &&
                 !(isIntegerTypeName(node.returnType) && isIntegerTypeName(bodyType)) &&
                 !(isTensorLikeType(node.returnType) && isTensorLikeType(bodyType)) &&
-                !(isI64IntegerAlias(node.returnType) && isI64IntegerAlias(bodyType))) {
+                !(isI64IntegerAlias(node.returnType) && isI64IntegerAlias(bodyType)) &&
+                !isArrayVectorAlias(node.returnType, bodyType)) {
                 reportError(
                     "Type error: Function '" + node.name + "' declared to return '" +
                     node.returnType->getName() + "' but returns '" + bodyType->getName() + "'");

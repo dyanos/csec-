@@ -293,6 +293,15 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   `ReduceStatementNode` uses that runtime length as its loop bound when present. The self-host path
   still computes `056` incorrectly; this fix is direct-compiler-only (no emitter or fixed-point
   change).
+- Overloaded object/namespace methods no longer collide in the direct compiler. A namespaced
+  method mangles purely by scope and name (`O#p`), so `def p(x: String)` and `def p(x: Boolean)`
+  produced the same LLVM name; the second body attached to the first function and read its
+  parameter with the wrong type — a Boolean body over a pointer argument emitted an illegal
+  `zext ptr -> i32` and aborted codegen (`114_out_object`), while a `p(Int)` collision silently
+  produced wrong code. An overload whose signature differs from an existing same-named function now
+  gets a signature-qualified name (`O#p.Boolean`); `findNamespacedFunctionByArgs` already matches
+  both the base name and `base.*`, so calls still resolve to the right overload.
+  `114_out_object` compiles and runs (exit `0`).
 - An `import` whose path uses non-ASCII (e.g. Korean) identifiers no longer hangs the compiler.
   Import expansion built a `std::filesystem::path` directly from the raw UTF-8 `import` target;
   on Windows that decodes the narrow string through the active code page, and the MSVC STL spins

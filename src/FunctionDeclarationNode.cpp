@@ -44,6 +44,34 @@ FunctionSymbol* updateOrRegisterFunctionSymbolNamed(
 std::string mangledFunctionName(CodeGenerator& cg, const std::string& name) {
     return cg.scopes.empty() ? "_" + name : join(cg.scopes, "#") + "#" + name;
 }
+
+// Give an overload a distinct LLVM name when a different-signature function already owns the
+// mangled name. Object/namespace methods mangle purely by scope and name (`O#p`), so overloads
+// such as `p(String)` and `p(Boolean)` would otherwise collide: the second body would attach to
+// the first function and read its parameter with the wrong type (e.g. a pointer where the body
+// expects a Boolean, producing an illegal zext). findNamespacedFunctionByArgs already matches both
+// the base name and `base.*`, so a signature-qualified suffix resolves correctly at the call site.
+std::string overloadUniqueFunctionName(CodeGenerator& cg, const std::string& baseName,
+                                       llvm::FunctionType* funcType,
+                                       const std::vector<std::unique_ptr<ASTNode>>& parameters) {
+    llvm::Function* existing = cg.module->getFunction(baseName);
+    if (!existing || existing->getFunctionType() == funcType) {
+        return baseName;
+    }
+    std::string suffix;
+    for (auto& param : parameters) {
+        auto type = param ? param->getType() : nullptr;
+        suffix += "." + (type ? type->getName() : std::string("Unknown"));
+    }
+    std::string candidate = baseName + suffix;
+    for (int counter = 0;; ++counter) {
+        llvm::Function* clash = cg.module->getFunction(candidate);
+        if (!clash || clash->getFunctionType() == funcType) {
+            return candidate;
+        }
+        candidate = baseName + suffix + "." + std::to_string(counter);
+    }
+}
 }
 
 llvm::Function* FunctionDeclarationNode::declarePrototype() {
@@ -59,10 +87,10 @@ llvm::Function* FunctionDeclarationNode::declarePrototype() {
     llvm::Type* returnType = getABIStorageType(this->returnType.get());
     if (!returnType) return nullptr;
 
-    const std::string funcName = mangledFunctionName(cg, this->name);
+    llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
+    const std::string funcName = overloadUniqueFunctionName(cg, mangledFunctionName(cg, this->name), funcType, this->parameters);
     llvm::Function* function = cg.module->getFunction(funcName);
     if (!function) {
-        llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
         function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, cg.module.get());
         if (this->isConstexpr) {
             function->addFnAttr(llvm::Attribute::AlwaysInline);
@@ -131,7 +159,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         return nullptr;
     }
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-    std::string funcName = mangledFunctionName(cg, this->name);
+    std::string funcName = overloadUniqueFunctionName(cg, mangledFunctionName(cg, this->name), funcType, this->parameters);
 
     // Reuse the prototype if one was already declared (for example by the pre-declaration pass
     // that enables forward references), so the body attaches to the function the callers resolved

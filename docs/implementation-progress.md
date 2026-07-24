@@ -256,13 +256,16 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
 
 ## Known Gaps in the Direct Compiler
 
-- Capturing lambdas are not implemented in the direct compiler: it represents a lambda as a bare
-  function pointer with no closure environment, so a lambda body that references an outer variable
-  cannot reach it. Such a lambda now fails with a clear error ("capturing lambdas are not
-  supported by the direct compiler; compile through the self-host path") instead of emitting a
-  function that refers to another frame's allocas — invalid IR that previously hung the verifier
-  on `097_lambda_capture_all_invocation` and `098_lambda_by_reference_invocation`. Non-capturing
-  lambdas (`095`) work; the self-host path implements closures and runs all lambda fixtures.
+- Lambda closures now work in the direct compiler. Every lambda is a uniform `{ code, env }`
+  closure: the function takes the environment pointer first, `[=]`/explicit captures store the
+  outer values by value, `[&]` stores their addresses, and a lambda that captures nothing gets an
+  empty environment. `IdentifierNode` returns a function-typed value (the closure pointer) as-is,
+  and a call through a lambda variable or a function-type parameter loads the code and
+  environment and calls `code(env, args)`. `095`–`106` (non-capturing, by-value capture,
+  by-reference capture, and higher-order variants passing a lambda to another function) all
+  execute correctly through the direct compiler as well as the self-host path. Closures are stack
+  allocated, so a lambda that outlives the frame that created it is not yet supported; the
+  fixtures use and pass lambdas within the creating frame.
 - Binding an array *literal* to a local (`val xs = [1, 2, 3]`) fails to declare in the direct
   compiler: the literal's type is `Array[Int]` (LLVM `[N x i32]`) but its value is a pointer to
   the array, so the pointer cannot be stored into the aggregate slot and the variable is left

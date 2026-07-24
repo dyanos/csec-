@@ -14,6 +14,7 @@
 #include "AssignmentExpressionNode.h"
 #include "AccessFieldNode.h"
 #include "ArrayAccessNode.h"
+#include "type_utils.h"
 
 #include <iostream>
 #include <set>
@@ -91,9 +92,63 @@ void LambdaExpressionNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* LambdaExpressionNode::codegen() {
     auto& cg = CodeGenerator::getInstance();
-    std::vector<llvm::Type*> paramTypes;
+    auto* opaquePtr = llvm::PointerType::getUnqual(cg.context);
 
-    // Add regular arguments
+    // Determine the captured variables at the enclosing scope (before entering the lambda scope).
+    // An explicit capture list is used verbatim; `[=]`/`[&]` capture every free variable of the
+    // body that resolves to an outer local.
+    std::set<std::string> paramNames;
+    for (auto& arg : arguments) {
+        if (auto* paramNode = dynamic_cast<ParameterNode*>(arg.get())) paramNames.insert(paramNode->name);
+    }
+    std::vector<std::string> capturedNames;
+    {
+        std::set<std::string> candidates;
+        if (!captureVariables.empty()) {
+            for (const auto& capture : captureVariables) candidates.insert(capture);
+        } else {
+            std::set<std::string> referenced;
+            collectReferencedIdentifiers(body.get(), referenced);
+            for (const auto& name : referenced) {
+                if (paramNames.count(name)) continue;
+                auto* symbol = cg.symbolTable.lookup(name);
+                if (symbol && (symbol->symbolType == SymbolType::VARIABLE || symbol->symbolType == SymbolType::FIELD)) {
+                    candidates.insert(name);
+                }
+            }
+        }
+        for (const auto& name : candidates) capturedNames.push_back(name);
+    }
+
+    struct Captured {
+        std::string name;
+        llvm::Value* outerValue;
+        llvm::Type* fieldType;
+        std::unique_ptr<Type> semanticType;
+    };
+    std::vector<Captured> captured;
+    std::vector<llvm::Type*> envFieldTypes;
+    for (const auto& name : capturedNames) {
+        auto* symbol = cg.symbolTable.lookup(name);
+        if (!symbol || !symbol->value) continue;
+        llvm::Type* fieldType = capturesByReference ? opaquePtr : getABIStorageType(symbol->type.get());
+        if (!fieldType) fieldType = llvm::Type::getInt32Ty(cg.context);
+        Captured entry;
+        entry.name = name;
+        entry.outerValue = symbol->value;
+        entry.fieldType = fieldType;
+        entry.semanticType = symbol->type ? symbol->type->clone() : std::make_unique<UnknownType>();
+        captured.push_back(std::move(entry));
+        envFieldTypes.push_back(fieldType);
+    }
+    // Every lambda is represented uniformly as a { code, env } closure whose function takes the
+    // environment pointer first, even when it captures nothing (empty environment). This gives
+    // lambda values one representation, so a function-type parameter can be called the same way
+    // whether or not the lambda it received captures anything.
+    llvm::StructType* envType = llvm::StructType::get(cg.context, envFieldTypes);
+
+    std::vector<llvm::Type*> paramTypes;
+    paramTypes.push_back(opaquePtr);
     for (auto& arg : arguments) {
         auto paramType = usableLambdaType(arg ? arg->getType() : nullptr);
         auto* argType = cg.getLLVMType(paramType.get());
@@ -104,95 +159,78 @@ llvm::Value* LambdaExpressionNode::codegen() {
         paramTypes.push_back(argType);
     }
 
-    // Determine return type
     auto bodyType = usableLambdaType(body ? body->getType() : nullptr);
     llvm::Type* returnType = bodyType ? cg.getLLVMType(bodyType.get()) : nullptr;
     if (!returnType) returnType = llvm::Type::getInt32Ty(cg.context);
 
-    // Create anonymous function
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-
     static int lambdaCount = 0;
     std::string lambdaName = "__lambda_" + std::to_string(lambdaCount++);
-
     llvm::Function* lambdaFunc = llvm::Function::Create(
         funcType, llvm::Function::InternalLinkage, lambdaName, cg.module.get());
 
-    // Save current insert point
     llvm::BasicBlock* savedBB = cg.builder.GetInsertBlock();
-
-    // Create entry block
+    auto savedPoint = cg.builder.GetInsertPoint();
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(cg.context, "entry", lambdaFunc);
     cg.builder.SetInsertPoint(entry);
-
     cg.symbolTable.enterScope();
 
-    int argIdx = 0;
-    // Bind arguments
+    // Bind captured variables from the environment argument.
+    {
+        llvm::Value* envArg = lambdaFunc->getArg(0);
+        for (size_t i = 0; i < captured.size(); ++i) {
+            llvm::Value* slot = cg.builder.CreateStructGEP(envType, envArg, static_cast<unsigned>(i), captured[i].name + ".cap");
+            if (capturesByReference) {
+                // The slot holds a pointer to the outer variable; bind the name to that storage.
+                llvm::Value* storage = cg.builder.CreateLoad(opaquePtr, slot, captured[i].name + ".ref");
+                cg.symbolTable.addSymbol(captured[i].name, std::make_unique<Symbol>(
+                    captured[i].name, captured[i].semanticType->clone(), storage, true, SymbolType::VARIABLE));
+            } else {
+                // The slot holds the captured value; copy it into a local so the name is an lvalue.
+                llvm::Value* localCopy = cg.builder.CreateAlloca(captured[i].fieldType, nullptr, captured[i].name);
+                llvm::Value* value = cg.builder.CreateLoad(captured[i].fieldType, slot, captured[i].name + ".val");
+                cg.builder.CreateStore(value, localCopy);
+                cg.symbolTable.addSymbol(captured[i].name, std::make_unique<Symbol>(
+                    captured[i].name, captured[i].semanticType->clone(), localCopy, false, SymbolType::VARIABLE));
+            }
+        }
+    }
+
+    // Bind declared parameters (after the environment argument).
+    const unsigned argBase = 1u;
     for (size_t i = 0; i < arguments.size(); ++i) {
         auto* paramNode = static_cast<ParameterNode*>(arguments[i].get());
         auto paramType = usableLambdaType(arguments[i] ? arguments[i]->getType() : nullptr);
         cg.symbolTable.addSymbol(paramNode->name, std::make_unique<Symbol>(
-            paramNode->name, std::move(paramType), lambdaFunc->getArg(argIdx), false, SymbolType::VARIABLE));
-        argIdx++;
+            paramNode->name, std::move(paramType), lambdaFunc->getArg(argBase + static_cast<unsigned>(i)), false, SymbolType::VARIABLE));
     }
 
-    // The direct compiler represents a lambda as a bare function pointer with no closure
-    // environment, so it cannot capture outer variables. Detect a body that references an outer
-    // variable (or an explicit/by-reference capture) and fail with a clear error instead of
-    // emitting a function that refers to another frame's allocas (invalid IR that hangs the
-    // verifier). The self-host path implements closures and handles these.
-    {
-        std::set<std::string> paramNames;
-        for (auto& arg : arguments) {
-            if (auto* paramNode = dynamic_cast<ParameterNode*>(arg.get())) {
-                paramNames.insert(paramNode->name);
-            }
-        }
-        std::set<std::string> referenced;
-        collectReferencedIdentifiers(body.get(), referenced);
-        bool capturesOuter = capturesByReference || !captureVariables.empty();
-        for (const auto& referencedName : referenced) {
-            if (paramNames.count(referencedName)) continue;
-            auto* symbol = cg.symbolTable.lookup(referencedName);
-            if (symbol && (symbol->symbolType == SymbolType::VARIABLE || symbol->symbolType == SymbolType::FIELD)) {
-                capturesOuter = true;
-                break;
-            }
-        }
-        if (capturesOuter) {
-            std::cerr << "Error: capturing lambdas are not supported by the direct compiler; "
-                         "compile through the self-host path" << std::endl;
-            cg.symbolTable.exitScope();
-            cg.builder.SetInsertPoint(savedBB);
-            lambdaFunc->eraseFromParent();
-            return nullptr;
-        }
-    }
-
-    // Generate body
-    llvm::Value* bodyValue = nullptr;
-    if (captureVariables.empty()) {
-        bodyValue = body->codegen();
-    }
-
-    // Add return if block has no terminator
+    llvm::Value* bodyValue = body ? body->codegen() : nullptr;
     if (!cg.builder.GetInsertBlock()->getTerminator()) {
-        if (bodyValue && !returnType->isVoidTy()) {
-            cg.builder.CreateRet(bodyValue);
-        }
-        else if (!returnType->isVoidTy()) {
-            cg.builder.CreateRet(defaultReturnValue(returnType));
-        }
-        else {
-            cg.builder.CreateRetVoid();
-        }
+        if (bodyValue && !returnType->isVoidTy()) cg.builder.CreateRet(bodyValue);
+        else if (!returnType->isVoidTy()) cg.builder.CreateRet(defaultReturnValue(returnType));
+        else cg.builder.CreateRetVoid();
     }
 
     cg.symbolTable.exitScope();
+    cg.builder.SetInsertPoint(savedBB, savedPoint);
 
-    // Restore insert point
-    cg.builder.SetInsertPoint(savedBB);
-
-    return lambdaFunc;
+    // Build the { code, env } closure. Fill the environment with the captured values (by value)
+    // or the outer variables' addresses (by reference); an empty environment for a lambda that
+    // captures nothing.
+    llvm::Value* environment = cg.builder.CreateAlloca(envType, nullptr, "lambda.env");
+    for (size_t i = 0; i < captured.size(); ++i) {
+        llvm::Value* slot = cg.builder.CreateStructGEP(envType, environment, static_cast<unsigned>(i), captured[i].name + ".store");
+        if (capturesByReference) {
+            cg.builder.CreateStore(captured[i].outerValue, slot);
+        } else {
+            llvm::Value* value = cg.builder.CreateLoad(captured[i].fieldType, captured[i].outerValue, captured[i].name + ".take");
+            cg.builder.CreateStore(value, slot);
+        }
+    }
+    llvm::StructType* closureType = llvm::StructType::get(cg.context, { opaquePtr, opaquePtr });
+    llvm::Value* closure = cg.builder.CreateAlloca(closureType, nullptr, "lambda.closure");
+    cg.builder.CreateStore(lambdaFunc, cg.builder.CreateStructGEP(closureType, closure, 0, "closure.code"));
+    cg.builder.CreateStore(environment, cg.builder.CreateStructGEP(closureType, closure, 1, "closure.env"));
+    return closure;
 }

@@ -78,6 +78,11 @@ llvm::Value* IdentifierNode::codegen() {
             dynamic_cast<ArrayType*>(symbol->type.get()) != nullptr)) {
             return symbol->value;
         }
+        // A lambda value is a { code, env } closure pointer bound directly; return the pointer
+        // itself rather than loading through it, so the whole closure is passed and called.
+        if (symbol->type && symbol->type->getKind() == Type::Kind::FUNCTION) {
+            return symbol->value;
+        }
         if (symbol->type && symbol->type->getKind() == Type::Kind::CLASS) {
             if (isStructClassType(symbol->type.get())) {
                 return symbol->value;

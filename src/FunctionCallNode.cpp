@@ -2066,12 +2066,35 @@ llvm::Value* FunctionCallNode::codegen() {
                 paramLLVMTypes.push_back(llvmParamType);
             }
             auto* llvmReturnType = getABIStorageType(funcType->returnType.get());
-            auto* llvmFuncType = llvmReturnType ? llvm::FunctionType::get(llvmReturnType, paramLLVMTypes, false) : nullptr;
-            if (!llvmFuncType) {
+            if (!llvmReturnType) {
                 std::cerr << "Error: Invalid callable symbol '" << functionName << "'" << std::endl;
                 return nullptr;
             }
 
+            // A capturing lambda is a { code, env } closure pointer rather than a bare function.
+            // Load its code and environment and call code(env, args).
+            if (!llvm::isa<llvm::Function>(callableSymbol->value)) {
+                auto* opaquePtr = llvm::PointerType::getUnqual(cg.context);
+                auto* closureType = llvm::StructType::get(cg.context, { opaquePtr, opaquePtr });
+                llvm::Value* closure = callableSymbol->value;
+                llvm::Value* code = cg.builder.CreateLoad(opaquePtr,
+                    cg.builder.CreateStructGEP(closureType, closure, 0, "closure.code"), "closure.code.fn");
+                llvm::Value* environment = cg.builder.CreateLoad(opaquePtr,
+                    cg.builder.CreateStructGEP(closureType, closure, 1, "closure.env"), "closure.env.ptr");
+                std::vector<llvm::Type*> closureParamTypes;
+                closureParamTypes.push_back(opaquePtr);
+                for (auto* paramType : paramLLVMTypes) closureParamTypes.push_back(paramType);
+                auto* closureFuncType = llvm::FunctionType::get(llvmReturnType, closureParamTypes, false);
+                std::vector<llvm::Value*> closureArgs;
+                closureArgs.push_back(environment);
+                for (auto* argValue : argValues) closureArgs.push_back(argValue);
+                llvm::Value* result = cg.builder.CreateCall(closureFuncType, code, closureArgs,
+                    llvmReturnType->isVoidTy() ? "" : "closure.call");
+                type = funcType->returnType ? funcType->returnType->clone() : std::make_unique<UnknownType>();
+                return result;
+            }
+
+            auto* llvmFuncType = llvm::FunctionType::get(llvmReturnType, paramLLVMTypes, false);
             llvm::Value* result = createTypedCallWithAdjustedArgs(llvmFuncType, callableSymbol->value, argValues);
             type = funcType->returnType ? funcType->returnType->clone() : std::make_unique<UnknownType>();
             return result;

@@ -294,11 +294,17 @@ and `counter * 21` actually call the operator methods. This currently covers poi
 empty (stateless) classes; operator methods on scalar-receiver classes that read constructor
 state are not yet passed their receiver.
 
-Method overloading and overriding remain incomplete: overloaded methods still emit one LLVM name
-per name rather than per signature (two `@Formatter_show` definitions collide), so
-`117_method_overloading`, `118_method_overriding`, and `119_operator_overloading_and_overriding`
-still fail through the self-host path. Overloads need parameter-type name mangling at definitions
-and argument-type resolution at call sites.
+Method overloading and overriding remain incomplete (`117_method_overloading`,
+`118_method_overriding`, `119_operator_overloading_and_overriding`). Two blockers, beyond the
+per-signature name mangling and argument-type resolution overloads need:
+
+- Overloaded methods emit one LLVM name per method name rather than per signature, so two
+  `@Formatter_show` definitions collide.
+- The pointer instance-call lowering (`csec_emit_ptr_instance_call`) only handles a zero-argument
+  method on a pointer-receiver class, so a String-returning method that takes an argument on a
+  stateless class — such as `formatter.show("ok")` — is not lowered at all, independent of
+  overloading. String-returning methods with arguments on scalar-receiver classes need lowering
+  first.
 
 ## Still Incomplete
 

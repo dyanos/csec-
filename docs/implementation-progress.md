@@ -391,21 +391,24 @@ A top-level function that returns String is recognized as a String expression, s
 with concatenation: `s + repeat(s, n - 1)` (a recursive String builder) and passing one String
 function's result to another both work. `187_string_function_concat_execution` exits `0`.
 
+A concatenation chain with a function call in the middle and string literals on both ends
+(`"<" + rep("x", 2) + ">"`) now lowers correctly on the self-host path.
+`188_string_concat_chain_execution` returns `5` (the length of `<xxx>`) through both the direct and
+self-host paths. The root cause was that `csec_i32_top_level_operator` computes an operator's
+precedence from a token's *text* without checking its kind, so a string literal such as `"<"`/`">"`
+(text `<`/`>`) was treated as a comparison operator (and a string like `"("` corrupts the bracket
+depth); for `"<" + rep(...) + ">"` the trailing `">"` outranked the `+`, so the concatenation case
+never fired and the expression dropped to the null-pointer fallback. Rather than change that shared
+scanner — which also drives the i32/i1 lowering and, when "fixed", re-split a large boolean
+condition in `csec_compiler.csec` and exposed latent emitter bugs that broke the bootstrap — a
+scoped `csec_ptr_top_level_operator` (which counts only genuine `'O'`/`'K'` operator tokens) is used
+in `csec_emit_ptr_expression` and `csec_is_string_expression`. Because it is confined to the
+pointer/String lowering, `csec_compiler.csec` compiles byte-identically (the fixed point is
+unchanged) while user concatenations split on the real `+`.
+
 Overloaded operator methods that read scalar-receiver constructor state are still not passed that
 state (the operator dispatch, like the method-call dispatch, only forwards a pointer receiver or
-none). A concatenation chain with a function call in the middle and string literals on both ends
-(`"<" + rep("x", 2) + ">"`) still lowers to an empty string; the simpler forms above are correct.
-The root cause is known: `csec_i32_top_level_operator` computes an operator's precedence from a
-token's *text* without checking its kind, so a string literal such as `"<"`/`">"` (text `<`/`>`)
-is treated as a comparison operator (and a string like `"("` corrupts the bracket depth). For
-`"<" + rep(...) + ">"` the trailing `">"` outranks the `+`, so the concatenation case never fires
-and the expression drops to the null pointer fallback. Guarding the scan to only symbol (`'O'`) and
-keyword (`'K'`) operator tokens fixes the emitted output (the self-host path then prints `<xx>`),
-but it is NOT safe to land as-is: it changes how `csec_compiler.csec` itself compiles, and the
-corrected split of one large boolean condition there exposes latent emitter bugs (the i32 lowering
-of a boolean `tokenIs(...)` sub-expression emits `load i32, ptr %tokenIs`, treating the function
-name as a local), which breaks the self-host fixed point. Landing this needs those downstream
-emitter paths hardened first; until then the guard is reverted to keep the bootstrap stable.
+none).
 
 ## Still Incomplete
 

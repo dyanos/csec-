@@ -2,7 +2,10 @@ static std::string csec_emit_ptr_expression(const char* tokens, int start, int e
     end = csec_i32_expression_end(tokens, start, end);
     const std::string indexedArray = csec_emit_ptr_array_index(tokens, start, end, resultName);
     if (!indexedArray.empty()) return indexedArray;
-    const int operation = csec_i32_top_level_operator(tokens, start, end);
+    // Use the string-literal-aware scan here so a concatenation chain whose operands include string
+    // literals with operator-like text ("<", ">", "(") splits on the real `+` rather than on a
+    // literal, which would otherwise drop the expression to the null-pointer fallback.
+    const int operation = csec_ptr_top_level_operator(tokens, start, end);
     // Operator overloading returning String: `instance <op> operand` where the instance's class
     // defines an `operator<op>` returning String. Handled before string concatenation so the
     // instance is dispatched rather than mistaken for a concatenation operand.

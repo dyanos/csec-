@@ -1,0 +1,11 @@
+def rep(s: String, n: Int): String {
+    if (n <= 1) {
+        return s;
+    }
+    return s + rep(s, n - 1);
+}
+
+def main(): Int {
+    val wrapped = "<" + rep("x", 3) + ">";
+    return wrapped.length;
+}

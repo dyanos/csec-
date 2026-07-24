@@ -44,6 +44,46 @@ static int csec_i32_top_level_operator(const char* tokens, int start, int end) {
     return selected;
 }
 
+// A string-literal-aware variant of the top-level operator scan for the pointer/String lowering.
+// The plain scan above matches on token *text*, so a string literal whose text is an operator or a
+// bracket (e.g. "<", ">", "(") is treated as one, which mis-splits a concatenation chain such as
+// `"<" + rep("x", 2) + ">"` (the trailing `">"` outranks the `+`) and drops it to the null
+// fallback. Here only genuine operator ('O') and keyword ('K') tokens count, so string/char
+// literal operands are skipped for both bracket tracking and operator selection. This is scoped to
+// csec_emit_ptr_expression alone; the i32/i1/i64 scanners keep the original behavior so the
+// self-host bootstrap's arithmetic and boolean lowering is unchanged.
+static int csec_ptr_top_level_operator(const char* tokens, int start, int end) {
+    int paren = 0;
+    int bracket = 0;
+    int brace = 0;
+    int selected = -1;
+    int bestPrecedence = 100;
+    for (int cursor = start; cursor < end; ++cursor) {
+        const char kind = csec_token_kind_at(tokens, cursor);
+        if (kind != 'O' && kind != 'K') continue;
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (std::strcmp(text, "(") == 0) { ++paren; continue; }
+        if (std::strcmp(text, ")") == 0) { --paren; continue; }
+        if (std::strcmp(text, "[") == 0) { ++bracket; continue; }
+        if (std::strcmp(text, "]") == 0) { --bracket; continue; }
+        if (std::strcmp(text, "{") == 0) { ++brace; continue; }
+        if (std::strcmp(text, "}") == 0) { --brace; continue; }
+        if (paren == 0 && bracket == 0 && brace == 0) {
+            const int precedence = csec_i32_operator_precedence(text);
+            const bool unarySign = (std::strcmp(text, "+") == 0 || std::strcmp(text, "-") == 0) &&
+                (cursor == start || (csec_token_kind_at(tokens, cursor - 1) == 'O' &&
+                    !csec_native_token_is(tokens, cursor - 1, 'O', ")") &&
+                    !csec_native_token_is(tokens, cursor - 1, 'O', "]") &&
+                    !csec_native_token_is(tokens, cursor - 1, 'O', "}")));
+            if (!unarySign && precedence > 0 && precedence <= bestPrecedence) {
+                selected = cursor;
+                bestPrecedence = precedence;
+            }
+        }
+    }
+    return selected;
+}
+
 static std::string csec_i32_literal(const char* text) {
     if (!text) return "0";
     if (text[0] == '0' && (text[1] == 'b' || text[1] == 'B')) {
@@ -1068,7 +1108,11 @@ static bool csec_is_string_expression(const char* tokens, int start, int end) {
             }
         }
     }
-    const int operation = csec_i32_top_level_operator(tokens, start, end);
+    // String-literal-aware scan so a chain whose operands are string literals with operator-like
+    // text (`"<" + f(x) + ">"`) splits on the real `+`; the plain scan would pick the trailing
+    // `">"` literal and misclassify the concatenation, mirroring the lowering in
+    // csec_emit_ptr_expression.
+    const int operation = csec_ptr_top_level_operator(tokens, start, end);
     // A `+` is a string concatenation when either operand is a string; the numeric side is
     // stringified during lowering. This also makes a chain such as `"a" + 1 + "b"` a string.
     if (operation >= start && std::strcmp(csec_token_text_at(tokens, operation), "+") == 0 &&

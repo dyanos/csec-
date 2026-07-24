@@ -650,6 +650,26 @@ std::unique_ptr<ASTNode> Parser::parsePostfixExpression() {
 			expect(TokenType::OPERATOR, "]");
             expr = std::move(accessNode);
 		}
+		else if (match(TokenType::OPERATOR, ".")) {
+			// Member access on an arbitrary expression, e.g. a method call on a string literal
+			// (`" x ".trim()`). Identifier-rooted paths are handled in parseSimpleExpression;
+			// this covers the cases that reach here as a completed primary expression.
+			if (!matchIdentifierName()) {
+				error("Expected member name after '.'");
+				break;
+			}
+			std::string member = previous().value;
+			if (match(TokenType::OPERATOR, "(")) {
+				auto methodCall = std::make_unique<MethodCallNode>();
+				methodCall->object = std::move(expr);
+				methodCall->methodName = member;
+				methodCall->arguments = parseCallParameterList();
+				expr = std::move(methodCall);
+			}
+			else {
+				expr = std::make_unique<AccessFieldNode>(std::move(expr), std::make_unique<IdentifierNode>(member));
+			}
+		}
 		else {
 			break;
 		}

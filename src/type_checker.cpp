@@ -451,6 +451,7 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
                 !(isIntegerTypeName(node.returnType) && isIntegerTypeName(bodyType)) &&
                 !(isTensorLikeType(node.returnType) && isTensorLikeType(bodyType)) &&
                 !(isI64IntegerAlias(node.returnType) && isI64IntegerAlias(bodyType)) &&
+                !(isIntegerTypeName(node.returnType) && bodyType && bodyType->getName() == "Char") &&
                 !isArrayVectorAlias(node.returnType, bodyType)) {
                 reportError(
                     "Type error: Function '" + node.name + "' declared to return '" +

@@ -269,15 +269,13 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
 - Binding an array *literal* to a local (`val xs = [1, 2, 3]`) fails to declare in the direct
   compiler: the literal's type is `Array[Int]` (LLVM `[N x i32]`) but its value is a pointer to
   the array, so the pointer cannot be stored into the aggregate slot and the variable is left
-  undefined. This makes `057_vector_parameter_indexing.csec` return `0` instead of `42` through
-  `--emit-ir` (the array is built but the following call is dropped). Binding array literals
-  directly, like `new T[n]`, fixes this but changes the representation the parallel collection
-  lowering (`pmap`/`reduce`) re-evaluates and hangs code generation on nested `pmap`, so the
-  representation needs unifying across both before this can be fixed. The self-host path handles
-  array-literal locals correctly.
-- `152_boolean_array_execution.csec` returns `1` instead of `0` through the direct compiler; it
-  is correct through the self-host path. The other scalar array-execution fixtures
-  (`155`–`171`) run correctly on both paths.
+  undefined. This makes `057_vector_parameter_indexing.csec` return `0` instead of `42` and
+  `152_boolean_array_execution.csec` return `1` instead of `0` through `--emit-ir`. Binding array
+  literals directly, like `new T[n]`, fixes both (verified) but exposes a pre-existing bug in the
+  nested-`pmap` lowering: with the literal now bound, the outer `pmap` proceeds into the inner one
+  and hangs code generation (`055_nested_pmap_shape`), where before it silently produced nothing.
+  So the array-literal fix is blocked on completing nested `pmap` (whose capture walk has no
+  `PMapStatementNode` case). The self-host path handles array-literal locals correctly.
 - Class inheritance now works in the direct compiler. `this` is bound to the class type during
   type checking so `this.field` and `this.method()`/`super.method()` resolve to real types;
   `AccessFieldNode::codegen` reads the field value (with a pointer accessor for assignment

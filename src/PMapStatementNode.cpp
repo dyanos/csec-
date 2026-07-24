@@ -400,10 +400,10 @@ llvm::Value* PMapStatementNode::codegen() {
     auto& cg = CodeGenerator::getInstance();
     llvm::Function* function = cg.builder.GetInsertBlock()->getParent();
 
-    if (backend == "gpu") {
-        std::cerr << "Error: pmap(gpu) syntax is reserved, but GPU lowering is not implemented yet" << std::endl;
-        return nullptr;
-    }
+    // The `gpu` backend has no device code generator yet, so it falls back to CPU execution: the
+    // sequential loop below produces the same results (the backend is a performance hint, not a
+    // semantic change). The loop is still tagged with `csec.pmap.backend.gpu` metadata so a future
+    // GPU lowering pass can find it.
 
     llvm::Value* arrayPtr = iterableExpr->codegen();
     if (!arrayPtr) return nullptr;

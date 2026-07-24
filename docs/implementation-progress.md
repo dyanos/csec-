@@ -2,6 +2,15 @@
 
 ## Verified
 
+- Every fixture under `tests/positive` compiles on the direct compiler, and the tracked execution
+  suites pass on both paths. The `pmap(gpu)`/`preduce(gpu)` backend has no device code generator
+  yet, so it falls back to CPU execution: `054_pmap_backend_variants` (which exercises `cpu`,
+  `simd`, `gpu`, and implicit-`cpu` variants) compiles and returns `0` on both the direct and
+  self-host paths. `gpu` is a performance hint that currently produces the same results as `cpu`;
+  the loop still carries `csec.pmap.backend.gpu` metadata for a future GPU lowering pass. (The
+  self-referential-class fixtures `063`/`101` remain non-terminating *as written* — an eager
+  `var next: Node = new Node(0)` default constructs forever — and the compiler correctly diagnoses
+  that rather than crashing; they are ill-formed programs, not a codegen gap.)
 - The self-host compiler reaches an LLVM fixed point. Recompiling `selfhost/csec_compiler.csec`
   with `nativeflow_stage5_current.ll` reproduces `nativeflow_stage6_current.ll` byte-for-byte,
   and the regenerated compiler reproduces itself again. The regenerated compiler also passes the

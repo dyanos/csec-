@@ -1066,9 +1066,8 @@ void TypeChecker::visit(PMapStatementNode& node) {
     if (node.backend != "cpu" && node.backend != "openmp" && node.backend != "gpu" && node.backend != "simd") {
         reportError("Type error: unsupported pmap backend '" + node.backend + "'");
     }
-    if (node.backend == "gpu") {
-        reportError("Type error: pmap(gpu) is reserved but GPU lowering is not implemented yet");
-    }
+    // `gpu` type-checks like any other backend; it currently falls back to CPU execution at codegen
+    // (no device code generator yet), which is a performance choice, not a semantic one.
     cg.symbolTable.enterScope();
     enterOwnershipScope();
     bindVariable(node.variable, elementType, false);

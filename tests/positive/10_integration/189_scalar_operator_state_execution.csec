@@ -1,0 +1,10 @@
+class Counter(value: Int) {
+    def operator +(right: Int): Int {
+        return value + right;
+    }
+}
+
+def main(): Int {
+    val c = new Counter(37);
+    return c + 5;
+}

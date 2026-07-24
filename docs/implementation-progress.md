@@ -355,9 +355,13 @@ instead of the primitive instruction. The guard only fires when the left operand
 local bound to `new Class(...)` whose class defines the operator, so primitive arithmetic is
 untouched (the fixed point is unchanged). `116_operator_overload_class.csec` exits `0`, and
 `183_operator_overload_dispatch_execution.csec` verifies through its exit code that `counter + 41`
-and `counter * 21` actually call the operator methods. This currently covers pointer-receiver and
-empty (stateless) classes; operator methods on scalar-receiver classes that read constructor
-state are not yet passed their receiver.
+and `counter * 21` actually call the operator methods. Operator methods on scalar-receiver classes
+that read constructor state now receive it: because a scalar class's methods take the constructor
+values as leading parameters (the same mechanism that lets `c.get()` read a field), the operator
+dispatch re-evaluates the `new Class(...)` constructor arguments and passes them as the receiver
+state before the operand. `189_scalar_operator_state_execution.csec` — `Counter(37) + 5` whose
+`operator+` returns `value + right` — returns `42` on both the direct and self-host paths (the
+fixed point is unchanged, since `csec_compiler.csec` defines no scalar-class operators).
 
 String-returning instance methods now accept arguments. `csec_emit_ptr_instance_call` lowers the
 method arguments by their declared parameter types and handles pointer-receiver and stateless

@@ -243,6 +243,28 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                         const std::string receiver = resultName + ".oprecv";
                         output += "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n";
                         arguments = "ptr " + receiver;
+                    } else {
+                        // Scalar-receiver class: its methods take the constructor state as leading
+                        // parameters (this is how `c.get()` reads a field), so re-evaluate the
+                        // `new Class(...)` constructor arguments and pass them as the operator's
+                        // receiver state. Without this the operator body reads uninitialised state.
+                        const int constructorOpen = initializer + 3;
+                        if (csec_native_token_is(tokens, constructorOpen, 'O', "(")) {
+                            const int constructorClose = csec_find_closing_token(tokens, constructorOpen, declarationEnd, "(", ")");
+                            int stateIndex = 0;
+                            for (int cursor = constructorOpen + 1, itemStart = constructorOpen + 1;
+                                 constructorClose > constructorOpen && cursor <= constructorClose; ++cursor) {
+                                if (cursor == constructorClose || csec_is_argument_separator(tokens, constructorClose, cursor)) {
+                                    if (cursor > itemStart) {
+                                        const std::string stateValue = resultName + ".oprecv" + std::to_string(stateIndex++);
+                                        output += csec_emit_i32_expression(tokens, itemStart, cursor, stateValue);
+                                        if (!arguments.empty()) arguments += ", ";
+                                        arguments += "i32 " + stateValue;
+                                    }
+                                    itemStart = cursor + 1;
+                                }
+                            }
+                        }
                     }
                     const std::string operandValue = resultName + ".oparg";
                     output += csec_emit_i32_expression(tokens, operation + 1, end, operandValue);

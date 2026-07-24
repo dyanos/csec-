@@ -1,0 +1,19 @@
+def repeat(s: String, n: Int): String {
+    if (n == 0) {
+        return "";
+    }
+    return s + repeat(s, n - 1);
+}
+
+def prefixed(name: String): String {
+    return "id-" + name;
+}
+
+def main(): Int {
+    val r: String = repeat("ab", 3);
+    val p: String = prefixed(repeat("x", 2));
+    if (r.length == 6 and p.length == 5) {
+        return 0;
+    }
+    return 1;
+}

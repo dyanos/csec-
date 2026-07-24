@@ -322,9 +322,14 @@ chain `"a" + 1 + "b"` stringify the integer through `csec_to_string_i64` before 
 string, and instance operator expressions returning String are recognized so untyped contexts
 route them through the String lowering. `186_string_int_concat_execution` exits `0`.
 
+A top-level function that returns String is recognized as a String expression, so it composes
+with concatenation: `s + repeat(s, n - 1)` (a recursive String builder) and passing one String
+function's result to another both work. `187_string_function_concat_execution` exits `0`.
+
 Overloaded operator methods that read scalar-receiver constructor state are still not passed that
 state (the operator dispatch, like the method-call dispatch, only forwards a pointer receiver or
-none).
+none). A concatenation chain with a function call in the middle and string literals on both ends
+(`"<" + rep("x", 2) + ">"`) still lowers to an empty string; the simpler forms above are correct.
 
 ## Still Incomplete
 

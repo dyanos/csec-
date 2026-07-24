@@ -4279,13 +4279,11 @@ if.then.17078:
   %ret.17089.left.left.left.left = call ptr @csec_string_concat(ptr %ret.17089.left.left.left.left.left, ptr %ret.17089.left.left.left.left.right)
   %ret.17089.left.left.left.right = getelementptr inbounds [17 x i8], ptr @.str.17094, i32 0, i32 0
   %ret.17089.left.left.left = call ptr @csec_string_concat(ptr %ret.17089.left.left.left.left, ptr %ret.17089.left.left.left.right)
-  %ret.17089.left.left.right.i32.arg0 = load ptr, ptr %tokens
-  %ret.17089.left.left.right.i32.arg1 = load i32, ptr %bodyStart.addr.17054
-  %ret.17089.left.left.right.i32.arg2 = load i32, ptr %bodyEnd.addr.17066
-  %ret.17089.left.left.right.i32.arg3 = getelementptr inbounds [5 x i8], ptr @.str.17104, i32 0, i32 0
-  %ret.17089.left.left.right.i32 = call i32 @generateCBody(ptr %ret.17089.left.left.right.i32.arg0, i32 %ret.17089.left.left.right.i32.arg1, i32 %ret.17089.left.left.right.i32.arg2, ptr %ret.17089.left.left.right.i32.arg3)
-  %ret.17089.left.left.right.i64 = sext i32 %ret.17089.left.left.right.i32 to i64
-  %ret.17089.left.left.right = call ptr @csec_to_string_i64(i64 %ret.17089.left.left.right.i64)
+  %ret.17089.left.left.right.arg0 = load ptr, ptr %tokens
+  %ret.17089.left.left.right.arg1 = load i32, ptr %bodyStart.addr.17054
+  %ret.17089.left.left.right.arg2 = load i32, ptr %bodyEnd.addr.17066
+  %ret.17089.left.left.right.arg3 = getelementptr inbounds [5 x i8], ptr @.str.17104, i32 0, i32 0
+  %ret.17089.left.left.right = call ptr @generateCBody(ptr %ret.17089.left.left.right.arg0, i32 %ret.17089.left.left.right.arg1, i32 %ret.17089.left.left.right.arg2, ptr %ret.17089.left.left.right.arg3)
   %ret.17089.left.left = call ptr @csec_string_concat(ptr %ret.17089.left.left.left, ptr %ret.17089.left.left.right)
   %ret.17089.left.right = getelementptr inbounds [15 x i8], ptr @.str.17107, i32 0, i32 0
   %ret.17089.left = call ptr @csec_string_concat(ptr %ret.17089.left.left, ptr %ret.17089.left.right)
@@ -5312,11 +5310,9 @@ if.end.21253:
   br i1 %ifcond.21285, label %if.then.21285, label %if.else.21285
 if.then.21285:
   %ret.21305.left.left.left = getelementptr inbounds [2 x i8], ptr @.str.21306, i32 0, i32 0
-  %ret.21305.left.left.right.i32.arg0 = load ptr, ptr %tokens
-  %ret.21305.left.left.right.i32.arg1 = load i32, ptr %start
-  %ret.21305.left.left.right.i32 = call i32 @tokenTextAt(ptr %ret.21305.left.left.right.i32.arg0, i32 %ret.21305.left.left.right.i32.arg1)
-  %ret.21305.left.left.right.i64 = sext i32 %ret.21305.left.left.right.i32 to i64
-  %ret.21305.left.left.right = call ptr @csec_to_string_i64(i64 %ret.21305.left.left.right.i64)
+  %ret.21305.left.left.right.arg0 = load ptr, ptr %tokens
+  %ret.21305.left.left.right.arg1 = load i32, ptr %start
+  %ret.21305.left.left.right = call ptr @tokenTextAt(ptr %ret.21305.left.left.right.arg0, i32 %ret.21305.left.left.right.arg1)
   %ret.21305.left.left = call ptr @csec_string_concat(ptr %ret.21305.left.left.left, ptr %ret.21305.left.left.right)
   %ret.21305.left.right = getelementptr inbounds [6 x i8], ptr @.str.21315, i32 0, i32 0
   %ret.21305.left = call ptr @csec_string_concat(ptr %ret.21305.left.left, ptr %ret.21305.left.right)
@@ -5777,11 +5773,9 @@ if.end.22542:
   br i1 %ifcond.22571, label %if.then.22571, label %if.else.22571
 if.then.22571:
   %ret.22591.left.left = getelementptr inbounds [2 x i8], ptr @.str.22592, i32 0, i32 0
-  %ret.22591.left.right.i32.arg0 = load ptr, ptr %tokens
-  %ret.22591.left.right.i32.arg1 = load i32, ptr %start
-  %ret.22591.left.right.i32 = call i32 @tokenTextAt(ptr %ret.22591.left.right.i32.arg0, i32 %ret.22591.left.right.i32.arg1)
-  %ret.22591.left.right.i64 = sext i32 %ret.22591.left.right.i32 to i64
-  %ret.22591.left.right = call ptr @csec_to_string_i64(i64 %ret.22591.left.right.i64)
+  %ret.22591.left.right.arg0 = load ptr, ptr %tokens
+  %ret.22591.left.right.arg1 = load i32, ptr %start
+  %ret.22591.left.right = call ptr @tokenTextAt(ptr %ret.22591.left.right.arg0, i32 %ret.22591.left.right.arg1)
   %ret.22591.left = call ptr @csec_string_concat(ptr %ret.22591.left.left, ptr %ret.22591.left.right)
   %ret.22591.right = getelementptr inbounds [6 x i8], ptr @.str.22601, i32 0, i32 0
   %ret.22591 = call ptr @csec_string_concat(ptr %ret.22591.left, ptr %ret.22591.right)
@@ -6810,11 +6804,9 @@ if.end.27311:
   br i1 %ifcond.27340, label %if.then.27340, label %if.else.27340
 if.then.27340:
   %ret.27360.left.left.left = getelementptr inbounds [2 x i8], ptr @.str.27361, i32 0, i32 0
-  %ret.27360.left.left.right.i32.arg0 = load ptr, ptr %tokens
-  %ret.27360.left.left.right.i32.arg1 = load i32, ptr %start
-  %ret.27360.left.left.right.i32 = call i32 @tokenTextAt(ptr %ret.27360.left.left.right.i32.arg0, i32 %ret.27360.left.left.right.i32.arg1)
-  %ret.27360.left.left.right.i64 = sext i32 %ret.27360.left.left.right.i32 to i64
-  %ret.27360.left.left.right = call ptr @csec_to_string_i64(i64 %ret.27360.left.left.right.i64)
+  %ret.27360.left.left.right.arg0 = load ptr, ptr %tokens
+  %ret.27360.left.left.right.arg1 = load i32, ptr %start
+  %ret.27360.left.left.right = call ptr @tokenTextAt(ptr %ret.27360.left.left.right.arg0, i32 %ret.27360.left.left.right.arg1)
   %ret.27360.left.left = call ptr @csec_string_concat(ptr %ret.27360.left.left.left, ptr %ret.27360.left.left.right)
   %ret.27360.left.right = getelementptr inbounds [7 x i8], ptr @.str.27370, i32 0, i32 0
   %ret.27360.left = call ptr @csec_string_concat(ptr %ret.27360.left.left, ptr %ret.27360.left.right)
@@ -7128,11 +7120,9 @@ if.end.28067:
   br i1 %ifcond.28109, label %if.then.28109, label %if.else.28109
 if.then.28109:
   %ret.28129.left.left.left = getelementptr inbounds [2 x i8], ptr @.str.28130, i32 0, i32 0
-  %ret.28129.left.left.right.i32.arg0 = load ptr, ptr %tokens
-  %ret.28129.left.left.right.i32.arg1 = load i32, ptr %start
-  %ret.28129.left.left.right.i32 = call i32 @tokenTextAt(ptr %ret.28129.left.left.right.i32.arg0, i32 %ret.28129.left.left.right.i32.arg1)
-  %ret.28129.left.left.right.i64 = sext i32 %ret.28129.left.left.right.i32 to i64
-  %ret.28129.left.left.right = call ptr @csec_to_string_i64(i64 %ret.28129.left.left.right.i64)
+  %ret.28129.left.left.right.arg0 = load ptr, ptr %tokens
+  %ret.28129.left.left.right.arg1 = load i32, ptr %start
+  %ret.28129.left.left.right = call ptr @tokenTextAt(ptr %ret.28129.left.left.right.arg0, i32 %ret.28129.left.left.right.arg1)
   %ret.28129.left.left = call ptr @csec_string_concat(ptr %ret.28129.left.left.left, ptr %ret.28129.left.left.right)
   %ret.28129.left.right = getelementptr inbounds [7 x i8], ptr @.str.28139, i32 0, i32 0
   %ret.28129.left = call ptr @csec_string_concat(ptr %ret.28129.left.left, ptr %ret.28129.left.right)
@@ -7630,15 +7620,13 @@ if.then.29419:
   %resultName.init.29436.right = call ptr @csec_to_string_i64(i64 %resultName.init.29436.right.i64)
   %resultName.init.29436 = call ptr @csec_string_concat(ptr %resultName.init.29436.left, ptr %resultName.init.29436.right)
   store ptr %resultName.init.29436, ptr %resultName.addr.29436
-  %ret.29449.left.left.left.left.left.i32.arg0 = load ptr, ptr %tokens
-  %ret.29449.left.left.left.left.left.i32.arg1.left = load i32, ptr %op.addr.29343
-  %ret.29449.left.left.left.left.left.i32.arg1.right = add i32 0, 1
-  %ret.29449.left.left.left.left.left.i32.arg1 = add i32 %ret.29449.left.left.left.left.left.i32.arg1.left, %ret.29449.left.left.left.left.left.i32.arg1.right
-  %ret.29449.left.left.left.left.left.i32.arg2 = load i32, ptr %end
-  %ret.29449.left.left.left.left.left.i32.arg3 = load ptr, ptr %resultName.addr.29436
-  %ret.29449.left.left.left.left.left.i32 = call i32 @generateLLVMExpressionF64(ptr %ret.29449.left.left.left.left.left.i32.arg0, i32 %ret.29449.left.left.left.left.left.i32.arg1, i32 %ret.29449.left.left.left.left.left.i32.arg2, ptr %ret.29449.left.left.left.left.left.i32.arg3)
-  %ret.29449.left.left.left.left.left.i64 = sext i32 %ret.29449.left.left.left.left.left.i32 to i64
-  %ret.29449.left.left.left.left.left = call ptr @csec_to_string_i64(i64 %ret.29449.left.left.left.left.left.i64)
+  %ret.29449.left.left.left.left.left.arg0 = load ptr, ptr %tokens
+  %ret.29449.left.left.left.left.left.arg1.left = load i32, ptr %op.addr.29343
+  %ret.29449.left.left.left.left.left.arg1.right = add i32 0, 1
+  %ret.29449.left.left.left.left.left.arg1 = add i32 %ret.29449.left.left.left.left.left.arg1.left, %ret.29449.left.left.left.left.left.arg1.right
+  %ret.29449.left.left.left.left.left.arg2 = load i32, ptr %end
+  %ret.29449.left.left.left.left.left.arg3 = load ptr, ptr %resultName.addr.29436
+  %ret.29449.left.left.left.left.left = call ptr @generateLLVMExpressionF64(ptr %ret.29449.left.left.left.left.left.arg0, i32 %ret.29449.left.left.left.left.left.arg1, i32 %ret.29449.left.left.left.left.left.arg2, ptr %ret.29449.left.left.left.left.left.arg3)
   %ret.29449.left.left.left.left.right = getelementptr inbounds [16 x i8], ptr @.str.29463, i32 0, i32 0
   %ret.29449.left.left.left.left = call ptr @csec_string_concat(ptr %ret.29449.left.left.left.left.left, ptr %ret.29449.left.left.left.left.right)
   %ret.29449.left.left.left.right = load ptr, ptr %resultName.addr.29436
@@ -7997,14 +7985,12 @@ if.then.30017:
   %rightCode.assign.30037.left.left.left = call ptr @csec_string_concat(ptr %rightCode.assign.30037.left.left.left.left, ptr %rightCode.assign.30037.left.left.left.right)
   %rightCode.assign.30037.left.left.right = getelementptr inbounds [25 x i8], ptr @.str.30043, i32 0, i32 0
   %rightCode.assign.30037.left.left = call ptr @csec_string_concat(ptr %rightCode.assign.30037.left.left.left, ptr %rightCode.assign.30037.left.left.right)
-  %rightCode.assign.30037.left.right.i32.arg0 = load ptr, ptr %tokens
-  %rightCode.assign.30037.left.right.i32.arg1 = load i32, ptr %rightStart.addr.29921
-  %rightCode.assign.30037.left.right.i32.arg2.arg0 = load ptr, ptr %tokens
-  %rightCode.assign.30037.left.right.i32.arg2.arg1 = load i32, ptr %rightStart.addr.29921
-  %rightCode.assign.30037.left.right.i32.arg2 = call i32 @tokenTextAt(ptr %rightCode.assign.30037.left.right.i32.arg2.arg0, i32 %rightCode.assign.30037.left.right.i32.arg2.arg1)
-  %rightCode.assign.30037.left.right.i32 = call i32 @lookupVisibleStorageName(ptr %rightCode.assign.30037.left.right.i32.arg0, i32 %rightCode.assign.30037.left.right.i32.arg1, i32 %rightCode.assign.30037.left.right.i32.arg2)
-  %rightCode.assign.30037.left.right.i64 = sext i32 %rightCode.assign.30037.left.right.i32 to i64
-  %rightCode.assign.30037.left.right = call ptr @csec_to_string_i64(i64 %rightCode.assign.30037.left.right.i64)
+  %rightCode.assign.30037.left.right.arg0 = load ptr, ptr %tokens
+  %rightCode.assign.30037.left.right.arg1 = load i32, ptr %rightStart.addr.29921
+  %rightCode.assign.30037.left.right.arg2.arg0 = load ptr, ptr %tokens
+  %rightCode.assign.30037.left.right.arg2.arg1 = load i32, ptr %rightStart.addr.29921
+  %rightCode.assign.30037.left.right.arg2 = call ptr @tokenTextAt(ptr %rightCode.assign.30037.left.right.arg2.arg0, i32 %rightCode.assign.30037.left.right.arg2.arg1)
+  %rightCode.assign.30037.left.right = call ptr @lookupVisibleStorageName(ptr %rightCode.assign.30037.left.right.arg0, i32 %rightCode.assign.30037.left.right.arg1, ptr %rightCode.assign.30037.left.right.arg2)
   %rightCode.assign.30037.left = call ptr @csec_string_concat(ptr %rightCode.assign.30037.left.left, ptr %rightCode.assign.30037.left.right)
   %rightCode.assign.30037.right = getelementptr inbounds [2 x i8], ptr @.str.30059, i32 0, i32 0
   %rightCode.assign.30037 = call ptr @csec_string_concat(ptr %rightCode.assign.30037.left, ptr %rightCode.assign.30037.right)
@@ -8156,12 +8142,10 @@ if.end.30256:
   br i1 %ifcond.30332, label %if.then.30332, label %if.else.30332
 if.then.30332:
   %ret.30352.left.left.left.left = getelementptr inbounds [12 x i8], ptr @.str.30353, i32 0, i32 0
-  %ret.30352.left.left.left.right.i32.arg0.arg0 = load ptr, ptr %tokens
-  %ret.30352.left.left.left.right.i32.arg0.arg1 = load i32, ptr %exprStart.addr.30304
-  %ret.30352.left.left.left.right.i32.arg0 = call i32 @tokenTextAt(ptr %ret.30352.left.left.left.right.i32.arg0.arg0, i32 %ret.30352.left.left.left.right.i32.arg0.arg1)
-  %ret.30352.left.left.left.right.i32 = call i32 @llvmCharI8Value(i32 %ret.30352.left.left.left.right.i32.arg0)
-  %ret.30352.left.left.left.right.i64 = sext i32 %ret.30352.left.left.left.right.i32 to i64
-  %ret.30352.left.left.left.right = call ptr @csec_to_string_i64(i64 %ret.30352.left.left.left.right.i64)
+  %ret.30352.left.left.left.right.arg0.arg0 = load ptr, ptr %tokens
+  %ret.30352.left.left.left.right.arg0.arg1 = load i32, ptr %exprStart.addr.30304
+  %ret.30352.left.left.left.right.arg0 = call ptr @tokenTextAt(ptr %ret.30352.left.left.left.right.arg0.arg0, i32 %ret.30352.left.left.left.right.arg0.arg1)
+  %ret.30352.left.left.left.right = call ptr @llvmCharI8Value(ptr %ret.30352.left.left.left.right.arg0)
   %ret.30352.left.left.left = call ptr @csec_string_concat(ptr %ret.30352.left.left.left.left, ptr %ret.30352.left.left.left.right)
   %ret.30352.left.left.right = getelementptr inbounds [8 x i8], ptr @.str.30365, i32 0, i32 0
   %ret.30352.left.left = call ptr @csec_string_concat(ptr %ret.30352.left.left.left, ptr %ret.30352.left.left.right)
@@ -8707,15 +8691,13 @@ if.then.33334:
   %resultName.init.33351.right = call ptr @csec_to_string_i64(i64 %resultName.init.33351.right.i64)
   %resultName.init.33351 = call ptr @csec_string_concat(ptr %resultName.init.33351.left, ptr %resultName.init.33351.right)
   store ptr %resultName.init.33351, ptr %resultName.addr.33351
-  %ret.33364.left.left.left.left.left.i32.arg0 = load ptr, ptr %tokens
-  %ret.33364.left.left.left.left.left.i32.arg1.left = load i32, ptr %op.addr.33258
-  %ret.33364.left.left.left.left.left.i32.arg1.right = add i32 0, 1
-  %ret.33364.left.left.left.left.left.i32.arg1 = add i32 %ret.33364.left.left.left.left.left.i32.arg1.left, %ret.33364.left.left.left.left.left.i32.arg1.right
-  %ret.33364.left.left.left.left.left.i32.arg2 = load i32, ptr %end
-  %ret.33364.left.left.left.left.left.i32.arg3 = load ptr, ptr %resultName.addr.33351
-  %ret.33364.left.left.left.left.left.i32 = call i32 @generateLLVMExpressionI1(ptr %ret.33364.left.left.left.left.left.i32.arg0, i32 %ret.33364.left.left.left.left.left.i32.arg1, i32 %ret.33364.left.left.left.left.left.i32.arg2, ptr %ret.33364.left.left.left.left.left.i32.arg3)
-  %ret.33364.left.left.left.left.left.i64 = sext i32 %ret.33364.left.left.left.left.left.i32 to i64
-  %ret.33364.left.left.left.left.left = call ptr @csec_to_string_i64(i64 %ret.33364.left.left.left.left.left.i64)
+  %ret.33364.left.left.left.left.left.arg0 = load ptr, ptr %tokens
+  %ret.33364.left.left.left.left.left.arg1.left = load i32, ptr %op.addr.33258
+  %ret.33364.left.left.left.left.left.arg1.right = add i32 0, 1
+  %ret.33364.left.left.left.left.left.arg1 = add i32 %ret.33364.left.left.left.left.left.arg1.left, %ret.33364.left.left.left.left.left.arg1.right
+  %ret.33364.left.left.left.left.left.arg2 = load i32, ptr %end
+  %ret.33364.left.left.left.left.left.arg3 = load ptr, ptr %resultName.addr.33351
+  %ret.33364.left.left.left.left.left = call ptr @generateLLVMExpressionI1(ptr %ret.33364.left.left.left.left.left.arg0, i32 %ret.33364.left.left.left.left.left.arg1, i32 %ret.33364.left.left.left.left.left.arg2, ptr %ret.33364.left.left.left.left.left.arg3)
   %ret.33364.left.left.left.left.right = getelementptr inbounds [12 x i8], ptr @.str.33378, i32 0, i32 0
   %ret.33364.left.left.left.left = call ptr @csec_string_concat(ptr %ret.33364.left.left.left.left.left, ptr %ret.33364.left.left.left.left.right)
   %ret.33364.left.left.left.right = load ptr, ptr %resultName.addr.33351
@@ -9547,13 +9529,11 @@ if.then.39008:
   br i1 %ifcond.39024, label %if.then.39024, label %if.else.39024
 if.then.39024:
   %ret.39055.left.left = getelementptr inbounds [11 x i8], ptr @.str.39056, i32 0, i32 0
-  %ret.39055.left.right.i32.arg0 = load ptr, ptr %tokens
-  %ret.39055.left.right.i32.arg1.left = load i32, ptr %cursor.addr.38983
-  %ret.39055.left.right.i32.arg1.right = add i32 0, 1
-  %ret.39055.left.right.i32.arg1 = add i32 %ret.39055.left.right.i32.arg1.left, %ret.39055.left.right.i32.arg1.right
-  %ret.39055.left.right.i32 = call i32 @tokenTextAt(ptr %ret.39055.left.right.i32.arg0, i32 %ret.39055.left.right.i32.arg1)
-  %ret.39055.left.right.i64 = sext i32 %ret.39055.left.right.i32 to i64
-  %ret.39055.left.right = call ptr @csec_to_string_i64(i64 %ret.39055.left.right.i64)
+  %ret.39055.left.right.arg0 = load ptr, ptr %tokens
+  %ret.39055.left.right.arg1.left = load i32, ptr %cursor.addr.38983
+  %ret.39055.left.right.arg1.right = add i32 0, 1
+  %ret.39055.left.right.arg1 = add i32 %ret.39055.left.right.arg1.left, %ret.39055.left.right.arg1.right
+  %ret.39055.left.right = call ptr @tokenTextAt(ptr %ret.39055.left.right.arg0, i32 %ret.39055.left.right.arg1)
   %ret.39055.left = call ptr @csec_string_concat(ptr %ret.39055.left.left, ptr %ret.39055.left.right)
   %ret.39055.right = getelementptr inbounds [2 x i8], ptr @.str.39067, i32 0, i32 0
   %ret.39055 = call ptr @csec_string_concat(ptr %ret.39055.left, ptr %ret.39055.right)
@@ -9561,18 +9541,16 @@ if.then.39024:
 if.else.39024:
   br label %if.end.39024
 if.end.39024:
-  %ret.39070.left.i32.arg0 = load ptr, ptr %tokens
-  %ret.39070.left.i32.arg1.left = load i32, ptr %cursor.addr.38983
-  %ret.39070.left.i32.arg1.right = add i32 0, 1
-  %ret.39070.left.i32.arg1 = add i32 %ret.39070.left.i32.arg1.left, %ret.39070.left.i32.arg1.right
-  %ret.39070.left.i32.arg2.arg0 = load ptr, ptr %tokens
-  %ret.39070.left.i32.arg2.arg1 = load i32, ptr %cursor.addr.38983
-  %ret.39070.left.i32.arg2.arg2 = load i32, ptr %bodyEnd
-  %ret.39070.left.i32.arg2 = call i32 @advanceStatement(ptr %ret.39070.left.i32.arg2.arg0, i32 %ret.39070.left.i32.arg2.arg1, i32 %ret.39070.left.i32.arg2.arg2)
-  %ret.39070.left.i32.arg3 = getelementptr inbounds [5 x i8], ptr @.str.39088, i32 0, i32 0
-  %ret.39070.left.i32 = call i32 @generateLLVMExpressionI32(ptr %ret.39070.left.i32.arg0, i32 %ret.39070.left.i32.arg1, i32 %ret.39070.left.i32.arg2, ptr %ret.39070.left.i32.arg3)
-  %ret.39070.left.i64 = sext i32 %ret.39070.left.i32 to i64
-  %ret.39070.left = call ptr @csec_to_string_i64(i64 %ret.39070.left.i64)
+  %ret.39070.left.arg0 = load ptr, ptr %tokens
+  %ret.39070.left.arg1.left = load i32, ptr %cursor.addr.38983
+  %ret.39070.left.arg1.right = add i32 0, 1
+  %ret.39070.left.arg1 = add i32 %ret.39070.left.arg1.left, %ret.39070.left.arg1.right
+  %ret.39070.left.arg2.arg0 = load ptr, ptr %tokens
+  %ret.39070.left.arg2.arg1 = load i32, ptr %cursor.addr.38983
+  %ret.39070.left.arg2.arg2 = load i32, ptr %bodyEnd
+  %ret.39070.left.arg2 = call i32 @advanceStatement(ptr %ret.39070.left.arg2.arg0, i32 %ret.39070.left.arg2.arg1, i32 %ret.39070.left.arg2.arg2)
+  %ret.39070.left.arg3 = getelementptr inbounds [5 x i8], ptr @.str.39088, i32 0, i32 0
+  %ret.39070.left = call ptr @generateLLVMExpressionI32(ptr %ret.39070.left.arg0, i32 %ret.39070.left.arg1, i32 %ret.39070.left.arg2, ptr %ret.39070.left.arg3)
   %ret.39070.right = getelementptr inbounds [16 x i8], ptr @.str.39091, i32 0, i32 0
   %ret.39070 = call ptr @csec_string_concat(ptr %ret.39070.left, ptr %ret.39070.right)
   ret ptr %ret.39070

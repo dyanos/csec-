@@ -95,6 +95,7 @@ static bool csec_visible_i64_array(const char* tokens, int limit, const char* na
 static std::string csec_class_method_symbol(const char* tokens, int classStart, int methodStart);
 static int csec_resolve_class_method_by_args(const char* tokens, int classStart, const char* methodName, int argStart, int argClose);
 static int csec_local_instance_class(const char* tokens, int ordinal, const char* name);
+static int csec_top_level_function_declaration(const char* tokens, const char* name);
 
 static std::vector<std::pair<std::string, std::string>> csec_class_constructor_params(const char* tokens, int classStart) {
     std::vector<std::pair<std::string, std::string>> params;
@@ -1043,6 +1044,13 @@ static bool csec_is_string_expression(const char* tokens, int start, int end) {
         return std::strcmp(method, "trim") == 0 || std::strcmp(method, "toUpper") == 0 ||
             std::strcmp(method, "toLower") == 0 || std::strcmp(method, "toString") == 0 ||
             std::strcmp(method, "substring") == 0;
+    }
+    // A top-level function call returning String is a String expression.
+    if (csec_token_kind_at(tokens, start) == 'I' && start + 1 < end &&
+        csec_native_token_is(tokens, start + 1, 'O', "(") &&
+        csec_find_closing_token(tokens, start + 1, end, "(", ")") == end - 1) {
+        const int callee = csec_top_level_function_declaration(tokens, csec_token_text_at(tokens, start));
+        if (callee >= 0 && std::strcmp(csec_function_return_type_at(tokens, callee), "String") == 0) return true;
     }
     // A class instance method call `obj.method(args)` is a String expression when the overload
     // selected by the argument types returns String. This lets untyped contexts (such as

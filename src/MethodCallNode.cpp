@@ -516,16 +516,31 @@ std::unique_ptr<Type> MethodCallNode::getType() {
         callArgTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
     }
 
-    auto methodSymbolOpt = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, methodName, callArgTypes);
-    if (!methodSymbolOpt) {
-        return std::make_unique<BasicType>("Real");
-    }
-
-    auto* methodSymbol = methodSymbolOpt;
-
-    auto* funcType = dynamic_cast<FunctionType*>(methodSymbol->type.get());
-    if (funcType && funcType->returnType) {
-        return funcType->returnType->clone();
+    // Resolve the method by walking the parent chain. During type checking a child class's method
+    // map does not yet contain copies of inherited methods (that copy happens at codegen), so a
+    // lookup confined to the receiver's own class would miss an inherited method such as
+    // `dog.getAge()` and fall back to `Real`, breaking callers that expect the declared return type.
+    auto& table = CodeGenerator::getInstance().symbolTable;
+    for (ClassSymbol* cls = classSymbol; cls; ) {
+        if (auto* methodSymbol = table.lookupMethod(*cls, methodName, callArgTypes)) {
+            if (auto* funcType = dynamic_cast<FunctionType*>(methodSymbol->type.get())) {
+                if (funcType->returnType) {
+                    return funcType->returnType->clone();
+                }
+            }
+        }
+        auto found = cls->methods.find(methodName);
+        if (found != cls->methods.end() && found->second) {
+            if (auto* funcType = dynamic_cast<FunctionType*>(found->second->type.get())) {
+                if (funcType->returnType) {
+                    return funcType->returnType->clone();
+                }
+            }
+        }
+        if (cls->superClassName.empty()) {
+            break;
+        }
+        cls = table.lookupClass(cls->superClassName);
     }
 
     return std::make_unique<BasicType>("Real");

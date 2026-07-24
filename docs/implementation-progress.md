@@ -293,6 +293,14 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   `ReduceStatementNode` uses that runtime length as its loop bound when present. The self-host path
   still computes `056` incorrectly; this fix is direct-compiler-only (no emitter or fixed-point
   change).
+- A call to an inherited method now resolves its return type in the direct compiler. During type
+  checking a child class's method map does not yet contain copies of inherited methods (that copy
+  happens at codegen), so `MethodCallNode::getType` — which only looked up the receiver's own class
+  — returned `Real` for `dog.getAge()` (defined on the parent `Animal`), and a caller summing it
+  into an `Int` failed with "declared to return 'Int' but returns 'Real'". The class-method path
+  now walks the parent chain (like the `this`/`super` path already did). `108_oop_and_templates`,
+  which combines inheritance, a static object, and generic (`template`) classes, compiles and
+  returns `17`; this was the last non-`gpu` fixture the direct compiler could not build.
 - Overloaded object/namespace methods no longer collide in the direct compiler. A namespaced
   method mangles purely by scope and name (`O#p`), so `def p(x: String)` and `def p(x: Boolean)`
   produced the same LLVM name; the second body attached to the first function and read its

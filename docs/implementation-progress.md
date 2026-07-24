@@ -351,6 +351,17 @@ Overloaded operator methods that read scalar-receiver constructor state are stil
 state (the operator dispatch, like the method-call dispatch, only forwards a pointer receiver or
 none). A concatenation chain with a function call in the middle and string literals on both ends
 (`"<" + rep("x", 2) + ">"`) still lowers to an empty string; the simpler forms above are correct.
+The root cause is known: `csec_i32_top_level_operator` computes an operator's precedence from a
+token's *text* without checking its kind, so a string literal such as `"<"`/`">"` (text `<`/`>`)
+is treated as a comparison operator (and a string like `"("` corrupts the bracket depth). For
+`"<" + rep(...) + ">"` the trailing `">"` outranks the `+`, so the concatenation case never fires
+and the expression drops to the null pointer fallback. Guarding the scan to only symbol (`'O'`) and
+keyword (`'K'`) operator tokens fixes the emitted output (the self-host path then prints `<xx>`),
+but it is NOT safe to land as-is: it changes how `csec_compiler.csec` itself compiles, and the
+corrected split of one large boolean condition there exposes latent emitter bugs (the i32 lowering
+of a boolean `tokenIs(...)` sub-expression emits `load i32, ptr %tokenIs`, treating the function
+name as a local), which breaks the self-host fixed point. Landing this needs those downstream
+emitter paths hardened first; until then the guard is reverted to keep the bootstrap stable.
 
 ## Still Incomplete
 

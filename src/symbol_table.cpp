@@ -188,9 +188,11 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
             switch (rawSymbol->symbolType) {
             case SymbolType::VARIABLE:
             case SymbolType::FIELD:
-                if (target->variables.count(name) != 0)
-                    return false;
-
+                // The namespace's `variables` map persists across the type-check and codegen
+                // phases (it lives on the shared NamespaceSymbol), so a field can already be
+                // present here when codegen re-adds it. Refresh the entry and always (re)bind
+                // the scope symbol, otherwise the codegen value (e.g. the field's global) never
+                // lands in the current scope and lookups inside object methods resolve to nothing.
                 target->variables[name] = rawSymbol->clone();
                 this->currentScope->symbols[name] = std::move(symbol);
                 return true;

@@ -228,7 +228,14 @@
   through the self-host path. (The direct compiler's class-method codegen is still incomplete —
   see the inheritance gap above — so this fixture is self-host only.)
 - Static objects support literal `Int` fields and expression-bodied methods. Together with mixed
-  String/Int constructor classes, `059_class_object_mix.csec` executes with exit code `8113`.
+  String/Int constructor classes, `059_class_object_mix.csec` executes with exit code `8113` on
+  both paths. The direct compiler previously returned `8080` because an object's field symbols
+  never reached the codegen scope: `SymbolTable::addSymbol` bailed out with `return false` when the
+  field was already present in the enclosing `NamespaceSymbol.variables` map (populated during the
+  type-check phase, which shares the symbol), so the emitted field global (`@maxRetries`) was never
+  bound and lookups inside object methods resolved to nothing (`ret i32 0`). The namespace
+  variable/field path now refreshes the persistent entry and always (re)binds the current-scope
+  symbol, so object methods read their fields.
 - Struct-backed class receivers now support `Boolean` constructor state and `Boolean` instance
   method returns with `i1` slots and calls. `069_boolean_constructor_state.csec` exits with `42`.
 - Direct class-body `Boolean` fields support literal initialization, assignment in a Boolean

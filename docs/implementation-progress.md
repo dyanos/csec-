@@ -256,6 +256,13 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
 
 ## Known Gaps in the Direct Compiler
 
+- Capturing lambdas are not implemented in the direct compiler: it represents a lambda as a bare
+  function pointer with no closure environment, so a lambda body that references an outer variable
+  cannot reach it. Such a lambda now fails with a clear error ("capturing lambdas are not
+  supported by the direct compiler; compile through the self-host path") instead of emitting a
+  function that refers to another frame's allocas — invalid IR that previously hung the verifier
+  on `097_lambda_capture_all_invocation` and `098_lambda_by_reference_invocation`. Non-capturing
+  lambdas (`095`) work; the self-host path implements closures and runs all lambda fixtures.
 - Binding an array *literal* to a local (`val xs = [1, 2, 3]`) fails to declare in the direct
   compiler: the literal's type is `Array[Int]` (LLVM `[N x i32]`) but its value is a pointer to
   the array, so the pointer cannot be stored into the aggregate slot and the variable is left

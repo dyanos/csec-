@@ -262,6 +262,18 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
 - `152_boolean_array_execution.csec` returns `1` instead of `0` through the direct compiler; it
   is correct through the self-host path. The other scalar array-execution fixtures
   (`155`–`171`) run correctly on both paths.
+- Class inheritance is incomplete in the direct compiler across three layers, so
+  `064_this_and_super_paths`, `068_inherited_mutable_fields`, and `071_inherited_boolean_field`
+  fail natively (all correct through the self-host path):
+  - The type checker resolves `this.method()` and `super.method()` to the numeric default
+    `Real` rather than the method's declared return type, because it has no enclosing-class
+    context for `this`/`super` and because `lookupMethod` assumes a receiver slot that the
+    registered method type (declared parameters only) does not include.
+  - `AccessFieldNode::codegen` returns the field address (`getelementptr`) without loading, so a
+    field read such as `this.value` yields a pointer that a scalar return then discards as `0`.
+  - `super.method()` has no dedicated codegen; it also lowers to a default `0`.
+  A complete fix spans the type checker (enclosing-class resolution, receiver-aware method
+  matching), field-read loading, and super dispatch.
 
 ## Still Incomplete
 

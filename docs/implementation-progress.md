@@ -53,8 +53,11 @@
 - String locals and parameters use pointer storage in the self-host LLVM path. `length` and
   `size()` lower through `csec_string_length`; `141_string_length_execution.csec` exits with
   `10`.
-- String `==` and `!=` lower through `csec_string_equals` for literals, locals, and parameters.
-  `142_string_equality_execution.csec` exits with `42`.
+- String `==` and `!=` lower through `csec_string_equals` for literals, locals, and parameters
+  on both paths. The direct compiler previously compared the pointers, so equal strings in
+  distinct globals compared unequal; it now emits the same content comparison as the self-host
+  path. `142_string_equality_execution.csec` exits with `42` through both `--emit-ir` and the
+  self-host path.
 - String concatenation lowers through `csec_string_concat`, and `String` functions return `ptr`
   values that can initialize String locals. `143_string_concat_and_return.csec` exits with `6`.
 - Class layouts and pointer receivers support `String` constructor parameters and `String` fields.
@@ -209,15 +212,32 @@
 - Child class layouts carry inherited `Boolean` field slots, and `super` calls preserve their
   `i1` result ABI. `071_inherited_boolean_field.csec` exits with `42`.
 
+## Building the Direct Compiler
+
+The direct compiler (`csec++.exe`) links LLVM through the C++ API (`src/ast.h` includes
+`<llvm/IR/Value.h>`), so it needs LLVM headers and libraries that the native-runtime DLL build
+does not. This checkout carries them under `vcpkg_installed/x64-windows`, so a from-source build
+works:
+
+```powershell
+cmake -S . -B build_cmake -G "Visual Studio 18 2026" -A x64 `
+  -DLLVM_DIR="$PWD\vcpkg_installed\x64-windows\share\llvm"
+cmake --build build_cmake --config Debug
+```
+
+Both `x64\Debug\csec++.exe` and `x64\Debug\System.Native.dll` are produced (the runtime DLL is
+also rebuilt and copied next to the exe, so `build_runtime.bat` is only needed for a
+runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CMake is safer.
+
 ## Known Gaps in the Direct Compiler
 
-- `String` `==` and `!=` lower to an LLVM pointer comparison in the direct compiler rather than
-  a `csec_string_equals` call, so equal strings held in distinct globals compare unequal.
-  `142_string_equality_execution.csec` returns `0` instead of `42` through `--emit-ir`; it is
-  correct through the self-host path. `BinaryExpressionNode.cpp` handles `String` for `+` but
-  has no `String` case in its comparison branch. This was not fixed here because the direct
-  compiler needs LLVM headers to build and they are not present in this checkout, so the change
-  could not be compiled or verified.
+- Returning a newly created array is broken two ways. The type checker rejects `Vector[Int]` as
+  the return type for a `new Int[n]` value ("declared to return 'Vector' but returns 'Array'").
+  Spelled `Array[Int]` it compiles but returns the wrong value, because array codegen (a) stack
+  allocates the array with `alloca` and then returns a pointer to it, a use-after-return once the
+  callee stack frame is gone, and (b) indexing an array held in a `ptr` local emits
+  `getelementptr` on the address of the local instead of loading the pointer first. The self-host
+  path handles array returns correctly, so this is a direct-compiler-only gap.
 
 ## Still Incomplete
 

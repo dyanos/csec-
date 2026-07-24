@@ -42,3 +42,6 @@
 *.pdb
 .claude/
 .cr/
+
+# CMake build tree (out-of-source)
+build_cmake/

@@ -629,6 +629,27 @@ llvm::Value* BinaryExpressionNode::codegen() {
         return codegenStringConcat(cg, leftValue, leftStaticType.get(), rightValue, rightStaticType.get());
     }
 
+    if ((op == "==" || op == "!=") && (leftTypeName == "String" || rightTypeName == "String" || pointerStringConcat)) {
+        // String comparison is by content, not pointer identity: two equal strings held in
+        // distinct globals must compare equal. csec_string_equals returns a non-zero i32 when
+        // the contents match.
+        auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+        auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+        auto leftStaticType = left->getType();
+        auto rightStaticType = right->getType();
+        llvm::Value* leftString = coerceValueForString(cg, leftValue, leftStaticType.get());
+        llvm::Value* rightString = coerceValueForString(cg, rightValue, rightStaticType.get());
+        llvm::Value* equals = cg.builder.CreateCall(
+            getOrCreateRuntimeFunction("csec_string_equals", i32Ty, {i8PtrTy, i8PtrTy}),
+            {leftString, rightString},
+            "str.equals");
+        llvm::Value* zero = llvm::ConstantInt::get(i32Ty, 0);
+        return op == "=="
+            ? cg.builder.CreateICmpNE(equals, zero, "str.eq")
+            : cg.builder.CreateICmpEQ(equals, zero, "str.ne");
+    }
+
     if (isLogicalOperator(op)) {
         llvm::Value* leftBool = coerceToBool(leftValue);
         llvm::Value* rightBool = coerceToBool(rightValue);

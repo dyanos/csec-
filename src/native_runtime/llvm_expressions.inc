@@ -332,6 +332,45 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                 csec_token_text_at(tokens, start + 2) + "(" + arguments + ")\n";
         }
     }
+    if (csec_native_token_is(tokens, start, 'K', "this") && start + 4 < end &&
+        csec_native_token_is(tokens, start + 1, 'O', ".") && csec_token_kind_at(tokens, start + 2) == 'I' &&
+        csec_native_token_is(tokens, start + 3, 'O', "(")) {
+        // `this.method(args)` calls another method of the enclosing class on the same receiver.
+        const int close = csec_find_closing_token(tokens, start + 3, end, "(", ")");
+        const int classStart = csec_enclosing_class_declaration(tokens, start);
+        if (close == end - 1 && classStart >= 0) {
+            const std::string className = csec_top_level_decl_name(tokens, classStart);
+            const std::string method = csec_token_text_at(tokens, start + 2);
+            std::string output;
+            std::string arguments;
+            if (csec_class_uses_pointer_receiver(tokens, classStart)) {
+                arguments = "ptr %arg.this";
+            } else {
+                int receiverIndex = 0;
+                for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
+                    if (std::strcmp(csec_llvm_type_for_name(parameter.second.c_str()), "i32") != 0) continue;
+                    const std::string value = resultName + ".this.recv" + std::to_string(receiverIndex++);
+                    output += "  " + value + " = load i32, ptr %" + parameter.first + "\n";
+                    if (!arguments.empty()) arguments += ", ";
+                    arguments += "i32 " + value;
+                }
+            }
+            int argumentStart = start + 4;
+            int argumentIndex = 0;
+            for (int cursor = argumentStart; cursor <= close; ++cursor) {
+                if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
+                    if (cursor > argumentStart) {
+                        const std::string value = resultName + ".marg" + std::to_string(argumentIndex++);
+                        output += csec_emit_i32_expression(tokens, argumentStart, cursor, value);
+                        if (!arguments.empty()) arguments += ", ";
+                        arguments += "i32 " + value;
+                    }
+                    argumentStart = cursor + 1;
+                }
+            }
+            return output + "  " + resultName + " = call i32 @" + className + "_" + method + "(" + arguments + ")\n";
+        }
+    }
     if (kind == 'I' && start + 3 < end && csec_native_token_is(tokens, start + 1, 'O', ".") &&
         csec_token_kind_at(tokens, start + 2) == 'I' && csec_native_token_is(tokens, start + 3, 'O', "(")) {
         const int close = csec_find_closing_token(tokens, start + 3, end, "(", ")");

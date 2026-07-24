@@ -221,6 +221,12 @@
   code `44` after two `increment()` calls.
 - Scalar-receiver classes support `this.field` reads and `super.method()` dispatch through the
   declared parent class. `064_this_and_super_paths.csec` executes with exit code `1`.
+- The self-host emitter lowers `this.method(args)` self-calls: it dispatches to another method of
+  the enclosing class on the same receiver (the receiver pointer for pointer-backed classes, or
+  the reloaded scalar constructor state otherwise), passing any method arguments. It previously
+  fell through to a zero constant. `182_this_method_self_call_execution.csec` exits with `0`
+  through the self-host path. (The direct compiler's class-method codegen is still incomplete —
+  see the inheritance gap above — so this fixture is self-host only.)
 - Static objects support literal `Int` fields and expression-bodied methods. Together with mixed
   String/Int constructor classes, `059_class_object_mix.csec` executes with exit code `8113`.
 - Struct-backed class receivers now support `Boolean` constructor state and `Boolean` instance

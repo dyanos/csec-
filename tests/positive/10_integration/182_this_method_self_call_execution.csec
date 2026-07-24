@@ -1,0 +1,21 @@
+class Stack(capacity: Int) {
+    def size(): Int {
+        return capacity;
+    }
+
+    def doubled(): Int {
+        return this.size() + this.size();
+    }
+
+    def plus(extra: Int): Int {
+        return this.size() + extra;
+    }
+}
+
+def main(): Int {
+    val s = new Stack(21);
+    if (s.doubled() == 42 and s.plus(8) == 29) {
+        return 0;
+    }
+    return 1;
+}

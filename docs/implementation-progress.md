@@ -294,17 +294,17 @@ and `counter * 21` actually call the operator methods. This currently covers poi
 empty (stateless) classes; operator methods on scalar-receiver classes that read constructor
 state are not yet passed their receiver.
 
-Method overloading and overriding remain incomplete (`117_method_overloading`,
-`118_method_overriding`, `119_operator_overloading_and_overriding`). Two blockers, beyond the
-per-signature name mangling and argument-type resolution overloads need:
+String-returning instance methods now accept arguments. `csec_emit_ptr_instance_call` lowers the
+method arguments by their declared parameter types and handles pointer-receiver and stateless
+classes, so `g.greet("hi")` and `g.wrap("[", "x")` execute. `184_string_method_argument_execution`
+exits `0` through the self-host path. A scalar-receiver class that carries constructor state is
+still not passed that state into such a call.
 
-- Overloaded methods emit one LLVM name per method name rather than per signature, so two
-  `@Formatter_show` definitions collide.
-- The pointer instance-call lowering (`csec_emit_ptr_instance_call`) only handles a zero-argument
-  method on a pointer-receiver class, so a String-returning method that takes an argument on a
-  stateless class — such as `formatter.show("ok")` — is not lowered at all, independent of
-  overloading. String-returning methods with arguments on scalar-receiver classes need lowering
-  first.
+Method overloading and overriding remain incomplete (`117_method_overloading`,
+`118_method_overriding`, `119_operator_overloading_and_overriding`): overloaded methods emit one
+LLVM name per method name rather than per signature, so two `@Formatter_show` definitions collide.
+Overloads need per-signature name mangling at definitions and argument-type resolution at call
+sites.
 
 ## Still Incomplete
 

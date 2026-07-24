@@ -1223,9 +1223,11 @@ static bool csec_emit_i32_instance_call(const char* tokens, int start, int end, 
 }
 
 static bool csec_emit_ptr_instance_call(const char* tokens, int start, int end, const std::string& resultName, std::string& output) {
-    if (csec_token_kind_at(tokens, start) != 'I' || start + 5 != end ||
+    if (csec_token_kind_at(tokens, start) != 'I' || start + 3 >= end ||
         !csec_native_token_is(tokens, start + 1, 'O', ".") || csec_token_kind_at(tokens, start + 2) != 'I' ||
-        !csec_native_token_is(tokens, start + 3, 'O', "(") || !csec_native_token_is(tokens, start + 4, 'O', ")")) return false;
+        !csec_native_token_is(tokens, start + 3, 'O', "(")) return false;
+    const int callClose = csec_find_closing_token(tokens, start + 3, end, "(", ")");
+    if (callClose != end - 1) return false;
     const int declaration = csec_find_visible_local(tokens, start, csec_token_text_at(tokens, start));
     const int declarationEnd = declaration >= 0 ? csec_advance_statement(tokens, declaration, 1000000000) : -1;
     const int initializer = declaration >= 0 ? csec_find_top_level_operator(tokens, declaration, declarationEnd, 1) : -1;
@@ -1235,11 +1237,42 @@ static bool csec_emit_ptr_instance_call(const char* tokens, int start, int end, 
     const char* className = csec_token_text_at(tokens, instanceStart + 1);
     const int classStart = csec_find_class_declaration(tokens, className);
     const int methodStart = classStart >= 0 ? csec_find_class_method_declaration(tokens, classStart, csec_token_text_at(tokens, start + 2)) : -1;
-    if (methodStart < 0 || std::strcmp(csec_function_return_type_at(tokens, methodStart), "String") != 0 ||
-        !csec_class_uses_pointer_receiver(tokens, classStart)) return false;
-    const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
-    const std::string receiver = resultName + ".this";
-    output = "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n" +
-        "  " + resultName + " = call ptr @" + std::string(className) + "_" + csec_token_text_at(tokens, start + 2) + "(ptr " + receiver + ")\n";
+    if (methodStart < 0 || std::strcmp(csec_function_return_type_at(tokens, methodStart), "String") != 0) return false;
+
+    const bool pointerReceiver = csec_class_uses_pointer_receiver(tokens, classStart);
+    // A scalar-receiver class that carries constructor state would need those values passed to
+    // the method; only pointer-receiver and stateless classes are handled here.
+    if (!pointerReceiver && !csec_class_constructor_params(tokens, classStart).empty()) return false;
+
+    std::string body;
+    std::string arguments;
+    if (pointerReceiver) {
+        const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
+        const std::string receiver = resultName + ".this";
+        body += "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n";
+        arguments = "ptr " + receiver;
+    }
+    const auto parameters = csec_function_params(tokens, methodStart);
+    int argumentStart = start + 4;
+    int index = 0;
+    for (int cursor = argumentStart; cursor <= callClose; ++cursor) {
+        if (cursor == callClose || csec_is_argument_separator(tokens, callClose, cursor)) {
+            if (cursor > argumentStart) {
+                const std::string value = resultName + ".arg" + std::to_string(index);
+                const std::string paramType = index < static_cast<int>(parameters.size()) ? parameters[index].second : std::string("Int");
+                if (std::strcmp(csec_llvm_type_for_name(paramType), "ptr") == 0) {
+                    body += csec_emit_ptr_expression(tokens, argumentStart, cursor, value);
+                    arguments += (arguments.empty() ? "" : ", ") + std::string("ptr ") + value;
+                } else {
+                    body += csec_emit_i32_expression(tokens, argumentStart, cursor, value);
+                    arguments += (arguments.empty() ? "" : ", ") + std::string("i32 ") + value;
+                }
+                ++index;
+            }
+            argumentStart = cursor + 1;
+        }
+    }
+    output = body + "  " + resultName + " = call ptr @" + std::string(className) + "_" +
+        csec_mangle_method_name(csec_token_text_at(tokens, start + 2)) + "(" + arguments + ")\n";
     return true;
 }

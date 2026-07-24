@@ -1,0 +1,20 @@
+class Greeter() {
+    def greet(name: String): String {
+        return name + "!";
+    }
+
+    def wrap(prefix: String, name: String): String {
+        return prefix + name;
+    }
+}
+
+def main(): Int {
+    val g = new Greeter();
+    val greeting: String = g.greet("hi");
+    val wrapped: String = g.wrap("[", "x");
+
+    if (greeting == "hi!" and wrapped.length == 2) {
+        return 0;
+    }
+    return 1;
+}

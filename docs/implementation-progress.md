@@ -142,6 +142,11 @@
 - `Byte` now preserves its direct compiler `i8` ABI through self-host function parameters and
   returns, local storage, arithmetic, calls, and comparisons. The direct and self-host LLVM paths
   both execute `167_byte_execution.csec` with exit code `0`.
+- The direct compiler declares every top-level function prototype before emitting any body, so a
+  function may call another declared later in the file. Forward references and mutual recursion
+  now work: previously a call to a not-yet-emitted function was dropped and its return value
+  replaced with a default (`return isOdd(n - 1)` became `ret i1 false`).
+  `181_mutual_recursion_execution.csec` exits with `0` on both paths.
 - `new T[n]` heap allocates the array in the direct compiler instead of stack allocating it, so
   an array created in a function and returned stays valid in the caller. An array or vector local
   initialized from a function call binds the returned pointer directly, so indexing it does not

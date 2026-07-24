@@ -15,29 +15,66 @@ void FunctionDeclarationNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
 
+namespace {
+FunctionSymbol* updateOrRegisterFunctionSymbolNamed(
+    const std::string& name, std::unique_ptr<Type> functionType, llvm::Function* function, bool isExternalSymbol) {
+    auto& symbolTable = CodeGenerator::getInstance().symbolTable;
+    FunctionSymbol* existingFunction = nullptr;
+    if (auto* concreteFunctionType = dynamic_cast<FunctionType*>(functionType.get())) {
+        existingFunction = symbolTable.lookupFunction(name, concreteFunctionType->parameterTypes);
+    }
+    auto* existingSymbol = existingFunction ? static_cast<Symbol*>(existingFunction) : nullptr;
+    if (existingSymbol && existingSymbol->symbolType == SymbolType::FUNCTION) {
+        existingSymbol->type = functionType ? functionType->clone() : std::make_unique<UnknownType>();
+        existingSymbol->value = function;
+        existingSymbol->function = function;
+        existingSymbol->isMutable = isExternalSymbol;
+        return dynamic_cast<FunctionSymbol*>(existingSymbol);
+    }
+
+    auto functionSymbol = std::make_unique<FunctionSymbol>(name, std::move(functionType), function, isExternalSymbol, SymbolType::FUNCTION);
+    auto* functionSymbolRaw = functionSymbol.get();
+    if (!symbolTable.addSymbol(name, std::move(functionSymbol))) {
+        std::cerr << "Error: Failed to register function symbol '" << name << "'" << std::endl;
+        return nullptr;
+    }
+    return functionSymbolRaw;
+}
+
+std::string mangledFunctionName(CodeGenerator& cg, const std::string& name) {
+    return cg.scopes.empty() ? "_" + name : join(cg.scopes, "#") + "#" + name;
+}
+}
+
+llvm::Function* FunctionDeclarationNode::declarePrototype() {
+    if (this->isExternal) return nullptr;
+    auto& cg = CodeGenerator::getInstance();
+
+    std::vector<llvm::Type*> paramTypes;
+    for (auto& param : this->parameters) {
+        auto* paramType = getABIStorageType(param->getType().get());
+        if (!paramType) return nullptr;
+        paramTypes.push_back(paramType);
+    }
+    llvm::Type* returnType = getABIStorageType(this->returnType.get());
+    if (!returnType) return nullptr;
+
+    const std::string funcName = mangledFunctionName(cg, this->name);
+    llvm::Function* function = cg.module->getFunction(funcName);
+    if (!function) {
+        llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
+        function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, cg.module.get());
+        if (this->isConstexpr) {
+            function->addFnAttr(llvm::Attribute::AlwaysInline);
+        }
+    }
+    updateOrRegisterFunctionSymbolNamed(this->name, this->getType(), function, false);
+    return function;
+}
+
 llvm::Value* FunctionDeclarationNode::codegen() {
     auto updateOrRegisterFunctionSymbol = [&](std::unique_ptr<Type> functionType, llvm::Function* function, bool isExternalSymbol) -> FunctionSymbol* {
-        auto& symbolTable = CodeGenerator::getInstance().symbolTable;
-        FunctionSymbol* existingFunction = nullptr;
-        if (auto* concreteFunctionType = dynamic_cast<FunctionType*>(functionType.get())) {
-            existingFunction = symbolTable.lookupFunction(this->name, concreteFunctionType->parameterTypes);
-        }
-        auto* existingSymbol = existingFunction ? static_cast<Symbol*>(existingFunction) : nullptr;
-        if (existingSymbol && existingSymbol->symbolType == SymbolType::FUNCTION) {
-            existingSymbol->type = functionType ? functionType->clone() : std::make_unique<UnknownType>();
-            existingSymbol->value = function;
-            existingSymbol->function = function;
-            existingSymbol->isMutable = isExternalSymbol;
-            return dynamic_cast<FunctionSymbol*>(existingSymbol);
-        }
-
-        auto functionSymbol = std::make_unique<FunctionSymbol>(this->name, std::move(functionType), function, isExternalSymbol, SymbolType::FUNCTION);
-        auto* functionSymbolRaw = functionSymbol.get();
-        if (!symbolTable.addSymbol(this->name, std::move(functionSymbol))) {
-            std::cerr << "Error: Failed to register function symbol '" << this->name << "'" << std::endl;
-            return nullptr;
-        }
-        return functionSymbolRaw;
+        return updateOrRegisterFunctionSymbolNamed(this->name, std::move(functionType), function, isExternalSymbol);
     };
 
     if (this->isExternal) {
@@ -94,16 +131,15 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         return nullptr;
     }
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-    std::string funcName = [&]() {
-        if (cg.scopes.empty()) {
-            return "_" + this->name;
-        }
-        else {
-            return join(cg.scopes, "#") + "#" + this->name;
-        }
-        }();
+    std::string funcName = mangledFunctionName(cg, this->name);
 
-    llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, cg.module.get());
+    // Reuse the prototype if one was already declared (for example by the pre-declaration pass
+    // that enables forward references), so the body attaches to the function the callers resolved
+    // against rather than a renamed duplicate.
+    llvm::Function* function = cg.module->getFunction(funcName);
+    if (!function) {
+        function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, cg.module.get());
+    }
 
     if (this->isConstexpr) {
         function->addFnAttr(llvm::Attribute::AlwaysInline);

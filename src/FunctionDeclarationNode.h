@@ -76,6 +76,12 @@ public:
     void accept(ASTVisitor& visitor) override;
 
     llvm::Value* codegen() override;
+
+    // Creates the LLVM function prototype and registers its symbol without emitting the body.
+    // Idempotent: reuses an existing prototype of the same mangled name. Running this for every
+    // top-level function before any body is emitted lets a function call another that is declared
+    // later in the file (forward references, mutual recursion).
+    llvm::Function* declarePrototype();
     std::unique_ptr<Type> getType() override {
         auto ft = std::make_unique<FunctionType>();
         ft->returnType = returnType ? returnType->clone() : std::make_unique<UnknownType>();

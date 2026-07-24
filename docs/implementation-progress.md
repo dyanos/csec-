@@ -293,6 +293,15 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   `ReduceStatementNode` uses that runtime length as its loop bound when present. The self-host path
   still computes `056` incorrectly; this fix is direct-compiler-only (no emitter or fixed-point
   change).
+- Nested array indexing now works in the direct compiler. An array-of-arrays literal
+  (`[[1, 2], [3, 4]]`) is stored as a buffer of pointers to the inner arrays, but `getLLVMType`
+  lowers an `ArrayType` element to an inline `[N x T]` aggregate. Indexing through an intermediate
+  array level therefore loaded the inner array as an aggregate value and the next `GEP` asserted
+  ("Ptr must have pointer type"). `ArrayAccessNode` (both the value and element-pointer paths) now
+  loads an array-typed intermediate element as an opaque pointer, matching the stored
+  representation. `043_indexing_and_compound_assignment` returns `28` (chained `nested[0][1]`) and
+  `111_tensor_indexing` returns `9` (comma multi-index `matrix[0, 1]` and `cube[1, 0, 1]`); both
+  previously crashed the compiler.
 - Class inheritance now works in the direct compiler. `this` is bound to the class type during
   type checking so `this.field` and `this.method()`/`super.method()` resolve to real types;
   `AccessFieldNode::codegen` reads the field value (with a pointer accessor for assignment

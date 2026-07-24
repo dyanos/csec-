@@ -7,6 +7,17 @@
 #include <vector>
 
 namespace {
+// A nested array element (`Array[Array[T]]` / `ArrayType` of arrays) is stored as a pointer to its
+// element buffer, not inline. When indexing through such an intermediate level, the value loaded is
+// that pointer, so the load/GEP type must be an opaque pointer rather than `getLLVMType`'s inline
+// `[N x T]` aggregate — otherwise the next index GEPs on a non-pointer aggregate and asserts.
+bool elementIsArrayLike(const Type* type) {
+    if (!type) return false;
+    if (dynamic_cast<const ArrayType*>(type) != nullptr) return true;
+    if (type->getKind() == Type::Kind::GENERIC && type->getName() == "Array") return true;
+    return false;
+}
+
 llvm::Value* toTensorIndex(CodeGenerator& cg, llvm::Value* value) {
     if (!value) return nullptr;
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
@@ -111,7 +122,9 @@ llvm::Value* ArrayAccessNode::codegen() {
             elementTypeInfo = getType();
         }
 
-        llvm::Type* elementType = cg.getLLVMType(elementTypeInfo.get());
+        llvm::Type* elementType = elementIsArrayLike(elementTypeInfo.get())
+            ? static_cast<llvm::Type*>(llvm::PointerType::getUnqual(cg.context))
+            : cg.getLLVMType(elementTypeInfo.get());
         if (!elementType) {
             std::cerr << "Error: Invalid array element type" << std::endl;
             return nullptr;
@@ -145,7 +158,9 @@ llvm::Value* ArrayAccessNode::codegenElementPointer() {
             }
         }
         if (!elementTypeInfo) return nullptr;
-        llvm::Type* elementType = cg.getLLVMType(elementTypeInfo.get());
+        llvm::Type* elementType = elementIsArrayLike(elementTypeInfo.get())
+            ? static_cast<llvm::Type*>(llvm::PointerType::getUnqual(cg.context))
+            : cg.getLLVMType(elementTypeInfo.get());
         llvm::Value* indexValue = spec->index->codegen();
         if (!elementType || !indexValue) return nullptr;
         llvm::Value* element = cg.builder.CreateGEP(elementType, currentValue, indexValue, "arrayelem.addr");

@@ -232,6 +232,15 @@ void collectPMapCaptures(
         }
         return;
     }
+    // A nested pmap: its iterable and body reference variables that the enclosing pmap must
+    // capture too. Walk both, treating the inner loop variable as a local of the inner scope.
+    if (auto* nested = dynamic_cast<PMapStatementNode*>(ast)) {
+        collectPMapCaptures(nested->iterableExpr.get(), loopVariable, locals, captures, seen, writes);
+        std::set<std::string> innerLocals = locals;
+        innerLocals.insert(nested->variable);
+        collectPMapCaptures(nested->body.get(), loopVariable, innerLocals, captures, seen, writes);
+        return;
+    }
     if (auto* match = dynamic_cast<MatchExpressionNode*>(ast)) {
         collectPMapCaptures(match->expression.get(), loopVariable, locals, captures, seen, writes);
         for (const auto& item : match->cases) {

@@ -4,6 +4,7 @@
 #include "ASTVisitor.h"
 #include "ClassInstanceCreationNode.h"
 #include "ArrayCreationExpressionNode.h"
+#include "ArrayLiteralNode.h"
 #include "CallExpressionNode.h"
 #include "FunctionCallNode.h"
 #include "LambdaExpressionNode.h"
@@ -148,6 +149,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
         !(isMutable && type && type->getName() == "Tensor") &&
         (dynamic_cast<ClassInstanceCreationNode*>(initializer.get()) != nullptr ||
          dynamic_cast<ArrayCreationExpressionNode*>(initializer.get()) != nullptr ||
+         dynamic_cast<ArrayLiteralNode*>(initializer.get()) != nullptr ||
          dynamic_cast<FunctionType*>(type.get()) != nullptr ||
          (type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
          type->getKind() == Type::Kind::BOX ||

@@ -266,16 +266,16 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   execute correctly through the direct compiler as well as the self-host path. Closures are stack
   allocated, so a lambda that outlives the frame that created it is not yet supported; the
   fixtures use and pass lambdas within the creating frame.
-- Binding an array *literal* to a local (`val xs = [1, 2, 3]`) fails to declare in the direct
-  compiler: the literal's type is `Array[Int]` (LLVM `[N x i32]`) but its value is a pointer to
-  the array, so the pointer cannot be stored into the aggregate slot and the variable is left
-  undefined. This makes `057_vector_parameter_indexing.csec` return `0` instead of `42` and
-  `152_boolean_array_execution.csec` return `1` instead of `0` through `--emit-ir`. Binding array
-  literals directly, like `new T[n]`, fixes both (verified) but exposes a pre-existing bug in the
-  nested-`pmap` lowering: with the literal now bound, the outer `pmap` proceeds into the inner one
-  and hangs code generation (`055_nested_pmap_shape`), where before it silently produced nothing.
-  So the array-literal fix is blocked on completing nested `pmap` (whose capture walk has no
-  `PMapStatementNode` case). The self-host path handles array-literal locals correctly.
+- Array *literal* locals now work in the direct compiler. `val xs = [1, 2, 3]` binds the literal
+  pointer directly (as `new T[n]` already did) instead of failing to store it into an aggregate
+  slot, so `057_vector_parameter_indexing.csec` returns `42` and `152_boolean_array_execution.csec`
+  returns `0`. Binding the literal made the nested-`pmap` lowering proceed where it previously
+  bailed, which exposed a hang: the pmap capture walk (`collectPMapCaptures`) had no
+  `PMapStatementNode` case, so an inner pmap's free variables were not captured and the outlined
+  outer function referenced them across frames. Adding that case fixes `055_nested_pmap_shape`
+  (no longer hangs). `preduce`/`map`/`filter` still compute wrong results natively
+  (`056_preduce_variants` is `85`, not the expected `143`) — but that is a pre-existing gap on
+  both paths (`056` is also wrong through the self-host path), independent of array literals.
 - Class inheritance now works in the direct compiler. `this` is bound to the class type during
   type checking so `this.field` and `this.method()`/`super.method()` resolve to real types;
   `AccessFieldNode::codegen` reads the field value (with a pointer accessor for assignment

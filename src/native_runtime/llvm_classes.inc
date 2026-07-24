@@ -507,7 +507,7 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
         }
     }
     const std::string original = "@" + methodName + "(";
-    const std::string replacement = "@" + className + "_" + methodName + "(";
+    const std::string replacement = "@" + className + "_" + csec_mangle_method_name(methodName) + "(";
     size_t position = 0;
     while ((position = definition.find(original, position)) != std::string::npos) {
         definition.replace(position, original.size(), replacement);

@@ -718,6 +718,34 @@ static bool csec_is_i16_type_name(const std::string& typeName) {
     return typeName == "Short";
 }
 
+// Method names may contain operator characters (`operator+`), which are not valid in an LLVM
+// symbol. Map each operator character to a readable word so the generated name is a legal
+// identifier and stays stable between the definition and its call sites. Names without operator
+// characters pass through unchanged, so ordinary methods are unaffected.
+static std::string csec_mangle_method_name(const std::string& name) {
+    std::string result;
+    for (char c : name) {
+        if (std::isalnum(static_cast<unsigned char>(c)) || c == '_') { result += c; continue; }
+        switch (c) {
+            case '+': result += "_add"; break;
+            case '-': result += "_sub"; break;
+            case '*': result += "_mul"; break;
+            case '/': result += "_div"; break;
+            case '%': result += "_mod"; break;
+            case '=': result += "_eq"; break;
+            case '<': result += "_lt"; break;
+            case '>': result += "_gt"; break;
+            case '!': result += "_bang"; break;
+            case '&': result += "_amp"; break;
+            case '|': result += "_pipe"; break;
+            case '^': result += "_caret"; break;
+            case '~': result += "_tilde"; break;
+            default: result += "_op"; break;
+        }
+    }
+    return result;
+}
+
 static const char* csec_llvm_type_for_name(const std::string& typeName) {
     if (typeName == "Int") return "i32";
     if (csec_is_i16_type_name(typeName)) return "i16";

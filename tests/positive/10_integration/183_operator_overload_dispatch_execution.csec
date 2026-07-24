@@ -1,0 +1,20 @@
+class Counter() {
+    def operator +(right: Int): Int {
+        return right + 1;
+    }
+
+    def operator *(right: Int): Int {
+        return right + right;
+    }
+}
+
+def main(): Int {
+    val counter = new Counter();
+    val added: Int = counter + 41;
+    val doubled: Int = counter * 21;
+
+    if (added == 42 and doubled == 42) {
+        return 0;
+    }
+    return 1;
+}

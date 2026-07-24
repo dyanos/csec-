@@ -163,6 +163,40 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
         const std::string leftName = resultName + ".left";
         const std::string rightName = resultName + ".right";
         const char* op = csec_token_text_at(tokens, operation);
+        // Operator overloading: when the left operand is a single class-instance local whose
+        // class defines an `operator<op>` method returning Int, dispatch to that method instead
+        // of the primitive instruction. The guard (single identifier bound to `new Class(...)`
+        // with a matching operator method) never fires on primitive operands.
+        if (start + 1 == operation && csec_token_kind_at(tokens, start) == 'I') {
+            const char* leftIdentifier = csec_token_text_at(tokens, start);
+            const int declaration = csec_find_visible_local(tokens, start, leftIdentifier);
+            const int declarationEnd = declaration >= 0 ? csec_advance_statement(tokens, declaration, 1000000000) : -1;
+            const int initializer = declaration >= 0 ? csec_find_top_level_operator(tokens, declaration, declarationEnd, 1) : -1;
+            if (initializer >= declaration && csec_native_token_is(tokens, initializer + 1, 'K', "new") &&
+                csec_token_kind_at(tokens, initializer + 2) == 'I') {
+                const std::string className = csec_token_text_at(tokens, initializer + 2);
+                const int classStart = csec_find_class_declaration(tokens, className.c_str());
+                const std::string operatorMethod = std::string("operator") + op;
+                const int method = classStart >= 0 ?
+                    csec_find_class_method_declaration(tokens, classStart, operatorMethod.c_str()) : -1;
+                if (method >= 0 && std::strcmp(csec_function_return_type_at(tokens, method), "Int") == 0) {
+                    std::string output;
+                    std::string arguments;
+                    if (csec_class_uses_pointer_receiver(tokens, classStart)) {
+                        const char* storage = csec_lookup_visible_storage_name(tokens, start, leftIdentifier);
+                        const std::string receiver = resultName + ".oprecv";
+                        output += "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n";
+                        arguments = "ptr " + receiver;
+                    }
+                    const std::string operandValue = resultName + ".oparg";
+                    output += csec_emit_i32_expression(tokens, operation + 1, end, operandValue);
+                    if (!arguments.empty()) arguments += ", ";
+                    arguments += "i32 " + operandValue;
+                    return output + "  " + resultName + " = call i32 @" + className + "_" +
+                        csec_mangle_method_name(operatorMethod) + "(" + arguments + ")\n";
+                }
+            }
+        }
         if ((std::strcmp(op, "==") == 0 || std::strcmp(op, "!=") == 0) &&
             csec_is_string_expression(tokens, start, operation) &&
             csec_is_string_expression(tokens, operation + 1, end)) {

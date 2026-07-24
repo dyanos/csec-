@@ -281,23 +281,24 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   A complete fix spans the type checker (enclosing-class resolution, receiver-aware method
   matching), field-read loading, and super dispatch.
 
-## Operator and Method Overloading (Self-Host Gap)
+## Operator and Method Overloading (Self-Host)
 
-Operator overloading and overload/override resolution are not yet implemented in the self-host
-emitter, and the generated modules are invalid, so `116_operator_overload_class`,
+Operator overloading works in the self-host emitter. Operator method names are mangled to legal
+LLVM identifiers (`operator+` becomes `Counter_operator_add`), and a binary operator whose left
+operand is a class instance with a matching `operator<op>` method dispatches to that method
+instead of the primitive instruction. The guard only fires when the left operand is a single
+local bound to `new Class(...)` whose class defines the operator, so primitive arithmetic is
+untouched (the fixed point is unchanged). `116_operator_overload_class.csec` exits `0`, and
+`183_operator_overload_dispatch_execution.csec` verifies through its exit code that `counter + 41`
+and `counter * 21` actually call the operator methods. This currently covers pointer-receiver and
+empty (stateless) classes; operator methods on scalar-receiver classes that read constructor
+state are not yet passed their receiver.
+
+Method overloading and overriding remain incomplete: overloaded methods still emit one LLVM name
+per name rather than per signature (two `@Formatter_show` definitions collide), so
 `117_method_overloading`, `118_method_overriding`, and `119_operator_overloading_and_overriding`
-fail through the self-host path (they run through the direct compiler, whose `println`-and-return
-bodies exit `0`):
-
-- An operator method emits an unquoted operator character in its LLVM name
-  (`@Counter_operator+`), which is a syntax error; operator names need mangling or quoting.
-- Overloaded methods emit the same LLVM name for every overload (two `@Formatter_show`
-  definitions), a duplicate-symbol collision; overloads need name mangling by parameter type.
-- Operator use is not dispatched to the operator method: `counter + 4` lowers to an integer add
-  rather than a call to `Counter_operator+`.
-
-A complete fix needs parameter-type name mangling at definitions and call sites plus operator
-dispatch.
+still fail through the self-host path. Overloads need parameter-type name mangling at definitions
+and argument-type resolution at call sites.
 
 ## Still Incomplete
 

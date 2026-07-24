@@ -402,11 +402,21 @@ std::string parseImportTarget(const std::string& trimmedLine) {
     return rest;
 }
 
+// Build a path from a UTF-8 string. Constructing std::filesystem::path directly from a narrow
+// std::string decodes it with the active code page on Windows, which hangs in the MSVC STL for
+// some multi-byte sequences (e.g. Korean identifiers in an import path); u8path decodes UTF-8.
+std::filesystem::path utf8Path(const std::string& utf8) {
+    return std::filesystem::u8path(utf8);
+}
+
 std::filesystem::path resolveImportPath(
     const std::filesystem::path& includingFile,
     const std::string& target) {
     std::filesystem::path baseDir = includingFile.parent_path();
-    std::filesystem::path requested(target);
+    // Interpret the import target as UTF-8. Constructing a path directly from a narrow std::string
+    // routes through the active code page on Windows, which hangs in the MSVC STL for some
+    // multi-byte (e.g. Korean) sequences; u8path decodes the bytes as UTF-8 instead.
+    std::filesystem::path requested = utf8Path(target);
     if (!requested.has_extension()) {
         requested.replace_extension(".csec");
     }
@@ -427,7 +437,7 @@ std::filesystem::path resolveImportPath(
                 ch = static_cast<char>(std::filesystem::path::preferred_separator);
             }
         }
-        std::filesystem::path dottedPath(dotted);
+        std::filesystem::path dottedPath = utf8Path(dotted);
         if (!dottedPath.has_extension()) {
             dottedPath.replace_extension(".csec");
         }

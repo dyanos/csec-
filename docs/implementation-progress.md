@@ -293,6 +293,12 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   `ReduceStatementNode` uses that runtime length as its loop bound when present. The self-host path
   still computes `056` incorrectly; this fix is direct-compiler-only (no emitter or fixed-point
   change).
+- An `import` whose path uses non-ASCII (e.g. Korean) identifiers no longer hangs the compiler.
+  Import expansion built a `std::filesystem::path` directly from the raw UTF-8 `import` target;
+  on Windows that decodes the narrow string through the active code page, and the MSVC STL spins
+  forever on some multi-byte sequences. The target is now decoded as UTF-8 via `std::filesystem::
+  u8path` (a small `utf8Path` helper). `082_utf8_imports_and_members` compiles and returns `6`
+  (`계산기.두배(3)`); it previously hung `expandImports` before lexing.
 - Nested array indexing now works in the direct compiler. An array-of-arrays literal
   (`[[1, 2], [3, 4]]`) is stored as a buffer of pointers to the inner arrays, but `getLLVMType`
   lowers an `ArrayType` element to an inline `[N x T]` aggregate. Indexing through an intermediate

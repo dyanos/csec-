@@ -8,6 +8,7 @@
 #include <llvm/IR/Module.h>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 class CodeGenerator {
 public:
@@ -36,6 +37,12 @@ public:
     // pointer so a downstream `preduce`/`map`/`filter` iterating that pointer can use the real
     // length instead of the (unknown or over-allocated) static size. Non-owning LLVM values.
     std::unordered_map<llvm::Value*, llvm::Value*> arrayRuntimeLength;
+
+    // Classes whose field initializers are currently being emitted. A class that eagerly
+    // constructs its own type in a field default (`var next: Node = new Node(0)`) would recurse
+    // forever; this set lets construction detect the cycle and emit a diagnostic instead of
+    // overflowing the compiler's stack.
+    std::unordered_set<std::string> classesUnderConstruction;
 
     llvm::LLVMContext& getContext() { return context; }
 

@@ -423,6 +423,24 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
             std::make_unique<Symbol>(paramName, paramIt->second->type->clone(), argValue, false, SymbolType::VARIABLE));
     }
 
+    // Constructor field initializers are emitted inline, so a class that eagerly constructs its own
+    // type in a field default (`var next: Node = new Node(0)`) recurses forever at codegen. Detect
+    // re-entry into the same class's field initialization and fail with a diagnostic rather than
+    // overflowing the stack. The guard sits after the constructor-argument loop above so a
+    // legitimate same-class argument (`new A(new A(5))`) is not caught.
+    if (cg.classesUnderConstruction.count(resolvedClassName)) {
+        std::cerr << "Error: class '" << resolvedClassName
+                  << "' eagerly constructs its own type in a field initializer (infinite "
+                     "construction); reference or nullable fields are not yet supported" << std::endl;
+        return failInitialization();
+    }
+    cg.classesUnderConstruction.insert(resolvedClassName);
+    struct ConstructionGuard {
+        std::unordered_set<std::string>& set;
+        std::string name;
+        ~ConstructionGuard() { set.erase(name); }
+    } constructionGuard{cg.classesUnderConstruction, resolvedClassName};
+
     for (const auto& fieldName : classSymbol->fieldOrder) {
         auto fieldIt = classSymbol->fields.find(fieldName);
         if (fieldIt == classSymbol->fields.end() || !fieldIt->second || !fieldIt->second->type) {

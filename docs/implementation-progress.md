@@ -302,6 +302,18 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
   representation. `043_indexing_and_compound_assignment` returns `28` (chained `nested[0][1]`) and
   `111_tensor_indexing` returns `9` (comma multi-index `matrix[0, 1]` and `cube[1, 0, 1]`); both
   previously crashed the compiler.
+- A self-referential class that eagerly constructs its own type in a field default
+  (`var next: Node = new Node(0)`) no longer crashes the direct compiler. Constructor field
+  initializers are emitted inline, so such a default recurses forever at codegen and previously
+  overflowed the stack (`063_class_self_reference`, `101_linked_list` aborted with `0xC00000FD`).
+  Construction now records the class being built in `CodeGenerator.classesUnderConstruction` and,
+  on re-entry into the same class's field initialization, emits a diagnostic
+  ("eagerly constructs its own type in a field initializer (infinite construction); reference or
+  nullable fields are not yet supported") instead of crashing. The guard sits after the
+  constructor-argument loop so a legitimate same-class argument (`new Wrap(new Box(42))`, or
+  `new A(new A(5))`) is unaffected. Properly supporting recursive data structures still needs
+  out-of-line constructors and reference/nullable field semantics; this only makes the compiler
+  robust against the non-terminating case.
 - Class inheritance now works in the direct compiler. `this` is bound to the class type during
   type checking so `this.field` and `this.method()`/`super.method()` resolve to real types;
   `AccessFieldNode::codegen` reads the field value (with a pointer accessor for assignment

@@ -1,0 +1,11 @@
+class Name(prefix: String) {
+    def greet(who: String): String {
+        return prefix + who;
+    }
+}
+
+def main(): Int {
+    val n = new Name("Hi ");
+    val g = n.greet("Bob");
+    return g.length;
+}

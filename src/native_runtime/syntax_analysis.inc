@@ -1031,6 +1031,17 @@ static std::string csec_c_local_type(const char* tokens, int start, int end, int
             if (std::strcmp(method, "trim") == 0 || std::strcmp(method, "toUpper") == 0 ||
                 std::strcmp(method, "toLower") == 0 || std::strcmp(method, "toString") == 0 ||
                 std::strcmp(method, "substring") == 0) return "String";
+            // A user class instance method call whose resolved overload returns String makes the
+            // local a String; otherwise `val g = obj.greet(...)` was typed Int and lowered through
+            // the i32 path, allocating an i32 slot for a pointer result. (csec_instance_call_
+            // returns_string is declared in NativeRuntime.h so it is callable from this region.)
+            if (csec_native_token_is(tokens, initializer + 4, 'O', "(")) {
+                const int methodClose = csec_find_closing_token(tokens, initializer + 4, end, "(", ")");
+                if (methodClose > initializer + 4 &&
+                    csec_instance_call_returns_string(tokens, initializer + 1, methodClose) != 0) {
+                    return "String";
+                }
+            }
         }
     }
     return "Int";

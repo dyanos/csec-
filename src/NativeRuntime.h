@@ -105,6 +105,7 @@ CSEC_NATIVE_API char* csec_llvm_name_with_number(const char* prefix, int number)
 CSEC_NATIVE_API char* csec_llvm_string_literal_bytes(const char* text);
 CSEC_NATIVE_API int csec_llvm_string_literal_byte_length(const char* text);
 CSEC_NATIVE_API char* csec_function_return_type_at(const char* tokens, int declStart);
+CSEC_NATIVE_API int csec_instance_call_returns_string(const char* tokens, int receiverOrdinal, int methodClose);
 CSEC_NATIVE_API char* csec_collect_type_name(const char* tokens, int start, int end);
 CSEC_NATIVE_API int csec_enclosing_function_decl_start(const char* tokens, int limit);
 CSEC_NATIVE_API int csec_enclosing_function_body_start(const char* tokens, int limit);

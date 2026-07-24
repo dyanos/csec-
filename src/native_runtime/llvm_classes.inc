@@ -503,7 +503,13 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
     char* raw = csec_generate_llvm_function_definition(tokens, methodStart);
     if (!raw) return "";
     std::string definition(raw);
-    if (std::strcmp(csec_function_return_type_at(tokens, methodStart), "String") == 0) {
+    // These String fast-paths emit a `(ptr %arg.this)` field-accessor signature, so they are only
+    // valid for parameter-less getters (`def name(): String = prefix`). A method with its own
+    // parameters (`def greet(who): String = prefix + who`) must fall through to the general
+    // generation below, which keeps the method parameters — otherwise `who` is dropped and only the
+    // field is returned.
+    if (std::strcmp(csec_function_return_type_at(tokens, methodStart), "String") == 0 &&
+        csec_function_params(tokens, methodStart).empty()) {
         for (const auto& parameter : csec_class_constructor_params(tokens, classStart)) {
             if (parameter.second != "String") continue;
             if (definition.find("ret ptr %ret") == std::string::npos) continue;
@@ -1262,6 +1268,21 @@ static int csec_resolve_class_method_by_args(const char* tokens, int classStart,
         if (matches && index == static_cast<int>(parameters.size())) return cursor;
     }
     return firstMatch;
+}
+
+// Whether `<receiver>.<method>(args...)` — receiver at receiverOrdinal, `.` at +1, method name at
+// +2, `(` at +3, matching `)` at methodClose — resolves to a user class instance method returning
+// String. Declared in NativeRuntime.h so csec_c_local_type (compiled earlier, under an enclosing
+// extern "C" region) can reach the class-resolution helpers without a cross-linkage forward
+// declaration, and type a `val g = obj.stringMethod()` local as String rather than Int.
+int csec_instance_call_returns_string(const char* tokens, int receiverOrdinal, int methodClose) {
+    const int classStart = csec_local_instance_class(tokens, receiverOrdinal,
+        csec_token_text_at(tokens, receiverOrdinal));
+    if (classStart < 0) return 0;
+    const int method = csec_resolve_class_method_by_args(tokens, classStart,
+        csec_token_text_at(tokens, receiverOrdinal + 2), receiverOrdinal + 4, methodClose);
+    if (method < 0) return 0;
+    return std::strcmp(csec_function_return_type_at(tokens, method), "String") == 0 ? 1 : 0;
 }
 
 static bool csec_expression_is_float(const char* tokens, int start, int end) {

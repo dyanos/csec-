@@ -363,6 +363,19 @@ state before the operand. `189_scalar_operator_state_execution.csec` — `Counte
 `operator+` returns `value + right` — returns `42` on both the direct and self-host paths (the
 fixed point is unchanged, since `csec_compiler.csec` defines no scalar-class operators).
 
+A `val` bound to a String-returning instance method call (`val g = n.greet("Bob")`) is now typed as
+a String rather than Int. `csec_c_local_type` only recognised the built-in String methods
+(`trim`/`toUpper`/…); a user class method returning String fell through to Int, so the local was
+allocated as an i32 slot for a pointer result. It now resolves the receiver's class and the called
+overload's return type (through a new `csec_instance_call_returns_string` helper declared in
+`NativeRuntime.h`, so it is reachable from `csec_c_local_type`'s translation region). A second bug
+surfaced once the type was correct: the String-method fast-paths in `csec_class_method_definition`
+emit a `(ptr %arg.this)` field-accessor signature and so are valid only for parameter-less getters;
+a method with its own parameters (`greet(who)`) was matching the field-return fallback, dropping
+`who`. Those fast-paths are now gated on the method having no parameters, so `greet` falls through to
+the general generation that keeps its parameter. `190_string_method_state_execution.csec` —
+`Name("Hi ").greet("Bob").length` — returns `6` on both paths, with the fixed point unchanged.
+
 String-returning instance methods now accept arguments. `csec_emit_ptr_instance_call` lowers the
 method arguments by their declared parameter types and handles pointer-receiver and stateless
 classes, so `g.greet("hi")` and `g.wrap("[", "x")` execute. `184_string_method_argument_execution`

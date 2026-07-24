@@ -139,16 +139,17 @@ llvm::Value* ClassDeclarationNode::codegen() {
         fieldTypes.push_back(fieldType);
     }
 
-    // 일반 필드 추가 (use source-ordered classBody->fields to ensure deterministic layout)
-    for (auto& field : classBody->fields) {
-        auto* fieldNode = dynamic_cast<VariableDeclarationNode*>(field.get());
-        if (!fieldNode || !fieldNode->type) {
-            std::cerr << "Error: Expected typed field declaration in class '" << name << "'" << std::endl;
+    // Body fields in declaration order, including fields inherited from a parent class so the
+    // struct layout matches the initialization order (own constructor params, then fieldOrder).
+    for (const auto& fieldName : classSymbol->fieldOrder) {
+        auto found = classSymbol->fields.find(fieldName);
+        if (found == classSymbol->fields.end() || !found->second || !found->second->type) {
+            std::cerr << "Error: Missing type for field '" << fieldName << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
-        llvm::Type* fieldType = getABIStorageType(fieldNode->type.get());
+        llvm::Type* fieldType = getABIStorageType(found->second->type.get());
         if (!fieldType) {
-            std::cerr << "Error: Unsupported field type '" << fieldNode->type->getName() << "' in class '" << name << "'" << std::endl;
+            std::cerr << "Error: Unsupported field type '" << found->second->type->getName() << "' in class '" << name << "'" << std::endl;
             return nullptr;
         }
         fieldTypes.push_back(fieldType);
@@ -330,12 +331,14 @@ llvm::Function* ClassDeclarationNode::defineMethod(FunctionDeclarationNode* meth
         bindField(param->name, param->type, false);
     }
 
-    for (auto& field : classBody->fields) {
-        auto* fieldNode = dynamic_cast<VariableDeclarationNode*>(field.get());
-        if (!fieldNode) {
+    // Body fields in the same order as the struct layout, including inherited fields, so a method
+    // (including an inherited one reached through super) sees every field at the right index.
+    for (const auto& fieldName : classSymbol->fieldOrder) {
+        auto found = classSymbol->fields.find(fieldName);
+        if (found == classSymbol->fields.end() || !found->second) {
             continue;
         }
-        bindField(fieldNode->name, fieldNode->type, fieldNode->isMutable);
+        bindField(fieldName, found->second->type, found->second->isMutable);
     }
 
     for (auto& param : method->parameters) {

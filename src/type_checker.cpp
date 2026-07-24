@@ -531,6 +531,13 @@ void TypeChecker::visit(ClassDeclarationNode& node) {
     cg.symbolTable.enterScope();
     enterOwnershipScope();
 
+    // Bind `this` to the class type so field and method accesses through it resolve during type
+    // checking (otherwise `this` caches the numeric default and breaks codegen).
+    {
+        std::unique_ptr<Type> thisType = std::make_unique<ClassType>(node.name);
+        bindVariable("this", thisType, false);
+    }
+
     for (auto& param : node.constructorParams) {
         if (param) {
             param->accept(*this);

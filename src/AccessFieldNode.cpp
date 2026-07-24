@@ -67,6 +67,34 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
 
+    // Reading a field yields its value. The address is produced by codegenFieldPointer(); load it.
+    llvm::Value* fieldPtr = codegenFieldPointer();
+    if (!fieldPtr) {
+        return nullptr;
+    }
+    auto& cg = CodeGenerator::getInstance();
+    llvm::Type* fieldLLVMType = cg.getLLVMType(getType().get());
+    if (!fieldLLVMType) {
+        std::cerr << "Error: Field '" << targetName << "' has an unsupported type" << std::endl;
+        return nullptr;
+    }
+    return cg.builder.CreateLoad(fieldLLVMType, fieldPtr, targetName + ".value");
+}
+
+llvm::Value* AccessFieldNode::codegenFieldPointer() {
+    auto* baseIdentifier = dynamic_cast<IdentifierNode*>(this->base.get());
+    if (!baseIdentifier) {
+        std::cerr << "Error: Base must be an identifier" << std::endl;
+        return nullptr;
+    }
+    auto* fieldIdentifier = dynamic_cast<IdentifierNode*>(this->field.get());
+    if (!fieldIdentifier) {
+        std::cerr << "Error: Field must be an identifier" << std::endl;
+        return nullptr;
+    }
+    auto baseType = baseIdentifier->getType();
+    const auto targetName = fieldIdentifier->value;
+
     if (!baseType || baseType->getKind() != Type::Kind::CLASS) {
         std::cerr << "Error: Base must be a class type" << std::endl;
         return nullptr;

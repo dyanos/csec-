@@ -60,6 +60,21 @@ public:
         return currentSymbol;
     }
 
+    // The class whose body is currently being processed, if any. During a method the current
+    // symbol is the method itself, so this also walks the saved-symbol stack to find the
+    // enclosing class. Used to resolve `this` and `super` inside method bodies.
+    ClassSymbol* getEnclosingClassSymbol() const {
+        if (auto* asClass = dynamic_cast<ClassSymbol*>(currentSymbol)) {
+            return asClass;
+        }
+        for (auto it = symbolStack.rbegin(); it != symbolStack.rend(); ++it) {
+            if (auto* asClass = dynamic_cast<ClassSymbol*>(*it)) {
+                return asClass;
+            }
+        }
+        return nullptr;
+    }
+
     void saveCurrentSymbol() {
         symbolStack.push_back(currentSymbol);
     }

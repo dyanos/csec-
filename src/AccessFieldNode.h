@@ -31,6 +31,9 @@ public:
 
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
+
+    // Address of the field (an lvalue), used as an assignment target. codegen() reads through it.
+    llvm::Value* codegenFieldPointer();
     std::unique_ptr<Type> getType() override;
     std::unique_ptr<ASTNode> clone() override {
         return std::make_unique<AccessFieldNode>(*this);

@@ -244,6 +244,48 @@ void MethodCallNode::accept(ASTVisitor& visitor) {
 llvm::Value* MethodCallNode::codegen() {
     auto& cg = CodeGenerator::getInstance();
 
+    // `this.method(args)` and `super.method(args)` call a method of the enclosing class (or its
+    // parent) on the current receiver. Resolve the defining class by walking the parent chain and
+    // call ClassName_method with `this` as the receiver.
+    if (auto* objectId = dynamic_cast<IdentifierNode*>(object.get())) {
+        if (objectId->value == "this" || objectId->value == "super") {
+            // The enclosing class is the type of the bound `this` receiver.
+            auto* thisSymbolForClass = cg.symbolTable.lookup("this");
+            ClassSymbol* enclosingClass = (thisSymbolForClass && thisSymbolForClass->type)
+                ? cg.symbolTable.lookupClass(thisSymbolForClass->type->getName()) : nullptr;
+            ClassSymbol* targetClass = enclosingClass;
+            if (objectId->value == "super" && enclosingClass && !enclosingClass->superClassName.empty()) {
+                targetClass = cg.symbolTable.lookupClass(enclosingClass->superClassName);
+            }
+            ClassSymbol* definingClass = targetClass;
+            while (definingClass && definingClass->methods.find(methodName) == definingClass->methods.end()) {
+                definingClass = definingClass->superClassName.empty()
+                    ? nullptr : cg.symbolTable.lookupClass(definingClass->superClassName);
+            }
+            if (definingClass) {
+                llvm::Function* function = cg.module->getFunction(definingClass->name + "_" + methodName);
+                if (function && function->arg_size() >= 1) {
+                    auto* thisSymbol = cg.symbolTable.lookup("this");
+                    llvm::Value* receiver = thisSymbol ? thisSymbol->value : nullptr;
+                    if (receiver) {
+                        std::vector<llvm::Value*> argValues;
+                        auto* receiverParamType = function->getFunctionType()->getParamType(0);
+                        if (receiver->getType() != receiverParamType) {
+                            receiver = cg.builder.CreateBitCast(receiver, receiverParamType, "recv.cast");
+                        }
+                        argValues.push_back(receiver);
+                        for (auto& argument : arguments) {
+                            llvm::Value* value = argument->codegen();
+                            if (!value) return nullptr;
+                            argValues.push_back(value);
+                        }
+                        return createMethodCallOrDefault(function, std::move(argValues));
+                    }
+                }
+            }
+        }
+    }
+
     if (auto* objectId = dynamic_cast<IdentifierNode*>(object.get())) {
         std::string qualifiedName = objectId->value + "." + methodName;
         std::vector<std::unique_ptr<Type>> argTypes;
@@ -401,6 +443,30 @@ std::unique_ptr<Type> MethodCallNode::getType() {
         for (auto& argument : arguments) {
             auto argType = argument->getType();
             argTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
+        }
+
+        // `this.method()` dispatches on the enclosing class; `super.method()` on its parent.
+        // Methods are registered on the class with their declared parameter types (no implicit
+        // receiver), so search the class's own method map and walk up the parent chain rather
+        // than lookupMethod, whose matching assumes a receiver slot.
+        if (objectId->value == "this" || objectId->value == "super") {
+            auto& table = CodeGenerator::getInstance().symbolTable;
+            ClassSymbol* enclosingClass = table.getEnclosingClassSymbol();
+            ClassSymbol* targetClass = enclosingClass;
+            if (objectId->value == "super" && enclosingClass && !enclosingClass->superClassName.empty()) {
+                targetClass = table.lookupClass(enclosingClass->superClassName);
+            }
+            for (ClassSymbol* cls = targetClass; cls; cls = table.lookupClass(cls->superClassName)) {
+                auto found = cls->methods.find(methodName);
+                if (found != cls->methods.end() && found->second) {
+                    if (auto* methodFuncType = dynamic_cast<FunctionType*>(found->second->type.get())) {
+                        if (methodFuncType->returnType) {
+                            return methodFuncType->returnType->clone();
+                        }
+                    }
+                }
+                if (cls->superClassName.empty()) break;
+            }
         }
 
         auto* functionSymbol = CodeGenerator::getInstance().symbolTable.lookupFunctionInNamespace(objectId->value, methodName, argTypes);

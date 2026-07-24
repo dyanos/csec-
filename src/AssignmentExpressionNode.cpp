@@ -3,6 +3,7 @@
 #include "ASTVisitor.h"
 #include "IdentifierNode.h"
 #include "ArrayAccessNode.h"
+#include "AccessFieldNode.h"
 #include "type_utils.h"
 
 #include <iostream>
@@ -40,6 +41,13 @@ llvm::Value* AssignmentExpressionNode::codegen() {
         targetPtr = access->codegenElementPointer();
         if (!targetPtr) {
             std::cerr << "Error: Invalid array assignment target" << std::endl;
+            return nullptr;
+        }
+    }
+    else if (auto* field = dynamic_cast<AccessFieldNode*>(left.get())) {
+        targetPtr = field->codegenFieldPointer();
+        if (!targetPtr) {
+            std::cerr << "Error: Invalid field assignment target" << std::endl;
             return nullptr;
         }
     }

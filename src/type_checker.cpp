@@ -452,6 +452,9 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
                 !(isTensorLikeType(node.returnType) && isTensorLikeType(bodyType)) &&
                 !(isI64IntegerAlias(node.returnType) && isI64IntegerAlias(bodyType)) &&
                 !(isIntegerTypeName(node.returnType) && bodyType && bodyType->getName() == "Char") &&
+                !((node.returnType->isDoubleTy() || node.returnType->getName() == "Real") &&
+                  (bodyType->isFloatTy() || bodyType->isDoubleTy() || bodyType->isIntegerTy())) &&
+                !(node.returnType->isFloatTy() && bodyType->isFloatTy()) &&
                 !isArrayVectorAlias(node.returnType, bodyType)) {
                 reportError(
                     "Type error: Function '" + node.name + "' declared to return '" +

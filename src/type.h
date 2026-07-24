@@ -359,7 +359,14 @@ public:
         auto otherGeneric = dynamic_cast<const GenericType*>(&other);
         if (!otherGeneric) return false;
         if (!baseType || !otherGeneric->baseType) return false;
-        if (!baseType->equals(*otherGeneric->baseType)) return false;
+        if (!baseType->equals(*otherGeneric->baseType)) {
+            // Vector and Array are interchangeable spellings of the flat array type, so a
+            // Vector[T] and an Array[T] are the same type for equality and overload resolution.
+            const std::string a = baseType->getName();
+            const std::string b = otherGeneric->baseType->getName();
+            const bool bothFlat = (a == "Array" || a == "Vector") && (b == "Array" || b == "Vector");
+            if (!bothFlat) return false;
+        }
         if (typeArguments.size() != otherGeneric->typeArguments.size()) return false;
         for (size_t i = 0; i < typeArguments.size(); ++i) {
             if (!typeArguments[i]->equals(*otherGeneric->typeArguments[i])) return false;

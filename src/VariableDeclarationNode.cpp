@@ -134,7 +134,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
     // Bind it directly (rather than into a pointer slot) so indexing can GEP on the pointer
     // without an intervening load, the same representation a `new T[n]` initializer produces.
     // This is restricted to call initializers so that array literals, which the parallel
-    // collection lowering represents through a slot, keep their existing representation.
+    // collection lowering re-evaluates through their own node, keep their existing representation.
     const bool arrayVectorFromCall = type &&
         (type->getKind() == Type::Kind::ARRAY ||
          (type->getKind() == Type::Kind::GENERIC &&

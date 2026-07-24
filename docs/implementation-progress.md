@@ -148,12 +148,14 @@
   read through an extra pointer slot. `178_new_array_return_execution.csec` builds an `Array[Int]`
   in a callee, returns it, and indexes it in `main`; it exits with `0` on both paths. (The
   self-host emitter already heap-allocated and indexed correctly.)
-- `Vector` and `Array` are recognized as the same flat array type by the type checker, so a
-  function may declare `Vector[T]` and return a `new T[n]` (typed `Array[T]`) value, and a local
-  declared one way may be initialized from the other. `179_vector_return_alias_execution.csec`
-  exits with `0` on both paths. Relaxing this check also resolved map/reduce/filter element types
-  in `050_collection_in_function.csec`, which now compiles and runs (`0`) through the direct
-  compiler.
+- `Vector` and `Array` are recognized as the same flat array type. The type checker accepts a
+  function that declares `Vector[T]` and returns a `new T[n]` (typed `Array[T]`) value, and a
+  local declared one way initialized from the other (`179_vector_return_alias_execution.csec`,
+  `0` on both paths). `GenericType::equals` treats `Vector[T]` and `Array[T]` as equal, so
+  overload resolution matches a `Vector` argument against an `Array` parameter and vice versa
+  (`180_vector_array_arg_alias_execution.csec`, `0` on both paths). Relaxing the checker also
+  resolved map/reduce/filter element types in `050_collection_in_function.csec`, which now
+  compiles and runs (`0`) through the direct compiler.
 - `Long` arrays and `Vector[Long]` now use stack-backed LLVM `i64` element storage for
   `new Long[n]` (also `Natural` and `Integer`), indexed assignment, indexed reads, parameter
   calls, comparisons, and forwarding an array pointer through a function return. `Long`-returning
@@ -243,9 +245,15 @@ runtime-only rebuild). The `.sln` also works but pins absolute LLVM paths, so CM
 
 ## Known Gaps in the Direct Compiler
 
-- Passing an array literal as a `Vector`/`Array` parameter and indexing it in the callee returns
-  the wrong value in the direct compiler (`057_vector_parameter_indexing.csec` returns `0`
-  instead of `42` through `--emit-ir`); it is correct through the self-host path.
+- Binding an array *literal* to a local (`val xs = [1, 2, 3]`) fails to declare in the direct
+  compiler: the literal's type is `Array[Int]` (LLVM `[N x i32]`) but its value is a pointer to
+  the array, so the pointer cannot be stored into the aggregate slot and the variable is left
+  undefined. This makes `057_vector_parameter_indexing.csec` return `0` instead of `42` through
+  `--emit-ir` (the array is built but the following call is dropped). Binding array literals
+  directly, like `new T[n]`, fixes this but changes the representation the parallel collection
+  lowering (`pmap`/`reduce`) re-evaluates and hangs code generation on nested `pmap`, so the
+  representation needs unifying across both before this can be fixed. The self-host path handles
+  array-literal locals correctly.
 - `152_boolean_array_execution.csec` returns `1` instead of `0` through the direct compiler; it
   is correct through the self-host path. The other scalar array-execution fixtures
   (`155`–`171`) run correctly on both paths.

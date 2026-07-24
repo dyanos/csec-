@@ -92,6 +92,9 @@ static bool csec_visible_f64_array(const char* tokens, int limit, const char* na
 static bool csec_visible_ptr_array(const char* tokens, int limit, const char* name);
 static bool csec_visible_i16_array(const char* tokens, int limit, const char* name);
 static bool csec_visible_i64_array(const char* tokens, int limit, const char* name);
+static std::string csec_class_method_symbol(const char* tokens, int classStart, int methodStart);
+static int csec_resolve_class_method_by_args(const char* tokens, int classStart, const char* methodName, int argStart, int argClose);
+static int csec_local_instance_class(const char* tokens, int ordinal, const char* name);
 
 static std::vector<std::pair<std::string, std::string>> csec_class_constructor_params(const char* tokens, int classStart) {
     std::vector<std::pair<std::string, std::string>> params;
@@ -507,7 +510,7 @@ static std::string csec_class_method_definition(const char* tokens, int classSta
         }
     }
     const std::string original = "@" + methodName + "(";
-    const std::string replacement = "@" + className + "_" + csec_mangle_method_name(methodName) + "(";
+    const std::string replacement = "@" + csec_class_method_symbol(tokens, classStart, methodStart) + "(";
     size_t position = 0;
     while ((position = definition.find(original, position)) != std::string::npos) {
         definition.replace(position, original.size(), replacement);
@@ -1041,6 +1044,22 @@ static bool csec_is_string_expression(const char* tokens, int start, int end) {
             std::strcmp(method, "toLower") == 0 || std::strcmp(method, "toString") == 0 ||
             std::strcmp(method, "substring") == 0;
     }
+    // A class instance method call `obj.method(args)` is a String expression when the overload
+    // selected by the argument types returns String. This lets untyped contexts (such as
+    // println) route the call through the pointer/String lowering.
+    if (csec_token_kind_at(tokens, start) == 'I' && start + 3 < end &&
+        csec_native_token_is(tokens, start + 1, 'O', ".") && csec_token_kind_at(tokens, start + 2) == 'I' &&
+        csec_native_token_is(tokens, start + 3, 'O', "(") &&
+        csec_find_closing_token(tokens, start + 3, end, "(", ")") == end - 1) {
+        const int classStart = csec_local_instance_class(tokens, start, csec_token_text_at(tokens, start));
+        if (classStart >= 0) {
+            const int method = csec_resolve_class_method_by_args(tokens, classStart,
+                csec_token_text_at(tokens, start + 2), start + 4, end - 1);
+            if (method >= 0 && std::strcmp(csec_function_return_type_at(tokens, method), "String") == 0) {
+                return true;
+            }
+        }
+    }
     const int operation = csec_i32_top_level_operator(tokens, start, end);
     return operation >= start && std::strcmp(csec_token_text_at(tokens, operation), "+") == 0 &&
         csec_is_string_expression(tokens, start, operation) &&
@@ -1106,6 +1125,78 @@ static int csec_find_class_method_declaration(const char* tokens, int classStart
             std::strcmp(csec_top_level_decl_name(tokens, cursor), methodName ? methodName : "") == 0) return cursor;
     }
     return -1;
+}
+
+// Number of methods in the class sharing a name. A name shared by more than one method is an
+// overload set, which needs a per-signature LLVM name so the definitions do not collide.
+static int csec_class_method_count(const char* tokens, int classStart, const char* methodName) {
+    const int bodyStart = csec_find_decl_body_start(tokens, classStart);
+    const int bodyEnd = csec_find_decl_body_end(tokens, bodyStart);
+    int count = 0;
+    for (int cursor = bodyStart; cursor >= 0 && cursor < bodyEnd; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'K', "def") &&
+            std::strcmp(csec_top_level_decl_name(tokens, cursor), methodName ? methodName : "") == 0) ++count;
+    }
+    return count;
+}
+
+// LLVM name for a class method. Overloaded methods get a suffix built from their parameter type
+// names so each signature is distinct; a method whose name is unique in the class keeps the plain
+// `Class_method` name, leaving non-overloaded methods (and the fixed point) unchanged.
+static std::string csec_class_method_symbol(const char* tokens, int classStart, int methodStart) {
+    const std::string className = csec_top_level_decl_name(tokens, classStart);
+    const std::string methodName = csec_top_level_decl_name(tokens, methodStart);
+    std::string symbol = className + "_" + csec_mangle_method_name(methodName);
+    if (csec_class_method_count(tokens, classStart, methodName.c_str()) > 1) {
+        for (const auto& parameter : csec_function_params(tokens, methodStart)) {
+            symbol += "_" + csec_mangle_method_name(parameter.second);
+        }
+    }
+    return symbol;
+}
+
+// Class of the local `name` visible at `ordinal`, when it was initialized from `new Class(...)`.
+static int csec_local_instance_class(const char* tokens, int ordinal, const char* name) {
+    const int declaration = csec_find_visible_local(tokens, ordinal, name);
+    if (declaration < 0) return -1;
+    const int declarationEnd = csec_advance_statement(tokens, declaration, 1000000000);
+    const int initializer = csec_find_top_level_operator(tokens, declaration, declarationEnd, 1);
+    if (initializer < declaration || !csec_native_token_is(tokens, initializer + 1, 'K', "new") ||
+        csec_token_kind_at(tokens, initializer + 2) != 'I') return -1;
+    return csec_find_class_declaration(tokens, csec_token_text_at(tokens, initializer + 2));
+}
+
+// Resolve an overloaded method to the overload whose parameter types match the argument
+// expressions, or the single method when the name is not overloaded. Only String versus non-String
+// is distinguished, which is enough to separate the fixture overloads.
+static int csec_resolve_class_method_by_args(const char* tokens, int classStart,
+    const char* methodName, int argStart, int argClose) {
+    const int bodyStart = csec_find_decl_body_start(tokens, classStart);
+    const int bodyEnd = csec_find_decl_body_end(tokens, bodyStart);
+    int firstMatch = -1;
+    for (int cursor = bodyStart; cursor >= 0 && cursor < bodyEnd; ++cursor) {
+        if (!csec_native_token_is(tokens, cursor, 'K', "def") ||
+            std::strcmp(csec_top_level_decl_name(tokens, cursor), methodName ? methodName : "") != 0) continue;
+        if (firstMatch < 0) firstMatch = cursor;
+        const auto parameters = csec_function_params(tokens, cursor);
+        bool matches = true;
+        int position = argStart;
+        int index = 0;
+        for (int c = argStart; c <= argClose; ++c) {
+            if (c == argClose || csec_is_argument_separator(tokens, argClose, c)) {
+                if (c > position) {
+                    if (index >= static_cast<int>(parameters.size())) { matches = false; break; }
+                    const bool argIsString = csec_is_string_expression(tokens, position, c);
+                    const bool paramIsString = (parameters[index].second == "String");
+                    if (argIsString != paramIsString) { matches = false; break; }
+                    ++index;
+                }
+                position = c + 1;
+            }
+        }
+        if (matches && index == static_cast<int>(parameters.size())) return cursor;
+    }
+    return firstMatch;
 }
 
 static bool csec_expression_is_float(const char* tokens, int start, int end) {
@@ -1204,21 +1295,47 @@ static bool csec_emit_i32_instance_call(const char* tokens, int start, int end, 
     };
     const char* className = csec_token_text_at(tokens, instanceStart + 1);
     const int classStart = csec_find_class_declaration(tokens, className);
+    const int methodStart = classStart >= 0 ?
+        csec_resolve_class_method_by_args(tokens, classStart, csec_token_text_at(tokens, start + 2), start + 4, callClose) : -1;
     if (classStart >= 0 && csec_class_uses_pointer_receiver(tokens, classStart)) {
         const std::string receiver = resultName + ".this";
         const char* storage = csec_lookup_visible_storage_name(tokens, start, csec_token_text_at(tokens, start));
         output += "  " + receiver + " = load ptr, ptr %" + std::string(storage) + "\n";
         arguments = "ptr " + receiver;
     } else appendArguments(instanceStart + 3, constructorClose);
-    appendArguments(start + 4, callClose);
-    const int methodStart = classStart >= 0 ? csec_find_class_method_declaration(tokens, classStart, csec_token_text_at(tokens, start + 2)) : -1;
+    // Method arguments, lowered by the resolved overload's parameter types so a String argument
+    // is passed as a pointer rather than truncated to i32.
+    const auto methodParameters = methodStart >= 0 ? csec_function_params(tokens, methodStart)
+        : std::vector<std::pair<std::string, std::string>>{};
+    {
+        int itemStart = start + 4;
+        int index = 0;
+        for (int cursor = start + 4; cursor <= callClose; ++cursor) {
+            if (cursor == callClose || csec_is_argument_separator(tokens, callClose, cursor)) {
+                if (cursor > itemStart) {
+                    const std::string value = resultName + ".marg" + std::to_string(index);
+                    const std::string parameterType = index < static_cast<int>(methodParameters.size())
+                        ? methodParameters[index].second : std::string("Int");
+                    if (std::strcmp(csec_llvm_type_for_name(parameterType), "ptr") == 0) {
+                        output += csec_emit_ptr_expression(tokens, itemStart, cursor, value);
+                        arguments += (arguments.empty() ? "" : ", ") + std::string("ptr ") + value;
+                    } else {
+                        output += csec_emit_i32_expression(tokens, itemStart, cursor, value);
+                        arguments += (arguments.empty() ? "" : ", ") + std::string("i32 ") + value;
+                    }
+                    ++index;
+                }
+                itemStart = cursor + 1;
+            }
+        }
+    }
+    const std::string methodSymbol = methodStart >= 0 ? csec_class_method_symbol(tokens, classStart, methodStart)
+        : std::string(className) + "_" + csec_mangle_method_name(csec_token_text_at(tokens, start + 2));
     if (methodStart >= 0 && std::strcmp(csec_function_return_type_at(tokens, methodStart), "Boolean") == 0) {
         const std::string booleanResult = resultName + ".i1";
-        output += "  " + booleanResult + " = call i1 @" + std::string(className) +
-            "_" + csec_token_text_at(tokens, start + 2) + "(" + arguments + ")\n";
+        output += "  " + booleanResult + " = call i1 @" + methodSymbol + "(" + arguments + ")\n";
         output += "  " + resultName + " = zext i1 " + booleanResult + " to i32\n";
-    } else output += "  " + resultName + " = call i32 @" + std::string(className) +
-        "_" + csec_token_text_at(tokens, start + 2) + "(" + arguments + ")\n";
+    } else output += "  " + resultName + " = call i32 @" + methodSymbol + "(" + arguments + ")\n";
     return true;
 }
 
@@ -1236,7 +1353,8 @@ static bool csec_emit_ptr_instance_call(const char* tokens, int start, int end, 
         csec_token_kind_at(tokens, instanceStart + 1) != 'I') return false;
     const char* className = csec_token_text_at(tokens, instanceStart + 1);
     const int classStart = csec_find_class_declaration(tokens, className);
-    const int methodStart = classStart >= 0 ? csec_find_class_method_declaration(tokens, classStart, csec_token_text_at(tokens, start + 2)) : -1;
+    const int methodStart = classStart >= 0 ?
+        csec_resolve_class_method_by_args(tokens, classStart, csec_token_text_at(tokens, start + 2), start + 4, callClose) : -1;
     if (methodStart < 0 || std::strcmp(csec_function_return_type_at(tokens, methodStart), "String") != 0) return false;
 
     const bool pointerReceiver = csec_class_uses_pointer_receiver(tokens, classStart);
@@ -1272,7 +1390,7 @@ static bool csec_emit_ptr_instance_call(const char* tokens, int start, int end, 
             argumentStart = cursor + 1;
         }
     }
-    output = body + "  " + resultName + " = call ptr @" + std::string(className) + "_" +
-        csec_mangle_method_name(csec_token_text_at(tokens, start + 2)) + "(" + arguments + ")\n";
+    output = body + "  " + resultName + " = call ptr @" + csec_class_method_symbol(tokens, classStart, methodStart) +
+        "(" + arguments + ")\n";
     return true;
 }

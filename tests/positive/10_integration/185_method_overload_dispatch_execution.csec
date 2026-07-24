@@ -1,0 +1,20 @@
+class Measure() {
+    def size(value: Int): Int {
+        return value + 1;
+    }
+
+    def size(value: String): Int {
+        return value.length;
+    }
+}
+
+def main(): Int {
+    val m = new Measure();
+    val fromInt: Int = m.size(41);
+    val fromString: Int = m.size("hello");
+
+    if (fromInt == 42 and fromString == 5) {
+        return 0;
+    }
+    return 1;
+}

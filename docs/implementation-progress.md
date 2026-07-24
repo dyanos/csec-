@@ -300,11 +300,20 @@ classes, so `g.greet("hi")` and `g.wrap("[", "x")` execute. `184_string_method_a
 exits `0` through the self-host path. A scalar-receiver class that carries constructor state is
 still not passed that state into such a call.
 
-Method overloading and overriding remain incomplete (`117_method_overloading`,
-`118_method_overriding`, `119_operator_overloading_and_overriding`): overloaded methods emit one
-LLVM name per method name rather than per signature, so two `@Formatter_show` definitions collide.
-Overloads need per-signature name mangling at definitions and argument-type resolution at call
-sites.
+Method overloading works in the self-host emitter. Overloaded methods get a per-signature LLVM
+name (the parameter type names are appended, so `Formatter_show_Int` and `Formatter_show_String`
+no longer collide), and a call resolves to the overload whose parameter types match the argument
+expressions (String versus non-String). The instance-call handlers lower each argument by the
+resolved overload's parameter type, and `csec_is_string_expression` recognizes an instance call
+that resolves to a String-returning overload so untyped contexts such as `println` route it
+through the String lowering. `117_method_overloading` exits `0`, and
+`185_method_overload_dispatch_execution` verifies through its exit code that overloads differing
+only by parameter type (`size(Int)` and `size(String)`, both returning Int) dispatch correctly.
+
+Method overriding through inheritance is still incomplete (`118_method_overriding`,
+`119_operator_overloading_and_overriding`): a call to an overridden method that returns a String
+built from an `Int` (`"child=" + value`) produces an empty result, so those fixtures print
+incorrectly even though their `println`-and-return-`0` bodies exit `0`.
 
 ## Still Incomplete
 

@@ -1837,6 +1837,21 @@ llvm::Value* FunctionCallNode::codegen() {
         argTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
     }
 
+    // free(x): release a heap allocation made by `new` (arrays, class instances, boxes). The value
+    // is a pointer; hand it to the runtime `free`. Freeing a non-heap value (e.g. an array literal,
+    // which is stack-allocated) is undefined, exactly as in C.
+    if (functionName == "free") {
+        if (!argValues.empty() && argValues[0] && argValues[0]->getType()->isPointerTy()) {
+            llvm::Value* raw = cg.builder.CreateBitCast(
+                argValues[0], llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context)), "free.ptr");
+            cg.builder.CreateCall(cg.freeFunction, { raw });
+        }
+        else {
+            std::cerr << "Error: free() expects a heap pointer argument" << std::endl;
+        }
+        return llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), 0);
+    }
+
     if (isNativeIOFunction(functionName)) {
         return codegenNativeIOCall(functionName, argValues, argTypes);
     }
@@ -2175,6 +2190,11 @@ llvm::Value* FunctionCallNode::codegen() {
 
 std::unique_ptr<Type> FunctionCallNode::getType() {
     if (type) return type->clone();
+
+    // free(x) is a statement-like builtin that releases a heap allocation; it yields no value.
+    if (functionName == "free") {
+        return std::make_unique<BasicType>("Unit");
+    }
 
     std::vector<std::unique_ptr<Type>> argTypes;
     for (auto& arg : arguments) {

@@ -417,6 +417,13 @@ static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bo
             output += std::string("  store ") + (boolean ? "i1 " : (pointer ? "ptr " : (doubling ? "double " : (floating ? "float " : "i32 ")))) + value + ", ptr %" + storage + "\n";
         } else if (!csec_emit_println_statement(tokens, cursor, next).empty()) {
             output += csec_emit_println_statement(tokens, cursor, next);
+        } else if (csec_native_token_is(tokens, cursor, 'I', "free") &&
+                   csec_native_token_is(tokens, cursor + 1, 'O', "(")) {
+            // free(x): the self-host emitter allocates collections on the stack, so there is nothing
+            // to release — treat it as a no-op (the direct compiler, which heap-allocates via
+            // malloc, performs the real free). The comment consumes the statement so it is not
+            // lowered as a generic i32 call to an undeclared @free.
+            output += "  ; free() no-op (self-host stack allocation)\n";
         } else if (csec_token_kind_at(tokens, cursor) == 'I' && cursor + 3 < next &&
                    csec_native_token_is(tokens, cursor + 1, 'O', ".") &&
                    csec_token_kind_at(tokens, cursor + 2) == 'I' &&

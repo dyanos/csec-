@@ -2,6 +2,15 @@
 
 ## Verified
 
+- Heap allocations can be released explicitly with a `free(x)` builtin. In the direct compiler
+  `new T[n]`, `new Class(...)`, and boxes are `malloc`-backed, so `free(x)` bit-casts the argument
+  pointer and calls the runtime `free`; the type checker types the call as `Unit`. The self-host
+  emitter allocates collections on the stack, so there is nothing to release there — it treats
+  `free(x)` as a no-op (a real `free` on a stack pointer would corrupt memory). `free` therefore has
+  consistent semantics on both paths (release heap memory where it exists, no-op where allocation is
+  stack-based) and the same program result. `191_free_heap_allocation_execution.csec` returns `42`
+  on both paths; freeing a class instance (`new Point(...)`) works the same way. Freeing a non-heap
+  value (e.g. an array literal) is undefined, as in C.
 - Every fixture under `tests/positive` compiles on the direct compiler, and the tracked execution
   suites pass on both paths. The `pmap(gpu)`/`preduce(gpu)` backend has no device code generator
   yet, so it falls back to CPU execution: `054_pmap_backend_variants` (which exercises `cpu`,

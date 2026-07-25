@@ -409,15 +409,17 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
   classes/arrays) remains a v2-line decision; `@copy` struct annotations and the strict-by-default
   flip are the documented follow-ups. See `type_checker.cpp` (`isCopyType`/`isMoveCheckedType`) and
   `main.cpp` (`--strict-ownership`).
-- **M3 — Ownership-CFG + dataflow framework. [partial]** The high-value precision gap is closed:
-  move-checking is now **path-sensitive across diverging `if`-branches** — both arms are analysed
-  from the same pre-branch ownership snapshot and only the fall-through paths are joined, so a move on
-  a branch that always returns no longer marks the value moved for the code after the `if`
-  (`statementDiverges` + `mergeMovedFrom` + `visit(IfStatementNode)` in `type_checker.cpp`; tests
-  `strict_ownership/positive/04`, `negative/03`). Soundness is preserved (a move on a fall-through
-  branch used after the `if`, and straight-line use-after-move, are still rejected). A full OCFG +
-  worklist solver (loops, definite-init as a lattice) remains a larger refactor, but the checker was
-  already *sound* — this was precision only.
+- **M3 — Ownership-CFG + dataflow framework. [partial]** The high-value precision gaps are closed:
+  move-checking is now **path-sensitive across diverging `if`-branches and `while` bodies**. Both `if`
+  arms are analysed from the same pre-branch ownership snapshot and only the fall-through paths are
+  joined; a `while` body that always returns has its moves discarded (it runs at most once and
+  diverges, so the loop only falls through when the body never executed). A move on a branch/body that
+  always returns no longer marks the value moved for the following code (`statementDiverges` +
+  `mergeMovedFrom` + `visit(IfStatementNode)`/`visit(WhileStatementNode)` in `type_checker.cpp`; tests
+  `strict_ownership/positive/{04,05}`, `negative/{03,04}`). Soundness is preserved (a move on a
+  fall-through branch/body used afterward, and straight-line use-after-move, are still rejected). A
+  full OCFG + worklist solver (definite-init as a lattice, multi-iteration loop re-move detection)
+  remains a larger refactor, but the checker was already *sound* — this is precision only.
 - **M4 — Drop elaboration generalized. [partial]** Per-path drop insertion now fires on **every
   return path**, not just the first: `emitAllCleanupsExcept` no longer clears the cleanup registry
   after emitting, so `if (c) { return 1; } return 0;` frees its owned locals on both the `then` and

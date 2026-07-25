@@ -2,6 +2,7 @@
 #include "ArrayAccessNode.h"
 #include "ASTVisitor.h"
 #include "TensorRuntime.h"
+#include "type_utils.h"
 
 #include <iostream>
 #include <vector>
@@ -56,7 +57,7 @@ llvm::Value* ArrayAccessNode::codegen() {
         indices.push_back(std::move(fallback));
     }
 
-    auto arrayTypeInfo = array->getType();
+    auto arrayTypeInfo = stripBorrow(array->getType());
     if (arrayTypeInfo && TensorRuntime::isTensorTypeName(arrayTypeInfo->getName())) {
         std::vector<bool> isSlice;
         std::vector<llvm::Value*> starts;
@@ -96,7 +97,7 @@ llvm::Value* ArrayAccessNode::codegen() {
     }
 
     llvm::Value* currentValue = arrayValue;
-    std::unique_ptr<Type> currentType = array->getType();
+    std::unique_ptr<Type> currentType = stripBorrow(array->getType());
     for (auto* spec : specs) {
         if (!spec || spec->isSlice) {
             std::cerr << "Error: Slice syntax is only supported for Tensor values" << std::endl;
@@ -142,7 +143,7 @@ llvm::Value* ArrayAccessNode::codegenElementPointer() {
     auto& cg = CodeGenerator::getInstance();
     if (!array) return nullptr;
     llvm::Value* currentValue = array->codegen();
-    std::unique_ptr<Type> currentType = array->getType();
+    std::unique_ptr<Type> currentType = stripBorrow(array->getType());
     if (!currentValue || !currentType || indices.empty()) return nullptr;
 
     for (size_t position = 0; position < indices.size(); ++position) {

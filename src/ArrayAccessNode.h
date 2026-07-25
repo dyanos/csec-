@@ -67,6 +67,14 @@ public:
     std::unique_ptr<Type> getType() override {
         if (!array) return std::make_unique<UnknownType>();
         auto resolvedArrayType = array->getType();
+        // Auto-deref: indexing a borrowed array/vector (`&Vector[T]` parameter) resolves against the
+        // borrowed collection, so `ref[i]` has element type T.
+        if (resolvedArrayType && (resolvedArrayType->getKind() == Type::Kind::BORROW ||
+                                  resolvedArrayType->getKind() == Type::Kind::MUTABLE_BORROW)) {
+            if (auto* bt = dynamic_cast<BorrowType*>(resolvedArrayType.get())) {
+                if (bt->baseType) resolvedArrayType = bt->baseType->clone();
+            }
+        }
         if (!resolvedArrayType) return std::make_unique<UnknownType>();
 
         bool containsSlice = false;

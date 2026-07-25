@@ -3,6 +3,7 @@
 #include "type_checker.h"
 #include "codegen.h"
 #include "symbol.h"
+#include "type_utils.h"
 
 #include <iostream>
 
@@ -161,6 +162,10 @@ bool isCopyType(const Type* type) {
     if (!type) return true;
     switch (type->getKind()) {
         case Type::Kind::CLASS:
+            // A `struct` is a value type (copied field-by-field, like a C struct), so it is Copy; a
+            // reference `class` owns identity/resources and moves. isStructClassType consults the
+            // class symbol's `isStruct` flag.
+            return isStructClassType(type);
         case Type::Kind::ARRAY:
         case Type::Kind::BOX:
             return false;
@@ -384,9 +389,13 @@ void TypeChecker::checkFunctionArguments(const std::vector<std::unique_ptr<ASTNo
         const bool argIsMove = isMoveExpression(arg);
         const bool argIsBorrow = isBorrowExpression(arg, &mutableBorrowArg);
         auto argType = arg ? arg->getType() : std::make_unique<UnknownType>();
+        // An explicit `<-` is only required for a NAMED owned value (an identifier bound to an owned
+        // local). A temporary — a literal, `new X()`, a call result, a computed value — is an rvalue
+        // with no other owner, so it moves implicitly and needs no marker (as in Rust).
+        const bool argIsNamedValue = arg && !identifierName(arg).empty();
 
         if (paramType && isMoveCheckedType(paramType)) {
-            if (!argIsMove) {
+            if (!argIsMove && !argIsBorrow && argIsNamedValue) {
                 reportError("Type error: ownership transfer to '" + callName + "' requires '<-'");
             }
         }
@@ -403,7 +412,7 @@ void TypeChecker::checkFunctionArguments(const std::vector<std::unique_ptr<ASTNo
         else if (argIsMove) {
             reportError("Type error: '<-' argument to '" + callName + "' requires an owning parameter");
         }
-        else if (argType && isMoveCheckedType(argType.get())) {
+        else if (argType && isMoveCheckedType(argType.get()) && argIsNamedValue) {
             reportError("Type error: ownership transfer to '" + callName + "' requires '<-'");
         }
 

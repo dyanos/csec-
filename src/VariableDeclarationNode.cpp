@@ -215,16 +215,29 @@ llvm::Value* VariableDeclarationNode::codegen() {
     }
 
     auto* currentSymbol = cg.symbolTable.getCurrentSymbol();
-    if (currentSymbol && currentSymbol->symbolType == SymbolType::NAMESPACE) {
+    // A top-level `var` (no enclosing function/class/namespace symbol) lowers to an LLVM global
+    // rather than a stack alloca in the bootstrap `main`. Recognise true module scope by both a null
+    // current symbol AND the builder still parked in the bootstrap main's block (the constructor's
+    // parking spot) — this excludes the transient null-currentSymbol windows that class/instance and
+    // call codegen open while emitting field/argument initializers.
+    llvm::BasicBlock* insertBB = cg.builder.GetInsertBlock();
+    const bool atModuleScope =
+        currentSymbol == nullptr && insertBB && insertBB->getParent() == cg.mainFunction;
+    const bool inNamespace = currentSymbol && currentSymbol->symbolType == SymbolType::NAMESPACE;
+    if (atModuleScope || inNamespace) {
         llvm::Constant* globalInit = llvm::dyn_cast<llvm::Constant>(initValue);
         if (!globalInit) {
             globalInit = llvm::Constant::getNullValue(varType);
         }
+        // Module-scope globals are read from other functions, so they need module-visible linkage;
+        // namespace-scoped ones stay private as before.
+        llvm::GlobalValue::LinkageTypes linkage =
+            atModuleScope ? llvm::GlobalValue::InternalLinkage : llvm::GlobalValue::PrivateLinkage;
         auto* global = new llvm::GlobalVariable(
             *cg.module,
             varType,
             !isMutable,
-            llvm::GlobalValue::PrivateLinkage,
+            linkage,
             globalInit,
             name);
         cg.symbolTable.addSymbol(

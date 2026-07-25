@@ -169,6 +169,15 @@ bool SymbolTable::addSymbol(const std::string& name, std::unique_ptr<Symbol> sym
             key = makeUniqueKey(this->currentScope->symbols, name);
         }
         else if (this->currentScope->symbols.count(name) != 0) {
+            // A module-scope var is bound twice across the two shared-symbol-table passes: once in
+            // type-checking (placeholder, value null) and once in codegen (the real global). Refresh
+            // the entry so the codegen value wins — mirroring the namespace VARIABLE path below.
+            // Without this the top-level global resolves to its null placeholder and reads as 0.
+            Symbol* existing = this->currentScope->symbols[name].get();
+            if (existing && existing->value == nullptr && rawSymbol->value != nullptr) {
+                this->currentScope->symbols[name] = std::move(symbol);
+                return true;
+            }
             return false;
         }
 

@@ -652,6 +652,16 @@ void TypeChecker::visit(ForStatementNode& node) {
 void TypeChecker::visit(ReturnStatementNode& node) {
     if (node.expression) {
         node.expression->accept(*this);
+        // Borrow escape (memory model §6): a borrow of a local dangles once the function returns.
+        // The MVP forbids returning references outright rather than introducing lifetime
+        // parameters, so `return &x` / `return &mut x` is always rejected.
+        bool isMutableBorrow = false;
+        if (isBorrowExpression(node.expression.get(), &isMutableBorrow)) {
+            const std::string name = movedOrBorrowedIdentifier(node.expression.get());
+            reportError("Type error: reference to local '" + name +
+                        "' escapes its function; return the value itself (move it with '<-' at the "
+                        "call site) or return an owned copy with clone(" + name + ")");
+        }
         checkTypeResolved(node.expression->getType(), "return expression");
     }
 }

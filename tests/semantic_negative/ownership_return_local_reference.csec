@@ -1,0 +1,12 @@
+class Value() {
+    def get(): Int = 0
+}
+
+def invalid(): &Value {
+    var value: box Value = new Value();
+    return &value;
+}
+
+def main(): Int {
+    return 0;
+}

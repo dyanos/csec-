@@ -489,6 +489,25 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
         node.type = std::make_unique<UnknownType>();
     }
 
+    // Owned-wrapper globals (box/Shared/Weak declared at module scope) are not yet supported: they
+    // need a startup constructor to run their heap initialization and a shutdown pass to release
+    // them, and moving a box bound at module scope currently loops in codegen. Reject with a clear
+    // diagnostic instead of hanging or silently mis-lowering. Scalar globals (Int, Bool, …) are fine
+    // and unaffected; owned values kept in function scope keep their deterministic destruction. No
+    // fixture declares an owned global, so this is a pure hang-to-error improvement.
+    if (CodeGenerator::getInstance().symbolTable.getCurrentSymbol() == nullptr && !node.isField &&
+        node.type) {
+        const bool ownedWrapperGlobal =
+            node.type->getKind() == Type::Kind::BOX ||
+            (node.type->getKind() == Type::Kind::GENERIC &&
+             (node.type->getName() == "Shared" || node.type->getName() == "Weak"));
+        if (ownedWrapperGlobal) {
+            reportError("Type error: owned global '" + node.name + "' of type '" +
+                        node.type->getName() + "' is not supported; keep owned values (box/Shared/"
+                        "Weak) in function scope where construction and destruction are deterministic");
+        }
+    }
+
     bindVariable(node.name, node.type, node.isMutable, node.isField ? SymbolType::FIELD : SymbolType::VARIABLE);
     declareOwnership(node.name, node.type);
 }

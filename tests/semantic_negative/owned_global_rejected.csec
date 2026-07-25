@@ -1,0 +1,2 @@
+var handle: box Int = 9;
+def main(): Int = 0

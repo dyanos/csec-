@@ -244,6 +244,12 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 		advance();
 	}
 
+	bool isAsyncFunction = false;
+	if (check(TokenType::KEYWORD, "async")) {
+		isAsyncFunction = true;
+		advance();
+	}
+
 	bool isUnsafeFunction = false;
 	if (check(TokenType::KEYWORD, "unsafe")) {
 		isUnsafeFunction = true;
@@ -251,6 +257,10 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 		if (!check(TokenType::KEYWORD, "def")) {
 			error("'unsafe' modifier is only valid on function declarations");
 		}
+	}
+
+	if (isAsyncFunction && !check(TokenType::KEYWORD, "def")) {
+		error("'async' modifier is only valid on function declarations");
 	}
 
 	std::unique_ptr<ASTNode> node = nullptr;
@@ -301,6 +311,7 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 		targetNode->isExternal = isExternal;
 		targetNode->isConstexpr = isConstexpr;
 		targetNode->isUnsafe = isUnsafeFunction;
+		targetNode->isAsync = isAsyncFunction;
 		node = std::move(targetNode);
 	}
 	else {

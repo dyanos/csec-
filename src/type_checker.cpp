@@ -535,6 +535,8 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
     if (node.isUnsafe) {
         ++unsafeContextDepth;
     }
+    const bool savedAsync = inAsyncFunction;
+    inAsyncFunction = node.isAsync;
 
     if (node.body) {
         node.body->accept(*this);
@@ -565,6 +567,7 @@ void TypeChecker::visit(FunctionDeclarationNode& node) {
     if (node.isUnsafe) {
         --unsafeContextDepth;
     }
+    inAsyncFunction = savedAsync;
 
     exitOwnershipScope();
     cg.symbolTable.exitScope();
@@ -1128,6 +1131,23 @@ void TypeChecker::visit(PrefixExpressionNode& node) {
     else if (node.op == "&" || node.op == "&mut") {
         if (!sourceName.empty()) {
             markBorrowed(sourceName, node.op == "&mut");
+        }
+    }
+    else if (node.op == "await") {
+        if (!inAsyncFunction) {
+            reportError("Type error: 'await' is only valid inside an 'async def' function");
+        }
+        // M8: a borrow may not be held live across an await point. After suspension another task may
+        // run, so a reference into a value that could be mutated or dropped meanwhile is unsound.
+        // Any &/&mut still active in scope when we await is rejected.
+        for (const auto& scope : ownershipScopes) {
+            for (const auto& entry : scope) {
+                if (entry.second.immutableBorrows > 0 || entry.second.mutableBorrowed) {
+                    reportError("Type error: borrow of '" + entry.first +
+                                "' is held across an 'await'; end the borrow before awaiting "
+                                "(a reference cannot survive suspension)");
+                }
+            }
         }
     }
     node.type = node.expression ? node.expression->getType() : std::make_unique<UnknownType>();

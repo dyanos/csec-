@@ -134,6 +134,9 @@ private:
 
     int errorCount = 0;
     int unsafeContextDepth = 0;
+    // True while checking the body of an `async def`. `await` is only valid here, and the M8
+    // no-borrow-across-await rule is enforced at each await point.
+    bool inAsyncFunction = false;
     std::vector<std::unordered_map<std::string, OwnershipState>> ownershipScopes;
     void reportError(const std::string& message);
     void checkTypeResolved(const std::unique_ptr<Type>& type, const std::string& context);

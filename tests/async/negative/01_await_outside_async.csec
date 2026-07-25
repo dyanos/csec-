@@ -1,0 +1,4 @@
+def fetch(): Int = 42
+def main(): Int {
+    return await fetch();
+}

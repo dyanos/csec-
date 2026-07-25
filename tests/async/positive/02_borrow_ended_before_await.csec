@@ -1,0 +1,9 @@
+def observe(value: &Int): Int = 0
+async def fetch(): Int = 42
+async def run(): Int {
+    var data: Int = 7;
+    var b: Int = observe(&data);
+    var y: Int = await fetch();
+    return y;
+}
+def main(): Int = 0

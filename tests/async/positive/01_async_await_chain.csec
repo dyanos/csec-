@@ -1,0 +1,8 @@
+async def fetch(): Int = 42
+async def run(): Int {
+    var x: Int = await fetch();
+    return x;
+}
+def main(): Int {
+    return run();
+}

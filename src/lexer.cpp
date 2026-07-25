@@ -87,6 +87,7 @@ void Lexer::initializeKeywords() {
         "this", "throw", "trait", "try", "true", "type", "val", "var",
 		"while", "with", "yield", "to", "until", "and", "or", "xor", "map", "pmap", "reduce", "preduce", "filter", "external", "inline", "constexpr",
 		"template", "typename", "mut", "box", "unsafe", "unatomic", "struct",
+		"async", "await",
         "molecule", "atom", "bond", "at", "steps", "dt", "temperature",
         "cfd", "grid", "viscosity", "velocity",
         "ode", "euler", "from", "step", "lattice", "spacing",

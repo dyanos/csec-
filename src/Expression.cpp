@@ -688,6 +688,13 @@ std::unique_ptr<ASTNode> Parser::parsePrefixExpression()
 		auto rightCopy = parsePrefixExpression();
 		return std::make_unique<PrefixExpressionNode>("<-", std::move(rightCopy));
 	}
+	else if (match(TokenType::KEYWORD, "await")) {
+		// `await expr` suspends until expr's async result is ready. Modelled as a prefix op so no new
+		// AST node is needed; the type checker enforces async-context + the no-borrow-across-await
+		// rule (M8), and codegen lowers it to the operand value (sequential evaluation for now).
+		auto rightCopy = parsePrefixExpression();
+		return std::make_unique<PrefixExpressionNode>("await", std::move(rightCopy));
+	}
 	else if (match(TokenType::OPERATOR, "&")) {
 		std::string op = match(TokenType::KEYWORD, "mut") ? "&mut" : "&";
 		auto rightCopy = parsePrefixExpression();

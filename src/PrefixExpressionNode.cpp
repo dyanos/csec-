@@ -31,6 +31,12 @@ llvm::Value* PrefixExpressionNode::codegen() {
     else if (op == "<-") {
         return value;
     }
+    else if (op == "await") {
+        // Sequential lowering: with no coroutine runtime yet, awaiting a value yields the value
+        // itself. The async/await surface and the no-borrow-across-await rule (M8) are enforced at
+        // type-check time; this keeps async functions executable as ordinary synchronous calls.
+        return value;
+    }
     else if (op == "++") {
         // increment
         // byte, char, word, short, int, long, long long, float, double, long double만 가능하도록 변경

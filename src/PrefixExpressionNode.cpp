@@ -23,6 +23,15 @@ llvm::Value* PrefixExpressionNode::codegen() {
         if (auto* id = dynamic_cast<IdentifierNode*>(expression.get())) {
             auto* symbol = CodeGenerator::getInstance().symbolTable.lookup(id->value);
             if (symbol && symbol->value) {
+                // An immutable borrow of a pointer-valued local kept in a slot (String, array, …)
+                // yields the loaded pointer, so the reference is the underlying object — matching how
+                // class objects (bound as direct pointers) already behave, and letting member access
+                // through a `&T` parameter dispatch correctly. A `&mut`, or a borrow of a by-value
+                // primitive/aggregate slot, keeps the slot address so the callee can read/mutate it.
+                if (op == "&" && llvm::isa<llvm::AllocaInst>(symbol->value) &&
+                    value && value->getType()->isPointerTy()) {
+                    return value;
+                }
                 return symbol->value;
             }
         }

@@ -2,6 +2,7 @@
 #include "AccessFieldNode.h"
 #include "ASTVisitor.h"
 #include "utils.h"
+#include "type_utils.h"
 
 #include "IdentifierNode.h"
 
@@ -37,7 +38,7 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
 
-    auto baseType = baseIdentifier->getType();
+    auto baseType = stripBorrow(baseIdentifier->getType());
     auto targetName = fieldIdentifier->value;
     if (baseType && baseType->isStringTy()) {
         llvm::Value* stringValue = baseIdentifier->codegen();
@@ -92,7 +93,7 @@ llvm::Value* AccessFieldNode::codegenFieldPointer() {
         std::cerr << "Error: Field must be an identifier" << std::endl;
         return nullptr;
     }
-    auto baseType = baseIdentifier->getType();
+    auto baseType = stripBorrow(baseIdentifier->getType());
     const auto targetName = fieldIdentifier->value;
 
     if (!baseType || baseType->getKind() != Type::Kind::CLASS) {
@@ -165,7 +166,7 @@ int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string&
 }
 
 std::unique_ptr<Type> AccessFieldNode::getType() {
-    auto baseType = base ? base->getType() : nullptr;
+    auto baseType = base ? stripBorrow(base->getType()) : nullptr;
     auto* fieldIdentifier = dynamic_cast<IdentifierNode*>(field.get());
     if (baseType && baseType->isStringTy() && fieldIdentifier) {
         const std::string& targetName = fieldIdentifier->value;

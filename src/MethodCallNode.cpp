@@ -343,6 +343,14 @@ llvm::Value* MethodCallNode::codegen() {
     }
 
     auto typeValue = object->getType();
+    // Auto-deref through a borrow: a `&T`/`&mut T` receiver dispatches like the borrowed T. The
+    // borrow value is already the underlying object pointer, so only the static type needs unwrapping.
+    if (typeValue && (typeValue->getKind() == Type::Kind::BORROW ||
+                      typeValue->getKind() == Type::Kind::MUTABLE_BORROW)) {
+        if (auto* bt = dynamic_cast<BorrowType*>(typeValue.get())) {
+            if (bt->baseType) typeValue = bt->baseType->clone();
+        }
+    }
     auto* objectType = typeValue.get();
 
     // Shared<T>/Weak<T> methods over the control block { i64 strong, i64 weak, payload }.
@@ -520,6 +528,15 @@ std::unique_ptr<Type> MethodCallNode::getType() {
     }
 
     auto trueObject = object->getType();
+    // Auto-deref through a borrow: `ref.method()` where ref : &T (or &mut T) resolves against T.
+    // Strict ownership (M2) makes `&T` parameters common, and a method call on a borrowed receiver
+    // must behave like a call on the borrowed value itself.
+    if (trueObject && (trueObject->getKind() == Type::Kind::BORROW ||
+                       trueObject->getKind() == Type::Kind::MUTABLE_BORROW)) {
+        if (auto* bt = dynamic_cast<BorrowType*>(trueObject.get())) {
+            if (bt->baseType) trueObject = bt->baseType->clone();
+        }
+    }
     auto* objectType = trueObject.get();
 
     // Shared<T>.clone() : Shared<T> ; Shared<T>.get() / Weak<T>.get() : T

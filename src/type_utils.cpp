@@ -18,6 +18,16 @@ bool areTypesCompatible(const std::vector<std::unique_ptr<Type>>& paramTypes, co
     return true;
 }
 
+std::unique_ptr<Type> stripBorrow(const std::unique_ptr<Type>& type) {
+    if (type && (type->getKind() == Type::Kind::BORROW ||
+                 type->getKind() == Type::Kind::MUTABLE_BORROW)) {
+        if (auto* bt = dynamic_cast<BorrowType*>(type.get())) {
+            if (bt->baseType) return bt->baseType->clone();
+        }
+    }
+    return type ? type->clone() : std::make_unique<UnknownType>();
+}
+
 bool isStructClassType(const Type* type) {
     if (!type || type->getKind() != Type::Kind::CLASS) {
         return false;

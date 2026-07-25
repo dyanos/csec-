@@ -254,6 +254,28 @@ std::string movedOrBorrowedIdentifier(ASTNode* node) {
     }
     return identifierName(node);
 }
+
+// A statement "diverges" when control can never fall through past it — every path returns. Moves
+// performed on a diverging path never reach the code after it, so the ownership checker must not let
+// them persist (memory model M3/M4: path-sensitive handling of conditionals).
+bool statementDiverges(const ASTNode* stmt) {
+    if (!stmt) return false;
+    if (dynamic_cast<const ReturnStatementNode*>(stmt)) {
+        return true;
+    }
+    if (auto* block = dynamic_cast<const BlockNode*>(stmt)) {
+        for (const auto& s : block->statements) {
+            if (statementDiverges(s.get())) return true;  // statements after it are unreachable
+        }
+        return false;
+    }
+    if (auto* ifn = dynamic_cast<const IfStatementNode*>(stmt)) {
+        // An `if` diverges only when both arms exist and both diverge.
+        return ifn->thenBlock && ifn->elseBlock &&
+               statementDiverges(ifn->thenBlock.get()) && statementDiverges(ifn->elseBlock.get());
+    }
+    return false;
+}
 }
 
 // External linkage (see type_checker.h): main.cpp toggles this from `--strict-ownership`. Defined
@@ -674,17 +696,56 @@ void TypeChecker::visit(ObjectDeclarationNode& node) {
     cg.symbolTable.setCurrentSymbol(savedCurrentSymbol);
 }
 
+void TypeChecker::mergeMovedFrom(
+    const std::vector<std::unordered_map<std::string, OwnershipState>>& source) {
+    const size_t n = std::min(ownershipScopes.size(), source.size());
+    for (size_t i = 0; i < n; ++i) {
+        for (const auto& entry : source[i]) {
+            if (!entry.second.moved) continue;
+            auto it = ownershipScopes[i].find(entry.first);
+            if (it != ownershipScopes[i].end()) {
+                it->second.moved = true;
+            }
+        }
+    }
+}
+
 void TypeChecker::visit(IfStatementNode& node) {
     if (node.condition) {
         node.condition->accept(*this);
         checkTypeResolved(node.condition->getType(), "if condition");
     }
+
+    // Path-sensitive move analysis (M3/M4). Evaluate both arms from the same pre-branch state, then
+    // join only the paths that fall through: a value is moved after the `if` iff it is moved on some
+    // surviving path. A branch that diverges (always returns) contributes no post-branch moves, so a
+    // `<-` inside `if (c) { return f(<- x); }` no longer falsely marks `x` moved for the code after.
+    const auto before = ownershipScopes;
+
     if (node.thenBlock) {
         node.thenBlock->accept(*this);
     }
+    const bool thenDiverges = node.thenBlock && statementDiverges(node.thenBlock.get());
+    const auto afterThen = ownershipScopes;
+
+    // The else arm runs on the false path, from the pre-branch state — not the then arm's state.
+    ownershipScopes = before;
     if (node.elseBlock) {
         node.elseBlock->accept(*this);
     }
+    const bool elseDiverges = node.elseBlock && statementDiverges(node.elseBlock.get());
+    const auto afterElse = ownershipScopes;
+
+    // Join the surviving paths. With no else arm, the false path falls through with `before` (no
+    // extra moves), which is exactly what starting from `before` and skipping the else merge gives.
+    ownershipScopes = before;
+    if (!thenDiverges) {
+        mergeMovedFrom(afterThen);
+    }
+    if (!elseDiverges) {
+        mergeMovedFrom(afterElse);
+    }
+
     node.type = node.getType();
 }
 

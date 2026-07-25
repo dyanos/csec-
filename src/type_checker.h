@@ -145,6 +145,10 @@ private:
     void markMoved(const std::string& name);
     void markBorrowed(const std::string& name, bool isMutableBorrow);
     void releaseBorrow(const std::string& name, bool isMutableBorrow);
+    // Path-sensitive join (M3/M4): OR the `moved` flags from `source` into the current ownership
+    // state (per scope, by name). Used to merge the fall-through paths of an `if` so moves made only
+    // on a diverging branch are not counted after it.
+    void mergeMovedFrom(const std::vector<std::unordered_map<std::string, OwnershipState>>& source);
     void checkFunctionArguments(const std::vector<std::unique_ptr<ASTNode>>& arguments,
                                 const std::vector<std::unique_ptr<Type>>& parameterTypes,
                                 const std::string& callName);

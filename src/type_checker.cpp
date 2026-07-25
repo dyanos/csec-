@@ -394,8 +394,9 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
                      !((node.type->isDoubleTy() || node.type->getName() == "Real") &&
                        (initType->isIntegerTy() || initType->isFloatTy() || initType->isDoubleTy())) &&
                      !canInitializeOwnershipType(node.type.get(), initType.get()) &&
-                     !(node.type->getKind() == Type::Kind::GENERIC && node.type->getName() == "Shared" &&
-                       initType->getKind() == Type::Kind::GENERIC && initType->getName() == "Shared") &&
+                     !(node.type->getKind() == Type::Kind::GENERIC && initType->getKind() == Type::Kind::GENERIC &&
+                       node.type->getName() == initType->getName() &&
+                       (node.type->getName() == "Shared" || node.type->getName() == "Weak")) &&
                      !(isTensorLikeType(node.type) && isTensorLikeType(initType)) &&
                      !isArrayVectorAlias(node.type, initType) &&
                      !initType->isSubtypeOf(node.type) &&

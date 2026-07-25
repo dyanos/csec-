@@ -122,6 +122,13 @@ void CodeGenerator::registerSharedCleanup(llvm::Value* controlBlock) {
     cleanupScopes.back().push_back({ controlBlock, CleanupKind::SharedRelease });
 }
 
+void CodeGenerator::registerWeakCleanup(llvm::Value* controlBlock) {
+    if (!controlBlock || cleanupScopes.empty()) {
+        return;
+    }
+    cleanupScopes.back().push_back({ controlBlock, CleanupKind::WeakRelease });
+}
+
 void CodeGenerator::emitCleanupEntry(llvm::Value* pointer, CleanupKind kind, llvm::Value* retainedPointer) {
     if (!pointer || pointer == retainedPointer) {
         return;
@@ -130,18 +137,28 @@ void CodeGenerator::emitCleanupEntry(llvm::Value* pointer, CleanupKind kind, llv
     llvm::Value* raw = pointer->getType() == i8PtrTy
         ? pointer
         : builder.CreateBitCast(pointer, i8PtrTy, "cleanup.ptr");
-    if (kind == CleanupKind::SharedRelease) {
-        // Decrement the strong count (an i64 at the block's start); free the block only at zero.
+    if (kind == CleanupKind::SharedRelease || kind == CleanupKind::WeakRelease) {
+        // The control block is { i64 strong, i64 weak, payload }. A Shared owner decrements strong,
+        // a Weak handle decrements weak. The block is freed only when BOTH counts reach zero (so a
+        // live Weak keeps the block, and dropping the last Weak after all strong owners reclaims it).
         auto* i64Ty = llvm::Type::getInt64Ty(context);
         llvm::Function* fn = builder.GetInsertBlock() ? builder.GetInsertBlock()->getParent() : nullptr;
         if (!fn) return;
-        llvm::Value* strong = builder.CreateLoad(i64Ty, pointer, "shared.strong");
-        llvm::Value* decremented = builder.CreateSub(strong, llvm::ConstantInt::get(i64Ty, 1), "shared.dec");
-        builder.CreateStore(decremented, pointer);
-        llvm::Value* isZero = builder.CreateICmpEQ(decremented, llvm::ConstantInt::get(i64Ty, 0), "shared.zero");
-        auto* freeBB = llvm::BasicBlock::Create(context, "shared.free", fn);
-        auto* contBB = llvm::BasicBlock::Create(context, "shared.cont", fn);
-        builder.CreateCondBr(isZero, freeBB, contBB);
+        llvm::Value* strongPtr = pointer;  // strong is field 0 (offset 0)
+        llvm::Value* weakPtr = builder.CreateGEP(i64Ty, pointer, llvm::ConstantInt::get(i64Ty, 1), "block.weak.ptr");
+        llvm::Value* counterPtr = kind == CleanupKind::SharedRelease ? strongPtr : weakPtr;
+        llvm::Value* count = builder.CreateLoad(i64Ty, counterPtr, "refcount");
+        llvm::Value* decremented = builder.CreateSub(count, llvm::ConstantInt::get(i64Ty, 1), "refcount.dec");
+        builder.CreateStore(decremented, counterPtr);
+        llvm::Value* strong = builder.CreateLoad(i64Ty, strongPtr, "block.strong");
+        llvm::Value* weak = builder.CreateLoad(i64Ty, weakPtr, "block.weak");
+        llvm::Value* zero = llvm::ConstantInt::get(i64Ty, 0);
+        llvm::Value* bothZero = builder.CreateAnd(
+            builder.CreateICmpEQ(strong, zero, "strong.zero"),
+            builder.CreateICmpEQ(weak, zero, "weak.zero"), "block.dead");
+        auto* freeBB = llvm::BasicBlock::Create(context, "block.free", fn);
+        auto* contBB = llvm::BasicBlock::Create(context, "block.cont", fn);
+        builder.CreateCondBr(bothZero, freeBB, contBB);
         builder.SetInsertPoint(freeBB);
         builder.CreateCall(freeFunction, { raw });
         builder.CreateBr(contBB);

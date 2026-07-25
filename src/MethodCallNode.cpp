@@ -345,18 +345,22 @@ llvm::Value* MethodCallNode::codegen() {
     auto typeValue = object->getType();
     auto* objectType = typeValue.get();
 
-    // Shared<T> methods: `.clone()` retains (bumps strong, returns the same block); `.get()` reads
-    // the payload. The Shared value is the control-block pointer { i64 strong, payload }.
-    if (objectType && objectType->getKind() == Type::Kind::GENERIC && objectType->getName() == "Shared") {
+    // Shared<T>/Weak<T> methods over the control block { i64 strong, i64 weak, payload }.
+    //   Shared.clone() retains (bumps strong, returns the same block);
+    //   Shared.get()   reads the payload;
+    //   Weak.get()     reads the payload if the value is still alive (strong > 0), else 0.
+    if (objectType && objectType->getKind() == Type::Kind::GENERIC &&
+        (objectType->getName() == "Shared" || objectType->getName() == "Weak")) {
+        const bool isWeak = objectType->getName() == "Weak";
         auto* genType = dynamic_cast<GenericType*>(objectType);
         llvm::Type* payloadType = (genType && !genType->typeArguments.empty() && genType->typeArguments[0])
             ? cg.getLLVMType(genType->typeArguments[0].get()) : nullptr;
         if (payloadType) {
             auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
-            llvm::StructType* blockType = llvm::StructType::get(cg.context, { i64Ty, payloadType });
+            llvm::StructType* blockType = llvm::StructType::get(cg.context, { i64Ty, i64Ty, payloadType });
             llvm::Value* block = cg.builder.CreateBitCast(
                 objectValue, llvm::PointerType::getUnqual(blockType), "shared.block");
-            if (methodName == "clone") {
+            if (!isWeak && methodName == "clone") {
                 llvm::Value* strongPtr = cg.builder.CreateStructGEP(blockType, block, 0, "shared.strong.ptr");
                 llvm::Value* strong = cg.builder.CreateLoad(i64Ty, strongPtr, "shared.strong");
                 cg.builder.CreateStore(
@@ -364,8 +368,17 @@ llvm::Value* MethodCallNode::codegen() {
                 return objectValue;
             }
             if (methodName == "get") {
-                llvm::Value* payloadPtr = cg.builder.CreateStructGEP(blockType, block, 1, "shared.payload.ptr");
-                return cg.builder.CreateLoad(payloadType, payloadPtr, "shared.get");
+                llvm::Value* payloadPtr = cg.builder.CreateStructGEP(blockType, block, 2, "shared.payload.ptr");
+                llvm::Value* payload = cg.builder.CreateLoad(payloadType, payloadPtr, "shared.get");
+                if (!isWeak) {
+                    return payload;
+                }
+                // Weak.get(): return the payload only while the value is alive, else a zero value.
+                llvm::Value* strong = cg.builder.CreateLoad(
+                    i64Ty, cg.builder.CreateStructGEP(blockType, block, 0, "weak.strong.ptr"), "weak.strong");
+                llvm::Value* alive = cg.builder.CreateICmpSGT(strong, llvm::ConstantInt::get(i64Ty, 0), "weak.alive");
+                llvm::Value* zero = llvm::Constant::getNullValue(payloadType);
+                return cg.builder.CreateSelect(alive, payload, zero, "weak.get");
             }
         }
     }
@@ -509,9 +522,10 @@ std::unique_ptr<Type> MethodCallNode::getType() {
     auto trueObject = object->getType();
     auto* objectType = trueObject.get();
 
-    // Shared<T>.clone() : Shared<T> ; Shared<T>.get() : T
-    if (objectType && objectType->getKind() == Type::Kind::GENERIC && objectType->getName() == "Shared") {
-        if (methodName == "clone") {
+    // Shared<T>.clone() : Shared<T> ; Shared<T>.get() / Weak<T>.get() : T
+    if (objectType && objectType->getKind() == Type::Kind::GENERIC &&
+        (objectType->getName() == "Shared" || objectType->getName() == "Weak")) {
+        if (methodName == "clone" && objectType->getName() == "Shared") {
             return objectType->clone();
         }
         if (methodName == "get") {

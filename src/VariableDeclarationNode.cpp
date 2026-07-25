@@ -162,7 +162,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
          dynamic_cast<FunctionType*>(type.get()) != nullptr ||
          (type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
          type->getKind() == Type::Kind::BOX ||
-         (type->getKind() == Type::Kind::GENERIC && type->getName() == "Shared") ||
+         (type->getKind() == Type::Kind::GENERIC && (type->getName() == "Shared" || type->getName() == "Weak")) ||
          arrayVectorFromCall);
 
     if (bindPointerBackedValueDirectly) {
@@ -173,8 +173,12 @@ llvm::Value* VariableDeclarationNode::codegen() {
             cg.registerCleanup(initValue);
         }
         else if (type->getKind() == Type::Kind::GENERIC && type->getName() == "Shared") {
-            // Each Shared<T> owner releases (decrements) at scope exit; the block is freed at zero.
+            // Each Shared<T> owner releases (decrements strong) at scope exit.
             cg.registerSharedCleanup(initValue);
+        }
+        else if (type->getKind() == Type::Kind::GENERIC && type->getName() == "Weak") {
+            // Each Weak<T> handle releases (decrements weak) at scope exit.
+            cg.registerWeakCleanup(initValue);
         }
         return initValue;
     }

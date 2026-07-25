@@ -1887,15 +1887,34 @@ llvm::Value* FunctionCallNode::codegen() {
         }
         llvm::Value* payload = argValues[0];
         auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
-        llvm::StructType* blockType = llvm::StructType::get(cg.context, { i64Ty, payload->getType() });
+        // Control block { strong, weak, payload }. strong keeps the payload alive; weak keeps only
+        // the block alive (for Weak<T> handles), so a cycle with a Weak edge is still reclaimed.
+        llvm::StructType* blockType = llvm::StructType::get(cg.context, { i64Ty, i64Ty, payload->getType() });
         const llvm::DataLayout& dl = cg.module->getDataLayout();
         llvm::Value* size = llvm::ConstantInt::get(i64Ty, dl.getTypeAllocSize(blockType));
         llvm::Value* raw = cg.builder.CreateCall(cg.mallocFunction, size, "shared.malloc");
         llvm::Value* block = cg.builder.CreateBitCast(raw, llvm::PointerType::getUnqual(blockType), "shared.block");
         cg.builder.CreateStore(llvm::ConstantInt::get(i64Ty, 1),
             cg.builder.CreateStructGEP(blockType, block, 0, "shared.strong.ptr"));
+        cg.builder.CreateStore(llvm::ConstantInt::get(i64Ty, 0),
+            cg.builder.CreateStructGEP(blockType, block, 1, "shared.weak.ptr"));
         cg.builder.CreateStore(payload,
-            cg.builder.CreateStructGEP(blockType, block, 1, "shared.payload.ptr"));
+            cg.builder.CreateStructGEP(blockType, block, 2, "shared.payload.ptr"));
+        return block;
+    }
+
+    // Weak(s): a non-owning handle into a Shared<T> control block. Bumps the weak count (which does
+    // not keep the payload alive) and returns the same block pointer as a Weak<T> value.
+    if (functionName == "Weak") {
+        if (argValues.empty() || !argValues[0] || !argValues[0]->getType()->isPointerTy()) {
+            std::cerr << "Error: Weak() expects a Shared value" << std::endl;
+            return argValues.empty() ? nullptr : argValues[0];
+        }
+        auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+        llvm::Value* block = argValues[0];
+        llvm::Value* weakPtr = cg.builder.CreateGEP(i64Ty, block, llvm::ConstantInt::get(i64Ty, 1), "weak.count.ptr");
+        llvm::Value* weak = cg.builder.CreateLoad(i64Ty, weakPtr, "weak.count");
+        cg.builder.CreateStore(cg.builder.CreateAdd(weak, llvm::ConstantInt::get(i64Ty, 1), "weak.inc"), weakPtr);
         return block;
     }
 
@@ -2257,6 +2276,19 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
         args.push_back(!arguments.empty() && arguments[0] ? arguments[0]->getType()
                                                           : std::make_unique<UnknownType>());
         return std::make_unique<GenericType>(std::make_unique<BasicType>("Shared"), args);
+    }
+
+    // Weak(s) : Weak<T> where s : Shared<T>
+    if (functionName == "Weak") {
+        std::vector<std::unique_ptr<Type>> args;
+        auto argType = !arguments.empty() && arguments[0] ? arguments[0]->getType() : std::make_unique<UnknownType>();
+        if (auto* gen = dynamic_cast<GenericType*>(argType.get())) {
+            if (!gen->typeArguments.empty() && gen->typeArguments[0]) {
+                args.push_back(gen->typeArguments[0]->clone());
+            }
+        }
+        if (args.empty()) args.push_back(std::make_unique<UnknownType>());
+        return std::make_unique<GenericType>(std::make_unique<BasicType>("Weak"), args);
     }
 
     std::vector<std::unique_ptr<Type>> argTypes;

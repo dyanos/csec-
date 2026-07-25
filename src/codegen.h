@@ -55,9 +55,11 @@ public:
     void enterCleanupScope();
     void exitCleanupScope();
     void registerCleanup(llvm::Value* pointer);
-    // A Shared<T> control block: at scope exit its strong count is decremented and the block is
-    // freed only at zero (reverse-order, like every other cleanup).
+    // A Shared<T> control block: at scope exit its strong count is decremented; the block is freed
+    // only when both strong and weak reach zero (reverse-order, like every other cleanup).
     void registerSharedCleanup(llvm::Value* controlBlock);
+    // A Weak<T> handle: decrements the weak count; frees the block when strong and weak are both zero.
+    void registerWeakCleanup(llvm::Value* controlBlock);
     void emitCurrentScopeCleanups();
     void emitAllCleanups();
     void emitAllCleanupsExcept(llvm::Value* retainedPointer);
@@ -69,7 +71,7 @@ private:
     CodeGenerator();
     // Each cleanup is a (pointer, kind) pair — kind 0 frees the pointer, kind 1 releases a Shared
     // control block.
-    enum class CleanupKind { Free = 0, SharedRelease = 1 };
+    enum class CleanupKind { Free = 0, SharedRelease = 1, WeakRelease = 2 };
     std::vector<std::vector<std::pair<llvm::Value*, CleanupKind>>> cleanupScopes;
     void emitCleanupEntry(llvm::Value* pointer, CleanupKind kind, llvm::Value* retainedPointer);
 };

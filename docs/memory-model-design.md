@@ -413,12 +413,14 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
 - **M6 — Escape analysis for borrows. [partial]** Return case done: `return &x` and a borrow element
   in a returned tuple (`return value, &value`) are rejected with beginner diagnostics. The
   global/field/escaping-closure cases need the OCFG (M3) and remain **[plan]**.
-- **M7 — `Shared<T>` (done; `Weak<T>` [plan]). [impl]** Strong reference counting: `Shared(x)`
+- **M7 — `Shared<T>` + `Weak<T>` (done). [impl]** Strong reference counting: `Shared(x)`
   allocates a control block `{ i64 strong, payload }` (strong=1); `.clone()` retains; `.get()` reads
   the payload; each owning binding releases (decrements) at scope exit and frees the block at zero.
   Refcount ops are inline IR (no runtime library needed); the cleanup system gained a release-vs-free
-  kind. Tests 194 (clone) and 195 (multi-clone, strong=3). `Weak<T>` and the cycle lint remain [plan];
-  duplicating a Shared must use `.clone()` (bare `=` copy is unsupported in the MVP).
+  kind. Tests 194 (clone) and 195 (multi-clone, strong=3). Weak<T> is a non-owning handle: `Weak(s)` bumps a separate weak count, `w.get()` returns the
+  payload only while some strong owner is alive (else a zero value), and the block is freed only when
+  strong AND weak both reach zero -- so a cycle with a Weak edge is reclaimed. Tests 194/195 (Shared),
+  196 (Weak). Only the automatic cycle *lint* remains [plan]; duplicate a Shared with `.clone()`.
 - **M8 — Globals & closures/async capture modes. [plan / partly infeasible]** Deterministic global
   init/shutdown and explicit capture modes are implementable; "no borrow across `await`" is moot
   until the language has `async`/coroutines (it currently does not).

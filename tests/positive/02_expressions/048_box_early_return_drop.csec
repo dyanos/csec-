@@ -1,0 +1,9 @@
+def pick(): Int = 1
+
+def main(): Int {
+    var b: box Int = 5;
+    if (pick() > 0) {
+        return 1;
+    }
+    return 0;
+}

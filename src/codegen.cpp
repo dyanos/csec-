@@ -185,12 +185,18 @@ void CodeGenerator::emitAllCleanups() {
 }
 
 void CodeGenerator::emitAllCleanupsExcept(llvm::Value* retainedPointer) {
+    // Emit drops for every live owned local along THIS return path, innermost scope first. Unlike a
+    // normal scope exit, the lists are NOT cleared: a `return` is one runtime path among several, so
+    // each early return and the fall-through exit must independently emit their own frees. Clearing
+    // here made the first return consume the registry and leak the locals on every later path (e.g.
+    // `if (c) { return 1; } return 0;` freed the box only on the `then` path). A single runtime path
+    // reaches either a return or its block's normal scope-exit cleanup, never both, so leaving the
+    // entries in place frees each local exactly once per path (M4 per-path drop elaboration).
     for (auto scopeIt = cleanupScopes.rbegin(); scopeIt != cleanupScopes.rend(); ++scopeIt) {
         auto& cleanups = *scopeIt;
         for (auto it = cleanups.rbegin(); it != cleanups.rend(); ++it) {
             emitCleanupEntry(it->first, it->second, retainedPointer);
         }
-        cleanups.clear();
     }
 }
 

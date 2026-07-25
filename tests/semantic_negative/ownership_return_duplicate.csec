@@ -1,0 +1,7 @@
+def make(): (box Int, box Int) {
+    var a: box Int = 10;
+    return a, a;
+}
+def main(): Int {
+    return 0;
+}

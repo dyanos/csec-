@@ -10,7 +10,7 @@
 class Type {
 public:
     // VARIABLE????댁꽌??寃???꾩슂
-    enum Kind { UNKNOWN=-1, BASIC=0, POINTER, ARRAY, STRUCT, CLASS, FUNCTION, GENERIC, VARIABLE, BOX, BORROW, MUTABLE_BORROW, UNSAFE_POINTER };
+    enum Kind { UNKNOWN=-1, BASIC=0, POINTER, ARRAY, STRUCT, CLASS, FUNCTION, GENERIC, VARIABLE, BOX, BORROW, MUTABLE_BORROW, UNSAFE_POINTER, TUPLE };
 
 private:
     Kind kind;
@@ -491,6 +491,40 @@ public:
 
     std::unique_ptr<Type> clone() override {
         return std::make_unique<BorrowType>(*this);
+    }
+};
+
+// An anonymous ordered product type `(T1, …, Tn)` used for multiple return values. Ownership of
+// each owned element transfers with the tuple; destructuring moves each element out into a binding.
+class TupleType : public Type {
+public:
+    std::vector<std::unique_ptr<Type>> elementTypes;
+
+    TupleType() : Type(Kind::TUPLE, "tuple") {}
+    explicit TupleType(std::vector<std::unique_ptr<Type>> elements)
+        : Type(Kind::TUPLE, "tuple") {
+        elementTypes = std::move(elements);
+    }
+    TupleType(const TupleType& other) : Type(Kind::TUPLE, "tuple") {
+        for (const auto& e : other.elementTypes) {
+            elementTypes.push_back(e ? e->clone() : nullptr);
+        }
+    }
+
+    bool equals(const Type& other) const override {
+        if (other.getKind() != Kind::TUPLE) return false;
+        auto* o = dynamic_cast<const TupleType*>(&other);
+        if (!o || o->elementTypes.size() != elementTypes.size()) return false;
+        for (size_t i = 0; i < elementTypes.size(); ++i) {
+            if (!elementTypes[i] || !o->elementTypes[i] || !elementTypes[i]->equals(*o->elementTypes[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    std::unique_ptr<Type> clone() override {
+        return std::make_unique<TupleType>(*this);
     }
 };
 

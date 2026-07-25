@@ -113,6 +113,8 @@ public:
 	void visit(ReduceStatementNode& node) override;
 	void visit(FilterStatementNode& node) override;
 	void visit(ArrayLiteralNode& node) override;
+	void visit(TupleExpressionNode& node) override;
+	void visit(DestructuringAssignmentNode& node) override;
 	void visit(WhileStatementNode& node) override;
 	void visit(TemplateDeclarationNode& node) override;
 

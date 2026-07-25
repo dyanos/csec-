@@ -1171,6 +1171,57 @@ void TypeChecker::visit(ArrayLiteralNode& node) {
     checkTypeResolved(node.getType(), "array literal");
 }
 
+void TypeChecker::visit(TupleExpressionNode& node) {
+    // Elements are evaluated left-to-right. Returning an owned value moves it, so a value used
+    // twice in one tuple (`return buffer, buffer`) is reported as a use-after-move on the second
+    // occurrence; the fix is `clone(...)` or `Shared<T>`.
+    for (auto& element : node.elements) {
+        if (!element) continue;
+        element->accept(*this);
+        const std::string name = movedOrBorrowedIdentifier(element.get());
+        if (!name.empty() && !isBorrowExpression(element.get())) {
+            auto* state = findOwnership(name);
+            if (state && state->owned) {
+                markMoved(name);
+            }
+        }
+    }
+    checkTypeResolved(node.getType(), "tuple expression");
+}
+
+void TypeChecker::visit(DestructuringAssignmentNode& node) {
+    if (node.value) {
+        node.value->accept(*this);
+    }
+    // Step 3 of the destructuring protocol: reject aliased destinations (`a, a = f()`).
+    for (size_t i = 0; i < node.targets.size(); ++i) {
+        if (node.targets[i].name == "_") continue;
+        for (size_t j = i + 1; j < node.targets.size(); ++j) {
+            if (node.targets[j].name == node.targets[i].name) {
+                reportError("Type error: destructuring destination '" + node.targets[i].name +
+                            "' is assigned more than once");
+            }
+        }
+    }
+    auto rhsType = node.value ? node.value->getType() : std::make_unique<UnknownType>();
+    auto* tupleType = dynamic_cast<TupleType*>(rhsType.get());
+    if (!tupleType) {
+        reportError("Type error: the right-hand side of a destructuring assignment must return "
+                    "multiple values");
+        return;
+    }
+    if (tupleType->elementTypes.size() != node.targets.size()) {
+        reportError("Type error: destructuring binds " + std::to_string(node.targets.size()) +
+                    " names but the right-hand side returns " +
+                    std::to_string(tupleType->elementTypes.size()) + " values");
+    }
+    for (size_t i = 0; i < node.targets.size() && i < tupleType->elementTypes.size(); ++i) {
+        if (node.targets[i].name == "_") continue;
+        bindVariable(node.targets[i].name, tupleType->elementTypes[i], node.targets[i].isMutable);
+        declareOwnership(node.targets[i].name, tupleType->elementTypes[i]);
+    }
+}
+
 void TypeChecker::visit(TemplateDeclarationNode& node) {
     if (node.templateParams.empty() && node.typeParameters.empty()) {
         reportError("Type error: Template declaration has no type parameters");

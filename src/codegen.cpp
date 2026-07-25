@@ -1,6 +1,7 @@
 // codegen.cpp
 #include "codegen.h"
 #include "TensorRuntime.h"
+#include "type_utils.h"
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -302,6 +303,19 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         }
         return llvm::ArrayType::get(elementLLVMType, arrayType->size);
 	}
+    else if (type->getKind() == Type::Kind::TUPLE) {
+        auto* tupleType = static_cast<const TupleType*>(type);
+        std::vector<llvm::Type*> elems;
+        for (const auto& e : tupleType->elementTypes) {
+            llvm::Type* et = getABIStorageType(e.get());
+            if (!et) {
+                std::cerr << "Error: Invalid element type in tuple" << std::endl;
+                return nullptr;
+            }
+            elems.push_back(et);
+        }
+        return llvm::StructType::get(context, elems);
+    }
     else if (type->getKind() == Type::Kind::POINTER) {
         auto* pointerType = static_cast<const PointerType*>(type);
         auto baseLLVMType = getLLVMType(pointerType->baseType.get());

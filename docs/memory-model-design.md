@@ -348,9 +348,9 @@ definite-init, drop *placement*. These vanish after type-checking.
 6. `var c = clone(a)` — two independent owned values. **[impl w/ this change]**
 7. `free(arr)` after last use of `new Int[n]`. **[impl]**
 8. `return buffer` — single owned return. **[impl]**
-9. `return texture, sound, metadata` — multiple owned return. **[plan]**
-10. `a, b = f()` destructure two owned results. **[plan]**
-11. `a, _ = f()` — ignored slot destroyed at op end. **[plan]**
+9. `return a, b, c` — multiple owned return (tuple). **[impl]**
+10. `a, b = f()` destructure two owned results. **[impl]**
+11. `a, _ = f()` — ignored slot. **[impl]**
 12. `a, b = b, a` — transactional swap. **[plan]**
 13. `return clone(a), a` — clone one, move the other. **[plan]**
 14. `s = Shared(v); u = s.clone()` — two strong owners. **[plan]**
@@ -404,7 +404,7 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
   use-after-move / borrow / definite-init onto it (handles conditionals & loops precisely).
 - **M4 — Drop elaboration generalized.** Per-path drop insertion for all Owned locals (not only
   box); reverse order; unwind edges included.
-- **M5 — Multiple return.** Parser: `return a,b` and `a,b = f()`; AST tuple + destructuring nodes;
+- **M5 — Multiple return. [impl]** Parser: `return a,b` and `a,b = f()`; AST tuple + destructuring nodes;
   type checker: tuple types + seven-step protocol; lowering to LLVM aggregate (sret/registers);
   edge-case tests (§4.3).
 - **M6 — Escape analysis for borrows.** Reject returning/storing/ capturing borrows that escape;

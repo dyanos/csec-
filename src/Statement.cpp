@@ -64,6 +64,14 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
 		std::unique_ptr<ASTNode> expr = nullptr;
 		if (!check(TokenType::END_OF_FILE) && !check(TokenType::OPERATOR, ";")) {
 			expr = parseExpression();
+				if (check(TokenType::OPERATOR, ",")) {
+					auto tuple = std::make_unique<TupleExpressionNode>();
+					tuple->elements.push_back(std::move(expr));
+					while (match(TokenType::OPERATOR, ",")) {
+						tuple->elements.push_back(parseExpression());
+					}
+					expr = std::move(tuple);
+				}
 		}
 		match(TokenType::OPERATOR, ";");
 		auto returnNode = std::make_unique<ReturnStatementNode>();
@@ -92,6 +100,32 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
 		return parseObjectDeclaration();
 	}
 	else {
+		if (check(TokenType::IDENTIFIER)) {
+			saveTokenPosition();
+			std::vector<DestructuringAssignmentNode::Target> targets;
+			bool destructuring = false;
+			if (match(TokenType::IDENTIFIER)) {
+				targets.push_back({ previous().value, false });
+				if (check(TokenType::OPERATOR, ",")) {
+					destructuring = true;
+					while (match(TokenType::OPERATOR, ",")) {
+						if (match(TokenType::IDENTIFIER)) {
+							targets.push_back({ previous().value, false });
+						} else { destructuring = false; break; }
+					}
+					if (destructuring && match(TokenType::OPERATOR, "=")) {
+						auto rhs = parseExpression();
+						match(TokenType::OPERATOR, ";");
+						auto node = std::make_unique<DestructuringAssignmentNode>();
+						node->targets = std::move(targets);
+						node->value = std::move(rhs);
+						discardTokenPosition();
+						return node;
+					}
+				}
+			}
+			restoreTokenPosition();
+		}
 		auto expr = parseExpression();
 		match(TokenType::OPERATOR, ";");
 		return expr;

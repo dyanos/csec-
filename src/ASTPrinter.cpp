@@ -271,4 +271,14 @@ public:
             element->accept(*this);
         }
 	}
+    void visit(TupleExpressionNode& node) override {
+        std::cout << "Tuple:" << std::endl;
+        for (auto& element : node.elements) {
+            if (element) element->accept(*this);
+        }
+    }
+    void visit(DestructuringAssignmentNode& node) override {
+        std::cout << "DestructuringAssignment" << std::endl;
+        if (node.value) node.value->accept(*this);
+    }
 };

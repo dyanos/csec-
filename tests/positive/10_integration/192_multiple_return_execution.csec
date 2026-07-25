@@ -1,0 +1,8 @@
+def load(): (Int, Int, Int) {
+    return 10, 20, 12;
+}
+
+def main(): Int {
+    a, b, c = load();
+    return a + b + c;
+}

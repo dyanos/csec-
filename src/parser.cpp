@@ -23,6 +23,27 @@ std::unique_ptr<ASTNode> Parser::parse() {
 }
 
 std::unique_ptr<Type> Parser::parseType() {
+    // Parenthesized type: `(A, B) => C` is a function type; `(T1, …, Tn)` is a tuple (multiple
+    // return); a single `(T)` is just a grouping. The `=> ` check disambiguates from function types.
+    if (match(TokenType::OPERATOR, "(")) {
+        std::vector<std::unique_ptr<Type>> elems;
+        if (!check(TokenType::OPERATOR, ")")) {
+            elems.push_back(parseType());
+            while (match(TokenType::OPERATOR, ",")) {
+                elems.push_back(parseType());
+            }
+        }
+        expect(TokenType::OPERATOR, ")");
+        if (match(TokenType::OPERATOR, "=>")) {
+            auto returnType = parseType();
+            return std::make_unique<FunctionType>(elems, returnType);
+        }
+        if (elems.size() == 1) {
+            return std::move(elems[0]);
+        }
+        return std::make_unique<TupleType>(std::move(elems));
+    }
+
     if (match(TokenType::KEYWORD, "box")) {
         return std::make_unique<BoxType>(parseType());
     }

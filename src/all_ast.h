@@ -34,6 +34,8 @@
 #include "PostfixExpressionNode.h"
 #include "PrefixExpressionNode.h"
 #include "ArrayLiteralNode.h"
+#include "TupleExpressionNode.h"
+#include "DestructuringAssignmentNode.h"
 #include "UnitNode.h"
 #include "IdentifierNode.h"
 #include "ValueNode.h"

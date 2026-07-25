@@ -1,0 +1,12 @@
+def take(v: box Int): Int = 1
+
+def make(): (box Int, box Int) {
+    var a: box Int = 10;
+    var b: box Int = 20;
+    return a, b;
+}
+
+def main(): Int {
+    x, y = make();
+    return take(<-x) + take(<-y);
+}

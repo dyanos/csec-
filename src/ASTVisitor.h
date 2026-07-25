@@ -34,6 +34,8 @@ class CastingExpressionNode;
 class PostfixExpressionNode;
 class PrefixExpressionNode;
 class ArrayLiteralNode;
+class TupleExpressionNode;
+class DestructuringAssignmentNode;
 class UnitNode;
 class IdentifierNode;
 class ValueNode;
@@ -83,6 +85,8 @@ public:
     virtual void visit(PostfixExpressionNode& node) = 0;
     virtual void visit(PrefixExpressionNode& node) = 0;
 	virtual void visit(ArrayLiteralNode& node) = 0;
+	virtual void visit(TupleExpressionNode& node) = 0;
+	virtual void visit(DestructuringAssignmentNode& node) = 0;
 
     virtual void visit(UnitNode& node) = 0;
     virtual void visit(IdentifierNode& node) = 0;

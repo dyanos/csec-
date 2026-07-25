@@ -1,0 +1,6 @@
+def add(a: Int, b: Int): Int = a + b
+def main(): Int {
+    var x: Int = 3;
+    var y: Int = 4;
+    return add(x, y);
+}

@@ -397,10 +397,18 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
   drop for box, `free`, ownership semantic tests. **[impl]**
 - **M1 — `clone` (done). [impl]** `clone(x)` builtin: type = type of `x` (fresh owned), leaves `x`
   unmoved; codegen mallocs + memcpys the boxed payload. Test `semantic_positive/ownership_clone`.
-- **M2 — Copy/Move classification pass. [plan]** Introduce `@copy` structs and a real `isCopyType`;
-  make `=` on any Owned (not just `box`) an error suggesting `<-`/`clone`/`&`. **Breaking:** the 263
-  existing fixtures assign/pass classes and arrays freely, so this needs a corpus migration and is
-  a v2-line decision, not a drop-in.
+- **M2 — Copy/Move classification pass. [impl, opt-in]** Delivered non-destructively behind the
+  `--strict-ownership` flag (off by default, so the existing corpus is untouched — verified 269/269
+  positive + 5/5 semantic_positive with the flag off). Adds a real `isCopyType` (primitives,
+  references, function values and value-structs are Copy; classes, arrays, `String`, and owned
+  container/smart-pointer generics are Owned) and `isMoveCheckedType`, which the move-checker's four
+  sites consult. With the flag on, move-checking generalizes from `box` to every non-copy type:
+  passing/assigning an Owned value without `<-` errors ("ownership transfer requires '<-'"), and
+  use-after-move on any Owned local is caught. The **breaking** strict-by-default variant (make this
+  the default + migrate all 263 fixtures + add per-type destructors and single-owner runtime for
+  classes/arrays) remains a v2-line decision; `@copy` struct annotations and the strict-by-default
+  flip are the documented follow-ups. See `type_checker.cpp` (`isCopyType`/`isMoveCheckedType`) and
+  `main.cpp` (`--strict-ownership`).
 - **M3 — Ownership-CFG + dataflow framework. [plan]** Build the OCFG and the worklist solver; port
   use-after-move / borrow / definite-init onto it (handles conditionals & loops precisely). Today's
   checker is a sound statement-ordered approximation; this is a larger internal refactor.

@@ -9,6 +9,12 @@
 #include <unordered_map>
 #include <vector>
 
+// Opt-in strict-ownership mode (M2). Off by default so the existing corpus is unaffected; when
+// enabled (via `--strict-ownership`) move-checking generalizes from `box` to every non-copy owned
+// type (classes, arrays, String, owned container/smart-pointer generics). See docs/memory-model-design.md.
+void setStrictOwnership(bool enabled);
+bool isStrictOwnership();
+
 // TypeChecker 클래스는 AST를 방문하여 타입 검사를 수행합니다.
 class TypeChecker : public ASTVisitor {
 public:

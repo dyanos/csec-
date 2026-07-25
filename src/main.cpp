@@ -75,6 +75,7 @@ void printUsage(const char* programName) {
         << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
         << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
         << "  --link-path <path>           Add a native library search path\n"
+        << "  --strict-ownership           Move-check all non-copy types (classes/arrays/String), not just box\n"
         << "  -- <args...>                 Pass arguments to a program run with --run\n"
         << "  --mangle <itanium|msvc> <signature>\n"
         << "                               Print a C++ ABI mangled name and exit\n";
@@ -1237,6 +1238,11 @@ int main(int argc, char** argv) {
         }
         if (arg == "--syntax-only" || arg == "--parse-only") {
             outputMode = OutputMode::SyntaxOnly;
+            continue;
+        }
+        if (arg == "--strict-ownership") {
+            // Opt-in M2: generalize move-checking to all non-copy types for this compilation only.
+            setStrictOwnership(true);
             continue;
         }
         if (arg == "--run") {

@@ -147,6 +147,53 @@ bool isOwnedMoveCheckedType(const Type* type) {
     return type && type->getKind() == Type::Kind::BOX;
 }
 
+// Opt-in strict-ownership mode (M2). Default off so the existing corpus keeps its freely-copyable
+// class/array/String semantics; `--strict-ownership` flips it on for a fresh compilation. The
+// external setter/getter (setStrictOwnership/isStrictOwnership) are defined past the anonymous
+// namespace below so main.cpp can link against them; they read this same flag by TU scope.
+bool g_strictOwnership = false;
+
+// A Copy type may be duplicated by a plain `=`/argument pass without an explicit `<-`/`clone`.
+// Everything else is an owned (affine) value that must move. Primitives, references (a borrow is a
+// copyable handle), function values, raw pointers and plain value-structs are Copy; classes,
+// arrays, String, and owned container/smart-pointer generics own a resource and are not.
+bool isCopyType(const Type* type) {
+    if (!type) return true;
+    switch (type->getKind()) {
+        case Type::Kind::CLASS:
+        case Type::Kind::ARRAY:
+        case Type::Kind::BOX:
+            return false;
+        case Type::Kind::BASIC:
+            // String owns a heap buffer; every other basic (Int/Long/Float/Bool/Char/…) is Copy.
+            return type->getName() != "String";
+        case Type::Kind::GENERIC: {
+            const std::string& n = type->getName();
+            return !(n == "Array" || n == "Vector" || n == "Map" || n == "Set" ||
+                     n == "List" || n == "Shared" || n == "Weak");
+        }
+        case Type::Kind::TUPLE: {
+            auto* t = dynamic_cast<const TupleType*>(type);
+            if (!t) return true;
+            // A tuple is Copy only when every element is Copy; one owned field taints the whole.
+            for (const auto& e : t->elementTypes) {
+                if (!isCopyType(e.get())) return false;
+            }
+            return true;
+        }
+        default:
+            // BORROW/MUTABLE_BORROW/FUNCTION/POINTER/UNSAFE_POINTER/STRUCT/VARIABLE/UNKNOWN → Copy.
+            return true;
+    }
+}
+
+// The predicate the move-checker actually consults. `box` is always move-checked (baseline
+// ownership, M0/M1). In strict mode every non-copy type joins it; otherwise only `box` moves.
+bool isMoveCheckedType(const Type* type) {
+    if (isOwnedMoveCheckedType(type)) return true;
+    return g_strictOwnership && type && !isCopyType(type);
+}
+
 bool isBorrowType(const Type* type) {
     return type && (type->getKind() == Type::Kind::BORROW || type->getKind() == Type::Kind::MUTABLE_BORROW);
 }
@@ -209,6 +256,11 @@ std::string movedOrBorrowedIdentifier(ASTNode* node) {
 }
 }
 
+// External linkage (see type_checker.h): main.cpp toggles this from `--strict-ownership`. Defined
+// here, past the anonymous namespace, so it references the internal g_strictOwnership by TU scope.
+void setStrictOwnership(bool enabled) { g_strictOwnership = enabled; }
+bool isStrictOwnership() { return g_strictOwnership; }
+
 void TypeChecker::reportError(const std::string& message) {
     ++errorCount;
     std::cerr << message << std::endl;
@@ -229,7 +281,7 @@ void TypeChecker::declareOwnership(const std::string& name, const std::unique_pt
         enterOwnershipScope();
     }
     OwnershipState state;
-    state.owned = type && isOwnedMoveCheckedType(type.get());
+    state.owned = type && isMoveCheckedType(type.get());
     ownershipScopes.back()[name] = state;
 }
 
@@ -311,7 +363,7 @@ void TypeChecker::checkFunctionArguments(const std::vector<std::unique_ptr<ASTNo
         const bool argIsBorrow = isBorrowExpression(arg, &mutableBorrowArg);
         auto argType = arg ? arg->getType() : std::make_unique<UnknownType>();
 
-        if (paramType && isOwnedMoveCheckedType(paramType)) {
+        if (paramType && isMoveCheckedType(paramType)) {
             if (!argIsMove) {
                 reportError("Type error: ownership transfer to '" + callName + "' requires '<-'");
             }
@@ -329,7 +381,7 @@ void TypeChecker::checkFunctionArguments(const std::vector<std::unique_ptr<ASTNo
         else if (argIsMove) {
             reportError("Type error: '<-' argument to '" + callName + "' requires an owning parameter");
         }
-        else if (argType && isOwnedMoveCheckedType(argType.get())) {
+        else if (argType && isMoveCheckedType(argType.get())) {
             reportError("Type error: ownership transfer to '" + callName + "' requires '<-'");
         }
 
@@ -931,7 +983,7 @@ void TypeChecker::visit(AssignmentExpressionNode& node) {
     auto rightType = node.right ? node.right->getType() : std::make_unique<UnknownType>();
     const std::string leftName = identifierName(node.left.get());
     const std::string rightName = movedOrBorrowedIdentifier(node.right.get());
-    const bool rightIsMoveChecked = rightType && isOwnedMoveCheckedType(rightType.get());
+    const bool rightIsMoveChecked = rightType && isMoveCheckedType(rightType.get());
     if (node.op == "<-") {
         if (!rightName.empty()) {
             markMoved(rightName);

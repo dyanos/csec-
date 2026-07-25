@@ -409,9 +409,15 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
   classes/arrays) remains a v2-line decision; `@copy` struct annotations and the strict-by-default
   flip are the documented follow-ups. See `type_checker.cpp` (`isCopyType`/`isMoveCheckedType`) and
   `main.cpp` (`--strict-ownership`).
-- **M3 — Ownership-CFG + dataflow framework. [plan]** Build the OCFG and the worklist solver; port
-  use-after-move / borrow / definite-init onto it (handles conditionals & loops precisely). Today's
-  checker is a sound statement-ordered approximation; this is a larger internal refactor.
+- **M3 — Ownership-CFG + dataflow framework. [partial]** The high-value precision gap is closed:
+  move-checking is now **path-sensitive across diverging `if`-branches** — both arms are analysed
+  from the same pre-branch ownership snapshot and only the fall-through paths are joined, so a move on
+  a branch that always returns no longer marks the value moved for the code after the `if`
+  (`statementDiverges` + `mergeMovedFrom` + `visit(IfStatementNode)` in `type_checker.cpp`; tests
+  `strict_ownership/positive/04`, `negative/03`). Soundness is preserved (a move on a fall-through
+  branch used after the `if`, and straight-line use-after-move, are still rejected). A full OCFG +
+  worklist solver (loops, definite-init as a lattice) remains a larger refactor, but the checker was
+  already *sound* — this was precision only.
 - **M4 — Drop elaboration generalized. [plan]** Per-path drop insertion for all Owned locals (not
   only box); reverse order; unwind edges included. Depends on M2/M3.
 - **M5 — Multiple return (done). [impl]** Parser `return a,b` / `a,b = f()` / `(A,B,C)` return type;
@@ -429,18 +435,30 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
   payload only while some strong owner is alive (else a zero value), and the block is freed only when
   strong AND weak both reach zero -- so a cycle with a Weak edge is reclaimed. Tests 194/195 (Shared),
   196 (Weak). Only the automatic cycle *lint* remains [plan]; duplicate a Shared with `.clone()`.
-- **M8 — Globals & closures/async capture modes. [plan / partly infeasible]** Deterministic global
-  init/shutdown and explicit capture modes are implementable; "no borrow across `await`" is moot
-  until the language has `async`/coroutines (it currently does not).
+- **M8 — Globals & closures/async capture modes. [partial / partly infeasible]** The foundation is
+  fixed: a top-level `var` now lowers to an LLVM global (`InternalLinkage`) that other functions read
+  and write, instead of a stack alloca in the bootstrap main that read back as its null placeholder
+  (`VariableDeclarationNode.cpp` module-scope path + `symbol_table.cpp` two-phase refresh; verified a
+  scalar global returns its initializer and a mutable global accumulates across functions). Borrow
+  escape *into* a global is already structurally blocked (`slot = &local` → "Invalid assignment
+  target"), same as the field case — no soundness hole. What remains: deterministic destruction of
+  *owned* globals at program shutdown (needs a global-ctor/dtor pass for `box`/`Shared` globals), and
+  "no borrow across `await`", which stays **infeasible** — the language has no `async`/coroutines, so
+  the rule has nothing to constrain.
 
 Deferred beyond MVP: partial moves (M9), borrow fields with proven lifetimes, region allocation
 (§ below), general lifetime parameters (likely never for v1 line).
 
-**Current status (implemented & verified on the direct compiler):** M0, M1, M5 fully; M6 return/tuple
-cases. The MVP cornerstone — single ownership, explicit `<-` move, lexical `&`/`&mut` borrows,
-use-after-move, borrow/alias checking, deterministic scope-exit destruction, explicit `clone`,
-`free`, and **multiple owned return values with destructuring** — is working end to end (native 83/82,
-regress 91/91, semantic-positive 6/6). Remaining milestones are the larger/breaking ones above.
+**Current status (implemented & verified on the direct compiler):** M0, M1, M5, M7 fully; M2 as the
+opt-in `--strict-ownership` mode; M3 path-sensitivity for diverging branches; M6 return/tuple cases
+(field/global/closure escape structurally blocked); M8 top-level globals. The MVP cornerstone —
+single ownership, explicit `<-` move, lexical `&`/`&mut` borrows, use-after-move, borrow/alias
+checking, deterministic scope-exit destruction, explicit `clone`, `free`, `Shared`/`Weak`, and
+**multiple owned return values with destructuring** — is working end to end. Regression: 269/269
+positive (syntax + codegen), 5/5 semantic_positive, 11/11 semantic_negative rejected, 7/7
+strict_ownership. **The only genuinely blocked items** are the breaking strict-by-default flip of M2
+(a v2 corpus-migration decision), M4 drop-elaboration for all owned locals (depends on the full
+OCFG), owned-global shutdown destruction, and M8's `await` rule (infeasible without `async`).
 
 ---
 

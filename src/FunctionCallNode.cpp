@@ -18,6 +18,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/DataLayout.h>
 
 namespace {
 bool isMathFallbackFunction(const std::string& name) {
@@ -1852,6 +1853,30 @@ llvm::Value* FunctionCallNode::codegen() {
         return llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), 0);
     }
 
+    // clone(x): produce a fresh, independently-owned box holding a copy of x's payload. The source
+    // is read (not moved), so `b = clone(a)` leaves `a` usable — this is the explicit-clone escape
+    // hatch from the ownership model. MVP semantics are a shallow copy of the boxed payload; a deep
+    // clone of nested heap references is a future refinement.
+    if (functionName == "clone") {
+        BoxType* boxType = (!argTypes.empty() && argTypes[0])
+            ? dynamic_cast<BoxType*>(argTypes[0].get()) : nullptr;
+        llvm::Type* payloadType = (boxType && boxType->baseType)
+            ? cg.getLLVMType(boxType->baseType.get()) : nullptr;
+        if (!payloadType || argValues.empty() || !argValues[0] || !argValues[0]->getType()->isPointerTy()) {
+            std::cerr << "Error: clone() expects an owned 'box T' value" << std::endl;
+            return argValues.empty() ? nullptr : argValues[0];
+        }
+        const llvm::DataLayout& dl = cg.module->getDataLayout();
+        llvm::Value* allocSize = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(cg.context), dl.getTypeAllocSize(payloadType));
+        llvm::Value* rawPtr = cg.builder.CreateCall(cg.mallocFunction, allocSize, "clone.malloc");
+        llvm::Value* newBox = cg.builder.CreateBitCast(
+            rawPtr, llvm::PointerType::getUnqual(payloadType), "clone.box");
+        // Copy the payload; the destination binding registers the cleanup, exactly as `new` does.
+        cg.builder.CreateMemCpy(newBox, llvm::MaybeAlign(), argValues[0], llvm::MaybeAlign(), allocSize);
+        return newBox;
+    }
+
     if (isNativeIOFunction(functionName)) {
         return codegenNativeIOCall(functionName, argValues, argTypes);
     }
@@ -2194,6 +2219,14 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
     // free(x) is a statement-like builtin that releases a heap allocation; it yields no value.
     if (functionName == "free") {
         return std::make_unique<BasicType>("Unit");
+    }
+
+    // clone(x) yields a fresh independently-owned value of the same type as x; it does not move x.
+    if (functionName == "clone") {
+        if (!arguments.empty() && arguments[0]) {
+            return arguments[0]->getType();
+        }
+        return std::make_unique<UnknownType>();
     }
 
     std::vector<std::unique_ptr<Type>> argTypes;

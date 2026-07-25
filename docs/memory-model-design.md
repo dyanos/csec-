@@ -395,26 +395,39 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
 
 - **M0 — baseline (done).** `box T`, `<-`, `&`/`&mut`, use-after-move, borrow/alias checks, RAII
   drop for box, `free`, ownership semantic tests. **[impl]**
-- **M1 — `clone` (this change).** Add `clone(x)` builtin: type = type of `x` (fresh owned), leaves
-  `x` unmoved; codegen deep-copies the boxed payload; self-host emitter recognizes it. Tests in
-  `semantic_positive`.
-- **M2 — Copy/Move classification pass.** Introduce `@copy` structs and a real `isCopyType`; make
-  `=` on any Owned (not just `box`) an error suggesting `<-`/`clone`/`&`. Migrate positive fixtures.
-- **M3 — Ownership-CFG + dataflow framework.** Build the OCFG and the worklist solver; port
-  use-after-move / borrow / definite-init onto it (handles conditionals & loops precisely).
-- **M4 — Drop elaboration generalized.** Per-path drop insertion for all Owned locals (not only
-  box); reverse order; unwind edges included.
-- **M5 — Multiple return. [impl]** Parser: `return a,b` and `a,b = f()`; AST tuple + destructuring nodes;
-  type checker: tuple types + seven-step protocol; lowering to LLVM aggregate (sret/registers);
-  edge-case tests (§4.3).
-- **M6 — Escape analysis for borrows.** Reject returning/storing/ capturing borrows that escape;
-  beginner diagnostics (§ Diagnostics).
-- **M7 — `Shared<T>`/`Weak<T>`.** Runtime control block, `.clone()`, weak, cycle lint.
-- **M8 — Globals & closures/async capture modes.** Deterministic global init/shutdown; explicit
-  move/borrow/shared capture; no-borrow-across-await.
+- **M1 — `clone` (done). [impl]** `clone(x)` builtin: type = type of `x` (fresh owned), leaves `x`
+  unmoved; codegen mallocs + memcpys the boxed payload. Test `semantic_positive/ownership_clone`.
+- **M2 — Copy/Move classification pass. [plan]** Introduce `@copy` structs and a real `isCopyType`;
+  make `=` on any Owned (not just `box`) an error suggesting `<-`/`clone`/`&`. **Breaking:** the 263
+  existing fixtures assign/pass classes and arrays freely, so this needs a corpus migration and is
+  a v2-line decision, not a drop-in.
+- **M3 — Ownership-CFG + dataflow framework. [plan]** Build the OCFG and the worklist solver; port
+  use-after-move / borrow / definite-init onto it (handles conditionals & loops precisely). Today's
+  checker is a sound statement-ordered approximation; this is a larger internal refactor.
+- **M4 — Drop elaboration generalized. [plan]** Per-path drop insertion for all Owned locals (not
+  only box); reverse order; unwind edges included. Depends on M2/M3.
+- **M5 — Multiple return (done). [impl]** Parser `return a,b` / `a,b = f()` / `(A,B,C)` return type;
+  `TupleType` → LLVM aggregate (sret/registers); `TupleExpressionNode`/`DestructuringAssignmentNode`;
+  seven-step protocol; ownership transfer of box elements; `_` ignore; duplicate-move and
+  duplicate-destination rejection. Tests 192/193 + two semantic negatives.
+- **M6 — Escape analysis for borrows. [partial]** Return case done: `return &x` and a borrow element
+  in a returned tuple (`return value, &value`) are rejected with beginner diagnostics. The
+  global/field/escaping-closure cases need the OCFG (M3) and remain **[plan]**.
+- **M7 — `Shared<T>`/`Weak<T>`. [plan]** Runtime control block `{strong, weak, value}`, `.clone()`,
+  weak, cycle lint. Substantial: needs three runtime functions AND a cleanup-system change so a
+  `Shared` binding releases (decrement) at scope exit instead of `free`ing.
+- **M8 — Globals & closures/async capture modes. [plan / partly infeasible]** Deterministic global
+  init/shutdown and explicit capture modes are implementable; "no borrow across `await`" is moot
+  until the language has `async`/coroutines (it currently does not).
 
 Deferred beyond MVP: partial moves (M9), borrow fields with proven lifetimes, region allocation
 (§ below), general lifetime parameters (likely never for v1 line).
+
+**Current status (implemented & verified on the direct compiler):** M0, M1, M5 fully; M6 return/tuple
+cases. The MVP cornerstone — single ownership, explicit `<-` move, lexical `&`/`&mut` borrows,
+use-after-move, borrow/alias checking, deterministic scope-exit destruction, explicit `clone`,
+`free`, and **multiple owned return values with destructuring** — is working end to end (native 83/82,
+regress 91/91, semantic-positive 6/6). Remaining milestones are the larger/breaking ones above.
 
 ---
 

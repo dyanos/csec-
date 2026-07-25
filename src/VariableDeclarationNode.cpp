@@ -162,6 +162,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
          dynamic_cast<FunctionType*>(type.get()) != nullptr ||
          (type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
          type->getKind() == Type::Kind::BOX ||
+         (type->getKind() == Type::Kind::GENERIC && type->getName() == "Shared") ||
          arrayVectorFromCall);
 
     if (bindPointerBackedValueDirectly) {
@@ -170,6 +171,10 @@ llvm::Value* VariableDeclarationNode::codegen() {
             std::make_unique<Symbol>(name, type->clone(), initValue, isMutable, SymbolType::VARIABLE));
         if (type->getKind() == Type::Kind::BOX) {
             cg.registerCleanup(initValue);
+        }
+        else if (type->getKind() == Type::Kind::GENERIC && type->getName() == "Shared") {
+            // Each Shared<T> owner releases (decrements) at scope exit; the block is freed at zero.
+            cg.registerSharedCleanup(initValue);
         }
         return initValue;
     }

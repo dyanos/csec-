@@ -1,0 +1,6 @@
+def main(): Int {
+    var s: Shared<Int> = Shared(10);
+    var a: Shared<Int> = s.clone();
+    var b: Shared<Int> = s.clone();
+    return s.get() + a.get() + b.get();
+}

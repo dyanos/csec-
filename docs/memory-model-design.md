@@ -353,7 +353,7 @@ definite-init, drop *placement*. These vanish after type-checking.
 11. `a, _ = f()` — ignored slot. **[impl]**
 12. `a, b = b, a` — transactional swap. **[plan]**
 13. `return clone(a), a` — clone one, move the other. **[plan]**
-14. `s = Shared(v); u = s.clone()` — two strong owners. **[plan]**
+14. `s = Shared(v); u = s.clone()` — two strong owners. **[impl]**
 15. `parent.child <- child` — move into a field. **[plan]**
 16. `if cond { x <- y }` then never use `y` afterward — conditional move OK. **[plan/CFG]**
 17. borrow inside a loop body, released each iteration. **[impl]**
@@ -413,9 +413,12 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
 - **M6 — Escape analysis for borrows. [partial]** Return case done: `return &x` and a borrow element
   in a returned tuple (`return value, &value`) are rejected with beginner diagnostics. The
   global/field/escaping-closure cases need the OCFG (M3) and remain **[plan]**.
-- **M7 — `Shared<T>`/`Weak<T>`. [plan]** Runtime control block `{strong, weak, value}`, `.clone()`,
-  weak, cycle lint. Substantial: needs three runtime functions AND a cleanup-system change so a
-  `Shared` binding releases (decrement) at scope exit instead of `free`ing.
+- **M7 — `Shared<T>` (done; `Weak<T>` [plan]). [impl]** Strong reference counting: `Shared(x)`
+  allocates a control block `{ i64 strong, payload }` (strong=1); `.clone()` retains; `.get()` reads
+  the payload; each owning binding releases (decrements) at scope exit and frees the block at zero.
+  Refcount ops are inline IR (no runtime library needed); the cleanup system gained a release-vs-free
+  kind. Tests 194 (clone) and 195 (multi-clone, strong=3). `Weak<T>` and the cycle lint remain [plan];
+  duplicating a Shared must use `.clone()` (bare `=` copy is unsupported in the MVP).
 - **M8 — Globals & closures/async capture modes. [plan / partly infeasible]** Deterministic global
   init/shutdown and explicit capture modes are implementable; "no borrow across `await`" is moot
   until the language has `async`/coroutines (it currently does not).

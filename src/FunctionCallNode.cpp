@@ -1877,6 +1877,28 @@ llvm::Value* FunctionCallNode::codegen() {
         return newBox;
     }
 
+    // Shared(x): explicit shared ownership. Allocate a control block { i64 strong, payload }, set
+    // strong = 1, store the payload, and return the block pointer (the Shared<T> value). Duplicate
+    // it with `.clone()` (retain); it is released at each owner's scope exit and freed at zero.
+    if (functionName == "Shared") {
+        if (argValues.empty() || !argValues[0]) {
+            std::cerr << "Error: Shared() expects one value" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* payload = argValues[0];
+        auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+        llvm::StructType* blockType = llvm::StructType::get(cg.context, { i64Ty, payload->getType() });
+        const llvm::DataLayout& dl = cg.module->getDataLayout();
+        llvm::Value* size = llvm::ConstantInt::get(i64Ty, dl.getTypeAllocSize(blockType));
+        llvm::Value* raw = cg.builder.CreateCall(cg.mallocFunction, size, "shared.malloc");
+        llvm::Value* block = cg.builder.CreateBitCast(raw, llvm::PointerType::getUnqual(blockType), "shared.block");
+        cg.builder.CreateStore(llvm::ConstantInt::get(i64Ty, 1),
+            cg.builder.CreateStructGEP(blockType, block, 0, "shared.strong.ptr"));
+        cg.builder.CreateStore(payload,
+            cg.builder.CreateStructGEP(blockType, block, 1, "shared.payload.ptr"));
+        return block;
+    }
+
     if (isNativeIOFunction(functionName)) {
         return codegenNativeIOCall(functionName, argValues, argTypes);
     }
@@ -2227,6 +2249,14 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
             return arguments[0]->getType();
         }
         return std::make_unique<UnknownType>();
+    }
+
+    // Shared(x) : Shared<typeof x>
+    if (functionName == "Shared") {
+        std::vector<std::unique_ptr<Type>> args;
+        args.push_back(!arguments.empty() && arguments[0] ? arguments[0]->getType()
+                                                          : std::make_unique<UnknownType>());
+        return std::make_unique<GenericType>(std::make_unique<BasicType>("Shared"), args);
     }
 
     std::vector<std::unique_ptr<Type>> argTypes;

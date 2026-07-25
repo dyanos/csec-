@@ -344,6 +344,32 @@ llvm::Value* MethodCallNode::codegen() {
 
     auto typeValue = object->getType();
     auto* objectType = typeValue.get();
+
+    // Shared<T> methods: `.clone()` retains (bumps strong, returns the same block); `.get()` reads
+    // the payload. The Shared value is the control-block pointer { i64 strong, payload }.
+    if (objectType && objectType->getKind() == Type::Kind::GENERIC && objectType->getName() == "Shared") {
+        auto* genType = dynamic_cast<GenericType*>(objectType);
+        llvm::Type* payloadType = (genType && !genType->typeArguments.empty() && genType->typeArguments[0])
+            ? cg.getLLVMType(genType->typeArguments[0].get()) : nullptr;
+        if (payloadType) {
+            auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+            llvm::StructType* blockType = llvm::StructType::get(cg.context, { i64Ty, payloadType });
+            llvm::Value* block = cg.builder.CreateBitCast(
+                objectValue, llvm::PointerType::getUnqual(blockType), "shared.block");
+            if (methodName == "clone") {
+                llvm::Value* strongPtr = cg.builder.CreateStructGEP(blockType, block, 0, "shared.strong.ptr");
+                llvm::Value* strong = cg.builder.CreateLoad(i64Ty, strongPtr, "shared.strong");
+                cg.builder.CreateStore(
+                    cg.builder.CreateAdd(strong, llvm::ConstantInt::get(i64Ty, 1), "shared.inc"), strongPtr);
+                return objectValue;
+            }
+            if (methodName == "get") {
+                llvm::Value* payloadPtr = cg.builder.CreateStructGEP(blockType, block, 1, "shared.payload.ptr");
+                return cg.builder.CreateLoad(payloadType, payloadPtr, "shared.get");
+            }
+        }
+    }
+
     if (objectType && objectType->isStringTy()) {
         if (auto* result = codegenStringMethod(cg, objectValue, methodName, arguments)) {
             return result;
@@ -482,6 +508,20 @@ std::unique_ptr<Type> MethodCallNode::getType() {
 
     auto trueObject = object->getType();
     auto* objectType = trueObject.get();
+
+    // Shared<T>.clone() : Shared<T> ; Shared<T>.get() : T
+    if (objectType && objectType->getKind() == Type::Kind::GENERIC && objectType->getName() == "Shared") {
+        if (methodName == "clone") {
+            return objectType->clone();
+        }
+        if (methodName == "get") {
+            auto* genType = dynamic_cast<GenericType*>(objectType);
+            if (genType && !genType->typeArguments.empty() && genType->typeArguments[0]) {
+                return genType->typeArguments[0]->clone();
+            }
+        }
+    }
+
     if (objectType && objectType->isStringTy()) {
         if (methodName == "length" || methodName == "size" || methodName == "count" || methodName == "indexOf") {
             return std::make_unique<BasicType>("Long");

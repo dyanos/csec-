@@ -112,25 +112,53 @@ void CodeGenerator::registerCleanup(llvm::Value* pointer) {
     if (!pointer || cleanupScopes.empty()) {
         return;
     }
-    cleanupScopes.back().push_back(pointer);
+    cleanupScopes.back().push_back({ pointer, CleanupKind::Free });
+}
+
+void CodeGenerator::registerSharedCleanup(llvm::Value* controlBlock) {
+    if (!controlBlock || cleanupScopes.empty()) {
+        return;
+    }
+    cleanupScopes.back().push_back({ controlBlock, CleanupKind::SharedRelease });
+}
+
+void CodeGenerator::emitCleanupEntry(llvm::Value* pointer, CleanupKind kind, llvm::Value* retainedPointer) {
+    if (!pointer || pointer == retainedPointer) {
+        return;
+    }
+    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+    llvm::Value* raw = pointer->getType() == i8PtrTy
+        ? pointer
+        : builder.CreateBitCast(pointer, i8PtrTy, "cleanup.ptr");
+    if (kind == CleanupKind::SharedRelease) {
+        // Decrement the strong count (an i64 at the block's start); free the block only at zero.
+        auto* i64Ty = llvm::Type::getInt64Ty(context);
+        llvm::Function* fn = builder.GetInsertBlock() ? builder.GetInsertBlock()->getParent() : nullptr;
+        if (!fn) return;
+        llvm::Value* strong = builder.CreateLoad(i64Ty, pointer, "shared.strong");
+        llvm::Value* decremented = builder.CreateSub(strong, llvm::ConstantInt::get(i64Ty, 1), "shared.dec");
+        builder.CreateStore(decremented, pointer);
+        llvm::Value* isZero = builder.CreateICmpEQ(decremented, llvm::ConstantInt::get(i64Ty, 0), "shared.zero");
+        auto* freeBB = llvm::BasicBlock::Create(context, "shared.free", fn);
+        auto* contBB = llvm::BasicBlock::Create(context, "shared.cont", fn);
+        builder.CreateCondBr(isZero, freeBB, contBB);
+        builder.SetInsertPoint(freeBB);
+        builder.CreateCall(freeFunction, { raw });
+        builder.CreateBr(contBB);
+        builder.SetInsertPoint(contBB);
+    }
+    else {
+        builder.CreateCall(freeFunction, { raw });
+    }
 }
 
 void CodeGenerator::emitCurrentScopeCleanups() {
     if (cleanupScopes.empty()) {
         return;
     }
-
     auto& cleanups = cleanupScopes.back();
     for (auto it = cleanups.rbegin(); it != cleanups.rend(); ++it) {
-        llvm::Value* pointer = *it;
-        if (!pointer) {
-            continue;
-        }
-        auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
-        llvm::Value* freePointer = pointer->getType() == i8PtrTy
-            ? pointer
-            : builder.CreateBitCast(pointer, i8PtrTy, "cleanup.free.ptr");
-        builder.CreateCall(freeFunction, { freePointer });
+        emitCleanupEntry(it->first, it->second, nullptr);
     }
     cleanups.clear();
 }
@@ -143,15 +171,7 @@ void CodeGenerator::emitAllCleanupsExcept(llvm::Value* retainedPointer) {
     for (auto scopeIt = cleanupScopes.rbegin(); scopeIt != cleanupScopes.rend(); ++scopeIt) {
         auto& cleanups = *scopeIt;
         for (auto it = cleanups.rbegin(); it != cleanups.rend(); ++it) {
-            llvm::Value* pointer = *it;
-            if (!pointer || pointer == retainedPointer) {
-                continue;
-            }
-            auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
-            llvm::Value* freePointer = pointer->getType() == i8PtrTy
-                ? pointer
-                : builder.CreateBitCast(pointer, i8PtrTy, "cleanup.free.ptr");
-            builder.CreateCall(freeFunction, { freePointer });
+            emitCleanupEntry(it->first, it->second, retainedPointer);
         }
         cleanups.clear();
     }

@@ -418,8 +418,13 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
   branch used after the `if`, and straight-line use-after-move, are still rejected). A full OCFG +
   worklist solver (loops, definite-init as a lattice) remains a larger refactor, but the checker was
   already *sound* — this was precision only.
-- **M4 — Drop elaboration generalized. [plan]** Per-path drop insertion for all Owned locals (not
-  only box); reverse order; unwind edges included. Depends on M2/M3.
+- **M4 — Drop elaboration generalized. [partial]** Per-path drop insertion now fires on **every
+  return path**, not just the first: `emitAllCleanupsExcept` no longer clears the cleanup registry
+  after emitting, so `if (c) { return 1; } return 0;` frees its owned locals on both the `then` and
+  the fall-through paths (reverse order preserved). Previously the first return consumed the registry
+  and every later path leaked (`codegen.cpp`; test `positive/048_box_early_return_drop`). Remaining:
+  drops for non-box owned locals (only reachable in strict mode, and needs per-type destructors) and
+  unwind-edge drops (moot until the language has exceptions).
 - **M5 — Multiple return (done). [impl]** Parser `return a,b` / `a,b = f()` / `(A,B,C)` return type;
   `TupleType` → LLVM aggregate (sret/registers); `TupleExpressionNode`/`DestructuringAssignmentNode`;
   seven-step protocol; ownership transfer of box elements; `_` ignore; duplicate-move and

@@ -1178,8 +1178,18 @@ void TypeChecker::visit(TupleExpressionNode& node) {
     for (auto& element : node.elements) {
         if (!element) continue;
         element->accept(*this);
+        // A tuple is only ever a multiple-return value, so a borrow element (`return value, &value`
+        // / `return owner, owner.ref`) escapes the function — reject it (memory model §6, §4.3).
+        bool isMutableBorrow = false;
+        if (isBorrowExpression(element.get(), &isMutableBorrow)) {
+            const std::string borrowed = movedOrBorrowedIdentifier(element.get());
+            reportError("Type error: reference to local '" + borrowed +
+                        "' escapes as a returned value; return the value itself or clone(" +
+                        borrowed + ")");
+            continue;
+        }
         const std::string name = movedOrBorrowedIdentifier(element.get());
-        if (!name.empty() && !isBorrowExpression(element.get())) {
+        if (!name.empty()) {
             auto* state = findOwnership(name);
             if (state && state->owned) {
                 markMoved(name);

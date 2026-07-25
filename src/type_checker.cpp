@@ -1293,7 +1293,16 @@ void TypeChecker::visit(WhileStatementNode& node) {
         checkTypeResolved(node.condition->getType(), "while condition");
     }
     if (node.body) {
+        // Path-sensitivity for loops (M3). A while body that always returns runs at most once and
+        // diverges on that run, so any moves it makes never reach the code after the loop — the loop
+        // can only fall through when the condition is false, i.e. the body never executed. Discard
+        // those moves, mirroring the diverging-if-arm handling. A non-diverging body keeps its moves
+        // (a value moved in a body that can loop is conservatively treated as moved afterward).
+        const auto beforeBody = ownershipScopes;
         node.body->accept(*this);
+        if (statementDiverges(node.body.get())) {
+            ownershipScopes = beforeBody;
+        }
     }
 }
 

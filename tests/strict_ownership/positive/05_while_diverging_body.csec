@@ -1,0 +1,9 @@
+def consume(value: box Int): Int = 1
+def pick(): Int = 0
+def main(): Int {
+    var b: box Int = 5;
+    while (pick() > 0) {
+        return consume(<- b);
+    }
+    return consume(<- b);
+}

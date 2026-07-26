@@ -2168,7 +2168,18 @@ llvm::Value* FunctionCallNode::codegen() {
                 auto* closureFuncType = llvm::FunctionType::get(llvmReturnType, closureParamTypes, false);
                 std::vector<llvm::Value*> closureArgs;
                 closureArgs.push_back(environment);
-                for (auto* argValue : argValues) closureArgs.push_back(argValue);
+                for (size_t i = 0; i < argValues.size(); ++i) {
+                    // Coerce each argument to the closure's declared parameter type (the params begin
+                    // after the env slot). An argument's value can have a different-but-compatible
+                    // scalar type — e.g. a Float literal passed where the parameter is Double — and
+                    // the raw value would otherwise trip LLVM's call-signature check. The direct-call
+                    // path adjusts args the same way.
+                    llvm::Value* argValue = argValues[i];
+                    if (i < paramLLVMTypes.size()) {
+                        argValue = coerceValueToLLVMType(argValue, paramLLVMTypes[i]);
+                    }
+                    closureArgs.push_back(argValue);
+                }
                 llvm::Value* result = cg.builder.CreateCall(closureFuncType, code, closureArgs,
                     llvmReturnType->isVoidTy() ? "" : "closure.call");
                 type = funcType->returnType ? funcType->returnType->clone() : std::make_unique<UnknownType>();

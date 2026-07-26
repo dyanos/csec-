@@ -1,0 +1,16 @@
+// Regression: calling a lambda with a floating-point parameter must coerce the argument to the
+// parameter type. A Float literal passed where the parameter is Double previously reached the
+// closure call unconverted and tripped an LLVM call-signature assertion.
+def apply(f: (Double) => Double, x: Double): Double {
+    return f(x);
+}
+
+def main(): Int {
+    val negate = [](x: Double) -> { return 0.0 - x; };
+    val r1: Double = negate(5.0);            // -5.0
+    val r2: Double = apply([](x: Double) -> { return x * 2.0; }, 3.0);  // 6.0
+    if (r1 < 0.0 and r2 > 5.0) {
+        return 0;
+    }
+    return 1;
+}

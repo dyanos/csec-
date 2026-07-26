@@ -1,0 +1,29 @@
+// What strict ownership REJECTS (each of these is a compile error under the default).
+// Uncomment one block at a time to see the diagnostic.
+//
+// Compile with:  csec++ examples/strict_ownership_errors.csec --emit-ir -o out.ll
+
+class Account(balance: Int) {
+    def balance(): Int = balance
+}
+
+def close(acct: Account): Int = acct.balance()
+
+def main(): Int {
+    val acct: Account = new Account(100);
+
+    // (1) USE AFTER MOVE — `acct` is moved into close(), then used again.
+    //     error: use of moved value 'acct'
+    //
+    //     val a: Int = close(<- acct);
+    //     val b: Int = close(<- acct);   // <-- acct already moved
+    //     return a + b;
+
+    // (2) MISSING MOVE MARKER — passing a named owned value without `<-`/`&`.
+    //     error: ownership transfer to 'close' requires '<-'
+    //
+    //     return close(acct);
+
+    // (3) OK: move it exactly once, don't touch it afterward.
+    return close(<- acct);
+}

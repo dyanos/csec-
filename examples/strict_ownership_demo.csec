@@ -1,0 +1,66 @@
+// Strict ownership demo (csec).
+//
+// On this branch, M2 strict ownership is the DEFAULT. The rules:
+//   * Copy types      — Int/Long/Float/Bool/Char, String (immutable), value `struct`s —
+//                       pass and assign freely, no marker needed.
+//   * Owned types     — reference `class`es, arrays/vectors, `box` — must either be
+//                       MOVED with `<-` (caller gives up ownership) or BORROWED with
+//                       `&` / `&mut` (caller keeps ownership; member access auto-derefs).
+//   * Temporaries     — a literal, `new X()`, or a call result is an rvalue and moves
+//                       implicitly; only a NAMED owned local needs an explicit `<-`.
+
+class Account(balance: Int) {
+    def balance(): Int = balance
+}
+
+// A `struct` is a value type => Copy (copied field-by-field, like a C struct).
+struct Point(x: Int, y: Int) {
+    def sum(): Int = x + y
+}
+
+// Borrow an owned Account read-only. `acct.balance()` auto-derefs the `&Account`.
+def peek(acct: &Account): Int = acct.balance()
+
+// Consume (move) an owned Account: takes ownership, caller can't use it afterward.
+def close(acct: Account): Int = acct.balance()
+
+// Borrow a vector and index through it (`values[i]` auto-derefs the borrow).
+def firstTwo(values: &Vector[Int]): Int = values[0] + values[1]
+
+// Copy types (Int, String) need no ownership markers.
+def describe(id: Int, label: String): Int = id
+
+def main(): Int {
+    var total: Int = 0;
+
+    // --- Copy types pass freely and stay usable ---
+    val tag: String = "checking";        // String is Copy
+    total = total + describe(7, tag);    // -> 7   (Int + String copied)
+    total = total + describe(9, tag);    // -> 16  (tag reused: it's Copy)
+
+    // --- value struct is Copy: assignment duplicates it ---
+    val p: Point = new Point(3, 4);
+    val q: Point = p;                    // struct copy, no `<-` needed
+    total = total + p.sum() + q.sum();   // -> 30  (both p and q still usable)
+
+    // --- owned class: BORROW with `&` to keep using it ---
+    val acct: Account = new Account(100);
+    total = total + peek(&acct);         // -> 130 (borrow; acct stays owned)
+    total = total + peek(&acct);         // -> 230 (borrow again — still fine)
+
+    // --- owned vector: BORROW to read ---
+    val nums: Vector[Int] = new Int[3];
+    nums[0] = 10;
+    nums[1] = 20;
+    nums[2] = 30;
+    total = total + firstTwo(&nums);     // -> 260 (borrow the vector, index through it)
+
+    // --- owned class: MOVE with `<-` (acct is consumed here) ---
+    total = total + close(<- acct);      // -> 360 (acct moved into close())
+    // Using `acct` here now would be a compile error: "use of moved value 'acct'".
+
+    if (total == 360) {
+        return 0;
+    }
+    return 1;
+}

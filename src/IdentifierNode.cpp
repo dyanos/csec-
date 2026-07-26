@@ -7,10 +7,59 @@
 #include <iostream>
 #include <cctype>
 #include <llvm/IR/GlobalVariable.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Constants.h>
 
 namespace {
+// A top-level function used as a first-class value must be presented as the uniform { code, env }
+// closure the call sites consume (they load `code` and call `code(env, args...)`), not as a raw
+// function pointer whose signature has no env parameter. Build (once) an env-ignoring thunk
+// `thunk(ptr env, args...) -> fn(args...)` and return a { thunk, null } closure. Without this,
+// passing a named function to a `(T...) => R` parameter reinterprets the function's code as a
+// closure struct and crashes.
+llvm::Value* wrapFunctionAsClosure(llvm::Function* fn) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* opaquePtr = llvm::PointerType::getUnqual(cg.context);
+
+    const std::string thunkName = fn->getName().str() + "$closure_thunk";
+    llvm::Function* thunk = cg.module->getFunction(thunkName);
+    if (!thunk) {
+        std::vector<llvm::Type*> thunkParams;
+        thunkParams.push_back(opaquePtr); // env slot (ignored)
+        for (auto& param : fn->args()) {
+            thunkParams.push_back(param.getType());
+        }
+        auto* thunkType = llvm::FunctionType::get(fn->getReturnType(), thunkParams, false);
+        thunk = llvm::Function::Create(thunkType, llvm::Function::InternalLinkage, thunkName, cg.module.get());
+
+        auto savedIP = cg.builder.saveIP();
+        auto* entry = llvm::BasicBlock::Create(cg.context, "entry", thunk);
+        cg.builder.SetInsertPoint(entry);
+        std::vector<llvm::Value*> callArgs;
+        auto argIt = thunk->arg_begin();
+        ++argIt; // skip the env parameter
+        for (; argIt != thunk->arg_end(); ++argIt) {
+            callArgs.push_back(&*argIt);
+        }
+        llvm::Value* result = cg.builder.CreateCall(fn, callArgs);
+        if (fn->getReturnType()->isVoidTy()) {
+            cg.builder.CreateRetVoid();
+        } else {
+            cg.builder.CreateRet(result);
+        }
+        cg.builder.restoreIP(savedIP);
+    }
+
+    auto* closureType = llvm::StructType::get(cg.context, { opaquePtr, opaquePtr });
+    llvm::Value* closure = cg.builder.CreateAlloca(closureType, nullptr, "fn.closure");
+    cg.builder.CreateStore(thunk, cg.builder.CreateStructGEP(closureType, closure, 0, "closure.code"));
+    cg.builder.CreateStore(llvm::ConstantPointerNull::get(opaquePtr),
+        cg.builder.CreateStructGEP(closureType, closure, 1, "closure.env"));
+    return closure;
+}
+
 bool isIntegerLiteralText(const std::string& text) {
     if (text.empty()) {
         return false;
@@ -52,6 +101,16 @@ llvm::Value* IdentifierNode::codegen() {
 	}
 
 	auto* symbol = symbolOpt;
+
+	// A bare reference to a top-level function (used as a value: passed as an argument, assigned to
+	// a function-typed variable, returned) becomes a { code, env } closure so it matches the uniform
+	// callable representation the call sites expect. Direct calls resolve the callee by name in
+	// FunctionCallNode and never reach here, so this only fires for value uses.
+	if (symbol->symbolType == SymbolType::FUNCTION && symbol->value &&
+		llvm::isa<llvm::Function>(symbol->value)) {
+		return wrapFunctionAsClosure(llvm::cast<llvm::Function>(symbol->value));
+	}
+
 	if (!symbol->value) {
         auto& cg = CodeGenerator::getInstance();
         if (symbol->type && symbol->type->isIntegerTy()) {

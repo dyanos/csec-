@@ -1,0 +1,18 @@
+// Regression: a named top-level function passed as a first-class value must be wrapped in a
+// { code, env } closure. Previously it was passed as a raw function pointer, which the callee
+// reinterpreted as a closure struct and crashed when calling it.
+def eulerStep(f: (Double, Double) => Double, t: Double, y: Double, h: Double): Double {
+    return y + h * f(t, y);
+}
+
+def decay(t: Double, y: Double): Double {
+    return 0.0 - y;
+}
+
+def main(): Int {
+    val y1 = eulerStep(decay, 0.0, 1.0, 0.1);
+    if (y1 < 1.0) {
+        return 0;
+    }
+    return 1;
+}

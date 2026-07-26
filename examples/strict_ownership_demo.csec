@@ -49,10 +49,7 @@ def main(): Int {
     total = total + peek(&acct);         // -> 230 (borrow again — still fine)
 
     // --- owned vector: BORROW to read ---
-    val nums: Vector[Int] = new Int[3];
-    nums[0] = 10;
-    nums[1] = 20;
-    nums[2] = 30;
+    val nums: Vector[Int] = [10, 20, 30];
     total = total + firstTwo(&nums);     // -> 260 (borrow the vector, index through it)
 
     // --- owned class: MOVE with `<-` (acct is consumed here) ---

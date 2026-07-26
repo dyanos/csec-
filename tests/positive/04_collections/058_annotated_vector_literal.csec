@@ -1,0 +1,11 @@
+// Regression: an array literal with an explicit `Vector[T]` annotation must index correctly
+// (previously it loaded a pointer out of the buffer's first element and segfaulted).
+def firstTwo(values: &Vector[Int]): Int = values[0] + values[1]
+
+def main(): Int {
+    val nums: Vector[Int] = [10, 20, 30];
+    if (nums[0] + nums[1] + nums[2] == 60 and firstTwo(&nums) == 30) {
+        return 0;
+    }
+    return 1;
+}

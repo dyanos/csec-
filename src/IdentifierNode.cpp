@@ -74,7 +74,13 @@ llvm::Value* IdentifierNode::codegen() {
     if ((symbol->symbolType == SymbolType::VARIABLE || symbol->symbolType == SymbolType::FIELD) &&
         symbol->value->getType()->isPointerTy() &&
         isAddressLike) {
+        // An array/vector local is bound directly to its element buffer (see
+        // VariableDeclarationNode::bindPointerBackedValueDirectly), so return that pointer rather than
+        // loading through it. `Array` and `Vector` are aliases: without recognising `Vector`, an
+        // annotated `val v: Vector[Int] = [..]` loads a pointer out of the buffer's first element
+        // (reading data as an address) and segfaults on the next index.
         if (symbol->type && (symbol->type->getName() == "Array" ||
+            symbol->type->getName() == "Vector" ||
             dynamic_cast<ArrayType*>(symbol->type.get()) != nullptr)) {
             return symbol->value;
         }

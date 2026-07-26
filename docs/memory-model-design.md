@@ -397,18 +397,18 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
   drop for box, `free`, ownership semantic tests. **[impl]**
 - **M1 — `clone` (done). [impl]** `clone(x)` builtin: type = type of `x` (fresh owned), leaves `x`
   unmoved; codegen mallocs + memcpys the boxed payload. Test `semantic_positive/ownership_clone`.
-- **M2 — Copy/Move classification pass. [impl, opt-in]** Delivered non-destructively behind the
-  `--strict-ownership` flag (off by default, so the existing corpus is untouched — verified 269/269
-  positive + 5/5 semantic_positive with the flag off). Adds a real `isCopyType` (primitives,
-  references, function values and value-structs are Copy; classes, arrays, `String`, and owned
-  container/smart-pointer generics are Owned) and `isMoveCheckedType`, which the move-checker's four
-  sites consult. With the flag on, move-checking generalizes from `box` to every non-copy type:
-  passing/assigning an Owned value without `<-` errors ("ownership transfer requires '<-'"), and
-  use-after-move on any Owned local is caught. The **breaking** strict-by-default variant (make this
-  the default + migrate all 263 fixtures + add per-type destructors and single-owner runtime for
-  classes/arrays) remains a v2-line decision; `@copy` struct annotations and the strict-by-default
-  flip are the documented follow-ups. See `type_checker.cpp` (`isCopyType`/`isMoveCheckedType`) and
-  `main.cpp` (`--strict-ownership`).
+- **M2 — Copy/Move classification pass. [impl, default on]** Strict ownership is now the **default**
+  (branch `memory-model-m2-strict-and-async`): `=`/argument passing of any non-copy Owned type
+  requires `<-`/`&`/`&mut`. `isCopyType` classifies Copy vs Owned — primitives, `String` (immutable/
+  shared), references, function values and value-`struct`s are Copy; reference `class`es, arrays,
+  `box`, and owned container/smart-pointer generics are Owned. Two rules keep it ergonomic: a
+  temporary (literal, `new X()`, call result) is an rvalue and moves implicitly (only *named* owned
+  locals need `<-`), and member access auto-derefs borrows (`ref.method()`, `ref.field`, `ref[i]`,
+  and `map`/`for` over `&Vector[T]` all behave like the borrowed value — see `stripBorrow`). All 270
+  positive fixtures were migrated (use-once args take `<-`, reused values take `&`) and compile+run
+  under the strict default; the self-host source also compiles clean under it. `--no-strict-ownership`
+  opts out (box-only) for legacy code. See `type_checker.cpp`, `main.cpp`, and the borrow auto-deref
+  in `MethodCallNode`/`AccessFieldNode`/`ArrayAccessNode`.
 - **M3 — Ownership-CFG + dataflow framework. [partial]** The high-value precision gaps are closed:
   move-checking is now **path-sensitive across diverging `if`-branches and `while` bodies**. Both `if`
   arms are analysed from the same pre-branch ownership snapshot and only the fall-through paths are
@@ -442,23 +442,29 @@ Milestones (each ends green on all suites + a byte-identical self-host fixed poi
   payload only while some strong owner is alive (else a zero value), and the block is freed only when
   strong AND weak both reach zero -- so a cycle with a Weak edge is reclaimed. Tests 194/195 (Shared),
   196 (Weak). Only the automatic cycle *lint* remains [plan]; duplicate a Shared with `.clone()`.
-- **M8 — Globals & closures/async capture modes. [partial / partly infeasible]** The foundation is
-  fixed: a top-level `var` now lowers to an LLVM global (`InternalLinkage`) that other functions read
-  and write, instead of a stack alloca in the bootstrap main that read back as its null placeholder
-  (`VariableDeclarationNode.cpp` module-scope path + `symbol_table.cpp` two-phase refresh; verified a
-  scalar global returns its initializer and a mutable global accumulates across functions). Borrow
-  escape *into* a global is already structurally blocked (`slot = &local` → "Invalid assignment
-  target"), same as the field case — no soundness hole. What remains: deterministic destruction of
-  *owned* globals at program shutdown (needs a global-ctor/dtor pass for `box`/`Shared` globals), and
-  "no borrow across `await`", which stays **infeasible** — the language has no `async`/coroutines, so
-  the rule has nothing to constrain.
+- **M8 — Globals & closures/async capture modes. [impl]** Two parts:
+  - *Globals:* a top-level `var` lowers to an LLVM global (`InternalLinkage`) read/written across
+    functions (`VariableDeclarationNode.cpp` module-scope path + `symbol_table.cpp` two-phase
+    refresh). Borrow escape *into* a global is structurally blocked (`slot = &local` → "Invalid
+    assignment target"), like the field case — no soundness hole. Owned-wrapper globals give a clean
+    diagnostic rather than the earlier hang.
+  - *async/await (branch `memory-model-m2-strict-and-async`):* adds `async` (function modifier) and
+    `await` (prefix expression) keywords. `await` is valid only inside an `async def`, and the M8
+    **no-borrow-across-await** rule is enforced: any `&`/`&mut` still live in scope at an await point
+    is rejected ("borrow of 'x' is held across an 'await'"), since after suspension another task could
+    mutate or drop the borrowed value. `await` lowers to its operand value (sequential evaluation)
+    until a coroutine runtime exists — the surface syntax and the borrow rule are what M8 specifies.
+    See `type_checker.cpp` (`inAsyncFunction` + the await check), `Expression.cpp`, `PrefixExpressionNode.cpp`;
+    tests `tests/async` + `run_async.ps1`.
 
 Deferred beyond MVP: partial moves (M9), borrow fields with proven lifetimes, region allocation
 (§ below), general lifetime parameters (likely never for v1 line).
 
-**Current status (implemented & verified on the direct compiler):** M0, M1, M5, M7 fully; M2 as the
-opt-in `--strict-ownership` mode; M3 path-sensitivity for diverging branches; M6 return/tuple cases
-(field/global/closure escape structurally blocked); M8 top-level globals. The MVP cornerstone —
+**Current status (implemented & verified on the direct compiler):** M0–M8 all implemented. M0/M1/M5/
+M7 fully; M2 strict ownership **on by default** (whole corpus migrated); M3 path-sensitivity for
+diverging `if`/`while`; M4 per-path drop on every return path; M6 return/tuple cases (field/global/
+closure escape structurally blocked); M8 top-level globals **plus async/await with the
+no-borrow-across-await rule** (branch `memory-model-m2-strict-and-async`). The MVP cornerstone —
 single ownership, explicit `<-` move, lexical `&`/`&mut` borrows, use-after-move, borrow/alias
 checking, deterministic scope-exit destruction, explicit `clone`, `free`, `Shared`/`Weak`, and
 **multiple owned return values with destructuring** — is working end to end. Regression: 269/269

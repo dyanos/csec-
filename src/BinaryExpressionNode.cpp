@@ -618,11 +618,18 @@ llvm::Value* BinaryExpressionNode::codegen() {
 
     auto& cg = CodeGenerator::getInstance();
 
+    // Two non-class pointer operands to `+` (or `==`/`!=`) are treated as strings — EXCEPT tensors,
+    // which are also heap structs behind a pointer. Without the tensor exclusion, `tensorA + tensorB`
+    // (e.g. a matmul result plus a bias) is mis-lowered to string concatenation, and the bogus
+    // "string" pointer segfaults the next tensor op that reads it. Tensor `+` must fall through to
+    // the tensor-arithmetic dispatch below.
     const bool pointerStringConcat =
         leftValue && rightValue &&
         leftValue->getType()->isPointerTy() && rightValue->getType()->isPointerTy() &&
         (!left->getType() || left->getType()->getKind() != Type::Kind::CLASS) &&
-        (!right->getType() || right->getType()->getKind() != Type::Kind::CLASS);
+        (!right->getType() || right->getType()->getKind() != Type::Kind::CLASS) &&
+        !TensorRuntime::isTensorTypeName(leftTypeName) &&
+        !TensorRuntime::isTensorTypeName(rightTypeName);
     if (op == "+" && (leftTypeName == "String" || rightTypeName == "String" || pointerStringConcat)) {
         auto leftStaticType = left->getType();
         auto rightStaticType = right->getType();

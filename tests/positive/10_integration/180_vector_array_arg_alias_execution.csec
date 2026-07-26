@@ -11,7 +11,7 @@ def firstOf(xs: Array[Int]): Int {
 
 def main(): Int {
     val made: Vector[Int] = build(2);
-    if (firstOf(made) == 42) {
+    if (firstOf(<- made) == 42) {
         return 0;
     }
     return 1;

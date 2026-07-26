@@ -5,7 +5,7 @@ def allEnabled(values: Vector[Boolean]): Boolean {
 def main(): Int {
     val flags = [true, false, true];
     flags[1] = true;
-    if (allEnabled(flags)) {
+    if (allEnabled(<- flags)) {
         return 0;
     }
     return 1;

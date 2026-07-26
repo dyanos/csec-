@@ -4,7 +4,7 @@ def main(): Int {
     val values = new String[2];
     values[0] = "left";
     values[1] = "right";
-    val forwarded: Vector[String] = identity(values);
+    val forwarded: Vector[String] = identity(<- values);
     val selected = forwarded[1];
     if (selected.length == 5) {
         return 0;

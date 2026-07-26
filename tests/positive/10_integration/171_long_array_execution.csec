@@ -6,7 +6,7 @@ def main(): Int {
     val values = new Long[2];
     values[0] = 2147483648;
     values[1] = 2147483653;
-    val selected: Long = second(values);
+    val selected: Long = second(<- values);
     if (selected == 2147483653) {
         return 0;
     }

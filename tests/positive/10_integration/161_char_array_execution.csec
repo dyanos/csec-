@@ -8,7 +8,7 @@ def main(): Int {
     val values = new Char[2];
     values[0] = identity('A');
     values[1] = 'Z';
-    val selected = second(values);
+    val selected = second(<- values);
     if (selected == 'Z') {
         return 0;
     }

@@ -4,7 +4,7 @@ def main(): Int {
     val values = new Char[2];
     values[0] = 'C';
     values[1] = 'D';
-    val forwarded: Vector[Char] = identity(values);
+    val forwarded: Vector[Char] = identity(<- values);
     if (forwarded[1] == 'D') {
         return 0;
     }

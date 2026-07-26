@@ -1,4 +1,4 @@
-def sum(values: Vector[Float]): Float {
+def sum(values: &Vector[Float]): Float {
     return values[0] + values[1] + values[2];
 }
 
@@ -7,7 +7,7 @@ def main(): Int {
     values[0] = 1.5;
     values[1] = 2.5;
     values[2] = 3.5;
-    if (sum(values) == 7.5 and values[0] + values[1] == 4.0) {
+    if (sum(&values) == 7.5 and values[0] + values[1] == 4.0) {
         return 0;
     }
     return 1;

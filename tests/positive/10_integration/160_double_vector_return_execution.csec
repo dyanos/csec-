@@ -4,7 +4,7 @@ def main(): Int {
     val values = new Double[2];
     values[0] = 1.25;
     values[1] = 2.5;
-    val forwarded: Vector[Double] = identity(values);
+    val forwarded: Vector[Double] = identity(<- values);
     if (forwarded[0] + forwarded[1] == 3.75) {
         return 0;
     }

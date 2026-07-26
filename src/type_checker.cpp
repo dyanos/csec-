@@ -33,7 +33,9 @@ bool isIntegerTypeName(const std::unique_ptr<Type>& type) {
            name == "Long" || name == "Natural" || name == "Integer";
 }
 
-std::unique_ptr<Type> collectionElementType(const std::unique_ptr<Type>& type) {
+std::unique_ptr<Type> collectionElementType(const std::unique_ptr<Type>& rawType) {
+    // Auto-deref: iterating a borrowed collection (`&Vector[T]`) yields elements of T.
+    auto type = stripBorrow(rawType);
     if (!type) return std::make_unique<UnknownType>();
     if (auto* arrType = dynamic_cast<ArrayType*>(type.get())) {
         return arrType->elementType ? arrType->elementType->clone() : std::make_unique<UnknownType>();
@@ -148,11 +150,12 @@ bool isOwnedMoveCheckedType(const Type* type) {
     return type && type->getKind() == Type::Kind::BOX;
 }
 
-// Opt-in strict-ownership mode (M2). Default off so the existing corpus keeps its freely-copyable
-// class/array/String semantics; `--strict-ownership` flips it on for a fresh compilation. The
-// external setter/getter (setStrictOwnership/isStrictOwnership) are defined past the anonymous
-// namespace below so main.cpp can link against them; they read this same flag by TU scope.
-bool g_strictOwnership = false;
+// Strict-ownership mode (M2) is now ON by default: `=`/argument passing of any non-copy owned type
+// (reference classes, arrays, box, owned container/smart-pointer generics) requires an explicit
+// `<-` move or `&`/`&mut` borrow. `--no-strict-ownership` opts a compilation out (e.g. legacy code
+// not yet migrated, such as the self-host source). The external setter/getter are defined past the
+// anonymous namespace below so main.cpp can link against them; they read this flag by TU scope.
+bool g_strictOwnership = true;
 
 // A Copy type may be duplicated by a plain `=`/argument pass without an explicit `<-`/`clone`.
 // Everything else is an owned (affine) value that must move. Primitives, references (a borrow is a
@@ -170,8 +173,11 @@ bool isCopyType(const Type* type) {
         case Type::Kind::BOX:
             return false;
         case Type::Kind::BASIC:
-            // String owns a heap buffer; every other basic (Int/Long/Float/Bool/Char/…) is Copy.
-            return type->getName() != "String";
+            // All basics are Copy, including String: csec strings are immutable/shared (literals are
+            // static data), so copying a String handle is a cheap value copy with no ownership
+            // transfer — the affine, move-only types are arrays, reference classes, box and the owned
+            // container/smart-pointer generics.
+            return true;
         case Type::Kind::GENERIC: {
             const std::string& n = type->getName();
             return !(n == "Array" || n == "Vector" || n == "Map" || n == "Set" ||

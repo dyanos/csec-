@@ -4,5 +4,5 @@ def pairSum(values: Vector[Int]): Int {
 
 def main(): Int {
     val values = [19, 23, 99];
-    return pairSum(values);
+    return pairSum(<- values);
 }

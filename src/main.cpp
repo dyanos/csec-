@@ -75,7 +75,8 @@ void printUsage(const char* programName) {
         << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
         << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
         << "  --link-path <path>           Add a native library search path\n"
-        << "  --strict-ownership           Move-check all non-copy types (classes/arrays/String), not just box\n"
+        << "  --strict-ownership           Force M2 strict ownership on (default; move-check all non-copy types)\n"
+        << "  --no-strict-ownership        Opt out of default strict ownership (box-only move-checking)\n"
         << "  -- <args...>                 Pass arguments to a program run with --run\n"
         << "  --mangle <itanium|msvc> <signature>\n"
         << "                               Print a C++ ABI mangled name and exit\n";
@@ -1241,8 +1242,14 @@ int main(int argc, char** argv) {
             continue;
         }
         if (arg == "--strict-ownership") {
-            // Opt-in M2: generalize move-checking to all non-copy types for this compilation only.
+            // M2 strict ownership is on by default; kept for explicitness / forcing it back on.
             setStrictOwnership(true);
+            continue;
+        }
+        if (arg == "--no-strict-ownership") {
+            // Opt out of default strict ownership for legacy/unmigrated code (e.g. the self-host
+            // source): move-checking falls back to box-only.
+            setStrictOwnership(false);
             continue;
         }
         if (arg == "--run") {

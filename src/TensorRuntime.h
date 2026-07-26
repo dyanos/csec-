@@ -416,6 +416,26 @@ inline llvm::Value* tensorLinearIndex(CodeGenerator& cg, llvm::Value* coords, ll
     return cg.builder.CreateLoad(i64Ty, resultPtr, "tensor.linear.result");
 }
 
+// Address of a single tensor element t[i0, i1, ...]. Mirrors the full-scalar-index read in
+// sliceTensor (same row-major linear index into the data buffer) but returns the element pointer,
+// so `t[i, j] = v` can store through it. `indices` must give one scalar per axis (no slices).
+inline llvm::Value* elementPointer(CodeGenerator& cg, llvm::Value* tensor,
+                                   const std::vector<llvm::Value*>& indices) {
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* rank = loadRank(cg, tensor);
+    llvm::Value* dims = loadDims(cg, tensor);
+    llvm::Value* data = loadData(cg, tensor);
+    llvm::Value* coords = cg.builder.CreateAlloca(i64Ty, rank, "tensor.set.coords");
+    for (size_t axis = 0; axis < indices.size(); ++axis) {
+        llvm::Value* coord = indices[axis] ? indices[axis] : i64(cg, 0);
+        cg.builder.CreateStore(coord,
+            cg.builder.CreateGEP(i64Ty, coords, i64(cg, static_cast<int64_t>(axis)), "tensor.set.coord.slot"));
+    }
+    llvm::Value* index = tensorLinearIndex(cg, coords, dims, rank);
+    return cg.builder.CreateGEP(f64Ty, data, index, "tensor.set.addr");
+}
+
 inline llvm::Value* sliceTensor(
     CodeGenerator& cg,
     llvm::Value* source,

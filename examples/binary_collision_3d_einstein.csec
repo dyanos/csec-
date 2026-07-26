@@ -1,0 +1,210 @@
+// ============================================================================
+//  binary_collision_3d_einstein.csec
+//
+//  Numerical simulation of the collision (inspiral -> merger) of two massive
+//  compact objects (black holes) in 3+1 numerical relativity, on CSEC++.
+//
+//  All quantities are in geometric units  G = c = 1  (lengths and times in M).
+//
+//  Physics grounded in Einstein's equations:
+//    * Constraint-satisfying initial data (a genuine solution of the 3D
+//      Einstein constraint equations):
+//        - Brill-Lindquist conformal factor  psi(x) = 1 + Sum_i m_i/(2 r_i),
+//          which solves the Hamiltonian constraint for time-symmetric,
+//          conformally-flat data. The physical spatial 3-metric is
+//              gamma_ij(x) = psi(x)^4 * delta_ij.
+//        - Bowen-York extrinsic curvature K_ij for a moving puncture, which
+//          solves the momentum constraint.
+//    * Orbital evolution with gravitational radiation reaction from the
+//      quadrupole formula (the weak-field limit of the field equations),
+//      integrated with RK4, driving the two bodies together.
+//    * Merger at the Schwarzschild ISCO  r = 6M  (a strong-field prediction of
+//      general relativity); remnant mass from the total radiated energy.
+// ============================================================================
+
+struct Vec3(x: Double, y: Double, z: Double) {
+    def norm(): Double = sqrt(x * x + y * y + z * z)
+}
+
+def vdist(a: Vec3, b: Vec3): Double {
+    val dx: Double = a.x - b.x;
+    val dy: Double = a.y - b.y;
+    val dz: Double = a.z - b.z;
+    return sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+// --- Brill-Lindquist conformal factor: solves the Hamiltonian constraint. ---
+def conformalFactor(p: Vec3, c1: Vec3, m1: Double, c2: Vec3, m2: Double): Double {
+    val r1: Double = vdist(p, c1);
+    val r2: Double = vdist(p, c2);
+    var psi: Double = 1.0;
+    if (r1 > 0.000001) {
+        psi = psi + m1 / (2.0 * r1);
+    }
+    if (r2 > 0.000001) {
+        psi = psi + m2 / (2.0 * r2);
+    }
+    return psi;
+}
+
+// --- Radiation-reaction: inspiral rate dr/dTime from the quadrupole formula. ---
+//     dr/dTime = -(64/5) * mu * M^2 / r^3     (mu = reduced mass, M = total mass)
+def separationRate(r: Double, mu: Double, mtot: Double): Double {
+    return 0.0 - (64.0 / 5.0) * mu * mtot * mtot / (r * r * r);
+}
+
+// --- Orbital angular frequency (Kepler): Omega = sqrt(M / r^3). ---
+def orbitalOmega(r: Double, mtot: Double): Double {
+    return sqrt(mtot / (r * r * r));
+}
+
+// --- Gravitational-wave luminosity: L = (32/5) mu^2 M^3 / r^5. ---
+def gwLuminosity(r: Double, mu: Double, mtot: Double): Double {
+    return (32.0 / 5.0) * mu * mu * mtot * mtot * mtot / (r * r * r * r * r);
+}
+
+def main(): Int {
+    println("=====================================================================");
+    println(" Binary black-hole collision  --  3+1 numerical relativity on CSEC++ ");
+    println("=====================================================================");
+
+    // ---- masses (geometric units) ----
+    val m1: Double = 1.0;
+    val m2: Double = 0.8;
+    val mtot: Double = m1 + m2;
+    val mu: Double = m1 * m2 / mtot;
+
+    println("m1 = " + m1 + ",  m2 = " + m2 + "   (geometric units)");
+    println("total mass M = " + mtot + ",  reduced mass mu = " + mu);
+
+    // ---- initial configuration: quasi-circular orbit ----
+    var r: Double = 12.0 * mtot;          // initial separation
+    val rISCO: Double = 6.0 * mtot;       // Schwarzschild innermost stable circular orbit
+    val c1: Vec3 = new Vec3(0.0 - m2 / mtot * r, 0.0, 0.0);   // body 1 (center of mass at origin)
+    val c2: Vec3 = new Vec3(m1 / mtot * r, 0.0, 0.0);         // body 2
+
+    // ======================================================================
+    //  (1) The 3-metric  gamma_ij = psi^4 delta_ij  at an observer point,
+    //      built as a genuine 3x3 tensor from the constraint solution psi.
+    // ======================================================================
+    val obs: Vec3 = new Vec3(0.0, 4.0 * mtot, 0.0);   // an observer off the orbital axis
+    val psi: Double = conformalFactor(obs, c1, m1, c2, m2);
+    val psi4: Double = psi * psi * psi * psi;
+
+    val gamma: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
+    gamma[0, 0] = psi4;
+    gamma[1, 1] = psi4;
+    gamma[2, 2] = psi4;
+
+    val detGamma: Double = psi4 * psi4 * psi4;       // det(psi^4 I) = psi^12
+    val properVolume: Double = sqrt(detGamma);       // sqrt(det gamma) = psi^6
+
+    println("");
+    println("--- Spatial 3-metric gamma_ij at observer (psi = " + psi + ") ---");
+    println("  [ " + gamma[0,0] + "  " + gamma[0,1] + "  " + gamma[0,2] + " ]");
+    println("  [ " + gamma[1,0] + "  " + gamma[1,1] + "  " + gamma[1,2] + " ]");
+    println("  [ " + gamma[2,0] + "  " + gamma[2,1] + "  " + gamma[2,2] + " ]");
+    println("  det(gamma) = " + detGamma + ",   proper-volume factor sqrt(det) = " + properVolume);
+
+    // ======================================================================
+    //  (2) Bowen-York extrinsic curvature K_ij of a moving puncture,
+    //      a solution of the momentum constraint (off-diagonal 3x3 tensor).
+    //      K_ij = (3/2r^2)[ P_i n_j + P_j n_i - (delta_ij - n_i n_j)(P.n) ]
+    // ======================================================================
+    val r1: Double = vdist(obs, c1);
+    val nvec: Vector[Double] = new Double[3];
+    nvec[0] = (obs.x - c1.x) / r1;
+    nvec[1] = (obs.y - c1.y) / r1;
+    nvec[2] = (obs.z - c1.z) / r1;
+
+    val pOrbit: Double = mu * sqrt(mtot / r);      // orbital momentum magnitude
+    val Pvec: Vector[Double] = new Double[3];
+    Pvec[0] = 0.0;
+    Pvec[1] = 0.0;
+    Pvec[2] = pOrbit;                              // momentum out of the orbital plane component
+    val Pdotn: Double = Pvec[0]*nvec[0] + Pvec[1]*nvec[1] + Pvec[2]*nvec[2];
+
+    val K: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
+    val pref: Double = 3.0 / (2.0 * r1 * r1);
+    for (i <- 0 to 2) {
+        for (j <- 0 to 2) {
+            var delta: Double = 0.0;
+            if (i == j) {
+                delta = 1.0;
+            }
+            val kij: Double = pref *
+                (Pvec[i]*nvec[j] + Pvec[j]*nvec[i] - (delta - nvec[i]*nvec[j]) * Pdotn);
+            K[i, j] = kij;
+        }
+    }
+    val trK: Double = K[0,0] + K[1,1] + K[2,2];    // trace (flat) -- should be ~0 (traceless)
+
+    println("");
+    println("--- Bowen-York extrinsic curvature K_ij at observer ---");
+    println("  [ " + K[0,0] + "  " + K[0,1] + "  " + K[0,2] + " ]");
+    println("  [ " + K[1,0] + "  " + K[1,1] + "  " + K[1,2] + " ]");
+    println("  [ " + K[2,0] + "  " + K[2,1] + "  " + K[2,2] + " ]");
+    println("  trace K = " + trK + "   (traceless, as required by the constraints)");
+
+    // ======================================================================
+    //  (3) Inspiral: evolve the separation with GW radiation reaction (RK4)
+    //      until the bodies reach the ISCO and collide.
+    // ======================================================================
+    println("");
+    println("--- Inspiral driven by gravitational radiation reaction ---");
+    println("  t/M        r/M       Omega*M     f_GW*M      L_GW        E_rad");
+
+    val dTime: Double = 2.0;                 // time nstep (units of M)
+    var t: Double = 0.0;
+    var eRad: Double = 0.0;               // cumulative radiated energy
+    var nstep: Int = 0;
+    var nextPrint: Double = 12.0 * mtot;  // print at decreasing radii for clean output
+    val pi: Double = 3.14159265358979;
+
+    while (r > rISCO and nstep < 200000) {
+        // snapshot
+        if (r <= nextPrint) {
+            val om: Double = orbitalOmega(r, mtot);
+            val fgw: Double = om / pi;                 // GW frequency = 2 * (orbital/2pi)
+            val lum: Double = gwLuminosity(r, mu, mtot);
+            println("  " + (t / mtot) + "   " + (r / mtot) + "   " + (om * mtot) +
+                    "   " + (fgw * mtot) + "   " + lum + "   " + eRad);
+            nextPrint = nextPrint - 1.0 * mtot;
+        }
+
+        // RK4 nstep for  dr/dTime = separationRate(r)
+        val k1: Double = separationRate(r, mu, mtot);
+        val k2: Double = separationRate(r + 0.5 * dTime * k1, mu, mtot);
+        val k3: Double = separationRate(r + 0.5 * dTime * k2, mu, mtot);
+        val k4: Double = separationRate(r + dTime * k3, mu, mtot);
+        val dr: Double = (dTime / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+
+        // accumulate radiated energy over this nstep
+        eRad = eRad + gwLuminosity(r, mu, mtot) * dTime;
+
+        r = r + dr;
+        t = t + dTime;
+        nstep = nstep + 1;
+    }
+
+    // ======================================================================
+    //  (4) Merger summary
+    // ======================================================================
+    val omMerge: Double = orbitalOmega(rISCO, mtot);
+    val fMerge: Double = omMerge / pi;
+    val mFinal: Double = mtot - eRad;
+
+    println("");
+    println("=====================================================================");
+    println(" MERGER");
+    println("=====================================================================");
+    println("  collision after t = " + (t / mtot) + " M   (" + nstep + " RK4 steps)");
+    println("  separation reached ISCO  r = " + (r / mtot) + " M  (ISCO = 6 M)");
+    println("  GW frequency at merger   f_GW * M = " + (fMerge * mtot));
+    println("  total energy radiated    E_rad = " + eRad + " M  (" +
+            (100.0 * eRad / mtot) + " % of M)");
+    println("  remnant black-hole mass  M_final ~ " + mFinal + " M");
+    println("=====================================================================");
+
+    return 0;
+}

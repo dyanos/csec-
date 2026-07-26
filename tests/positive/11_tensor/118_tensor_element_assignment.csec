@@ -1,0 +1,13 @@
+// Tensor element assignment t[i,j] = v (writes now persist into the data buffer).
+def main(): Int {
+    val g: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
+    g[0, 0] = 2.0;
+    g[1, 1] = 5.0;
+    g[2, 2] = 7.0;
+    g[0, 2] = 1.0;
+    var trace: Double = g[0, 0] + g[1, 1] + g[2, 2];
+    if (trace == 14.0 and g[0, 2] == 1.0 and g[2, 0] == 0.0) {
+        return 0;
+    }
+    return 1;
+}

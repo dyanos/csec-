@@ -454,6 +454,17 @@ llvm::Value* MethodCallNode::codegen() {
         return nullptr;
     }
 
+    // A struct method receives `this` by address. When the receiver is a temporary struct value
+    // (e.g. the result of a struct-returning call, `f(...).method()`), it lives in a register and has
+    // no address yet, so the method would read garbage fields. Materialize it into a stack slot and
+    // pass the pointer. A receiver that is already a pointer (a struct variable, or a reference
+    // class) is used unchanged.
+    if (objectValue && !objectValue->getType()->isPointerTy()) {
+        llvm::Value* slot = cg.builder.CreateAlloca(objectValue->getType(), nullptr, "recv.materialized");
+        cg.builder.CreateStore(objectValue, slot);
+        objectValue = slot;
+    }
+
     std::vector<llvm::Value*> argValues;
     argValues.push_back(objectValue);
 

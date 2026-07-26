@@ -146,6 +146,20 @@ llvm::Value* ArrayAccessNode::codegenElementPointer() {
     std::unique_ptr<Type> currentType = stripBorrow(array->getType());
     if (!currentValue || !currentType || indices.empty()) return nullptr;
 
+    // Tensor element write `t[i, j, ...] = v`: tensors are a { rank, dims, count, data } struct, not
+    // a flat buffer, so compute the address into `data` via the same row-major linear index the read
+    // path uses. Requires a full scalar index per axis (no slices).
+    if (TensorRuntime::isTensorTypeName(currentType->getName())) {
+        std::vector<llvm::Value*> tensorIndices;
+        for (auto& spec : indices) {
+            if (!spec || spec->isSlice || !spec->index) return nullptr;
+            llvm::Value* idx = toTensorIndex(cg, spec->index->codegen());
+            if (!idx) return nullptr;
+            tensorIndices.push_back(idx);
+        }
+        return TensorRuntime::elementPointer(cg, currentValue, tensorIndices);
+    }
+
     for (size_t position = 0; position < indices.size(); ++position) {
         ArrayIndexSpec* spec = indices[position].get();
         if (!spec || spec->isSlice || !spec->index) return nullptr;

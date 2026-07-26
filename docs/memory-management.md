@@ -1,5 +1,13 @@
 # Memory Management Design
 
+> **Superseded.** This is the earlier design proposal, kept for historical
+> reference. The implemented ownership model — strict-by-default move/borrow,
+> Copy vs owned classification, `clone`/`free`, `Shared`/`Weak`, deterministic
+> destruction, async/await with the no-borrow-across-await rule, and the M0–M8
+> milestone status — is documented in
+> [memory-model-design.md](memory-model-design.md). For the user-facing surface
+> syntax see [syntax.md](syntax.md).
+
 This document records the proposed ownership and pointer model for TensorScript.
 The goal is to keep C++-level control available while making the default path
 safe, deterministic, and easy for the compiler to check.

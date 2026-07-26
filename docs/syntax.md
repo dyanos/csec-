@@ -191,6 +191,139 @@ class Counter() {
 }
 ```
 
+## Structs
+
+A `struct` declares a value type — its fields are copied field-by-field on
+assignment or argument passing, like a C struct. Structs may declare methods:
+
+```ts
+struct Point(x: Int, y: Int) {
+    def sum(): Int = x + y
+}
+
+def main(): Int {
+    val p: Point = new Point(3, 4);
+    val q: Point = p;          // copy: p and q are independent
+    return p.sum() + q.sum();  // both still usable
+}
+```
+
+A `class`, by contrast, is a reference type with identity (see *Memory And
+Ownership*).
+
+## Multiple Return Values And Destructuring
+
+A function can return several values by declaring a tuple return type and
+listing the values after `return`:
+
+```ts
+def load(): (Int, Int, Int) {
+    return 10, 20, 12;
+}
+```
+
+The result is unpacked at the call site by listing the destination names. Use
+`_` to ignore a component:
+
+```ts
+def main(): Int {
+    a, b, c = load();      // binds a, b, c
+    val q, _ = divmod();   // ignore the second value
+    return a + b + c;
+}
+```
+
+## Memory And Ownership
+
+CSEC uses a Rust-lite ownership model that is **strict by default**: values of
+an *owned* (non-copy) type must be explicitly moved with `<-` or borrowed with
+`&`/`&mut` — you cannot silently make a second owner. Pass `--no-strict-ownership`
+to fall back to the earlier box-only checking for unmigrated code.
+
+**Copy types** are duplicated freely with no marker: the scalar primitives
+(`Int`, `Long`, `Float`, `Double`, `Bool`, `Char`, …), `String` (immutable and
+shared), references, function values, and value `struct`s.
+
+**Owned types** are affine and must move or be borrowed: reference `class`es,
+arrays/vectors, `box T`, and the owned container/smart-pointer generics
+(`Shared`, `Weak`, …).
+
+```ts
+class Account(balance: Int) { def balance(): Int = balance }
+
+def peek(acct: &Account): Int = acct.balance()   // borrow (read-only)
+def close(acct: Account): Int = acct.balance()   // takes ownership (consumes)
+
+def main(): Int {
+    val acct: Account = new Account(100);
+    val a = peek(&acct);        // borrow: acct stays owned, still usable
+    val b = close(<- acct);     // move: ownership transferred; acct is gone now
+    // using `acct` here => compile error: "use of moved value 'acct'"
+    return a + b;
+}
+```
+
+- `<- x` moves the owned value `x` (the source is consumed).
+- `&x` / `&mut x` borrow `x`; a borrow is a temporary reference that must not
+  outlive the value. Member access, indexing, and method calls auto-deref a
+  borrowed receiver (`ref.field`, `ref[i]`, `ref.method()`).
+- A **temporary** (a literal, `new X()`, a call result, a computed value) is an
+  rvalue with no other owner, so it moves implicitly — only a *named* owned
+  local needs an explicit `<-`.
+
+**Explicit heap ownership** is available through `box T`:
+
+```ts
+var b: box Int = 7;      // owns a heap Int
+var c: box Int = clone(b); // deep copy; b is still valid
+val n = consume(<- b);   // move b into consume()
+free(c);                 // release c's memory early
+```
+
+`clone(x)` produces a fresh owned copy; `free(x)` releases a heap value; owned
+locals are otherwise dropped deterministically at end of scope, on every return
+path.
+
+**Shared / Weak** provide reference counting for shared ownership:
+
+```ts
+val s = Shared(42);   // strong count 1
+val s2 = s.clone();   // retains (strong count 2)
+val w = Weak(s);      // non-owning handle
+val value = s.get();  // read the payload
+val maybe = w.get();  // payload while a strong owner is alive, else a zero value
+```
+
+The control block is freed only when both the strong and weak counts reach
+zero, so a `Weak` edge can break an ownership cycle.
+
+Two escape hatches remain available: `unsafe def ... { ... }` for raw-pointer
+work, and the `box`/borrow rules above for everything else.
+
+## Asynchronous Functions
+
+An `async def` declares an asynchronous function; `await` (a prefix operator)
+suspends until an awaited async result is ready and is valid only inside an
+`async def`:
+
+```ts
+async def fetch(): Int = 42
+async def run(): Int {
+    val x: Int = await fetch();
+    return x;
+}
+def main(): Int {
+    return run();
+}
+```
+
+The ownership rule extends across suspension points: a borrow (`&`/`&mut`) may
+not be held live across an `await`, because after suspension another task could
+mutate or drop the borrowed value. End the borrow before awaiting. `await`
+currently lowers to sequential evaluation (async functions run as ordinary
+synchronous calls) until a coroutine runtime is added; the surface syntax and
+the borrow rule are enforced today.
+
 ## Templates
 
 Function and class templates use C++-style `template<...>` declarations with
@@ -381,6 +514,13 @@ matrix, summation, product, set, and function-style notation. See the fixtures i
 
 - Statements generally end with `;`.
 - Blocks use `{ ... }`.
+- Ownership is strict by default. Compile with `--no-strict-ownership` to fall
+  back to box-only move-checking for code that has not been migrated;
+  `--strict-ownership` forces it on explicitly.
+- For the full ownership/borrow/move/destruction model and its milestone status
+  see [memory-model-design.md](memory-model-design.md); runnable examples are in
+  `examples/strict_ownership_demo.csec` and
+  `examples/strict_ownership_errors.csec`.
 - The language and runtime are evolving; tests under `tests/positive`,
   `tests/semantic_positive`, `tests/negative`, and `tests/native` are the best
   reference for exact accepted syntax.

@@ -18,6 +18,14 @@ For language syntax, see [docs/syntax.md](docs/syntax.md).
   TensorScript/CSEC syntax.
 - Scalar math, set helpers, tensor runtime helpers, and transformer-oriented
   tensor test fixtures.
+- **Strict-by-default ownership**: Copy vs owned (affine) types, explicit `<-`
+  move and `&`/`&mut` borrows, use-after-move / borrow / alias checking,
+  deterministic scope-exit destruction, `clone`, `free`, `box T`, and
+  `Shared`/`Weak` reference counting. `--no-strict-ownership` opts out.
+- **Multiple return values** with tuple return types and destructuring
+  (`a, b = f()`, `_` to ignore), and value `struct`s.
+- **async / await** with the no-borrow-across-await rule (`await` currently
+  lowers to sequential evaluation).
 - Native runtime support for printing, input, math functions, sockets, POSIX-like
   file/process helpers, parallel helpers, and dynamic library interop.
 - `[@DllImport("library", "symbol")] external def ...` for native symbol imports.
@@ -32,7 +40,8 @@ For language syntax, see [docs/syntax.md](docs/syntax.md).
 - Collection transforms: `map`, `pmap`, `filter`, and `reduce`.
 - Policy-based reduction syntax with `preduce(cpu|simd, acc, x <- xs, init)`.
 - Modeling sugar for ODE, molecular dynamics, CFD, and MCMC-style examples.
-- Safe-by-default ownership and explicit unsafe/nonatomic escape hatches.
+- Strict-by-default ownership with explicit `<-` move / `&` borrow and
+  `unsafe`/`unatomic` escape hatches.
 
 ## Requirements
 
@@ -245,5 +254,8 @@ The intended high-level numerical syntax includes:
 - Backend lowering to optimized libraries such as BLAS/LAPACK and GPU math
   libraries where possible.
 
-See `docs/memory-management.md` for the proposed ownership, borrow, move, and
-unsafe pointer model.
+See `docs/memory-model-design.md` for the implemented ownership, borrow, move,
+and destruction model (milestones M0–M8), and `docs/syntax.md` for the language
+surface. `docs/memory-management.md` is the earlier design proposal, kept for
+historical reference. Runnable ownership examples live in
+`examples/strict_ownership_demo.csec` and `examples/strict_ownership_errors.csec`.

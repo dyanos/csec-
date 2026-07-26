@@ -1498,7 +1498,12 @@ llvm::Value* codegenBuiltinOdeCall(const std::string& functionName, const std::v
     }
 
     auto* function = cg.builder.GetInsertBlock()->getParent();
-    auto* fType = llvm::FunctionType::get(f64Ty, {f64Ty, f64Ty}, false);
+    // The differential function is passed as a first-class value, i.e. a { code, env } closure. It is
+    // invoked below via the closure convention (code(env, t, y)); calling the closure pointer as a
+    // bare `double(double,double)` would execute the struct data as code and crash.
+    auto* opaquePtr = llvm::PointerType::getUnqual(cg.context);
+    auto* closureStructType = llvm::StructType::get(cg.context, { opaquePtr, opaquePtr });
+    auto* closureFnType = llvm::FunctionType::get(f64Ty, { opaquePtr, f64Ty, f64Ty }, false);
     llvm::Value* derivative = argValues[0];
     llvm::Value* t0 = coerceMathValueToDouble(cg, argValues[1]);
     llvm::Value* y0 = coerceMathValueToDouble(cg, argValues[2]);
@@ -1525,7 +1530,11 @@ llvm::Value* codegenBuiltinOdeCall(const std::string& functionName, const std::v
     cg.builder.SetInsertPoint(bodyBB);
     llvm::Value* t = cg.builder.CreateLoad(f64Ty, tPtr, "ode.t.load");
     llvm::Value* y = cg.builder.CreateLoad(f64Ty, yPtr, "ode.y.load");
-    llvm::Value* dy = cg.builder.CreateCall(fType, derivative, {t, y}, "ode.dy");
+    llvm::Value* fCode = cg.builder.CreateLoad(opaquePtr,
+        cg.builder.CreateStructGEP(closureStructType, derivative, 0, "ode.f.code"), "ode.f.code.fn");
+    llvm::Value* fEnv = cg.builder.CreateLoad(opaquePtr,
+        cg.builder.CreateStructGEP(closureStructType, derivative, 1, "ode.f.env"), "ode.f.env.ptr");
+    llvm::Value* dy = cg.builder.CreateCall(closureFnType, fCode, {fEnv, t, y}, "ode.dy");
     llvm::Value* nextY = cg.builder.CreateFAdd(y, cg.builder.CreateFMul(h, dy, "ode.delta"), "ode.next.y");
     llvm::Value* nextT = cg.builder.CreateFAdd(t, h, "ode.next.t");
     cg.builder.CreateStore(nextY, yPtr);

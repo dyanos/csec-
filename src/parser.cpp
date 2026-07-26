@@ -72,6 +72,7 @@ std::unique_ptr<Type> Parser::parseType() {
 		if (typeName == "Int" ||
 			typeName == "Float" ||
 			typeName == "Double" ||
+			typeName == "Real" ||
 			typeName == "Unit" ||
 			typeName == "Void" ||
 			typeName == "Char" ||
@@ -83,6 +84,10 @@ std::unique_ptr<Type> Parser::parseType() {
 			typeName == "Short" ||
 			typeName == "Byte" ||
 			typeName == "String") {
+			// `Real` is the math-oriented alias for a 64-bit float (getLLVMType maps it to double,
+			// and it is the declared result type of sum/mean/norm/approxEq). Without it here, a
+			// `val x: Real` was parsed as a reference ClassType and later loaded as a pointer,
+			// dereferencing the double's bit pattern as an address and crashing.
 			baseType = std::make_unique<BasicType>(typeName);
 		}
 		else {

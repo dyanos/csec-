@@ -1,0 +1,16 @@
+// Regression: `target <- source` between owned box variables must copy the box payload, not store
+// the source pointer into the target box's (payload-sized) allocation — the latter overflowed the
+// heap and hung the allocator on the next free (box Int, empty classes, etc.).
+class Empty() { def id(): Int = 0 }
+
+def main(): Int {
+    var s: box Int = 1;
+    var t: box Int = 2;
+    t <- s;
+
+    var a: box Empty = new Empty();
+    var b: box Empty = new Empty();
+    b <- a;
+
+    return 0;
+}

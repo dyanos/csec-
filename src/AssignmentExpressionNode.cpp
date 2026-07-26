@@ -7,6 +7,7 @@
 #include "type_utils.h"
 
 #include <iostream>
+#include <llvm/IR/DataLayout.h>
 
 void AssignmentExpressionNode::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
@@ -55,6 +56,30 @@ llvm::Value* AssignmentExpressionNode::codegen() {
     if (!targetPtr->getType()->isPointerTy()) {
         std::cerr << "Error: Left-hand side of assignment is not assignable" << std::endl;
         return nullptr;
+    }
+
+    // Move-assignment `target <- source` between owned box variables copies the source box's payload
+    // into the target box. Both allocations stay valid and are each freed once at scope exit, and the
+    // type checker has already marked `source` moved. The generic store below would instead write the
+    // source *pointer* (pointer-sized) into the target box's payload-sized allocation — an overflow
+    // that corrupts the heap and hangs the allocator on the next free (e.g. `box Int`/empty classes).
+    if (op == "<-") {
+        auto boxNodeType = left->getType();
+        if (boxNodeType && boxNodeType->getKind() == Type::Kind::BOX &&
+            leftValue->getType()->isPointerTy() && rightValue->getType()->isPointerTy()) {
+            auto& cg = CodeGenerator::getInstance();
+            auto* boxType = dynamic_cast<BoxType*>(boxNodeType.get());
+            llvm::Type* payloadType =
+                boxType && boxType->baseType ? cg.getLLVMType(boxType->baseType.get()) : nullptr;
+            if (payloadType) {
+                uint64_t size = cg.module->getDataLayout().getTypeAllocSize(payloadType);
+                if (size > 0) {
+                    cg.builder.CreateMemCpy(leftValue, llvm::MaybeAlign(), rightValue,
+                                            llvm::MaybeAlign(), size);
+                }
+                return leftValue;
+            }
+        }
     }
 
     llvm::Type* targetType = CodeGenerator::getInstance().getLLVMType(left->getType().get());

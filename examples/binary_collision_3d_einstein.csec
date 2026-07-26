@@ -229,11 +229,12 @@ def main(): Int {
     val h0: Double = gwStrainAmp(rWave, mu, mtot, dist);
 
     println("  observer distance D = " + (dist / mtot) + " M,  peak strain h0 = " + h0);
-    println("  sampling h_+(t), h_x(t) at r = 7 M over ~2 GW periods:");
-    println("   t/M         h_+            h_x         wave");
+    println("  waveform h(t) at r = 7 M over ~2 GW periods  (time downward):");
+    println("    '*' = h_+ ,  'o' = h_x ,  '|' = zero");
+    println("    -h0 <---------------------- 0 ----------------------> +h0");
 
     var tw: Double = 0.0;
-    val dTw: Double = periodGW / 4.0;
+    val dTw: Double = periodGW / 8.0;               // fine time resolution
     val tEnd: Double = 2.0 * periodGW;
     var posSeen: Int = 0;                            // saw h_+ > 0 ?
     var negSeen: Int = 0;                            // saw h_+ < 0 ?
@@ -241,17 +242,35 @@ def main(): Int {
         val ph: Double = omWave * tw;               // orbital phase
         val hplus: Double = h0 * cos(2.0 * ph);
         val hcross: Double = h0 * sin(2.0 * ph);
-        val band: Double = 0.05 * h0;               // near-zero band (5% of peak)
-        var marker: String = "  ~0";
-        if (hplus > band) {
-            marker = "  +peak";
+        if (hplus > 0.05 * h0) {
             posSeen = 1;
         }
-        if (hplus < 0.0 - band) {
-            marker = "  -peak";
+        if (hplus < 0.0 - 0.05 * h0) {
             negSeen = 1;
         }
-        println("   " + (tw / mtot) + "   " + hplus + "   " + hcross + "   " + marker);
+        // map strain in [-h0, +h0] onto columns [2, 58] with the zero axis at 30
+        val colPlus: Double = 30.0 + (hplus / h0) * 28.0;
+        val colCross: Double = 30.0 + (hcross / h0) * 28.0;
+        var line: String = "";
+        for (c <- 0 to 60) {
+            if (colPlus >= c and colPlus < c + 1) {
+                line = line + "*";
+            }
+            else {
+                if (colCross >= c and colCross < c + 1) {
+                    line = line + "o";
+                }
+                else {
+                    if (c == 30) {
+                        line = line + "|";
+                    }
+                    else {
+                        line = line + " ";
+                    }
+                }
+            }
+        }
+        println(line);
         tw = tw + dTw;
     }
 

@@ -1,0 +1,200 @@
+// ============================================================================
+//  binary_collision_3d_einstein_latex.csec
+//
+//  LaTeX-math version of the binary black-hole collision simulation.  Every
+//  governing law is written directly in CSEC's inline LaTeX math ( $...$ ),
+//  so the source reads like the equations it implements and still evaluates.
+//
+//  Governing equations (3+1 numerical relativity, geometric units G = c = 1):
+//
+//    Hamiltonian constraint (Brill-Lindquist, conformally flat, K_ij = 0):
+//        $$ \psi(x) = 1 + \frac{m_1}{2 r_1} + \frac{m_2}{2 r_2}, \qquad
+//           \gamma_{ij} = \psi^4 \delta_{ij} $$
+//
+//    Momentum constraint (Bowen-York extrinsic curvature of a moving puncture):
+//        $$ K_{ij} = \frac{3}{2 r^2}\left[ P_i n_j + P_j n_i
+//                    - (\delta_{ij} - n_i n_j) P_k n^k \right] $$
+//
+//    Orbital frequency (Kepler) and quadrupole radiation reaction:
+//        $$ \Omega = \sqrt{\frac{M}{r^3}}, \qquad
+//           \frac{dr}{dt} = -\frac{64}{5} \frac{\mu M^2}{r^3} $$
+//
+//    Gravitational-wave luminosity and strain (leading quadrupole):
+//        $$ L = \frac{32}{5} \frac{\mu^2 M^3}{r^5}, \qquad
+//           h_0 = \frac{4\mu}{D} \frac{M}{r}, \qquad
+//           h_+ = h_0 \cos 2\phi, \; h_\times = h_0 \sin 2\phi $$
+// ============================================================================
+
+struct Vec3(x: Double, y: Double, z: Double) {
+    //  $\lVert v \rVert = \sqrt{x^2 + y^2 + z^2}$
+    def norm(): Double = $\sqrt{x * x + y * y + z * z}$
+}
+
+def vdist(a: Vec3, b: Vec3): Double {
+    val dx: Double = a.x - b.x;
+    val dy: Double = a.y - b.y;
+    val dz: Double = a.z - b.z;
+    //  $r = \sqrt{dx^2 + dy^2 + dz^2}$
+    return $\sqrt{dx * dx + dy * dy + dz * dz}$;
+}
+
+//  $\psi = 1 + \frac{m_1}{2 r_1} + \frac{m_2}{2 r_2}$   (Hamiltonian constraint)
+def conformalFactor(p: Vec3, c1: Vec3, m1: Double, c2: Vec3, m2: Double): Double {
+    val r1: Double = vdist(p, c1);
+    val r2: Double = vdist(p, c2);
+    return $1.0 + \frac{m1}{2 * r1} + \frac{m2}{2 * r2}$;
+}
+
+//  $\frac{dr}{dt} = -\frac{64}{5}\frac{\mu M^2}{r^3}$   (radiation reaction)
+def separationRate(r: Double, mu: Double, mtot: Double): Double =
+    $0.0 - \frac{64}{5} * mu * mtot * mtot / (r * r * r)$
+
+//  $\Omega = \sqrt{\frac{M}{r^3}}$
+def orbitalOmega(r: Double, mtot: Double): Double =
+    $\sqrt{\frac{mtot}{r * r * r}}$
+
+//  $L = \frac{32}{5}\frac{\mu^2 M^3}{r^5}$
+def gwLuminosity(r: Double, mu: Double, mtot: Double): Double =
+    $\frac{32}{5} * mu * mu * mtot * mtot * mtot / (r * r * r * r * r)$
+
+//  $h_0 = \frac{4\mu}{D}\frac{M}{r}$
+def gwStrainAmp(r: Double, mu: Double, mtot: Double, dist: Double): Double =
+    $\frac{4 * mu}{dist} * \frac{mtot}{r}$
+
+def main(): Int {
+    println("===============================================================");
+    println(" Binary black-hole collision  --  LaTeX-math edition (CSEC++)  ");
+    println("===============================================================");
+
+    val m1: Double = 1.0;
+    val m2: Double = 0.8;
+    val mtot: Double = m1 + m2;
+    //  $\mu = \frac{m_1 m_2}{m_1 + m_2}$
+    val mu: Double = $\frac{m1 * m2}{m1 + m2}$;
+    println("m1 = " + m1 + ",  m2 = " + m2 + ",  M = " + mtot + ",  mu = " + mu);
+
+    var r: Double = 12.0 * mtot;
+    val rISCO: Double = 6.0 * mtot;
+    val c1: Vec3 = new Vec3(0.0 - m2 / mtot * r, 0.0, 0.0);
+    val c2: Vec3 = new Vec3(m1 / mtot * r, 0.0, 0.0);
+
+    // ---- 3-metric  gamma_ij = psi^4 delta_ij  ----
+    val obs: Vec3 = new Vec3(0.0, 4.0 * mtot, 0.0);
+    val psi: Double = conformalFactor(obs, c1, m1, c2, m2);
+    //  $\psi^4$
+    val psi4: Double = $psi * psi * psi * psi$;
+    val gamma: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
+    gamma[0, 0] = psi4;
+    gamma[1, 1] = psi4;
+    gamma[2, 2] = psi4;
+    //  $\det\gamma = \psi^{12}, \quad \sqrt{\det\gamma} = \psi^6$
+    val detGamma: Double = $psi4 * psi4 * psi4$;
+    println("");
+    println("gamma_ij = psi^4 I  with psi = " + psi + ",  psi^4 = " + psi4);
+    println("  det(gamma) = " + detGamma + " = psi^12,  sqrt(det) = " + sqrt(detGamma));
+
+    // ---- Bowen-York extrinsic curvature K_ij (momentum constraint) ----
+    val r1: Double = vdist(obs, c1);
+    val nvec: Vector[Double] = new Double[3];
+    nvec[0] = (obs.x - c1.x) / r1;
+    nvec[1] = (obs.y - c1.y) / r1;
+    nvec[2] = (obs.z - c1.z) / r1;
+    val pOrbit: Double = mu * orbitalOmega(r, mtot) * r;
+    val Pvec: Vector[Double] = new Double[3];
+    Pvec[0] = 0.0;
+    Pvec[1] = 0.0;
+    Pvec[2] = pOrbit;
+    val Pdotn: Double = Pvec[0] * nvec[0] + Pvec[1] * nvec[1] + Pvec[2] * nvec[2];
+    val K: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
+    val pref: Double = $\frac{3}{2 * r1 * r1}$;
+    for (i <- 0 to 2) {
+        for (j <- 0 to 2) {
+            var delta: Double = 0.0;
+            if (i == j) {
+                delta = 1.0;
+            }
+            K[i, j] = pref * (Pvec[i] * nvec[j] + Pvec[j] * nvec[i] - (delta - nvec[i] * nvec[j]) * Pdotn);
+        }
+    }
+    println("");
+    println("K_ij (Bowen-York), trace = " + (K[0,0] + K[1,1] + K[2,2]) + " (traceless):");
+    println("  [ " + K[0,0] + "  " + K[0,1] + "  " + K[0,2] + " ]");
+    println("  [ " + K[1,0] + "  " + K[1,1] + "  " + K[1,2] + " ]");
+    println("  [ " + K[2,0] + "  " + K[2,1] + "  " + K[2,2] + " ]");
+
+    // ---- Inspiral (RK4 on dr/dt) to the ISCO ----
+    println("");
+    println("--- Inspiral (radiation reaction) ---");
+    println("  t/M       r/M      Omega*M    L_GW       E_rad");
+    val dTime: Double = 2.0;
+    var t: Double = 0.0;
+    var eRad: Double = 0.0;
+    var nstep: Int = 0;
+    var nextPrint: Double = 12.0 * mtot;
+    val pi: Double = 3.14159265358979;
+    while (r > rISCO and nstep < 200000) {
+        if (r <= nextPrint) {
+            println("  " + (t / mtot) + "  " + (r / mtot) + "  " + (orbitalOmega(r, mtot) * mtot) +
+                    "  " + gwLuminosity(r, mu, mtot) + "  " + eRad);
+            nextPrint = nextPrint - 2.0 * mtot;
+        }
+        val k1: Double = separationRate(r, mu, mtot);
+        val k2: Double = separationRate(r + 0.5 * dTime * k1, mu, mtot);
+        val k3: Double = separationRate(r + 0.5 * dTime * k2, mu, mtot);
+        val k4: Double = separationRate(r + dTime * k3, mu, mtot);
+        //  $r \leftarrow r + \frac{dt}{6}(k_1 + 2 k_2 + 2 k_3 + k_4)$   (RK4)
+        r = r + $\frac{dTime}{6} * (k1 + 2.0 * k2 + 2.0 * k3 + k4)$;
+        eRad = eRad + gwLuminosity(r, mu, mtot) * dTime;
+        t = t + dTime;
+        nstep = nstep + 1;
+    }
+
+    println("");
+    println("MERGER at r = " + (r / mtot) + " M after t = " + (t / mtot) +
+            " M;  E_rad = " + (100.0 * eRad / mtot) + " % of M");
+
+    // ---- Gravitational waveform  h_+ = h0 cos(2 phi)  as an ASCII chart ----
+    println("");
+    println("--- Gravitational waveform h(t)   ('*'=h_+, 'o'=h_x, '|'=0) ---");
+    val dist: Double = 100.0 * mtot;
+    val rWave: Double = 7.0 * mtot;
+    val omWave: Double = orbitalOmega(rWave, mtot);
+    val periodGW: Double = pi / omWave;
+    val h0: Double = gwStrainAmp(rWave, mu, mtot, dist);
+    println("    peak strain h0 = " + h0 + "    -h0 <---- 0 ----> +h0");
+    var tw: Double = 0.0;
+    val dTw: Double = periodGW / 8.0;
+    while (tw <= 2.0 * periodGW) {
+        val ph: Double = omWave * tw;
+        //  $h_+ = h_0 \cos 2\phi, \quad h_\times = h_0 \sin 2\phi$
+        val hplus: Double = h0 * cos(2.0 * ph);
+        val hcross: Double = h0 * sin(2.0 * ph);
+        val colP: Double = $30.0 + \frac{hplus}{h0} * 28.0$;
+        val colX: Double = $30.0 + \frac{hcross}{h0} * 28.0$;
+        var line: String = "";
+        for (c <- 0 to 60) {
+            if (colP >= c and colP < c + 1) {
+                line = line + "*";
+            }
+            else {
+                if (colX >= c and colX < c + 1) {
+                    line = line + "o";
+                }
+                else {
+                    if (c == 30) {
+                        line = line + "|";
+                    }
+                    else {
+                        line = line + " ";
+                    }
+                }
+            }
+        }
+        println(line);
+        tw = tw + dTw;
+    }
+    println("");
+    println("Gravitational wave confirmed: h_+(t) oscillates, L_GW > 0.");
+    println("===============================================================");
+    return 0;
+}

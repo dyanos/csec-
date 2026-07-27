@@ -52,6 +52,35 @@ double csec_tensor_get(void* tp, long long i) {
     return t->data[i];
 }
 
+// Rank-2 (matrix) tensor: `rows x cols`, stored flat row-major.
+void* csec_tensor_new2(long long rows, long long cols, double fill) {
+    if (rows < 0) rows = 0;
+    if (cols < 0) cols = 0;
+    long long count = rows * cols;
+    CsecTensor* t = csecTensorAlloc(2, count);
+    if (t->rank >= 2) { t->dims[0] = rows; t->dims[1] = cols; }
+    for (long long i = 0; i < count; ++i) t->data[i] = fill;
+    return t;
+}
+
+double csec_tensor_get2(void* tp, long long i, long long j) {
+    auto* t = static_cast<CsecTensor*>(tp);
+    if (!t) return 0.0;
+    long long cols = t->rank >= 2 ? t->dims[1] : 1;
+    long long idx = i * cols + j;
+    if (idx < 0 || idx >= t->count) return 0.0;
+    return t->data[idx];
+}
+
+void csec_tensor_set2(void* tp, long long i, long long j, double v) {
+    auto* t = static_cast<CsecTensor*>(tp);
+    if (!t) return;
+    long long cols = t->rank >= 2 ? t->dims[1] : 1;
+    long long idx = i * cols + j;
+    if (idx < 0 || idx >= t->count) return;
+    t->data[idx] = v;
+}
+
 void csec_tensor_set(void* tp, long long i, double v) {
     auto* t = static_cast<CsecTensor*>(tp);
     if (!t || i < 0 || i >= t->count) return;

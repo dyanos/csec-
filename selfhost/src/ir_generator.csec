@@ -856,6 +856,10 @@ def llvmCallArgumentType(tokens: String, start: Int, rawEnd: Int): String {
     if (end <= start) {
         return "i32";
     }
+    // Typed expression arguments (Double math, tensor/String/Nat handles).
+    if (expressionIsDouble(tokens, start, end)) { return "double"; }
+    if (expressionIsString(tokens, start, end) or expressionIsTensor(tokens, start, end) or
+        expressionIsNat(tokens, start, end)) { return "ptr"; }
     if (tokenKindAt(tokens, start) == kindString() and end == start + 1) {
         return "ptr";
     }
@@ -914,6 +918,16 @@ def generateLLVMCallArgumentLoadI32(tokens: String, start: Int, rawEnd: Int, res
     val end: Int = trimExpressionEnd(tokens, start, rawEnd);
     if (end <= start) {
         return "  " + resultName + " = add i32 0, 0\n";
+    }
+    // Compute a typed argument: a Double expression as double, a tensor/String/Nat as a ptr handle.
+    if (expressionIsDouble(tokens, start, end)) {
+        return generateLLVMExpressionF64(tokens, start, end, resultName);
+    }
+    if (expressionIsNat(tokens, start, end)) {
+        return generateLLVMExpressionNat(tokens, start, end, resultName);
+    }
+    if (expressionIsString(tokens, start, end) or expressionIsTensor(tokens, start, end)) {
+        return generateLLVMExpressionPtr(tokens, start, end, resultName);
     }
     if (tokenKindAt(tokens, start) == kindString() and end == start + 1) {
         val text: String = tokenTextAt(tokens, start);
@@ -1088,59 +1102,60 @@ def generateLLVMCallArgumentLoadI32(tokens: String, start: Int, rawEnd: Int, res
     return "  " + resultName + " = add i32 0, 0\n";
 }
 
-def generateLLVMCallArgumentLoadsI32(tokens: String, argsStart: Int, argsEnd: Int, resultName: String): String {
-    val first: Int = skipTrivia(tokens, argsStart);
-    val end: Int = trimExpressionEnd(tokens, first, argsEnd);
-    if (first >= end) { return ""; }
-    val lastComma: Int = findTopLevelOperator(tokens, first, end, 12);
-    if (lastComma < first) { return generateLLVMCallArgumentLoadI32(tokens, first, end, resultName + ".arg0"); }
-    val secondComma: Int = findTopLevelOperator(tokens, first, lastComma, 12);
-    if (secondComma < first) {
-        return generateLLVMCallArgumentLoadI32(tokens, first, lastComma, resultName + ".arg0") +
-            generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, lastComma + 1), end, resultName + ".arg1");
+// First depth-0 comma in [start,end), or -1. Commas inside ()/[] (nested calls, t[i,j]) are skipped.
+def firstTopLevelComma(tokens: String, start: Int, end: Int): Int {
+    var depth: Int = 0;
+    var cursor: Int = start;
+    while (cursor < end) {
+        if (tokenIs(tokens, cursor, kindOperator(), "(") or tokenIs(tokens, cursor, kindOperator(), "[")) {
+            depth = depth + 1;
+        }
+        else if (tokenIs(tokens, cursor, kindOperator(), ")") or tokenIs(tokens, cursor, kindOperator(), "]")) {
+            depth = depth - 1;
+        }
+        else if (depth == 0 and tokenIs(tokens, cursor, kindOperator(), ",")) {
+            return cursor;
+        }
+        cursor = cursor + 1;
     }
-    val firstComma: Int = findTopLevelOperator(tokens, first, secondComma, 12);
-    if (firstComma < first) {
-        return generateLLVMCallArgumentLoadI32(tokens, first, secondComma, resultName + ".arg0") +
-            generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, secondComma + 1), lastComma, resultName + ".arg1") +
-            generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, lastComma + 1), end, resultName + ".arg2");
-    }
-    return generateLLVMCallArgumentLoadI32(tokens, first, firstComma, resultName + ".arg0") +
-        generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, firstComma + 1), secondComma, resultName + ".arg1") +
-        generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, secondComma + 1), lastComma, resultName + ".arg2") +
-        generateLLVMCallArgumentLoadI32(tokens, skipTrivia(tokens, lastComma + 1), end, resultName + ".arg3");
+    return 0 - 1;
 }
 
+// Emit the load/compute code for every comma-separated argument (any count) into resultName.argN.
+def generateLLVMCallArgumentLoadsI32(tokens: String, argsStart: Int, argsEnd: Int, resultName: String): String {
+    val end: Int = trimExpressionEnd(tokens, skipTrivia(tokens, argsStart), argsEnd);
+    val builder: Long = csec_string_builder_new();
+    var argStart: Int = skipTrivia(tokens, argsStart);
+    var index: Int = 0;
+    while (argStart < end) {
+        val comma: Int = firstTopLevelComma(tokens, argStart, end);
+        var argEnd: Int = end;
+        if (comma >= argStart) { argEnd = comma; }
+        csec_string_builder_append(builder,
+            generateLLVMCallArgumentLoadI32(tokens, argStart, argEnd, resultName + ".arg" + index));
+        if (comma >= argStart) { argStart = skipTrivia(tokens, comma + 1); index = index + 1; }
+        else { argStart = end; }
+    }
+    return csec_string_builder_finish(builder);
+}
+
+// Emit the `type value, type value, ...` argument list for a call (any argument count).
 def generateLLVMCallArgumentListI32(tokens: String, argsStart: Int, argsEnd: Int, resultName: String): String {
-    val first: Int = skipTrivia(tokens, argsStart);
-    val end: Int = trimExpressionEnd(tokens, first, argsEnd);
-    if (first >= end) { return ""; }
-    val lastComma: Int = findTopLevelOperator(tokens, first, end, 12);
-    if (lastComma < first) {
-        return llvmCallArgumentType(tokens, first, end) + " " +
-            llvmCallArgumentValue(tokens, first, end, resultName, 0);
+    val end: Int = trimExpressionEnd(tokens, skipTrivia(tokens, argsStart), argsEnd);
+    val builder: Long = csec_string_builder_new();
+    var argStart: Int = skipTrivia(tokens, argsStart);
+    var index: Int = 0;
+    while (argStart < end) {
+        val comma: Int = firstTopLevelComma(tokens, argStart, end);
+        var argEnd: Int = end;
+        if (comma >= argStart) { argEnd = comma; }
+        if (index > 0) { csec_string_builder_append(builder, ", "); }
+        csec_string_builder_append(builder, llvmCallArgumentType(tokens, argStart, argEnd) + " " +
+            llvmCallArgumentValue(tokens, argStart, argEnd, resultName, index));
+        if (comma >= argStart) { argStart = skipTrivia(tokens, comma + 1); index = index + 1; }
+        else { argStart = end; }
     }
-    val secondComma: Int = findTopLevelOperator(tokens, first, lastComma, 12);
-    if (secondComma < first) {
-        val second: Int = skipTrivia(tokens, lastComma + 1);
-        return llvmCallArgumentType(tokens, first, lastComma) + " " + llvmCallArgumentValue(tokens, first, lastComma, resultName, 0) + ", " +
-            llvmCallArgumentType(tokens, second, end) + " " + llvmCallArgumentValue(tokens, second, end, resultName, 1);
-    }
-    val firstComma: Int = findTopLevelOperator(tokens, first, secondComma, 12);
-    if (firstComma < first) {
-        val second: Int = skipTrivia(tokens, secondComma + 1);
-        val third: Int = skipTrivia(tokens, lastComma + 1);
-        return llvmCallArgumentType(tokens, first, secondComma) + " " + llvmCallArgumentValue(tokens, first, secondComma, resultName, 0) + ", " +
-            llvmCallArgumentType(tokens, second, lastComma) + " " + llvmCallArgumentValue(tokens, second, lastComma, resultName, 1) + ", " +
-            llvmCallArgumentType(tokens, third, end) + " " + llvmCallArgumentValue(tokens, third, end, resultName, 2);
-    }
-    val second: Int = skipTrivia(tokens, firstComma + 1);
-    val third: Int = skipTrivia(tokens, secondComma + 1);
-    val fourth: Int = skipTrivia(tokens, lastComma + 1);
-    return llvmCallArgumentType(tokens, first, firstComma) + " " + llvmCallArgumentValue(tokens, first, firstComma, resultName, 0) + ", " +
-        llvmCallArgumentType(tokens, second, secondComma) + " " + llvmCallArgumentValue(tokens, second, secondComma, resultName, 1) + ", " +
-        llvmCallArgumentType(tokens, third, lastComma) + " " + llvmCallArgumentValue(tokens, third, lastComma, resultName, 2) + ", " +
-        llvmCallArgumentType(tokens, fourth, end) + " " + llvmCallArgumentValue(tokens, fourth, end, resultName, 3);
+    return csec_string_builder_finish(builder);
 }
 
 def llvmRuntimeCallName(name: String): String {
@@ -1475,13 +1490,26 @@ def generateLLVMExpressionF64(tokens: String, start: Int, rawEnd: Int, resultNam
             "  " + resultName + " = call double @" + llvmRuntimeCallName(tokenTextAt(tokens, start)) + "(" +
             generateLLVMCallArgumentListI32(tokens, start + 2, end - 1, resultName) + ")\n";
     }
-    // Vector element read  t[i]  -> csec_tensor_get(load t, i).
+    // Vector/matrix element read  t[i]  or  t[i, j]  -> csec_tensor_get / csec_tensor_get2.
     if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
         tokenIs(tokens, start + 1, kindOperator(), "[") and
         findClosingToken(tokens, start + 1, end, "[", "]") == end - 1) {
         val storageName: String = lookupVisibleStorageName(tokens, start, tokenTextAt(tokens, start));
-        return "  " + resultName + ".tobj = load ptr, ptr %" + storageName + "\n" +
-            generateLLVMExpressionI32(tokens, start + 2, end - 1, resultName + ".tidx") +
+        val idxStart: Int = start + 2;
+        val idxEnd: Int = end - 1;
+        val comma: Int = findTopLevelOperator(tokens, idxStart, idxEnd, 12);
+        val objLoad: String = "  " + resultName + ".tobj = load ptr, ptr %" + storageName + "\n";
+        if (comma > idxStart) {
+            return objLoad +
+                generateLLVMExpressionI32(tokens, idxStart, comma, resultName + ".ti") +
+                "  " + resultName + ".ti64 = sext i32 " + resultName + ".ti to i64\n" +
+                generateLLVMExpressionI32(tokens, skipTrivia(tokens, comma + 1), idxEnd, resultName + ".tj") +
+                "  " + resultName + ".tj64 = sext i32 " + resultName + ".tj to i64\n" +
+                "  " + resultName + " = call double @csec_tensor_get2(ptr " + resultName + ".tobj, i64 " +
+                resultName + ".ti64, i64 " + resultName + ".tj64)\n";
+        }
+        return objLoad +
+            generateLLVMExpressionI32(tokens, idxStart, idxEnd, resultName + ".tidx") +
             "  " + resultName + ".tidx64 = sext i32 " + resultName + ".tidx to i64\n" +
             "  " + resultName + " = call double @csec_tensor_get(ptr " + resultName + ".tobj, i64 " +
             resultName + ".tidx64)\n";
@@ -2073,19 +2101,47 @@ def expressionIsTensor(tokens: String, rawStart: Int, rawEnd: Int): Boolean {
     return false;
 }
 
-// Element count of `new Tensor< E, d1, d2, ... >`: the last dimension literal (rank-1 vectors use one).
-def tensorNewCountText(tokens: String, start: Int, end: Int): String {
+// The `which`-th (0-based) integer dimension literal of `new Tensor< E, d0, d1, .. >`, or "" if absent.
+def tensorNewDimText(tokens: String, start: Int, end: Int, which: Int): String {
     var lt: Int = start;
     while (lt < end and !tokenIs(tokens, lt, kindOperator(), "<")) { lt = lt + 1; }
-    if (lt >= end) { return "1"; }
+    if (lt >= end) { return ""; }
     val gt: Int = findClosingToken(tokens, lt, end, "<", ">");
     var cursor: Int = lt + 1;
-    var last: String = "1";
+    var seen: Int = 0;
     while (cursor < gt) {
-        if (tokenKindAt(tokens, cursor) == kindInteger()) { last = tokenTextAt(tokens, cursor); }
+        if (tokenKindAt(tokens, cursor) == kindInteger()) {
+            if (seen == which) { return tokenTextAt(tokens, cursor); }
+            seen = seen + 1;
+        }
         cursor = cursor + 1;
     }
-    return last;
+    return "";
+}
+
+// Element write  t[i] = v  or  t[i, j] = v  -> csec_tensor_set / csec_tensor_set2.
+def generateTensorElementSet(tokens: String, cursor: Int, next: Int): String {
+    val close: Int = findClosingToken(tokens, cursor + 1, next, "[", "]");
+    val storageName: String = lookupVisibleStorageName(tokens, cursor, tokenTextAt(tokens, cursor));
+    val idxStart: Int = cursor + 2;
+    val comma: Int = findTopLevelOperator(tokens, idxStart, close, 12);
+    val objLoad: String = "  %tset.obj." + cursor + " = load ptr, ptr %" + storageName + "\n";
+    if (comma > idxStart) {
+        return objLoad +
+            generateLLVMExpressionI32(tokens, idxStart, comma, "%tset.ti." + cursor) +
+            "  %tset.ti64." + cursor + " = sext i32 %tset.ti." + cursor + " to i64\n" +
+            generateLLVMExpressionI32(tokens, skipTrivia(tokens, comma + 1), close, "%tset.tj." + cursor) +
+            "  %tset.tj64." + cursor + " = sext i32 %tset.tj." + cursor + " to i64\n" +
+            generateLLVMExpressionF64(tokens, close + 2, next, "%tset.val." + cursor) +
+            "  call void @csec_tensor_set2(ptr %tset.obj." + cursor + ", i64 %tset.ti64." + cursor +
+            ", i64 %tset.tj64." + cursor + ", double %tset.val." + cursor + ")\n";
+    }
+    return objLoad +
+        generateLLVMExpressionI32(tokens, idxStart, close, "%tset.idx." + cursor) +
+        "  %tset.i64." + cursor + " = sext i32 %tset.idx." + cursor + " to i64\n" +
+        generateLLVMExpressionF64(tokens, close + 2, next, "%tset.val." + cursor) +
+        "  call void @csec_tensor_set(ptr %tset.obj." + cursor + ", i64 %tset.i64." + cursor +
+        ", double %tset.val." + cursor + ")\n";
 }
 
 def generateLLVMExpressionPtr(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
@@ -2098,16 +2154,22 @@ def generateLLVMExpressionPtr(tokens: String, start: Int, rawEnd: Int, resultNam
         findClosingToken(tokens, start, end, "(", ")") == end - 1) {
         return generateLLVMExpressionPtr(tokens, start + 1, end - 1, resultName);
     }
-    // `new Tensor< .., N >( fill )` -> a runtime-allocated vector of N elements set to fill.
+    // `new Tensor< E, d0 [, d1] >( fill )` -> a runtime vector (rank 1) or matrix (rank 2) set to fill.
     if (tokenKindAt(tokens, start) == kindKeyword() and strEq(tokenTextAt(tokens, start), "new") and
         tokenIs(tokens, start + 1, kindIdentifier(), "Tensor")) {
-        val count: String = tensorNewCountText(tokens, start, end);
+        val d0: String = tensorNewDimText(tokens, start, end, 0);
+        val d1: String = tensorNewDimText(tokens, start, end, 1);
         var lp: Int = start;
         while (lp < end and !tokenIs(tokens, lp, kindOperator(), "(")) { lp = lp + 1; }
         val rp: Int = findClosingToken(tokens, lp, end, "(", ")");
         val fillName: String = resultName + ".tfill";
-        return generateLLVMExpressionF64(tokens, lp + 1, rp, fillName) +
-            "  " + resultName + " = call ptr @csec_tensor_new(i64 " + count + ", double " + fillName + ")\n";
+        val fillCode: String = generateLLVMExpressionF64(tokens, lp + 1, rp, fillName);
+        if (d1.length > 0) {
+            return fillCode + "  " + resultName + " = call ptr @csec_tensor_new2(i64 " + d0 +
+                ", i64 " + d1 + ", double " + fillName + ")\n";
+        }
+        return fillCode + "  " + resultName + " = call ptr @csec_tensor_new(i64 " + d0 +
+            ", double " + fillName + ")\n";
     }
     // Component-wise tensor arithmetic: t (+|-) t elementwise; t (*|/) scalar broadcast.
     val topOp: Int = expressionTopLevelOperator(tokens, start, end);
@@ -2552,16 +2614,7 @@ def generateLLVMFlatBodyI32(tokens: String, bodyStart: Int, bodyEnd: Int): Strin
             else
             if (tokenKindAt(tokens, cursor) == kindIdentifier() and
                 tokenIs(tokens, cursor + 1, kindOperator(), "[")) {
-                // Vector element write  t[i] = v  -> csec_tensor_set(load t, i, v).
-                val close: Int = findClosingToken(tokens, cursor + 1, next, "[", "]");
-                val storageName: String = lookupVisibleStorageName(tokens, cursor, tokenTextAt(tokens, cursor));
-                csec_string_builder_append(builder,
-                    "  %tset.obj." + cursor + " = load ptr, ptr %" + storageName + "\n" +
-                    generateLLVMExpressionI32(tokens, cursor + 2, close, "%tset.idx." + cursor) +
-                    "  %tset.i64." + cursor + " = sext i32 %tset.idx." + cursor + " to i64\n" +
-                    generateLLVMExpressionF64(tokens, close + 2, next, "%tset.val." + cursor) +
-                    "  call void @csec_tensor_set(ptr %tset.obj." + cursor + ", i64 %tset.i64." + cursor +
-                    ", double %tset.val." + cursor + ")\n");
+                csec_string_builder_append(builder, generateTensorElementSet(tokens, cursor, next));
             }
             else if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
                 val targetType: String = lookupVisibleValueType(tokens, cursor, tokenTextAt(tokens, cursor));
@@ -2860,16 +2913,7 @@ def generateLLVMMainBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int):
             }
             else if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier() and
                 tokenIs(tokens, cursor + 1, kindOperator(), "[")) {
-                // Vector element write  t[i] = v  -> csec_tensor_set(load t, i, v).
-                val closeE: Int = findClosingToken(tokens, cursor + 1, next, "[", "]");
-                val storageNameE: String = lookupVisibleStorageName(tokens, cursor, tokenTextAt(tokens, cursor));
-                csec_string_builder_append(builder,
-                    "  %tset.obj." + cursor + " = load ptr, ptr %" + storageNameE + "\n" +
-                    generateLLVMExpressionI32(tokens, cursor + 2, closeE, "%tset.idx." + cursor) +
-                    "  %tset.i64." + cursor + " = sext i32 %tset.idx." + cursor + " to i64\n" +
-                    generateLLVMExpressionF64(tokens, closeE + 2, next, "%tset.val." + cursor) +
-                    "  call void @csec_tensor_set(ptr %tset.obj." + cursor + ", i64 %tset.i64." + cursor +
-                    ", double %tset.val." + cursor + ")\n");
+                csec_string_builder_append(builder, generateTensorElementSet(tokens, cursor, next));
             }
             else if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier()) {
                 val targetType: String = lookupVisibleValueType(tokens, cursor, tokenTextAt(tokens, cursor));
@@ -3270,10 +3314,9 @@ def generateLLVMPointerBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: In
                     "if.end." + labelSeed + ":\n");
             }
         }
-        else if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
-            csec_string_builder_append(builder, generateLLVMAssignmentPtr(tokens, cursor, next));
-        }
         else {
+            // Expression statements, while/for, element writes and println: let the flat body handle
+            // them (it dispatches assignments by type and knows tensor element-set / println).
             csec_string_builder_append(builder, generateLLVMFlatBodyI32(tokens, cursor, next));
         }
         cursor = skipTrivia(tokens, next);
@@ -3542,6 +3585,9 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader17: Int = csec_string_builder_append(builder, "declare ptr @csec_string_substring(ptr, i32, i32)\n");
     val appendHeader18: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_i64(i64)\n");
     val appendHeader18d: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_double(double)\n");
+    val appendHeaderMath1: Int = csec_string_builder_append(builder, "declare double @sqrt(double)\n");
+    val appendHeaderMath2: Int = csec_string_builder_append(builder, "declare double @cos(double)\n");
+    val appendHeaderMath3: Int = csec_string_builder_append(builder, "declare double @sin(double)\n");
     val appendHeader19: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_char(i8)\n");
     val appendHeaderNat1: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_from_i64(i64)\n");
     val appendHeaderNat2: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_from_decimal(ptr)\n");
@@ -3553,6 +3599,9 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeaderTen1: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_new(i64, double)\n");
     val appendHeaderTen2: Int = csec_string_builder_append(builder, "declare double @csec_tensor_get(ptr, i64)\n");
     val appendHeaderTen3: Int = csec_string_builder_append(builder, "declare void @csec_tensor_set(ptr, i64, double)\n");
+    val appendHeaderTen2a: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_new2(i64, i64, double)\n");
+    val appendHeaderTen2b: Int = csec_string_builder_append(builder, "declare double @csec_tensor_get2(ptr, i64, i64)\n");
+    val appendHeaderTen2c: Int = csec_string_builder_append(builder, "declare void @csec_tensor_set2(ptr, i64, i64, double)\n");
     val appendHeaderTen4: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_add(ptr, ptr)\n");
     val appendHeaderTen5: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_sub(ptr, ptr)\n");
     val appendHeaderTen6: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_mul(ptr, ptr)\n");
@@ -3693,6 +3742,9 @@ def generateLLVMModule(tokens: String): String {
         "declare ptr @csec_string_substring(ptr, i32, i32)\n" +
         "declare ptr @csec_to_string_i64(i64)\n" +
         "declare ptr @csec_to_string_double(double)\n" +
+        "declare double @sqrt(double)\n" +
+        "declare double @cos(double)\n" +
+        "declare double @sin(double)\n" +
         "declare ptr @csec_to_string_char(i8)\n" +
         "declare ptr @csec_bigint_from_i64(i64)\n" +
         "declare ptr @csec_bigint_from_decimal(ptr)\n" +
@@ -3704,6 +3756,9 @@ def generateLLVMModule(tokens: String): String {
         "declare ptr @csec_tensor_new(i64, double)\n" +
         "declare double @csec_tensor_get(ptr, i64)\n" +
         "declare void @csec_tensor_set(ptr, i64, double)\n" +
+        "declare ptr @csec_tensor_new2(i64, i64, double)\n" +
+        "declare double @csec_tensor_get2(ptr, i64, i64)\n" +
+        "declare void @csec_tensor_set2(ptr, i64, i64, double)\n" +
         "declare ptr @csec_tensor_add(ptr, ptr)\n" +
         "declare ptr @csec_tensor_sub(ptr, ptr)\n" +
         "declare ptr @csec_tensor_mul(ptr, ptr)\n" +

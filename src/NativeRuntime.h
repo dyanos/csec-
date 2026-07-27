@@ -128,6 +128,15 @@ CSEC_NATIVE_API char* csec_string_to_lower(const char* value);
 CSEC_NATIVE_API char* csec_string_trim(const char* value);
 CSEC_NATIVE_API char* csec_to_string_i64(long long value);
 CSEC_NATIVE_API char* csec_to_string_double(double value);
+
+// Arbitrary-precision integers backing the Nat (Gaussian integer) type. Handles
+// are opaque, heap-allocated, caller-owned (leaked), like the string helpers.
+CSEC_NATIVE_API void* csec_bigint_from_i64(long long value);
+CSEC_NATIVE_API void* csec_bigint_add(void* a, void* b);
+CSEC_NATIVE_API void* csec_bigint_sub(void* a, void* b);
+CSEC_NATIVE_API void* csec_bigint_mul(void* a, void* b);
+CSEC_NATIVE_API int   csec_bigint_cmp(void* a, void* b);
+CSEC_NATIVE_API char* csec_bigint_to_string(void* a);
 CSEC_NATIVE_API char* csec_to_string_bool(int value);
 CSEC_NATIVE_API char* csec_to_string_char(char value);
 CSEC_NATIVE_API char* csec_replace_dots_with_slash(const char* value);

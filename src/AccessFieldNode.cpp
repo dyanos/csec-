@@ -74,7 +74,10 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
     auto& cg = CodeGenerator::getInstance();
-    llvm::Type* fieldLLVMType = cg.getLLVMType(getType().get());
+    // Load with the field's ABI *storage* type, which is how it was laid out in the struct. For a
+    // reference-typed field (a non-struct class such as BigInt) that is a `ptr` handle, not the pointee
+    // struct that getLLVMType would return -- loading the struct-by-value from the slot would be wrong.
+    llvm::Type* fieldLLVMType = getABIStorageType(getType().get());
     if (!fieldLLVMType) {
         std::cerr << "Error: Field '" << targetName << "' has an unsupported type" << std::endl;
         return nullptr;

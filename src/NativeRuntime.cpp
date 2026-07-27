@@ -46,3 +46,4 @@
 #include "native_runtime/llvm_expressions.inc"
 #include "native_runtime/llvm_module.inc"
 #include "native_runtime/runtime_services.inc"
+#include "native_runtime/bigint_runtime.inc"

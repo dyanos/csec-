@@ -10,8 +10,9 @@
 //  CSEC written on top of them.
 // ============================================================================
 
-// Gaussian norm  N(z) = re^2 + im^2  (a natural number; it is multiplicative).
-def norm(z: Nat): Long = z.re * z.re + z.im * z.im
+// Gaussian norm  N(z) = re^2 + im^2  (a natural number; it is multiplicative). BigInt so it never
+// overflows -- the norm of a big Gaussian is a big natural number.
+def norm(z: Nat): BigInt = z.re * z.re + z.im * z.im
 
 // Complex conjugate  conj(re + im i) = re - im i.
 def conj(z: Nat): Nat = new Nat(z.re, 0 - z.im)
@@ -76,6 +77,50 @@ def main(): Int {
     println("  a*i + b*i = " + show(rhs));
     if (natEq(lhs, rhs)) {
         println("  => confirmed.");
+    }
+
+    // ---- Unbounded scale: a natural number has no 64-bit ceiling ----
+    println("");
+    println("--- Unbounded scale (a signed 64-bit int overflows past ~9.2e18) ---");
+
+    //  2^100  by repeated multiplication -- 31 exact digits.
+    val two: Nat = new Nat(2, 0);
+    var p2: Nat = new Nat(1, 0);
+    var k: Int = 0;
+    while (k < 100) {
+        p2 = p2 * two;
+        k = k + 1;
+    }
+    println("  2^100        = " + p2.re);
+
+    //  30!  -- 33 exact digits.
+    var fact: Nat = new Nat(1, 0);
+    var n: Int = 1;
+    while (n <= 30) {
+        fact = fact * new Nat(n, 0);
+        n = n + 1;
+    }
+    println("  30!          = " + fact.re);
+
+    //  (3+2i)^20  in the Gaussian integers; its norm must equal N(3+2i)^20 = 13^20 exactly.
+    var z: Nat = new Nat(1, 0);
+    var e: Int = 0;
+    while (e < 20) {
+        z = z * a;
+        e = e + 1;
+    }
+    var pw: Nat = new Nat(1, 0);
+    val thirteen: Nat = new Nat(13, 0);
+    var j: Int = 0;
+    while (j < 20) {
+        pw = pw * thirteen;
+        j = j + 1;
+    }
+    println("  (3+2i)^20    = " + show(z));
+    println("  N((3+2i)^20) = " + norm(z));
+    println("  13^20        = " + pw.re);
+    if (norm(z) == pw.re) {
+        println("  => confirmed:  N(z^20) = N(z)^20 = 13^20  (23 digits, exact, no overflow)");
     }
 
     println("=====================================================");

@@ -1450,6 +1450,15 @@ def generateLLVMLoadF64IfIdentifier(tokens: String, start: Int, rawEnd: Int): St
     return "";
 }
 
+// A vector's named component: x/y/z/w -> element index 0..3, or -1 for any other field.
+def tensorComponentIndex(name: String): Int {
+    if (strEq(name, "x")) { return 0; }
+    if (strEq(name, "y")) { return 1; }
+    if (strEq(name, "z")) { return 2; }
+    if (strEq(name, "w")) { return 3; }
+    return 0 - 1;
+}
+
 // Last top-level (depth-0) token whose text equals `word` -- used to find a tensor operator like `inner`
 // that is not one of the single-character arithmetic operators.
 def findTopLevelKeywordOperator(tokens: String, start: Int, rawEnd: Int, word: String): Int {
@@ -1489,6 +1498,16 @@ def generateLLVMExpressionF64(tokens: String, start: Int, rawEnd: Int, resultNam
         return generateLLVMCallArgumentLoadsI32(tokens, start + 2, end - 1, resultName) +
             "  " + resultName + " = call double @" + llvmRuntimeCallName(tokenTextAt(tokens, start)) + "(" +
             generateLLVMCallArgumentListI32(tokens, start + 2, end - 1, resultName) + ")\n";
+    }
+    // Named vector component read  v.x / v.y / v.z / v.w  -> csec_tensor_get(load v, 0..3).
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 3 and
+        tokenIs(tokens, start + 1, kindOperator(), ".") and
+        tokenKindAt(tokens, start + 2) == kindIdentifier() and
+        tensorComponentIndex(tokenTextAt(tokens, start + 2)) >= 0) {
+        val storageName: String = lookupVisibleStorageName(tokens, start, tokenTextAt(tokens, start));
+        return "  " + resultName + ".tobj = load ptr, ptr %" + storageName + "\n" +
+            "  " + resultName + " = call double @csec_tensor_get(ptr " + resultName + ".tobj, i64 " +
+            tensorComponentIndex(tokenTextAt(tokens, start + 2)) + ")\n";
     }
     // Vector/matrix element read  t[i]  or  t[i, j]  -> csec_tensor_get / csec_tensor_get2.
     if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
@@ -2119,8 +2138,17 @@ def tensorNewDimText(tokens: String, start: Int, end: Int, which: Int): String {
     return "";
 }
 
-// Element write  t[i] = v  or  t[i, j] = v  -> csec_tensor_set / csec_tensor_set2.
+// Element write  t[i] = v ,  t[i, j] = v , or named component  t.x = v .
 def generateTensorElementSet(tokens: String, cursor: Int, next: Int): String {
+    // Named component  v.x = value  -> csec_tensor_set(load v, 0..3, value).
+    if (tokenIs(tokens, cursor + 1, kindOperator(), ".")) {
+        val comp: Int = tensorComponentIndex(tokenTextAt(tokens, cursor + 2));
+        val storageNameC: String = lookupVisibleStorageName(tokens, cursor, tokenTextAt(tokens, cursor));
+        return "  %tset.obj." + cursor + " = load ptr, ptr %" + storageNameC + "\n" +
+            generateLLVMExpressionF64(tokens, cursor + 4, next, "%tset.val." + cursor) +
+            "  call void @csec_tensor_set(ptr %tset.obj." + cursor + ", i64 " + comp +
+            ", double %tset.val." + cursor + ")\n";
+    }
     val close: Int = findClosingToken(tokens, cursor + 1, next, "[", "]");
     val storageName: String = lookupVisibleStorageName(tokens, cursor, tokenTextAt(tokens, cursor));
     val idxStart: Int = cursor + 2;
@@ -2613,7 +2641,9 @@ def generateLLVMFlatBodyI32(tokens: String, bodyStart: Int, bodyEnd: Int): Strin
             }
             else
             if (tokenKindAt(tokens, cursor) == kindIdentifier() and
-                tokenIs(tokens, cursor + 1, kindOperator(), "[")) {
+                (tokenIs(tokens, cursor + 1, kindOperator(), "[") or
+                 (tokenIs(tokens, cursor + 1, kindOperator(), ".") and
+                  tensorComponentIndex(tokenTextAt(tokens, cursor + 2)) >= 0))) {
                 csec_string_builder_append(builder, generateTensorElementSet(tokens, cursor, next));
             }
             else if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
@@ -2912,7 +2942,9 @@ def generateLLVMMainBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int):
                     argCodeP + "  call void @csec_print_string(ptr " + strNameP + ")\n" + newlineP);
             }
             else if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier() and
-                tokenIs(tokens, cursor + 1, kindOperator(), "[")) {
+                (tokenIs(tokens, cursor + 1, kindOperator(), "[") or
+                 (tokenIs(tokens, cursor + 1, kindOperator(), ".") and
+                  tensorComponentIndex(tokenTextAt(tokens, cursor + 2)) >= 0))) {
                 csec_string_builder_append(builder, generateTensorElementSet(tokens, cursor, next));
             }
             else if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier()) {

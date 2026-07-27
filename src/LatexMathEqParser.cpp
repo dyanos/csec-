@@ -330,7 +330,16 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parseMultiplicative() {
 			std::string cmd = tryPeekLatexCommand();
 			if (cmd == "times" || cmd == "div" || cmd == "cdot") {
 				advance(); // consume '\'
-				op = advance().value;
+				op = advance().value; // "times" / "div" / "cdot"
+				// In math these are ordinary arithmetic: \cdot and \times multiply, \div divides.
+				// Emit the standard operators so codegen evaluates them (the raw command names have
+				// no codegen handler and would evaluate to 0).
+				if (op == "cdot" || op == "times") {
+					op = "*";
+				}
+				else if (op == "div") {
+					op = "/";
+				}
 			}
 			else {
 				break;
@@ -353,7 +362,9 @@ std::unique_ptr<ASTNode> LatexMathEqParser::parsePostfix() {
 		if (check(TokenType::OPERATOR, "^")) {
 			advance(); // consume '^'
 			auto exponent = parseArg();
-			node = std::make_unique<BinaryExpressionNode>(std::move(node), "^", std::move(exponent));
+			// In math `^` is exponentiation; emit the power operator `**` (CSEC's `^` is bitwise XOR,
+			// which returns 0 on the floating-point operands typical of a formula).
+			node = std::make_unique<BinaryExpressionNode>(std::move(node), "**", std::move(exponent));
 		}
 		else if (check(TokenType::OPERATOR, "_")) {
 			advance(); // consume '_'

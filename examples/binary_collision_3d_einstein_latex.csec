@@ -27,7 +27,7 @@
 
 struct Vec3(x: Double, y: Double, z: Double) {
     //  $\lVert v \rVert = \sqrt{x^2 + y^2 + z^2}$
-    def norm(): Double = $\sqrt{x * x + y * y + z * z}$
+    def norm(): Double = $\sqrt{x^2 + y^2 + z^2}$
 }
 
 def vdist(a: Vec3, b: Vec3): Double {
@@ -35,31 +35,31 @@ def vdist(a: Vec3, b: Vec3): Double {
     val dy: Double = a.y - b.y;
     val dz: Double = a.z - b.z;
     //  $r = \sqrt{dx^2 + dy^2 + dz^2}$
-    return $\sqrt{dx * dx + dy * dy + dz * dz}$;
+    return $\sqrt{dx^2 + dy^2 + dz^2}$;
 }
 
 //  $\psi = 1 + \frac{m_1}{2 r_1} + \frac{m_2}{2 r_2}$   (Hamiltonian constraint)
 def conformalFactor(p: Vec3, c1: Vec3, m1: Double, c2: Vec3, m2: Double): Double {
     val r1: Double = vdist(p, c1);
     val r2: Double = vdist(p, c2);
-    return $1.0 + \frac{m1}{2 * r1} + \frac{m2}{2 * r2}$;
+    return $1.0 + \frac{m1}{2 \cdot r1} + \frac{m2}{2 \cdot r2}$;
 }
 
 //  $\frac{dr}{dt} = -\frac{64}{5}\frac{\mu M^2}{r^3}$   (radiation reaction)
 def separationRate(r: Double, mu: Double, mtot: Double): Double =
-    $0.0 - \frac{64}{5} * mu * mtot * mtot / (r * r * r)$
+    $0.0 - \frac{64}{5} \cdot mu \cdot mtot^2 / r^3$
 
 //  $\Omega = \sqrt{\frac{M}{r^3}}$
 def orbitalOmega(r: Double, mtot: Double): Double =
-    $\sqrt{\frac{mtot}{r * r * r}}$
+    $\sqrt{\frac{mtot}{r^3}}$
 
 //  $L = \frac{32}{5}\frac{\mu^2 M^3}{r^5}$
 def gwLuminosity(r: Double, mu: Double, mtot: Double): Double =
-    $\frac{32}{5} * mu * mu * mtot * mtot * mtot / (r * r * r * r * r)$
+    $\frac{32}{5} \cdot mu^2 \cdot mtot^3 / r^5$
 
 //  $h_0 = \frac{4\mu}{D}\frac{M}{r}$
 def gwStrainAmp(r: Double, mu: Double, mtot: Double, dist: Double): Double =
-    $\frac{4 * mu}{dist} * \frac{mtot}{r}$
+    $\frac{4 \cdot mu}{dist} \cdot \frac{mtot}{r}$
 
 def main(): Int {
     println("===============================================================");
@@ -70,7 +70,7 @@ def main(): Int {
     val m2: Double = 0.8;
     val mtot: Double = m1 + m2;
     //  $\mu = \frac{m_1 m_2}{m_1 + m_2}$
-    val mu: Double = $\frac{m1 * m2}{m1 + m2}$;
+    val mu: Double = $\frac{m1 \cdot m2}{m1 + m2}$;
     println("m1 = " + m1 + ",  m2 = " + m2 + ",  M = " + mtot + ",  mu = " + mu);
 
     var r: Double = 12.0 * mtot;
@@ -82,13 +82,13 @@ def main(): Int {
     val obs: Vec3 = new Vec3(0.0, 4.0 * mtot, 0.0);
     val psi: Double = conformalFactor(obs, c1, m1, c2, m2);
     //  $\psi^4$
-    val psi4: Double = $psi * psi * psi * psi$;
+    val psi4: Double = $psi^4$;
     val gamma: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
     gamma[0, 0] = psi4;
     gamma[1, 1] = psi4;
     gamma[2, 2] = psi4;
     //  $\det\gamma = \psi^{12}, \quad \sqrt{\det\gamma} = \psi^6$
-    val detGamma: Double = $psi4 * psi4 * psi4$;
+    val detGamma: Double = $psi4^3$;
     println("");
     println("gamma_ij = psi^4 I  with psi = " + psi + ",  psi^4 = " + psi4);
     println("  det(gamma) = " + detGamma + " = psi^12,  sqrt(det) = " + sqrt(detGamma));
@@ -106,7 +106,7 @@ def main(): Int {
     Pvec[2] = pOrbit;
     val Pdotn: Double = Pvec[0] * nvec[0] + Pvec[1] * nvec[1] + Pvec[2] * nvec[2];
     val K: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
-    val pref: Double = $\frac{3}{2 * r1 * r1}$;
+    val pref: Double = $\frac{3}{2 \cdot r1^2}$;
     for (i <- 0 to 2) {
         for (j <- 0 to 2) {
             var delta: Double = 0.0;
@@ -143,7 +143,7 @@ def main(): Int {
         val k3: Double = separationRate(r + 0.5 * dTime * k2, mu, mtot);
         val k4: Double = separationRate(r + dTime * k3, mu, mtot);
         //  $r \leftarrow r + \frac{dt}{6}(k_1 + 2 k_2 + 2 k_3 + k_4)$   (RK4)
-        r = r + $\frac{dTime}{6} * (k1 + 2.0 * k2 + 2.0 * k3 + k4)$;
+        r = $r + \frac{dTime}{6} \cdot (k1 + 2.0 \cdot k2 + 2.0 \cdot k3 + k4)$;
         eRad = eRad + gwLuminosity(r, mu, mtot) * dTime;
         t = t + dTime;
         nstep = nstep + 1;
@@ -169,8 +169,8 @@ def main(): Int {
         //  $h_+ = h_0 \cos 2\phi, \quad h_\times = h_0 \sin 2\phi$
         val hplus: Double = h0 * cos(2.0 * ph);
         val hcross: Double = h0 * sin(2.0 * ph);
-        val colP: Double = $30.0 + \frac{hplus}{h0} * 28.0$;
-        val colX: Double = $30.0 + \frac{hcross}{h0} * 28.0$;
+        val colP: Double = $30.0 + \frac{hplus}{h0} \cdot 28.0$;
+        val colX: Double = $30.0 + \frac{hcross}{h0} \cdot 28.0$;
         var line: String = "";
         for (c <- 0 to 60) {
             if (colP >= c and colP < c + 1) {

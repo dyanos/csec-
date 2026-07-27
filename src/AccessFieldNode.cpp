@@ -3,6 +3,7 @@
 #include "ASTVisitor.h"
 #include "utils.h"
 #include "type_utils.h"
+#include "TensorRuntime.h"
 
 #include "IdentifierNode.h"
 
@@ -14,6 +15,16 @@ llvm::Function* getOrCreateRuntimeFunction(const std::string& name, llvm::Type* 
     if (auto* function = cg.module->getFunction(name)) return function;
     auto* functionTy = llvm::FunctionType::get(returnType, paramTypes, false);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, name, cg.module.get());
+}
+
+// A vector's named components: v.x/v.y/v.z/v.w address elements 0..3 of a tensor. Lets a rank-1 tensor
+// read like the Vec3 it stands in for. Returns -1 for any other field name.
+int tensorComponentIndex(const std::string& name) {
+    if (name == "x") return 0;
+    if (name == "y") return 1;
+    if (name == "z") return 2;
+    if (name == "w") return 3;
+    return -1;
 }
 }
 
@@ -68,6 +79,19 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
 
+    // Named component of a vector (rank-1 tensor): v.x / v.y / v.z / v.w -> element 0..3.
+    if (baseType && TensorRuntime::isTensorTypeName(baseType->getName())) {
+        int comp = tensorComponentIndex(targetName);
+        if (comp >= 0) {
+            llvm::Value* tensorVal = baseIdentifier->codegen();
+            if (!tensorVal) return nullptr;
+            auto& cg = CodeGenerator::getInstance();
+            auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+            llvm::Value* addr = TensorRuntime::elementPointer(cg, tensorVal, {llvm::ConstantInt::get(i64Ty, comp)});
+            return cg.builder.CreateLoad(llvm::Type::getDoubleTy(cg.context), addr, targetName + ".comp");
+        }
+    }
+
     // Reading a field yields its value. The address is produced by codegenFieldPointer(); load it.
     llvm::Value* fieldPtr = codegenFieldPointer();
     if (!fieldPtr) {
@@ -98,6 +122,18 @@ llvm::Value* AccessFieldNode::codegenFieldPointer() {
     }
     auto baseType = stripBorrow(baseIdentifier->getType());
     const auto targetName = fieldIdentifier->value;
+
+    // Vector component as an assignment target: `nvec.x = ...` -> address of element 0..3.
+    if (baseType && TensorRuntime::isTensorTypeName(baseType->getName())) {
+        int comp = tensorComponentIndex(targetName);
+        if (comp >= 0) {
+            llvm::Value* tensorVal = baseIdentifier->codegen();
+            if (!tensorVal) return nullptr;
+            auto& cg = CodeGenerator::getInstance();
+            auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+            return TensorRuntime::elementPointer(cg, tensorVal, {llvm::ConstantInt::get(i64Ty, comp)});
+        }
+    }
 
     if (!baseType || baseType->getKind() != Type::Kind::CLASS) {
         std::cerr << "Error: Base must be a class type" << std::endl;
@@ -171,6 +207,11 @@ int AccessFieldNode::findFieldIndex(ClassSymbol* classSymbol, const std::string&
 std::unique_ptr<Type> AccessFieldNode::getType() {
     auto baseType = base ? stripBorrow(base->getType()) : nullptr;
     auto* fieldIdentifier = dynamic_cast<IdentifierNode*>(field.get());
+    // A vector component (v.x/v.y/v.z/v.w) is a scalar tensor element.
+    if (baseType && fieldIdentifier && TensorRuntime::isTensorTypeName(baseType->getName()) &&
+        tensorComponentIndex(fieldIdentifier->value) >= 0) {
+        return std::make_unique<BasicType>("Double");
+    }
     if (baseType && baseType->isStringTy() && fieldIdentifier) {
         const std::string& targetName = fieldIdentifier->value;
         if (targetName == "length" || targetName == "size" || targetName == "count") {

@@ -1,0 +1,28 @@
+// Component-wise vector arithmetic on rank-1 tensors, with named components x/y/z.
+// `nvec = (obs - c1) / r1` should behave exactly like the per-component form.
+def main(): Int {
+    val obs: Tensor<Double, 3> = new Tensor<Double, 3>(0.0);
+    obs.x = 4.0; obs.y = 5.0; obs.z = 6.0;
+    val c1: Tensor<Double, 3> = new Tensor<Double, 3>(0.0);
+    c1.x = 1.0; c1.y = 1.0; c1.z = 1.0;
+    val r1: Double = 2.0;
+
+    // Whole-vector: subtract component-wise, then divide by a scalar (broadcast).
+    val nvec: Tensor<Double, 3> = (obs - c1) / r1;   // (1.5, 2.0, 2.5)
+
+    // Same thing, spelled out, must agree component by component.
+    val ex: Double = (obs.x - c1.x) / r1;
+    val ey: Double = (obs.y - c1.y) / r1;
+    val ez: Double = (obs.z - c1.z) / r1;
+
+    val dot: Double = obs inner c1;                  // 4 + 5 + 6 = 15
+    val nrm2: Double = nvec inner nvec;              // 1.5^2 + 2^2 + 2.5^2 = 12.5
+
+    var status: Int = 1;
+    if (nvec.x == ex and nvec.y == ey and nvec.z == ez and
+        nvec.x == 1.5 and nvec.y == 2.0 and nvec.z == 2.5 and
+        dot == 15.0 and nrm2 == 12.5) {
+        status = 0;
+    }
+    return status;
+}

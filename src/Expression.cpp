@@ -252,7 +252,18 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
             std::string op = previous().value;
 			auto assignNode = std::make_unique<AssignmentExpressionNode>();
             assignNode->op = op;
-			assignNode->left = std::make_unique<IdentifierNode>(join(pathComponents, "."));
+			// `base.member = ...` targets a field/vector-component: build an AccessFieldNode so the
+			// assignment resolves the element address (via codegenFieldPointer). `this`/`super` member
+			// writes keep their existing dotted-identifier handling.
+			if (pathComponents.size() == 2 &&
+			    pathComponents[0] != "this" && pathComponents[0] != "super") {
+				assignNode->left = std::make_unique<AccessFieldNode>(
+					std::make_unique<IdentifierNode>(pathComponents[0]),
+					std::make_unique<IdentifierNode>(pathComponents[1]));
+			}
+			else {
+				assignNode->left = std::make_unique<IdentifierNode>(join(pathComponents, "."));
+			}
 			assignNode->right = parseExpression();
 			return assignNode;
 		}

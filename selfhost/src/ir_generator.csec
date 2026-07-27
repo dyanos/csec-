@@ -2470,6 +2470,12 @@ def generateLLVMFlatBodyI32(tokens: String, bodyStart: Int, bodyEnd: Int): Strin
                         "  ret i32 " + resultName + "\n");
                 }
             }
+            else if (expressionIsDouble(tokens, cursor + 1, next)) {
+                val resultName: String = "%ret." + cursor;
+                csec_string_builder_append(builder, generateLLVMExpressionF64(tokens, cursor + 1, next, resultName + ".d") +
+                    "  " + resultName + " = fptosi double " + resultName + ".d to i32\n" +
+                    "  ret i32 " + resultName + "\n");
+            }
             else if (llvmExpressionLooksPtr(tokens, cursor + 1, next)) {
                 val resultName: String = "%ret." + cursor;
                 csec_string_builder_append(builder, generateLLVMExpressionPtr(tokens, cursor + 1, next, resultName) +
@@ -2897,6 +2903,11 @@ def generateLLVMMainBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int):
                 }
                 csec_string_builder_append(builder, llvmLoadForValueType(tokens, cursor, returnName, returnType, "%" + returnName + ".ret") +
                     "  ret i32 %" + returnName + ".ret\n");
+                return csec_string_builder_finish(builder);
+            }
+            if (expressionIsDouble(tokens, cursor + 1, next)) {
+                csec_string_builder_append(builder, generateLLVMExpressionF64(tokens, cursor + 1, next, "%ret.d") +
+                    "  %ret = fptosi double %ret.d to i32\n  ret i32 %ret\n");
                 return csec_string_builder_finish(builder);
             }
             csec_string_builder_append(builder, generateLLVMExpressionI32(tokens, cursor + 1, next, "%ret") + "  ret i32 %ret\n");

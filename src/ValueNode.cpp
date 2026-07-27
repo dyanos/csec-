@@ -5,6 +5,8 @@
 
 #include "token.h"
 
+#include <cerrno>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 
@@ -19,8 +21,13 @@ llvm::Value* ValueNode::codegen() {
 
 	try {
 		if (valueType == TokenType::INTEGER_LITERAL) {
-			const long long parsed = std::stoll(value, nullptr, 0);
-			const bool requiresLong = parsed < std::numeric_limits<int>::min() ||
+			// strtoll never throws (std::stoll does, on a literal beyond 2^63). A literal too large for
+			// i64 is only meaningful when the target is Nat, where coerceToNat() reparses this node's
+			// exact text via from_decimal and ignores this placeholder.
+			errno = 0;
+			const long long parsed = std::strtoll(value.c_str(), nullptr, 0);
+			const bool requiresLong = errno == ERANGE ||
+				parsed < std::numeric_limits<int>::min() ||
 				parsed > std::numeric_limits<int>::max();
 			return llvm::ConstantInt::get(requiresLong ? llvm::Type::getInt64Ty(cg.context)
 				: llvm::Type::getInt32Ty(cg.context), parsed, true);

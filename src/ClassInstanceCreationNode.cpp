@@ -297,21 +297,6 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         if (!value) {
             value = llvm::Constant::getNullValue(targetType);
         }
-        // A BigInt field stores an arbitrary-precision handle (a ptr). An integer constructor argument
-        // (e.g. `new Nat(3, 2)`) must be promoted to a handle via the runtime before it can be stored.
-        if (fieldType && fieldType->getName() == "BigInt" && value && value->getType()->isIntegerTy()) {
-            auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
-            auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
-            llvm::Value* wide = value->getType()->isIntegerTy(64)
-                ? value
-                : cg.builder.CreateSExt(value, i64Ty, "bigint.arg.sext");
-            llvm::Function* fromI64 = cg.module->getFunction("csec_bigint_from_i64");
-            if (!fromI64) {
-                auto* fnTy = llvm::FunctionType::get(i8PtrTy, {i64Ty}, false);
-                fromI64 = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "csec_bigint_from_i64", cg.module.get());
-            }
-            value = cg.builder.CreateCall(fromI64, {wide}, "bigint.from.i64");
-        }
         value = coerceForStore(value, targetType);
         if (!value || value->getType() != targetType) {
             std::cerr << "Error: Constructor value for field '" << fieldName << "' has incompatible type" << std::endl;

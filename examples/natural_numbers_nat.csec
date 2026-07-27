@@ -1,0 +1,96 @@
+// ============================================================================
+//  natural_numbers_nat.csec
+//
+//  Nat is an ordinary natural number -- the kind people count with -- but with
+//  no size ceiling. It is arbitrary precision: it never silently overflows the
+//  way a fixed 64-bit integer does past ~9.2 x 10^18. You write and use it like
+//  any other number.
+// ============================================================================
+
+// n! grows explosively; a Nat holds every digit exactly.
+def factorial(n: Int): Nat {
+    var f: Nat = 1;
+    var i: Int = 2;
+    while (i <= n) {
+        f = f * i;
+        i = i + 1;
+    }
+    return f;
+}
+
+// The nth Fibonacci number -- fib(100) already has 21 digits.
+def fib(n: Int): Nat {
+    var a: Nat = 0;
+    var b: Nat = 1;
+    var i: Int = 0;
+    while (i < n) {
+        val next: Nat = a + b;
+        a = b;
+        b = next;
+        i = i + 1;
+    }
+    return a;
+}
+
+// Sum of the first n natural numbers.
+def sumUpTo(n: Int): Nat {
+    var s: Nat = 0;
+    var i: Int = 1;
+    while (i <= n) {
+        s = s + i;
+        i = i + 1;
+    }
+    return s;
+}
+
+def main(): Int {
+    println("==================================================");
+    println(" Nat -- ordinary natural numbers, unbounded scale ");
+    println("==================================================");
+
+    // Everyday arithmetic reads exactly like Int.
+    val a: Nat = 12;
+    val b: Nat = 5;
+    println("a = " + a + ",  b = " + b);
+    println("  a + b = " + (a + b));      // 17
+    println("  a - b = " + (a - b));      // 7
+    println("  a * b = " + (a * b));      // 60
+    println("  a > b = " + (a > b));      // true
+
+    println("");
+    println("--- Factorials (exact, no overflow) ---");
+    println("  10!  = " + factorial(10));
+    println("  20!  = " + factorial(20));   // already exceeds a 64-bit integer
+    println("  50!  = " + factorial(50));
+    println("  100! = " + factorial(100));  // 158 digits
+
+    println("");
+    println("--- Powers of two ---");
+    var p: Nat = 1;
+    var k: Int = 0;
+    while (k < 128) {
+        p = p * 2;
+        k = k + 1;
+    }
+    println("  2^128 = " + p);
+
+    println("");
+    println("--- Fibonacci ---");
+    println("  fib(100) = " + fib(100));
+    println("  fib(200) = " + fib(200));
+
+    println("");
+    println("--- Big literals are read exactly ---");
+    val big: Nat = 123456789012345678901234567890;
+    println("  n        = " + big);
+    println("  n + 1    = " + (big + 1));
+    println("  n * n    = " + (big * big));
+
+    println("");
+    println("--- Gauss's sum  1 + 2 + ... + n ---");
+    println("  sum(100)  = " + sumUpTo(100));    // 5050
+    println("  sum(1000) = " + sumUpTo(1000));   // 500500
+
+    println("==================================================");
+    return 0;
+}

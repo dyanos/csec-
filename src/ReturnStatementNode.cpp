@@ -31,6 +31,13 @@ llvm::Value* ReturnStatementNode::codegen() {
             return nullptr;
         }
 
+        // Returning an integer where the function's return slot is a pointer means a Nat return
+        // (`def f(): Nat = 5`): promote it to a handle. No other pointer-return type accepts an integer.
+        if (returnValue && returnValue->getType()->isIntegerTy() && returnType->isPointerTy()) {
+            auto natType = std::make_unique<ClassType>("Nat");
+            returnValue = coerceToNat(returnValue, natType.get(), expression.get());
+        }
+
         returnValue = coerceValueToLLVMType(returnValue, returnType);
         if (!returnValue || returnValue->getType() != returnType) {
             std::cerr << "Error: Return value type does not match function return type" << std::endl;

@@ -167,12 +167,12 @@ llvm::Value* coerceValueForString(CodeGenerator& cg, llvm::Value* value, const T
             {intValue},
             "str.int.call");
     }
-    // A BigInt is a heap handle; render it as its exact decimal expansion.
-    if (type->getName() == "BigInt" && value->getType()->isPointerTy()) {
+    // A Nat is a heap handle; render it as its exact decimal expansion.
+    if (type->getName() == "Nat" && value->getType()->isPointerTy()) {
         return cg.builder.CreateCall(
             getOrCreateRuntimeFunction("csec_bigint_to_string", i8PtrTy, {i8PtrTy}),
             {value},
-            "str.bigint.call");
+            "str.nat.call");
     }
 
     return llvm::ConstantPointerNull::get(i8PtrTy);
@@ -282,93 +282,52 @@ static llvm::Value* codegenComplexOp(const std::string& op, llvm::Value* leftVal
 }
 
 // Get/declare a csec_bigint_* runtime function taking N pointer handles and returning a pointer handle.
-static llvm::Function* getBigIntFn(CodeGenerator& cg, const std::string& name, unsigned arity) {
+// (The runtime helpers keep the bigint name; the language type they back is Nat.)
+static llvm::Function* getNatFn(CodeGenerator& cg, const std::string& name, unsigned arity) {
     auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
     std::vector<llvm::Type*> params(arity, i8PtrTy);
     return getOrCreateRuntimeFunction(name, i8PtrTy, params);
 }
 
-// Arbitrary-precision integer op on two BigInt handles -> a new handle (csec_bigint_add/sub/mul).
-static llvm::Value* bigIntBinary(CodeGenerator& cg, const char* fn, llvm::Value* a, llvm::Value* b) {
-    return cg.builder.CreateCall(getBigIntFn(cg, fn, 2), {a, b}, "big");
+// Arbitrary-precision integer op on two Nat handles -> a new handle (csec_bigint_add/sub/mul).
+static llvm::Value* natBinary(CodeGenerator& cg, const char* fn, llvm::Value* a, llvm::Value* b) {
+    return cg.builder.CreateCall(getNatFn(cg, fn, 2), {a, b}, "nat");
 }
 
-// Gaussian-integer (Nat) arithmetic on { BigInt re, BigInt im } = { ptr, ptr } values. Operands arrive
-// as pointers to a Nat struct; the result is a freshly allocated Nat pointer, matching how `new Nat(a,b)`
-// is represented. Each component op is arbitrary precision (csec_bigint_*), so results never overflow.
-// `+`/`-` are componentwise; `*` is the complex product (ac - bd) + (ad + bc) i, staying inside Z[i].
-static llvm::Value* codegenGaussianIntOp(const std::string& op, llvm::Value* leftPtr,
-                                         llvm::Value* rightPtr, llvm::StructType* natTy) {
-    auto& cg = CodeGenerator::getInstance();
-    auto& builder = cg.builder;
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
-    auto load = [&](llvm::Value* p, unsigned idx, const char* name) -> llvm::Value* {
-        return builder.CreateLoad(i8PtrTy, builder.CreateStructGEP(natTy, p, idx, name), name);
-    };
-    llvm::Value* aRe = load(leftPtr, 0, "a.re");
-    llvm::Value* aIm = load(leftPtr, 1, "a.im");
-    llvm::Value* bRe = load(rightPtr, 0, "b.re");
-    llvm::Value* bIm = load(rightPtr, 1, "b.im");
-
-    llvm::Value* rRe = nullptr;
-    llvm::Value* rIm = nullptr;
-    if (op == "+") {
-        rRe = bigIntBinary(cg, "csec_bigint_add", aRe, bRe);
-        rIm = bigIntBinary(cg, "csec_bigint_add", aIm, bIm);
-    } else if (op == "-") {
-        rRe = bigIntBinary(cg, "csec_bigint_sub", aRe, bRe);
-        rIm = bigIntBinary(cg, "csec_bigint_sub", aIm, bIm);
-    } else if (op == "*") {
-        rRe = bigIntBinary(cg, "csec_bigint_sub",
-                           bigIntBinary(cg, "csec_bigint_mul", aRe, bRe),
-                           bigIntBinary(cg, "csec_bigint_mul", aIm, bIm));
-        rIm = bigIntBinary(cg, "csec_bigint_add",
-                           bigIntBinary(cg, "csec_bigint_mul", aRe, bIm),
-                           bigIntBinary(cg, "csec_bigint_mul", aIm, bRe));
-    } else {
-        return nullptr;
-    }
-
-    llvm::Value* result = builder.CreateAlloca(natTy, nullptr, "nat.result");
-    builder.CreateStore(rRe, builder.CreateStructGEP(natTy, result, 0, "nat.result.re"));
-    builder.CreateStore(rIm, builder.CreateStructGEP(natTy, result, 1, "nat.result.im"));
-    return result;
-}
-
-// Coerce a BigInt operand for scalar arithmetic/comparison. A BigInt is already a ptr handle; an integer
-// literal (e.g. the 0 in `z.im < 0`, or 13 in `norm == 13`) is promoted to a handle via the runtime.
-static llvm::Value* asBigIntHandle(CodeGenerator& cg, llvm::Value* v, const Type* t) {
+// Coerce a Nat operand for arithmetic/comparison. A Nat is already a ptr handle; an integer literal or
+// value (e.g. the 1 in `n + 1`, or 1000 in `n < 1000`) is promoted to a handle via the runtime.
+static llvm::Value* asNatHandle(CodeGenerator& cg, llvm::Value* v, const Type* t) {
     auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
     if (!v) return nullptr;
-    // An actual BigInt: the value is already a handle.
-    if (t && t->getName() == "BigInt" && v->getType()->isPointerTy()) return v;
+    // An actual Nat: the value is already a handle.
+    if (t && t->getName() == "Nat" && v->getType()->isPointerTy()) return v;
     // An integer (literal or variable) is promoted to a handle. Only integers are promoted -- a String
-    // or other pointer operand is NOT a BigInt, so we return null and let `+`/`==` fall through to the
-    // string/other path (e.g. `bigIntValue + " i"` must be concatenation, not bignum addition).
+    // or other pointer operand is NOT a Nat, so we return null and let `+`/`==` fall through to the
+    // string/other path (e.g. `natValue + " apples"` must be concatenation, not bignum addition).
     if (v->getType()->isIntegerTy() && (!t || t->getKind() != Type::Kind::CLASS)) {
         auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
-        llvm::Value* wide = v->getType()->isIntegerTy(64) ? v : cg.builder.CreateSExt(v, i64Ty, "big.sext");
+        llvm::Value* wide = v->getType()->isIntegerTy(64) ? v : cg.builder.CreateSExt(v, i64Ty, "nat.sext");
         auto* fn = getOrCreateRuntimeFunction("csec_bigint_from_i64", i8PtrTy, {i64Ty});
-        return cg.builder.CreateCall(fn, {wide}, "big.from.i64");
+        return cg.builder.CreateCall(fn, {wide}, "nat.from.i64");
     }
     return nullptr;
 }
 
-// Scalar BigInt op: +/-/* -> a new handle; comparisons -> i1 via csec_bigint_cmp. Returns nullptr if
-// this is not a BigInt operation (neither operand is BigInt), so the caller falls through.
-static llvm::Value* codegenBigIntScalarOp(const std::string& op, llvm::Value* leftValue, const Type* leftType,
-                                          llvm::Value* rightValue, const Type* rightType) {
-    const bool leftBig = leftType && leftType->getName() == "BigInt";
-    const bool rightBig = rightType && rightType->getName() == "BigInt";
-    if (!leftBig && !rightBig) return nullptr;
+// Scalar Nat op: +/-/* -> a new handle; comparisons -> i1 via csec_bigint_cmp. Returns nullptr if this
+// is not a Nat operation (neither operand is Nat), so the caller falls through.
+static llvm::Value* codegenNatScalarOp(const std::string& op, llvm::Value* leftValue, const Type* leftType,
+                                       llvm::Value* rightValue, const Type* rightType) {
+    const bool leftNat = leftType && leftType->getName() == "Nat";
+    const bool rightNat = rightType && rightType->getName() == "Nat";
+    if (!leftNat && !rightNat) return nullptr;
     auto& cg = CodeGenerator::getInstance();
-    llvm::Value* a = asBigIntHandle(cg, leftValue, leftType);
-    llvm::Value* b = asBigIntHandle(cg, rightValue, rightType);
+    llvm::Value* a = asNatHandle(cg, leftValue, leftType);
+    llvm::Value* b = asNatHandle(cg, rightValue, rightType);
     if (!a || !b) return nullptr;
 
-    if (op == "+") return bigIntBinary(cg, "csec_bigint_add", a, b);
-    if (op == "-") return bigIntBinary(cg, "csec_bigint_sub", a, b);
-    if (op == "*") return bigIntBinary(cg, "csec_bigint_mul", a, b);
+    if (op == "+") return natBinary(cg, "csec_bigint_add", a, b);
+    if (op == "-") return natBinary(cg, "csec_bigint_sub", a, b);
+    if (op == "*") return natBinary(cg, "csec_bigint_mul", a, b);
 
     if (op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || op == ">=") {
         auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
@@ -726,40 +685,16 @@ llvm::Value* BinaryExpressionNode::codegen() {
             std::cerr << "Type error: Quaternion division is not supported (division is undefined for quaternions)" << std::endl;
             return nullptr;
         }
-        if (leftTypeName == "Nat" && (op == "+" || op == "-" || op == "*")) {
-            auto* natSymbol = CodeGenerator::getInstance().symbolTable.lookupClass("Nat");
-            auto* natTy = natSymbol ? llvm::dyn_cast<llvm::StructType>(natSymbol->classType) : nullptr;
-            if (natTy) {
-                auto& cgNat = CodeGenerator::getInstance();
-                // Operands are normally pointers to a Nat value. A Nat that arrives by value -- e.g. the
-                // result of a function returning Nat, as in `a * conj(a)` -- must be spilled to an alloca
-                // so codegenGaussianIntOp can StructGEP into it.
-                auto materialize = [&](llvm::Value* v) -> llvm::Value* {
-                    if (v && v->getType()->isPointerTy()) return v;
-                    if (v && v->getType() == natTy) {
-                        llvm::Value* slot = cgNat.builder.CreateAlloca(natTy, nullptr, "nat.spill");
-                        cgNat.builder.CreateStore(v, slot);
-                        return slot;
-                    }
-                    return nullptr;
-                };
-                llvm::Value* lp = materialize(leftValue);
-                llvm::Value* rp = materialize(rightValue);
-                if (lp && rp) {
-                    return codegenGaussianIntOp(op, lp, rp, natTy);
-                }
-            }
-        }
     }
 
-    // Arbitrary-precision scalar arithmetic/comparison when either operand is a BigInt (a Nat's re/im
-    // component). Handles mixed BigInt/integer operands (`z.im < 0`, `norm == 13`) by promoting the
-    // integer side to a handle. Placed before string concat so `+` on BigInt is not read as concatenation.
+    // Arbitrary-precision arithmetic/comparison when either operand is a Nat (an unbounded natural
+    // number). Handles mixed Nat/integer operands (`n + 1`, `n < 1000`) by promoting the integer side
+    // to a handle. Placed before string concat so `+` on a Nat is not misread as concatenation.
     {
         auto lt = left->getType();
         auto rt = right->getType();
-        if (auto* big = codegenBigIntScalarOp(op, leftValue, lt.get(), rightValue, rt.get())) {
-            return big;
+        if (auto* nat = codegenNatScalarOp(op, leftValue, lt.get(), rightValue, rt.get())) {
+            return nat;
         }
     }
 
@@ -1148,17 +1083,12 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
         return std::make_unique<BasicType>("String");
     }
 
-    // Gaussian integers: Nat +/-/* Nat -> Nat.
-    if (leftType->getName() == "Nat" && rightType->getName() == "Nat" &&
-        (op == "+" || op == "-" || op == "*")) {
-        return std::make_unique<ClassType>("Nat");
-    }
-
-    // Arbitrary-precision scalars: BigInt +/-/* (with either operand a BigInt) -> BigInt;
-    // BigInt comparisons -> Boolean. Mixed BigInt/integer promotes the integer side.
-    if (leftType->getName() == "BigInt" || rightType->getName() == "BigInt") {
+    // Nat (arbitrary-precision natural number): +/-/* with either operand a Nat -> Nat; comparisons ->
+    // Boolean. Mixed Nat/integer promotes the integer side. A Nat + String is concatenation (handled
+    // above by the String rule), so only fall here when the other operand is not a String.
+    if (leftType->getName() == "Nat" || rightType->getName() == "Nat") {
         if (op == "+" || op == "-" || op == "*") {
-            return std::make_unique<ClassType>("BigInt");
+            return std::make_unique<ClassType>("Nat");
         }
         if (op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || op == ">=") {
             return std::make_unique<BasicType>("Boolean");

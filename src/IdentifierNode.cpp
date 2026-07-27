@@ -94,13 +94,26 @@ llvm::Value* IdentifierNode::codegen() {
             return llvm::ConstantInt::get(llvm::Type::getInt1Ty(cg.context), value == "true" ? 1 : 0);
         }
         if (isIntegerLiteralText(value)) {
-            return llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), std::stoi(value));
+            // strtoll never throws (std::stoi throws on a literal beyond 2^31). A literal too large for
+            // this scalar is only meaningful when the target is Nat, where coerceToNat() reparses the
+            // exact text via from_decimal and ignores this (truncated) placeholder.
+            long long parsed = std::strtoll(value.c_str(), nullptr, 10);
+            return llvm::ConstantInt::get(llvm::Type::getInt32Ty(cg.context), static_cast<int32_t>(parsed));
         }
 		std::cerr << "Undefined variable: " << value << std::endl;
 		return llvm::ConstantFP::get(llvm::Type::getDoubleTy(cg.context), 0.0);
 	}
 
 	auto* symbol = symbolOpt;
+
+	// A Nat variable is a slot holding its arbitrary-precision handle; reading it yields the handle.
+	// (A Nat parameter is bound to the bare handle directly, not an alloca, so it is returned as-is.)
+	if (symbol->type && symbol->type->getName() == "Nat" && symbol->value &&
+		llvm::isa<llvm::AllocaInst>(symbol->value)) {
+		auto& cg = CodeGenerator::getInstance();
+		auto* handleTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+		return cg.builder.CreateLoad(handleTy, symbol->value, value + ".nat");
+	}
 
 	// A bare reference to a top-level function (used as a value: passed as an argument, assigned to
 	// a function-typed variable, returned) becomes a { code, env } closure so it matches the uniform

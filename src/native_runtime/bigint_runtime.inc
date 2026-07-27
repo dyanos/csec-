@@ -115,6 +115,27 @@ void* csec_bigint_from_i64(long long value) {
     return csecBigIntAlloc(sign, std::move(mag));
 }
 
+// Parse an arbitrarily long decimal string (optional leading +/-) into a Nat handle. This is how a
+// natural-number literal too large for 64 bits reaches the program exactly.
+void* csec_bigint_from_decimal(const char* text) {
+    if (!text) return csecBigIntAlloc(0, {});
+    const char* p = text;
+    int sign = 1;
+    if (*p == '+' || *p == '-') { if (*p == '-') sign = -1; ++p; }
+    std::vector<std::uint32_t> mag;   // little-endian base 1e9
+    for (; *p; ++p) {
+        if (*p < '0' || *p > '9') continue;              // ignore stray separators
+        std::uint64_t carry = static_cast<std::uint64_t>(*p - '0');
+        for (std::size_t i = 0; i < mag.size(); ++i) {   // mag = mag*10 + digit
+            std::uint64_t cur = static_cast<std::uint64_t>(mag[i]) * 10u + carry;
+            mag[i] = static_cast<std::uint32_t>(cur % CSEC_BIGINT_BASE);
+            carry = cur / CSEC_BIGINT_BASE;
+        }
+        while (carry) { mag.push_back(static_cast<std::uint32_t>(carry % CSEC_BIGINT_BASE)); carry /= CSEC_BIGINT_BASE; }
+    }
+    return csecBigIntAlloc(sign, std::move(mag));
+}
+
 void* csec_bigint_add(void* a, void* b) {
     return csecBigIntAddSigned(static_cast<CsecBigInt*>(a), static_cast<CsecBigInt*>(b));
 }

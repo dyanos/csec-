@@ -123,29 +123,16 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
         this->currentScope->symbols["Quaternion"] = std::move(quaternionSymbol);
     }
 
-    // BigInt = arbitrary-precision integer, the scalar component behind Nat. It is a reference type: a
-    // value is an opaque heap handle (a `ptr`), so a natural number has no 64-bit ceiling. Its +, -, *
-    // and comparisons are lowered to the csec_bigint_* runtime in BinaryExpressionNode. Registered as a
-    // non-struct ClassSymbol so it reuses the class-operator path and is excluded from scalar auto-load.
-    auto* bigIntOpaqueTy = llvm::StructType::create(context, "CsecBigInt");  // opaque; value is a ptr to it
-    this->currentScope->symbols["BigInt"] =
-        std::make_unique<ClassSymbol>("BigInt", bigIntOpaqueTy, "System.lang.Object");
-
-    // Nat = Gaussian integer  re + im*i , where re and im are arbitrary-precision whole numbers -- the
-    // natural-number set extended into the imaginary direction (the ring Z[i]), with no size limit.
-    // Registered as a value struct (like a user `struct Nat(re: BigInt, im: BigInt)`) so construction
-    // (`new Nat(a, b)`), field access (.re/.im) and value/copy semantics go through the struct machinery;
-    // the +, -, * operators are wired in BinaryExpressionNode. Layout: { BigInt re, BigInt im } = { ptr, ptr }.
+    // Nat = an ordinary natural number, as people use them, but with no size ceiling -- an
+    // arbitrary-precision integer. It is a reference type: a value is an opaque heap handle (a `ptr`)
+    // backed by the csec_bigint_* runtime, so it grows without bound instead of overflowing at 2^63.
+    // Registered as a non-struct ClassSymbol so it reuses the class-operator path and is excluded from
+    // scalar auto-load. Its +, -, * and comparisons are lowered in BinaryExpressionNode; an integer
+    // literal or value is coerced to a handle wherever a Nat is expected (declarations, returns, args).
     {
-        auto* handleTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
-        auto* natStructTy = llvm::StructType::create(context, { handleTy, handleTy }, "Nat");
-        auto natSymbol = std::make_unique<ClassSymbol>("Nat", natStructTy, "System.lang.Object");
-        natSymbol->isStruct = true;
-        natSymbol->constructorParamOrder.push_back("re");
-        natSymbol->constructorParamOrder.push_back("im");
-        natSymbol->constructorParams["re"] = std::make_unique<Symbol>("re", std::make_unique<ClassType>("BigInt"), nullptr, false, SymbolType::FIELD);
-        natSymbol->constructorParams["im"] = std::make_unique<Symbol>("im", std::make_unique<ClassType>("BigInt"), nullptr, false, SymbolType::FIELD);
-        this->currentScope->symbols["Nat"] = std::move(natSymbol);
+        auto* natOpaqueTy = llvm::StructType::create(context, "CsecNat");  // opaque; a Nat value is a ptr to it
+        this->currentScope->symbols["Nat"] =
+            std::make_unique<ClassSymbol>("Nat", natOpaqueTy, "System.lang.Object");
     }
 
     auto anyRefType = std::make_unique<ClassType>("AnyRef");

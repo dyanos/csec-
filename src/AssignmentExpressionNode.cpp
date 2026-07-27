@@ -29,6 +29,17 @@ llvm::Value* AssignmentExpressionNode::codegen() {
             return nullptr;
         }
         targetPtr = symbolOpt->value;
+        // A Nat variable holds its handle in a slot: promote an integer RHS to a handle and store it.
+        if (symbolOpt->type && symbolOpt->type->getName() == "Nat" &&
+            symbolOpt->value && llvm::isa<llvm::AllocaInst>(symbolOpt->value)) {
+            rightValue = coerceToNat(rightValue, symbolOpt->type.get(), right.get());
+            if (rightValue && rightValue->getType()->isPointerTy()) {
+                CodeGenerator::getInstance().builder.CreateStore(rightValue, symbolOpt->value);
+                return rightValue;
+            }
+            std::cerr << "Type error: Assignment value for Nat variable '" << id->value << "' is not a Nat" << std::endl;
+            return nullptr;
+        }
         if (isStructClassType(symbolOpt->type.get())) {
             llvm::Type* targetType = CodeGenerator::getInstance().getLLVMType(symbolOpt->type.get());
             rightValue = coerceValueToLLVMType(rightValue, targetType);

@@ -425,6 +425,15 @@ llvm::Value* codegenNativeIOCall(
                     getOrCreateRuntimeFunction(cg, "csec_print_double", voidTy, {f64Ty}),
                     {coerceMathValueToDouble(cg, argValues[i])});
             }
+            else if (argType && argType->getName() == "Nat" && argValues[i]->getType()->isPointerTy()) {
+                // Print a Nat by its exact decimal expansion.
+                llvm::Value* text = cg.builder.CreateCall(
+                    getOrCreateRuntimeFunction(cg, "csec_bigint_to_string", i8PtrTy, {i8PtrTy}),
+                    {argValues[i]});
+                cg.builder.CreateCall(
+                    getOrCreateRuntimeFunction(cg, "csec_print_string", voidTy, {i8PtrTy}),
+                    {text});
+            }
             else {
                 cg.builder.CreateCall(
                     getOrCreateRuntimeFunction(cg, "csec_print_i64", voidTy, {i64Ty}),
@@ -1722,6 +1731,23 @@ static std::unique_ptr<Type> inferTypeFromLLVM(llvm::Value* val) {
 }
 
 static llvm::Value* coerceArgumentToParameterType(llvm::Value* value, llvm::Type* targetType) {
+    // An integer argument passed where a pointer parameter is expected means a Nat parameter
+    // (`gcd(12, 18)` with `def gcd(a: Nat, b: Nat)`): promote it to an arbitrary-precision handle.
+    // Any other integer->pointer argument would be a type error regardless, so this is safe.
+    if (value && value->getType()->isIntegerTy() && targetType && targetType->isPointerTy()) {
+        auto& cg = CodeGenerator::getInstance();
+        auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+        auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+        llvm::Value* wide = value->getType()->isIntegerTy(64)
+            ? value
+            : cg.builder.CreateSExt(value, i64Ty, "nat.arg.sext");
+        llvm::Function* fn = cg.module->getFunction("csec_bigint_from_i64");
+        if (!fn) {
+            auto* fnTy = llvm::FunctionType::get(i8PtrTy, {i64Ty}, false);
+            fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "csec_bigint_from_i64", cg.module.get());
+        }
+        return cg.builder.CreateCall(fn, {wide}, "nat.arg");
+    }
     return coerceValueToLLVMType(value, targetType);
 }
 

@@ -104,6 +104,24 @@ llvm::Value* VariableDeclarationNode::codegen() {
         }
     }
 
+    // Where a Nat is declared but an integer initializes it (`val n: Nat = 5`, or a literal larger than
+    // 64 bits), promote the value to an arbitrary-precision handle before it is stored/bound.
+    initValue = coerceToNat(initValue, type.get(), this->initializer.get());
+
+    // A Nat variable lives in a slot holding its handle (a ptr), so a `var` can be reassigned
+    // (`fact = fact * i`). Reads load the handle (IdentifierNode); assignments store a new one.
+    if (type && type->getName() == "Nat") {
+        auto* handleTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+        if (!initValue || !initValue->getType()->isPointerTy()) {
+            initValue = llvm::ConstantPointerNull::get(handleTy);
+        }
+        llvm::Value* slot = cg.builder.CreateAlloca(handleTy, nullptr, name + ".nat");
+        cg.builder.CreateStore(initValue, slot);
+        cg.symbolTable.addSymbol(
+            name, std::make_unique<Symbol>(name, type->clone(), slot, isMutable, SymbolType::VARIABLE));
+        return slot;
+    }
+
     if (type && type->getKind() == Type::Kind::BOX && initValue && !initValue->getType()->isPointerTy()) {
         auto* boxType = dynamic_cast<BoxType*>(type.get());
         llvm::Type* baseType = boxType && boxType->baseType ? cg.getLLVMType(boxType->baseType.get()) : nullptr;

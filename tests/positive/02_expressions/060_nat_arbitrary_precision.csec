@@ -1,0 +1,36 @@
+// Nat = an ordinary natural number, as people use them, but with no size ceiling: arbitrary precision.
+// It behaves like a normal number (arithmetic, comparison), it just never overflows.
+def factorial(k: Int): Nat {
+    var f: Nat = 1;
+    var i: Int = 2;
+    while (i <= k) {
+        f = f * i;
+        i = i + 1;
+    }
+    return f;
+}
+
+def main(): Int {
+    val a: Nat = 12;
+    val b: Nat = 5;
+    val ok1: Boolean = (a + b == 17) and (a - b == 7) and (a * b == 60) and (a > b) and (b < a);
+
+    // Unbounded: 2^100 and 30! are exact, far beyond a signed 64-bit integer (~9.2e18).
+    var p: Nat = 1;
+    var k: Int = 0;
+    while (k < 100) {
+        p = p * 2;
+        k = k + 1;
+    }
+    val ok2: Boolean = (p == "1267650600228229401496703205376");
+    val ok3: Boolean = (factorial(30) == "265252859812191058636308480000000");
+
+    // A literal larger than 2^63 is read exactly.
+    val big: Nat = 123456789012345678901234567890;
+    val ok4: Boolean = (big + 1 == "123456789012345678901234567891");
+
+    if (ok1 and ok2 and ok3 and ok4) {
+        return 0;
+    }
+    return 1;
+}

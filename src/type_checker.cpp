@@ -167,8 +167,9 @@ bool isCopyType(const Type* type) {
         case Type::Kind::CLASS:
             // A `struct` is a value type (copied field-by-field, like a C struct), so it is Copy; a
             // reference `class` owns identity/resources and moves. isStructClassType consults the
-            // class symbol's `isStruct` flag.
-            return isStructClassType(type);
+            // class symbol's `isStruct` flag. Nat is an immutable arbitrary-precision number whose
+            // handle is a shared value (like String), so it is Copy too -- `b = a` needs no `<-`.
+            return isStructClassType(type) || type->getName() == "Nat";
         case Type::Kind::ARRAY:
         case Type::Kind::BOX:
             return false;
@@ -482,6 +483,9 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
                      !(node.type->isDoubleTy() && initType->isFloatTy()) &&
                      !((node.type->isDoubleTy() || node.type->getName() == "Real") &&
                        (initType->isIntegerTy() || initType->isFloatTy() || initType->isDoubleTy())) &&
+                     // Nat (arbitrary-precision natural number) accepts any integer or another Nat.
+                     !(node.type->getName() == "Nat" &&
+                       (initType->isIntegerTy() || isIntegerTypeName(initType) || initType->getName() == "Nat")) &&
                      !canInitializeOwnershipType(node.type.get(), initType.get()) &&
                      !(node.type->getKind() == Type::Kind::GENERIC && initType->getKind() == Type::Kind::GENERIC &&
                        node.type->getName() == initType->getName() &&

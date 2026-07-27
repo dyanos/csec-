@@ -132,6 +132,7 @@ CSEC_NATIVE_API char* csec_to_string_double(double value);
 // Arbitrary-precision integers backing the Nat (Gaussian integer) type. Handles
 // are opaque, heap-allocated, caller-owned (leaked), like the string helpers.
 CSEC_NATIVE_API void* csec_bigint_from_i64(long long value);
+CSEC_NATIVE_API void* csec_bigint_from_decimal(const char* text);
 CSEC_NATIVE_API void* csec_bigint_add(void* a, void* b);
 CSEC_NATIVE_API void* csec_bigint_sub(void* a, void* b);
 CSEC_NATIVE_API void* csec_bigint_mul(void* a, void* b);

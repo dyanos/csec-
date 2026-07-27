@@ -123,6 +123,22 @@ void SymbolTable::initializeBuiltInTypes(llvm::LLVMContext& context) {
         this->currentScope->symbols["Quaternion"] = std::move(quaternionSymbol);
     }
 
+    // Nat = Gaussian integer  re + im*i , where re and im are whole numbers -- the natural-number
+    // set extended into the imaginary direction (the ring Z[i]). Registered as a value struct (like a
+    // user `struct Nat(re: Long, im: Long)`) so construction (`new Nat(a, b)`), field access (.re/.im)
+    // and value/copy semantics all go through the working struct machinery; the +, -, * operators are
+    // wired in BinaryExpressionNode. { i64 re, i64 im }.
+    {
+        auto* natStructTy = llvm::StructType::create(context, { llvm::Type::getInt64Ty(context), llvm::Type::getInt64Ty(context) }, "Nat");
+        auto natSymbol = std::make_unique<ClassSymbol>("Nat", natStructTy, "System.lang.Object");
+        natSymbol->isStruct = true;
+        natSymbol->constructorParamOrder.push_back("re");
+        natSymbol->constructorParamOrder.push_back("im");
+        natSymbol->constructorParams["re"] = std::make_unique<Symbol>("re", std::make_unique<BasicType>("Long"), nullptr, false, SymbolType::FIELD);
+        natSymbol->constructorParams["im"] = std::make_unique<Symbol>("im", std::make_unique<BasicType>("Long"), nullptr, false, SymbolType::FIELD);
+        this->currentScope->symbols["Nat"] = std::move(natSymbol);
+    }
+
     auto anyRefType = std::make_unique<ClassType>("AnyRef");
     //addTypeSymbol("AnyRef", anyRefType);
     this->currentScope->symbols["AnyRef"] = std::make_unique<ClassSymbol>("AnyRef", llvm::Type::getInt32Ty(context), "System.lang.Object");

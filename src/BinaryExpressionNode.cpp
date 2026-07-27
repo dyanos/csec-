@@ -274,6 +274,44 @@ static llvm::Value* codegenComplexOp(const std::string& op, llvm::Value* leftVal
     return result;
 }
 
+// Gaussian-integer (Nat) arithmetic on { i64 re, i64 im } values. Operands arrive as pointers to a
+// Nat struct (the value representation), and the result is a freshly allocated Nat pointer, matching
+// how `new Nat(a, b)` is represented. `+`/`-` add/subtract componentwise; `*` is the complex product
+// (ac - bd) + (ad + bc) i, which stays inside the integers.
+static llvm::Value* codegenGaussianIntOp(const std::string& op, llvm::Value* leftPtr,
+                                         llvm::Value* rightPtr, llvm::StructType* natTy) {
+    auto& cg = CodeGenerator::getInstance();
+    auto& builder = cg.builder;
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto load = [&](llvm::Value* p, unsigned idx, const char* name) -> llvm::Value* {
+        return builder.CreateLoad(i64Ty, builder.CreateStructGEP(natTy, p, idx, name), name);
+    };
+    llvm::Value* aRe = load(leftPtr, 0, "a.re");
+    llvm::Value* aIm = load(leftPtr, 1, "a.im");
+    llvm::Value* bRe = load(rightPtr, 0, "b.re");
+    llvm::Value* bIm = load(rightPtr, 1, "b.im");
+
+    llvm::Value* rRe = nullptr;
+    llvm::Value* rIm = nullptr;
+    if (op == "+") {
+        rRe = builder.CreateAdd(aRe, bRe, "nat.re");
+        rIm = builder.CreateAdd(aIm, bIm, "nat.im");
+    } else if (op == "-") {
+        rRe = builder.CreateSub(aRe, bRe, "nat.re");
+        rIm = builder.CreateSub(aIm, bIm, "nat.im");
+    } else if (op == "*") {
+        rRe = builder.CreateSub(builder.CreateMul(aRe, bRe, "ac"), builder.CreateMul(aIm, bIm, "bd"), "nat.re");
+        rIm = builder.CreateAdd(builder.CreateMul(aRe, bIm, "ad"), builder.CreateMul(aIm, bRe, "bc"), "nat.im");
+    } else {
+        return nullptr;
+    }
+
+    llvm::Value* result = builder.CreateAlloca(natTy, nullptr, "nat.result");
+    builder.CreateStore(rRe, builder.CreateStructGEP(natTy, result, 0, "nat.result.re"));
+    builder.CreateStore(rIm, builder.CreateStructGEP(natTy, result, 1, "nat.result.im"));
+    return result;
+}
+
 // Get or create __gcd_i64(i64, i64) -> i64 in the module
 static llvm::Function* getOrCreateGcdI64(llvm::Module& module, llvm::LLVMContext& context) {
     if (auto* f = module.getFunction("__gcd_i64")) return f;
@@ -613,6 +651,30 @@ llvm::Value* BinaryExpressionNode::codegen() {
         if (leftTypeName == "Quaternion" && op == "/") {
             std::cerr << "Type error: Quaternion division is not supported (division is undefined for quaternions)" << std::endl;
             return nullptr;
+        }
+        if (leftTypeName == "Nat" && (op == "+" || op == "-" || op == "*")) {
+            auto* natSymbol = CodeGenerator::getInstance().symbolTable.lookupClass("Nat");
+            auto* natTy = natSymbol ? llvm::dyn_cast<llvm::StructType>(natSymbol->classType) : nullptr;
+            if (natTy) {
+                auto& cgNat = CodeGenerator::getInstance();
+                // Operands are normally pointers to a Nat value. A Nat that arrives by value -- e.g. the
+                // result of a function returning Nat, as in `a * conj(a)` -- must be spilled to an alloca
+                // so codegenGaussianIntOp can StructGEP into it.
+                auto materialize = [&](llvm::Value* v) -> llvm::Value* {
+                    if (v && v->getType()->isPointerTy()) return v;
+                    if (v && v->getType() == natTy) {
+                        llvm::Value* slot = cgNat.builder.CreateAlloca(natTy, nullptr, "nat.spill");
+                        cgNat.builder.CreateStore(v, slot);
+                        return slot;
+                    }
+                    return nullptr;
+                };
+                llvm::Value* lp = materialize(leftValue);
+                llvm::Value* rp = materialize(rightValue);
+                if (lp && rp) {
+                    return codegenGaussianIntOp(op, lp, rp, natTy);
+                }
+            }
         }
     }
 
@@ -999,6 +1061,12 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
 
     if (op == "+" && (leftType->getName() == "String" || rightType->getName() == "String")) {
         return std::make_unique<BasicType>("String");
+    }
+
+    // Gaussian integers: Nat +/-/* Nat -> Nat.
+    if (leftType->getName() == "Nat" && rightType->getName() == "Nat" &&
+        (op == "+" || op == "-" || op == "*")) {
+        return std::make_unique<ClassType>("Nat");
     }
 
     if (leftType->getKind() == Type::Kind::CLASS) {

@@ -177,6 +177,23 @@ std::unique_ptr<Type> AccessFieldNode::getType() {
             return std::make_unique<BasicType>("Boolean");
         }
     }
+    // A class/struct field has a declared type; resolve it from the class symbol. Falling back to the
+    // field identifier's own getType() assumes Real (double) and mistypes non-Double fields -- e.g.
+    // the i64 components of a Nat/Gaussian integer would be loaded as a double.
+    if (baseType && baseType->getKind() == Type::Kind::CLASS && fieldIdentifier) {
+        auto* classSymbol = CodeGenerator::getInstance().symbolTable.lookupClass(baseType->getName());
+        if (classSymbol) {
+            const std::string& fname = fieldIdentifier->value;
+            auto cp = classSymbol->constructorParams.find(fname);
+            if (cp != classSymbol->constructorParams.end() && cp->second && cp->second->type) {
+                return cp->second->type->clone();
+            }
+            auto fp = classSymbol->fields.find(fname);
+            if (fp != classSymbol->fields.end() && fp->second && fp->second->type) {
+                return fp->second->type->clone();
+            }
+        }
+    }
     if (!field) return std::make_unique<UnknownType>();
     return field->getType();
 }

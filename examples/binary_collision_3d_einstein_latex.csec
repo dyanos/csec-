@@ -25,21 +25,21 @@
 //           h_+ = h_0 \cos 2\phi, \; h_\times = h_0 \sin 2\phi $$
 // ============================================================================
 
-struct Vec3(x: Double, y: Double, z: Double) {
-    //  $\lVert v \rVert = \sqrt{x^2 + y^2 + z^2}$
-    def norm(): Double = $\sqrt{x^2 + y^2 + z^2}$
+// A 3-vector is a rank-1 tensor: component-wise arithmetic (a - b, v / s, u inner v) works directly.
+def vec3(x: Double, y: Double, z: Double): Tensor<Double, 3> {
+    val v: Tensor<Double, 3> = new Tensor<Double, 3>(0.0);
+    v.x = x; v.y = y; v.z = z;
+    return v;
 }
 
-def vdist(a: Vec3, b: Vec3): Double {
-    val dx: Double = a.x - b.x;
-    val dy: Double = a.y - b.y;
-    val dz: Double = a.z - b.z;
-    //  $r = \sqrt{dx^2 + dy^2 + dz^2}$
-    return $\sqrt{dx^2 + dy^2 + dz^2}$;
+//  $r = \lVert a - b \rVert = \sqrt{(a-b)\cdot(a-b)}$
+def vdist(a: Tensor<Double, 3>, b: Tensor<Double, 3>): Double {
+    val d: Tensor<Double, 3> = a - b;
+    return sqrt(d inner d);
 }
 
 //  $\psi = 1 + \frac{m_1}{2 r_1} + \frac{m_2}{2 r_2}$   (Hamiltonian constraint)
-def conformalFactor(p: Vec3, c1: Vec3, m1: Double, c2: Vec3, m2: Double): Double {
+def conformalFactor(p: Tensor<Double, 3>, c1: Tensor<Double, 3>, m1: Double, c2: Tensor<Double, 3>, m2: Double): Double {
     val r1: Double = vdist(p, c1);
     val r2: Double = vdist(p, c2);
     return $1.0 + \frac{m1}{2 \cdot r1} + \frac{m2}{2 \cdot r2}$;
@@ -75,11 +75,11 @@ def main(): Int {
 
     var r: Double = 12.0 * mtot;
     val rISCO: Double = 6.0 * mtot;
-    val c1: Vec3 = new Vec3(0.0 - m2 / mtot * r, 0.0, 0.0);
-    val c2: Vec3 = new Vec3(m1 / mtot * r, 0.0, 0.0);
+    val c1: Tensor<Double, 3> = vec3(0.0 - m2 / mtot * r, 0.0, 0.0);
+    val c2: Tensor<Double, 3> = vec3(m1 / mtot * r, 0.0, 0.0);
 
     // ---- 3-metric  gamma_ij = psi^4 delta_ij  ----
-    val obs: Vec3 = new Vec3(0.0, 4.0 * mtot, 0.0);
+    val obs: Tensor<Double, 3> = vec3(0.0, 4.0 * mtot, 0.0);
     val psi: Double = conformalFactor(obs, c1, m1, c2, m2);
     //  $\psi^4$
     val psi4: Double = $psi^4$;
@@ -95,16 +95,12 @@ def main(): Int {
 
     // ---- Bowen-York extrinsic curvature K_ij (momentum constraint) ----
     val r1: Double = vdist(obs, c1);
-    val nvec: Vector[Double] = new Double[3];
-    nvec[0] = (obs.x - c1.x) / r1;
-    nvec[1] = (obs.y - c1.y) / r1;
-    nvec[2] = (obs.z - c1.z) / r1;
+    //  $\hat n = \frac{obs - c1}{r_1}$   (component-wise subtraction, scalar divide)
+    val nvec: Tensor<Double, 3> = (obs - c1) / r1;
     val pOrbit: Double = mu * orbitalOmega(r, mtot) * r;
-    val Pvec: Vector[Double] = new Double[3];
-    Pvec[0] = 0.0;
-    Pvec[1] = 0.0;
-    Pvec[2] = pOrbit;
-    val Pdotn: Double = Pvec[0] * nvec[0] + Pvec[1] * nvec[1] + Pvec[2] * nvec[2];
+    val Pvec: Tensor<Double, 3> = vec3(0.0, 0.0, pOrbit);
+    //  $P \cdot n$
+    val Pdotn: Double = Pvec inner nvec;
     val K: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
     val pref: Double = $\frac{3}{2 \cdot r1^2}$;
     for (i <- 0 to 2) {

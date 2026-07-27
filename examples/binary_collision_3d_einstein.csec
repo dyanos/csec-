@@ -22,19 +22,22 @@
 //      general relativity); remnant mass from the total radiated energy.
 // ============================================================================
 
-struct Vec3(x: Double, y: Double, z: Double) {
-    def norm(): Double = sqrt(x * x + y * y + z * z)
+// A 3-vector is a rank-1 tensor, so it supports component-wise arithmetic directly:
+// `a - b`, `v / s`, `u inner v`. Components read/write as .x/.y/.z.
+def vec3(x: Double, y: Double, z: Double): Tensor<Double, 3> {
+    val v: Tensor<Double, 3> = new Tensor<Double, 3>(0.0);
+    v.x = x; v.y = y; v.z = z;
+    return v;
 }
 
-def vdist(a: Vec3, b: Vec3): Double {
-    val dx: Double = a.x - b.x;
-    val dy: Double = a.y - b.y;
-    val dz: Double = a.z - b.z;
-    return sqrt(dx * dx + dy * dy + dz * dz);
+// Euclidean distance -- the length of the difference vector, written component-free.
+def vdist(a: Tensor<Double, 3>, b: Tensor<Double, 3>): Double {
+    val d: Tensor<Double, 3> = a - b;
+    return sqrt(d inner d);
 }
 
 // --- Brill-Lindquist conformal factor: solves the Hamiltonian constraint. ---
-def conformalFactor(p: Vec3, c1: Vec3, m1: Double, c2: Vec3, m2: Double): Double {
+def conformalFactor(p: Tensor<Double, 3>, c1: Tensor<Double, 3>, m1: Double, c2: Tensor<Double, 3>, m2: Double): Double {
     val r1: Double = vdist(p, c1);
     val r2: Double = vdist(p, c2);
     var psi: Double = 1.0;
@@ -88,14 +91,14 @@ def main(): Int {
     // ---- initial configuration: quasi-circular orbit ----
     var r: Double = 12.0 * mtot;          // initial separation
     val rISCO: Double = 6.0 * mtot;       // Schwarzschild innermost stable circular orbit
-    val c1: Vec3 = new Vec3(0.0 - m2 / mtot * r, 0.0, 0.0);   // body 1 (center of mass at origin)
-    val c2: Vec3 = new Vec3(m1 / mtot * r, 0.0, 0.0);         // body 2
+    val c1: Tensor<Double, 3> = vec3(0.0 - m2 / mtot * r, 0.0, 0.0);   // body 1 (center of mass at origin)
+    val c2: Tensor<Double, 3> = vec3(m1 / mtot * r, 0.0, 0.0);         // body 2
 
     // ======================================================================
     //  (1) The 3-metric  gamma_ij = psi^4 delta_ij  at an observer point,
     //      built as a genuine 3x3 tensor from the constraint solution psi.
     // ======================================================================
-    val obs: Vec3 = new Vec3(0.0, 4.0 * mtot, 0.0);   // an observer off the orbital axis
+    val obs: Tensor<Double, 3> = vec3(0.0, 4.0 * mtot, 0.0);   // an observer off the orbital axis
     val psi: Double = conformalFactor(obs, c1, m1, c2, m2);
     val psi4: Double = psi * psi * psi * psi;
 
@@ -120,17 +123,12 @@ def main(): Int {
     //      K_ij = (3/2r^2)[ P_i n_j + P_j n_i - (delta_ij - n_i n_j)(P.n) ]
     // ======================================================================
     val r1: Double = vdist(obs, c1);
-    val nvec: Vector[Double] = new Double[3];
-    nvec[0] = (obs.x - c1.x) / r1;
-    nvec[1] = (obs.y - c1.y) / r1;
-    nvec[2] = (obs.z - c1.z) / r1;
+    // Unit radial vector: subtract component-wise and divide by the scalar distance, in one line.
+    val nvec: Tensor<Double, 3> = (obs - c1) / r1;
 
     val pOrbit: Double = mu * sqrt(mtot / r);      // orbital momentum magnitude
-    val Pvec: Vector[Double] = new Double[3];
-    Pvec[0] = 0.0;
-    Pvec[1] = 0.0;
-    Pvec[2] = pOrbit;                              // momentum out of the orbital plane component
-    val Pdotn: Double = Pvec[0]*nvec[0] + Pvec[1]*nvec[1] + Pvec[2]*nvec[2];
+    val Pvec: Tensor<Double, 3> = vec3(0.0, 0.0, pOrbit);   // momentum, out of the orbital plane
+    val Pdotn: Double = Pvec inner nvec;                    // P . n as a dot product
 
     val K: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);
     val pref: Double = 3.0 / (2.0 * r1 * r1);

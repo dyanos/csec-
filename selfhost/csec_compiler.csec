@@ -3174,6 +3174,28 @@ def generateLLVMLoadF64IfIdentifier(tokens: String, start: Int, rawEnd: Int): St
     return "";
 }
 
+// Last top-level (depth-0) token whose text equals `word` -- used to find a tensor operator like `inner`
+// that is not one of the single-character arithmetic operators.
+def findTopLevelKeywordOperator(tokens: String, start: Int, rawEnd: Int, word: String): Int {
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    var depth: Int = 0;
+    var cursor: Int = start;
+    var found: Int = 0 - 1;
+    while (cursor < end) {
+        if (tokenIs(tokens, cursor, kindOperator(), "(") or tokenIs(tokens, cursor, kindOperator(), "[")) {
+            depth = depth + 1;
+        }
+        else if (tokenIs(tokens, cursor, kindOperator(), ")") or tokenIs(tokens, cursor, kindOperator(), "]")) {
+            depth = depth - 1;
+        }
+        else if (depth == 0 and strEq(tokenTextAt(tokens, cursor), word)) {
+            found = cursor;
+        }
+        cursor = cursor + 1;
+    }
+    return found;
+}
+
 def generateLLVMExpressionF64(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
     val end: Int = trimExpressionEnd(tokens, start, rawEnd);
     if (end <= start) {
@@ -3191,6 +3213,25 @@ def generateLLVMExpressionF64(tokens: String, start: Int, rawEnd: Int, resultNam
         return generateLLVMCallArgumentLoadsI32(tokens, start + 2, end - 1, resultName) +
             "  " + resultName + " = call double @" + llvmRuntimeCallName(tokenTextAt(tokens, start)) + "(" +
             generateLLVMCallArgumentListI32(tokens, start + 2, end - 1, resultName) + ")\n";
+    }
+    // Vector element read  t[i]  -> csec_tensor_get(load t, i).
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "[") and
+        findClosingToken(tokens, start + 1, end, "[", "]") == end - 1) {
+        val storageName: String = lookupVisibleStorageName(tokens, start, tokenTextAt(tokens, start));
+        return "  " + resultName + ".tobj = load ptr, ptr %" + storageName + "\n" +
+            generateLLVMExpressionI32(tokens, start + 2, end - 1, resultName + ".tidx") +
+            "  " + resultName + ".tidx64 = sext i32 " + resultName + ".tidx to i64\n" +
+            "  " + resultName + " = call double @csec_tensor_get(ptr " + resultName + ".tobj, i64 " +
+            resultName + ".tidx64)\n";
+    }
+    // Dot product  a inner b  -> csec_tensor_inner (scalar double).
+    val innerPos: Int = findTopLevelKeywordOperator(tokens, start, end, "inner");
+    if (innerPos > start) {
+        return generateLLVMExpressionPtr(tokens, start, innerPos, resultName + ".il") +
+            generateLLVMExpressionPtr(tokens, innerPos + 1, end, resultName + ".ir") +
+            "  " + resultName + " = call double @csec_tensor_inner(ptr " + resultName + ".il, ptr " +
+            resultName + ".ir)\n";
     }
     val op: Int = expressionTopLevelOperator(tokens, start, end);
     if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
@@ -3644,10 +3685,96 @@ def llvmBlockEndsWithTopLevelReturn(tokens: String, bodyStart: Int, bodyEnd: Int
     return result;
 }
 
+// A tensor is a rank-1 vector handle (ptr) backed by the csec_tensor_* runtime. These helpers detect a
+// tensor-typed expression and the element count of a `new Tensor<..>` so the self-host can lower vector
+// construction and component-wise arithmetic to runtime calls.
+def expressionIsTensor(tokens: String, rawStart: Int, rawEnd: Int): Boolean {
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) { return false; }
+    if (tokenKindAt(tokens, start) == kindKeyword() and strEq(tokenTextAt(tokens, start), "new")) {
+        return tokenIs(tokens, start + 1, kindIdentifier(), "Tensor");
+    }
+    if (tokenIs(tokens, start, kindOperator(), "(") and
+        findClosingToken(tokens, start, end, "(", ")") == end - 1) {
+        return expressionIsTensor(tokens, start + 1, end - 1);
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return lookupVisibleValueType(tokens, start, tokenTextAt(tokens, start)).startsWith("Tensor");
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        return lookupFunctionReturnType(tokens, tokenTextAt(tokens, start)).startsWith("Tensor");
+    }
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
+        val t: String = tokenTextAt(tokens, op);
+        if (strEq(t, "+") or strEq(t, "-") or strEq(t, "*") or strEq(t, "/")) {
+            return expressionIsTensor(tokens, start, op) or expressionIsTensor(tokens, op + 1, end);
+        }
+    }
+    return false;
+}
+
+// Element count of `new Tensor< E, d1, d2, ... >`: the last dimension literal (rank-1 vectors use one).
+def tensorNewCountText(tokens: String, start: Int, end: Int): String {
+    var lt: Int = start;
+    while (lt < end and !tokenIs(tokens, lt, kindOperator(), "<")) { lt = lt + 1; }
+    if (lt >= end) { return "1"; }
+    val gt: Int = findClosingToken(tokens, lt, end, "<", ">");
+    var cursor: Int = lt + 1;
+    var last: String = "1";
+    while (cursor < gt) {
+        if (tokenKindAt(tokens, cursor) == kindInteger()) { last = tokenTextAt(tokens, cursor); }
+        cursor = cursor + 1;
+    }
+    return last;
+}
+
 def generateLLVMExpressionPtr(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
     val end: Int = trimExpressionEnd(tokens, start, rawEnd);
     if (end <= start) {
         return "  " + resultName + " = inttoptr i64 0 to ptr\n";
+    }
+    // A fully parenthesized expression -- e.g. the `(obs - c1)` in `(obs - c1) / r1` -- unwraps.
+    if (tokenIs(tokens, start, kindOperator(), "(") and
+        findClosingToken(tokens, start, end, "(", ")") == end - 1) {
+        return generateLLVMExpressionPtr(tokens, start + 1, end - 1, resultName);
+    }
+    // `new Tensor< .., N >( fill )` -> a runtime-allocated vector of N elements set to fill.
+    if (tokenKindAt(tokens, start) == kindKeyword() and strEq(tokenTextAt(tokens, start), "new") and
+        tokenIs(tokens, start + 1, kindIdentifier(), "Tensor")) {
+        val count: String = tensorNewCountText(tokens, start, end);
+        var lp: Int = start;
+        while (lp < end and !tokenIs(tokens, lp, kindOperator(), "(")) { lp = lp + 1; }
+        val rp: Int = findClosingToken(tokens, lp, end, "(", ")");
+        val fillName: String = resultName + ".tfill";
+        return generateLLVMExpressionF64(tokens, lp + 1, rp, fillName) +
+            "  " + resultName + " = call ptr @csec_tensor_new(i64 " + count + ", double " + fillName + ")\n";
+    }
+    // Component-wise tensor arithmetic: t (+|-) t elementwise; t (*|/) scalar broadcast.
+    val topOp: Int = expressionTopLevelOperator(tokens, start, end);
+    if (topOp > start and tokenKindAt(tokens, topOp) == kindOperator() and
+        (expressionIsTensor(tokens, start, topOp) or expressionIsTensor(tokens, topOp + 1, end))) {
+        val ot: String = tokenTextAt(tokens, topOp);
+        val tl: String = resultName + ".tl";
+        if (strEq(ot, "+") or strEq(ot, "-")) {
+            var efn: String = "csec_tensor_add";
+            if (strEq(ot, "-")) { efn = "csec_tensor_sub"; }
+            val tr: String = resultName + ".tr";
+            return generateLLVMExpressionPtr(tokens, start, topOp, tl) +
+                generateLLVMExpressionPtr(tokens, topOp + 1, end, tr) +
+                "  " + resultName + " = call ptr @" + efn + "(ptr " + tl + ", ptr " + tr + ")\n";
+        }
+        if (strEq(ot, "*") or strEq(ot, "/")) {
+            var sfn: String = "csec_tensor_scale";
+            if (strEq(ot, "/")) { sfn = "csec_tensor_div_scalar"; }
+            val ts: String = resultName + ".ts";
+            return generateLLVMExpressionPtr(tokens, start, topOp, tl) +
+                generateLLVMExpressionF64(tokens, topOp + 1, end, ts) +
+                "  " + resultName + " = call ptr @" + sfn + "(ptr " + tl + ", double " + ts + ")\n";
+        }
     }
     if (tokenKindAt(tokens, start) == kindString() and end == start + 1) {
         val text: String = tokenTextAt(tokens, start);
@@ -4036,7 +4163,20 @@ def generateLLVMFlatBodyI32(tokens: String, bodyStart: Int, bodyEnd: Int): Strin
                 }
             }
             else
-            if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
+            if (tokenKindAt(tokens, cursor) == kindIdentifier() and
+                tokenIs(tokens, cursor + 1, kindOperator(), "[")) {
+                // Vector element write  t[i] = v  -> csec_tensor_set(load t, i, v).
+                val close: Int = findClosingToken(tokens, cursor + 1, next, "[", "]");
+                val storageName: String = lookupVisibleStorageName(tokens, cursor, tokenTextAt(tokens, cursor));
+                csec_string_builder_append(builder,
+                    "  %tset.obj." + cursor + " = load ptr, ptr %" + storageName + "\n" +
+                    generateLLVMExpressionI32(tokens, cursor + 2, close, "%tset.idx." + cursor) +
+                    "  %tset.i64." + cursor + " = sext i32 %tset.idx." + cursor + " to i64\n" +
+                    generateLLVMExpressionF64(tokens, close + 2, next, "%tset.val." + cursor) +
+                    "  call void @csec_tensor_set(ptr %tset.obj." + cursor + ", i64 %tset.i64." + cursor +
+                    ", double %tset.val." + cursor + ")\n");
+            }
+            else if (tokenKindAt(tokens, cursor) == kindIdentifier()) {
                 val targetType: String = lookupVisibleValueType(tokens, cursor, tokenTextAt(tokens, cursor));
                 if (strEq(targetType, "Boolean")) {
                     csec_string_builder_append(builder, generateLLVMAssignmentI1(tokens, cursor, next));
@@ -4308,7 +4448,20 @@ def generateLLVMMainBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int):
             if (statementCall.length > 0) {
                 csec_string_builder_append(builder, statementCall);
             }
-            if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier()) {
+            if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier() and
+                tokenIs(tokens, cursor + 1, kindOperator(), "[")) {
+                // Vector element write  t[i] = v  -> csec_tensor_set(load t, i, v).
+                val closeE: Int = findClosingToken(tokens, cursor + 1, next, "[", "]");
+                val storageNameE: String = lookupVisibleStorageName(tokens, cursor, tokenTextAt(tokens, cursor));
+                csec_string_builder_append(builder,
+                    "  %tset.obj." + cursor + " = load ptr, ptr %" + storageNameE + "\n" +
+                    generateLLVMExpressionI32(tokens, cursor + 2, closeE, "%tset.idx." + cursor) +
+                    "  %tset.i64." + cursor + " = sext i32 %tset.idx." + cursor + " to i64\n" +
+                    generateLLVMExpressionF64(tokens, closeE + 2, next, "%tset.val." + cursor) +
+                    "  call void @csec_tensor_set(ptr %tset.obj." + cursor + ", i64 %tset.i64." + cursor +
+                    ", double %tset.val." + cursor + ")\n");
+            }
+            else if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier()) {
                 val targetType: String = lookupVisibleValueType(tokens, cursor, tokenTextAt(tokens, cursor));
                 if (strEq(targetType, "Boolean")) {
                     csec_string_builder_append(builder, generateLLVMAssignmentI1(tokens, cursor, next));
@@ -4986,6 +5139,15 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeaderNat5: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_mul(ptr, ptr)\n");
     val appendHeaderNat6: Int = csec_string_builder_append(builder, "declare i32 @csec_bigint_cmp(ptr, ptr)\n");
     val appendHeaderNat7: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_to_string(ptr)\n");
+    val appendHeaderTen1: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_new(i64, double)\n");
+    val appendHeaderTen2: Int = csec_string_builder_append(builder, "declare double @csec_tensor_get(ptr, i64)\n");
+    val appendHeaderTen3: Int = csec_string_builder_append(builder, "declare void @csec_tensor_set(ptr, i64, double)\n");
+    val appendHeaderTen4: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_add(ptr, ptr)\n");
+    val appendHeaderTen5: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_sub(ptr, ptr)\n");
+    val appendHeaderTen6: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_mul(ptr, ptr)\n");
+    val appendHeaderTen7: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_scale(ptr, double)\n");
+    val appendHeaderTen8: Int = csec_string_builder_append(builder, "declare ptr @csec_tensor_div_scalar(ptr, double)\n");
+    val appendHeaderTen9: Int = csec_string_builder_append(builder, "declare double @csec_tensor_inner(ptr, ptr)\n");
     val appendHeader20: Int = csec_string_builder_append(builder, "declare ptr @csec_token_append_owned(ptr, i8, ptr)\n");
     val appendHeader21: Int = csec_string_builder_append(builder, "declare i64 @csec_token_builder_new()\n");
     val appendHeader22: Int = csec_string_builder_append(builder, "declare i32 @csec_token_builder_append(i64, i8, ptr)\n");
@@ -5127,6 +5289,15 @@ def generateLLVMModule(tokens: String): String {
         "declare ptr @csec_bigint_mul(ptr, ptr)\n" +
         "declare i32 @csec_bigint_cmp(ptr, ptr)\n" +
         "declare ptr @csec_bigint_to_string(ptr)\n" +
+        "declare ptr @csec_tensor_new(i64, double)\n" +
+        "declare double @csec_tensor_get(ptr, i64)\n" +
+        "declare void @csec_tensor_set(ptr, i64, double)\n" +
+        "declare ptr @csec_tensor_add(ptr, ptr)\n" +
+        "declare ptr @csec_tensor_sub(ptr, ptr)\n" +
+        "declare ptr @csec_tensor_mul(ptr, ptr)\n" +
+        "declare ptr @csec_tensor_scale(ptr, double)\n" +
+        "declare ptr @csec_tensor_div_scalar(ptr, double)\n" +
+        "declare double @csec_tensor_inner(ptr, ptr)\n" +
         "declare ptr @csec_token_append_owned(ptr, i8, ptr)\n" +
         "declare i64 @csec_token_builder_new()\n" +
         "declare i32 @csec_token_builder_append(i64, i8, ptr)\n" +

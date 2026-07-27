@@ -3233,6 +3233,11 @@ def generateLLVMExpressionF64(tokens: String, start: Int, rawEnd: Int, resultNam
             "  " + resultName + " = call double @csec_tensor_inner(ptr " + resultName + ".il, ptr " +
             resultName + ".ir)\n";
     }
+    // A fully parenthesized expression -- e.g. `(2.0 * r)` in `m / (2.0 * r)` -- unwraps.
+    if (tokenIs(tokens, start, kindOperator(), "(") and
+        findClosingToken(tokens, start, end, "(", ")") == end - 1) {
+        return generateLLVMExpressionF64(tokens, start + 1, end - 1, resultName);
+    }
     val op: Int = expressionTopLevelOperator(tokens, start, end);
     if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
         val opText: String = tokenTextAt(tokens, op);
@@ -3242,14 +3247,98 @@ def generateLLVMExpressionF64(tokens: String, start: Int, rawEnd: Int, resultNam
         if (strEq(opText, "*")) { mnemonic = "fmul"; }
         if (strEq(opText, "/")) { mnemonic = "fdiv"; }
         if (mnemonic.length > 0) {
-            return generateLLVMLoadF64IfIdentifier(tokens, start, op) +
-                generateLLVMLoadF64IfIdentifier(tokens, op + 1, end) +
+            // Recurse on each operand so nested sub-expressions (parens, chained arithmetic) work,
+            // instead of only leaf literals/identifiers.
+            return generateLLVMExpressionF64(tokens, start, op, resultName + ".fl") +
+                generateLLVMExpressionF64(tokens, op + 1, end, resultName + ".fr") +
                 "  " + resultName + " = " + mnemonic + " double " +
-                llvmF64Value(tokens, start, op) + ", " +
-                llvmF64Value(tokens, op + 1, end) + "\n";
+                resultName + ".fl, " + resultName + ".fr\n";
         }
     }
     return "  " + resultName + " = fadd double 0.000000e+00, 0.000000e+00\n";
+}
+
+// Is this expression a String (a string literal, a String variable/return, or a `+` concatenation)?
+def expressionIsString(tokens: String, rawStart: Int, rawEnd: Int): Boolean {
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) { return false; }
+    if (tokenKindAt(tokens, start) == kindString() and end == start + 1) { return true; }
+    if (tokenIs(tokens, start, kindOperator(), "(") and
+        findClosingToken(tokens, start, end, "(", ")") == end - 1) {
+        return expressionIsString(tokens, start + 1, end - 1);
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return strEq(lookupVisibleValueType(tokens, start, tokenTextAt(tokens, start)), "String");
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        return strEq(lookupFunctionReturnType(tokens, tokenTextAt(tokens, start)), "String");
+    }
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start and tokenKindAt(tokens, op) == kindOperator() and strEq(tokenTextAt(tokens, op), "+")) {
+        return expressionIsString(tokens, start, op) or expressionIsString(tokens, op + 1, end);
+    }
+    return false;
+}
+
+// Is this expression a Double (so a comparison / operand should use fcmp / a double temp)?
+def expressionIsDouble(tokens: String, rawStart: Int, rawEnd: Int): Boolean {
+    // A `+` with any String operand is string concatenation, not a Double.
+    if (expressionIsString(tokens, rawStart, rawEnd)) { return false; }
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) { return false; }
+    if (tokenKindAt(tokens, start) == kindFloat() and end == start + 1) { return true; }
+    if (tokenIs(tokens, start, kindOperator(), "(") and
+        findClosingToken(tokens, start, end, "(", ")") == end - 1) {
+        return expressionIsDouble(tokens, start + 1, end - 1);
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return strEq(lookupVisibleValueType(tokens, start, tokenTextAt(tokens, start)), "Double");
+    }
+    // Vector element read t[i] and dot product `a inner b` are scalar doubles.
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "[") and
+        findClosingToken(tokens, start + 1, end, "[", "]") == end - 1) {
+        return true;
+    }
+    if (findTopLevelKeywordOperator(tokens, start, end, "inner") > start) { return true; }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        return strEq(lookupFunctionReturnType(tokens, tokenTextAt(tokens, start)), "Double");
+    }
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
+        val t: String = tokenTextAt(tokens, op);
+        if (strEq(t, "+") or strEq(t, "-") or strEq(t, "*") or strEq(t, "/")) {
+            return expressionIsDouble(tokens, start, op) or expressionIsDouble(tokens, op + 1, end);
+        }
+    }
+    return false;
+}
+
+// Produce a double-typed operand named `name`, converting an integer sub-expression with sitofp so
+// mixed comparisons like `colPlus >= c` (Double vs Int) work.
+def f64Operand(tokens: String, start: Int, end: Int, name: String): String {
+    if (expressionIsDouble(tokens, start, end)) {
+        return generateLLVMExpressionF64(tokens, start, end, name);
+    }
+    return generateLLVMExpressionI32(tokens, start, end, name + ".i32") +
+        "  " + name + " = sitofp i32 " + name + ".i32 to double\n";
+}
+
+// Map an integer compare op (slt/sle/sgt/sge/eq/ne) to the ordered floating predicate.
+def fcmpPredicate(compareOp: String): String {
+    if (strEq(compareOp, "slt")) { return "olt"; }
+    if (strEq(compareOp, "sle")) { return "ole"; }
+    if (strEq(compareOp, "sgt")) { return "ogt"; }
+    if (strEq(compareOp, "sge")) { return "oge"; }
+    if (strEq(compareOp, "eq")) { return "oeq"; }
+    if (strEq(compareOp, "ne")) { return "one"; }
+    return "oeq";
 }
 
 def generateLLVMLocalF64(tokens: String, start: Int, end: Int): String {
@@ -3515,6 +3604,12 @@ def generateLLVMConditionI1(tokens: String, start: Int, rawEnd: Int, resultName:
                     natOperandCode(tokens, op + 1, end, natR) +
                     "  " + natCmp + " = call i32 @csec_bigint_cmp(ptr " + natL + ", ptr " + natR + ")\n" +
                     "  " + resultName + " = icmp " + compareOp + " i32 " + natCmp + ", 0\n";
+            }
+            if (expressionIsDouble(tokens, start, op) or expressionIsDouble(tokens, op + 1, end)) {
+                return f64Operand(tokens, start, op, resultName + ".fl") +
+                    f64Operand(tokens, op + 1, end, resultName + ".fr") +
+                    "  " + resultName + " = fcmp " + fcmpPredicate(compareOp) + " double " +
+                    resultName + ".fl, " + resultName + ".fr\n";
             }
             val leftName: String = resultName + ".left.i32";
             val rightName: String = resultName + ".right.i32";
@@ -3842,6 +3937,10 @@ def generateLLVMExpressionPtr(tokens: String, start: Int, rawEnd: Int, resultNam
                 lookupVisibleStorageName(tokens, start, tokenTextAt(tokens, start)) + "\n" +
                 "  " + resultName + ".left = call ptr @csec_to_string_char(i8 " + resultName + ".left.i8)\n";
         }
+        else if (expressionIsDouble(tokens, start, leftEnd)) {
+            leftCode = generateLLVMExpressionF64(tokens, start, leftEnd, resultName + ".left.f64") +
+                "  " + resultName + ".left = call ptr @csec_to_string_double(double " + resultName + ".left.f64)\n";
+        }
         else {
             leftCode = generateLLVMExpressionI32(tokens, start, leftEnd, resultName + ".left.i32") +
                 "  " + resultName + ".left.i64 = sext i32 " + resultName + ".left.i32 to i64\n" +
@@ -3871,6 +3970,10 @@ def generateLLVMExpressionPtr(tokens: String, start: Int, rawEnd: Int, resultNam
             rightCode = "  " + resultName + ".right.i8 = load i8, ptr %" +
                 lookupVisibleStorageName(tokens, rightStart, tokenTextAt(tokens, rightStart)) + "\n" +
                 "  " + resultName + ".right = call ptr @csec_to_string_char(i8 " + resultName + ".right.i8)\n";
+        }
+        else if (expressionIsDouble(tokens, rightStart, rightEnd)) {
+            rightCode = generateLLVMExpressionF64(tokens, rightStart, rightEnd, resultName + ".right.f64") +
+                "  " + resultName + ".right = call ptr @csec_to_string_double(double " + resultName + ".right.f64)\n";
         }
         else {
             rightCode = generateLLVMExpressionI32(tokens, rightStart, rightEnd, resultName + ".right.i32") +
@@ -4151,6 +4254,29 @@ def generateLLVMFlatBodyI32(tokens: String, bodyStart: Int, bodyEnd: Int): Strin
         }
         else {
             if (tokenKindAt(tokens, cursor) == kindIdentifier() and cursor + 1 < next and
+                tokenIs(tokens, cursor + 1, kindOperator(), "(") and
+                (strEq(tokenTextAt(tokens, cursor), "println") or strEq(tokenTextAt(tokens, cursor), "print"))) {
+                // println(expr) / print(expr): render the argument to a string and print it.
+                val callEnd: Int = findClosingToken(tokens, cursor + 1, next, "(", ")");
+                val argStart: Int = skipTrivia(tokens, cursor + 2);
+                val argEnd: Int = trimExpressionEnd(tokens, argStart, callEnd);
+                val strName: String = "%print." + cursor;
+                var argCode: String = "";
+                if (expressionIsDouble(tokens, argStart, argEnd)) {
+                    argCode = generateLLVMExpressionF64(tokens, argStart, argEnd, strName + ".f64") +
+                        "  " + strName + " = call ptr @csec_to_string_double(double " + strName + ".f64)\n";
+                }
+                else {
+                    argCode = generateLLVMExpressionPtr(tokens, argStart, argEnd, strName);
+                }
+                var newline: String = "";
+                if (strEq(tokenTextAt(tokens, cursor), "println")) {
+                    newline = "  call void @csec_print_newline()\n";
+                }
+                csec_string_builder_append(builder,
+                    argCode + "  call void @csec_print_string(ptr " + strName + ")\n" + newline);
+            }
+            else if (tokenKindAt(tokens, cursor) == kindIdentifier() and cursor + 1 < next and
                 tokenIs(tokens, cursor + 1, kindOperator(), "(") and
                 strEq(tokenTextAt(tokens, cursor), "csec_string_builder_append")) {
                 val callEnd: Int = findClosingToken(tokens, cursor + 1, next, "(", ")");
@@ -4449,6 +4575,29 @@ def generateLLVMMainBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int):
                 csec_string_builder_append(builder, statementCall);
             }
             if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier() and
+                cursor + 1 < next and tokenIs(tokens, cursor + 1, kindOperator(), "(") and
+                (strEq(tokenTextAt(tokens, cursor), "println") or strEq(tokenTextAt(tokens, cursor), "print"))) {
+                // println(expr) / print(expr): render the argument to a string and print it.
+                val callEndP: Int = findClosingToken(tokens, cursor + 1, next, "(", ")");
+                val argStartP: Int = skipTrivia(tokens, cursor + 2);
+                val argEndP: Int = trimExpressionEnd(tokens, argStartP, callEndP);
+                val strNameP: String = "%print." + cursor;
+                var argCodeP: String = "";
+                if (expressionIsDouble(tokens, argStartP, argEndP)) {
+                    argCodeP = generateLLVMExpressionF64(tokens, argStartP, argEndP, strNameP + ".f64") +
+                        "  " + strNameP + " = call ptr @csec_to_string_double(double " + strNameP + ".f64)\n";
+                }
+                else {
+                    argCodeP = generateLLVMExpressionPtr(tokens, argStartP, argEndP, strNameP);
+                }
+                var newlineP: String = "";
+                if (strEq(tokenTextAt(tokens, cursor), "println")) {
+                    newlineP = "  call void @csec_print_newline()\n";
+                }
+                csec_string_builder_append(builder,
+                    argCodeP + "  call void @csec_print_string(ptr " + strNameP + ")\n" + newlineP);
+            }
+            else if (statementCall.length == 0 and tokenKindAt(tokens, cursor) == kindIdentifier() and
                 tokenIs(tokens, cursor + 1, kindOperator(), "[")) {
                 // Vector element write  t[i] = v  -> csec_tensor_set(load t, i, v).
                 val closeE: Int = findClosingToken(tokens, cursor + 1, next, "[", "]");
@@ -5131,6 +5280,7 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader16: Int = csec_string_builder_append(builder, "declare i32 @csec_string_starts_with(ptr, ptr)\n");
     val appendHeader17: Int = csec_string_builder_append(builder, "declare ptr @csec_string_substring(ptr, i32, i32)\n");
     val appendHeader18: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_i64(i64)\n");
+    val appendHeader18d: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_double(double)\n");
     val appendHeader19: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_char(i8)\n");
     val appendHeaderNat1: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_from_i64(i64)\n");
     val appendHeaderNat2: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_from_decimal(ptr)\n");
@@ -5281,6 +5431,7 @@ def generateLLVMModule(tokens: String): String {
         "declare i32 @csec_string_starts_with(ptr, ptr)\n" +
         "declare ptr @csec_string_substring(ptr, i32, i32)\n" +
         "declare ptr @csec_to_string_i64(i64)\n" +
+        "declare ptr @csec_to_string_double(double)\n" +
         "declare ptr @csec_to_string_char(i8)\n" +
         "declare ptr @csec_bigint_from_i64(i64)\n" +
         "declare ptr @csec_bigint_from_decimal(ptr)\n" +

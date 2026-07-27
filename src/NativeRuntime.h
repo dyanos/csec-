@@ -138,6 +138,17 @@ CSEC_NATIVE_API void* csec_bigint_sub(void* a, void* b);
 CSEC_NATIVE_API void* csec_bigint_mul(void* a, void* b);
 CSEC_NATIVE_API int   csec_bigint_cmp(void* a, void* b);
 CSEC_NATIVE_API char* csec_bigint_to_string(void* a);
+
+// Tensor operations callable from the self-host compiler (csec++ inlines these instead).
+CSEC_NATIVE_API void*  csec_tensor_new(long long count, double fill);
+CSEC_NATIVE_API double csec_tensor_get(void* t, long long i);
+CSEC_NATIVE_API void   csec_tensor_set(void* t, long long i, double v);
+CSEC_NATIVE_API void*  csec_tensor_add(void* a, void* b);
+CSEC_NATIVE_API void*  csec_tensor_sub(void* a, void* b);
+CSEC_NATIVE_API void*  csec_tensor_mul(void* a, void* b);
+CSEC_NATIVE_API void*  csec_tensor_scale(void* t, double s);
+CSEC_NATIVE_API void*  csec_tensor_div_scalar(void* t, double s);
+CSEC_NATIVE_API double csec_tensor_inner(void* a, void* b);
 CSEC_NATIVE_API char* csec_to_string_bool(int value);
 CSEC_NATIVE_API char* csec_to_string_char(char value);
 CSEC_NATIVE_API char* csec_replace_dots_with_slash(const char* value);

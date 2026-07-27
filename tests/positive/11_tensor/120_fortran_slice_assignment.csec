@@ -1,0 +1,16 @@
+// Fortran-style ':' array sections: whole-array and strided assignment, scalar broadcast,
+// section-to-section copy, and section arithmetic.
+def main(): Int {
+    val a: Tensor<Double, 6> = new Tensor<Double, 6>(0.0);
+    val b: Tensor<Double, 6> = new Tensor<Double, 6>(2.0);
+    a[:] = 1.0;            // whole-array scalar broadcast -> [1,1,1,1,1,1]
+    a[2:5] = b[2:5];       // section copy from another tensor -> [1,1,2,2,2,1]
+    a[0:6:2] = 9.0;        // strided scalar broadcast (0,2,4) -> [9,1,9,2,9,1]
+    val c: Tensor<Double, 3> = a[0:3] + b[0:3];   // section arithmetic -> (11,3,11)
+    if (a[0] == 9.0 and a[1] == 1.0 and a[2] == 9.0 and
+        a[3] == 2.0 and a[4] == 9.0 and a[5] == 1.0 and
+        c[0] == 11.0 and c[1] == 3.0 and c[2] == 11.0) {
+        return 0;
+    }
+    return 1;
+}

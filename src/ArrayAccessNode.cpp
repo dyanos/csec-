@@ -139,6 +139,57 @@ llvm::Value* ArrayAccessNode::codegen() {
     return currentValue;
 }
 
+llvm::Value* ArrayAccessNode::codegenSliceAssign(llvm::Value* rhs, const Type* rhsType) {
+    auto& cg = CodeGenerator::getInstance();
+    if (!array || !rhs) return nullptr;
+    auto arrayType = stripBorrow(array->getType());
+    if (!arrayType || !TensorRuntime::isTensorTypeName(arrayType->getName())) {
+        std::cerr << "Error: slice assignment is only supported for Tensor values" << std::endl;
+        return nullptr;
+    }
+    // Single-axis section: `t[:]`, `t[i:j]`, `t[i:j:k]`. Multi-axis section assignment is not supported.
+    if (indices.size() != 1 || !indices[0] || !indices[0]->isSlice) {
+        std::cerr << "Error: only a single-axis tensor section can be assigned" << std::endl;
+        return nullptr;
+    }
+    ArrayIndexSpec* spec = indices[0].get();
+
+    llvm::Value* tensor = array->codegen();
+    if (!tensor) return nullptr;
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
+    llvm::Value* count = TensorRuntime::loadCount(cg, tensor);
+    llvm::Value* data = TensorRuntime::loadData(cg, tensor);
+
+    // Section bounds default to the whole array (`t[:]` = 0 .. count step 1).
+    llvm::Value* start = spec->start ? toTensorIndex(cg, spec->start->codegen())
+                                     : llvm::ConstantInt::get(i64Ty, 0);
+    llvm::Value* end = spec->end ? toTensorIndex(cg, spec->end->codegen()) : count;
+    llvm::Value* step = spec->step ? toTensorIndex(cg, spec->step->codegen())
+                                   : llvm::ConstantInt::get(i64Ty, 1);
+
+    // Element count of the section: ceil((end - start) / step).
+    llvm::Value* span = cg.builder.CreateSub(end, start, "slice.span");
+    llvm::Value* n = cg.builder.CreateSDiv(
+        cg.builder.CreateAdd(span, cg.builder.CreateSub(step, llvm::ConstantInt::get(i64Ty, 1))),
+        step, "slice.n");
+
+    const bool rhsIsTensor = rhsType && TensorRuntime::isTensorTypeName(rhsType->getName());
+    llvm::Value* rhsData = rhsIsTensor ? TensorRuntime::loadData(cg, rhs) : nullptr;
+    llvm::Value* scalar = rhsIsTensor ? nullptr : TensorRuntime::toDouble(cg, rhs);
+
+    TensorRuntime::emitCountedLoop(cg, n, "slice.assign", [&](llvm::Value* k) {
+        llvm::Value* idx = cg.builder.CreateAdd(start, cg.builder.CreateMul(k, step, "slice.k.step"), "slice.idx");
+        llvm::Value* dst = cg.builder.CreateGEP(f64Ty, data, idx, "slice.dst");
+        llvm::Value* value = scalar;
+        if (rhsIsTensor) {
+            value = cg.builder.CreateLoad(f64Ty, cg.builder.CreateGEP(f64Ty, rhsData, k, "slice.src"), "slice.srcval");
+        }
+        cg.builder.CreateStore(value, dst);
+    });
+    return rhs;
+}
+
 llvm::Value* ArrayAccessNode::codegenElementPointer() {
     auto& cg = CodeGenerator::getInstance();
     if (!array) return nullptr;

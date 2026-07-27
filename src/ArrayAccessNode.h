@@ -64,6 +64,16 @@ public:
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
     llvm::Value* codegenElementPointer();
+    // True if any index spec is a colon slice (`t[:]`, `t[i:j]`, ...).
+    bool hasSlice() const {
+        for (const auto& spec : indices) {
+            if (spec && spec->isSlice) return true;
+        }
+        return false;
+    }
+    // Assign into a tensor section: `t[i:j] = rhs`. rhs is a scalar (broadcast to every element of the
+    // section) or a tensor (element-wise). Returns rhs on success, nullptr if unsupported.
+    llvm::Value* codegenSliceAssign(llvm::Value* rhs, const Type* rhsType);
     std::unique_ptr<Type> getType() override {
         if (!array) return std::make_unique<UnknownType>();
         auto resolvedArrayType = array->getType();

@@ -50,6 +50,16 @@ llvm::Value* AssignmentExpressionNode::codegen() {
         }
     }
     else if (auto* access = dynamic_cast<ArrayAccessNode*>(left.get())) {
+        // A colon section on the left (`t[:] = v`, `t[i:j] = v`) assigns the whole section -- a scalar
+        // broadcast to every element, or an element-wise copy from another tensor (Fortran `:`).
+        if (access->hasSlice()) {
+            auto rightType = right ? right->getType() : nullptr;
+            llvm::Value* assigned = access->codegenSliceAssign(rightValue, rightType.get());
+            if (!assigned) {
+                return nullptr;
+            }
+            return assigned;
+        }
         targetPtr = access->codegenElementPointer();
         if (!targetPtr) {
             std::cerr << "Error: Invalid array assignment target" << std::endl;

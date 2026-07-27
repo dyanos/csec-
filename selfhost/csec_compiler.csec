@@ -3054,6 +3054,102 @@ def generateLLVMLocalI64(tokens: String, start: Int, end: Int): String {
         "  store i64 0, ptr %" + storageName + "\n";
 }
 
+// --- Nat: an arbitrary-precision natural number, represented as an opaque ptr handle backed by the
+//     csec_bigint_* runtime. Mirrors the I64 family but emits runtime calls instead of native ops. ---
+def expressionIsNat(tokens: String, rawStart: Int, rawEnd: Int): Boolean {
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) { return false; }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return strEq(lookupVisibleValueType(tokens, start, tokenTextAt(tokens, start)), "Nat");
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        return strEq(lookupFunctionReturnType(tokens, tokenTextAt(tokens, start)), "Nat");
+    }
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
+        val mnemonic: String = irOperatorName(tokenTextAt(tokens, op));
+        if (strEq(mnemonic, "add") or strEq(mnemonic, "sub") or strEq(mnemonic, "mul")) {
+            return expressionIsNat(tokens, start, op) or expressionIsNat(tokens, op + 1, end);
+        }
+    }
+    return false;
+}
+
+// Emit code producing a Nat handle named `tempName`: an integer literal is promoted via from_i64, an
+// identifier is loaded, anything else recurses through the full Nat expression generator.
+def natOperandCode(tokens: String, rawStart: Int, rawEnd: Int, tempName: String): String {
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (tokenKindAt(tokens, start) == kindInteger() and end == start + 1) {
+        return "  " + tempName + " = call ptr @csec_bigint_from_i64(i64 " + tokenTextAt(tokens, start) + ")\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "  " + tempName + " = load ptr, ptr %" +
+            lookupVisibleStorageName(tokens, start, tokenTextAt(tokens, start)) + "\n";
+    }
+    return generateLLVMExpressionNat(tokens, start, end, tempName);
+}
+
+def generateLLVMExpressionNat(tokens: String, rawStart: Int, rawEnd: Int, resultName: String): String {
+    val start: Int = skipTrivia(tokens, rawStart);
+    val end: Int = trimExpressionEnd(tokens, start, rawEnd);
+    if (end <= start) {
+        return "  " + resultName + " = call ptr @csec_bigint_from_i64(i64 0)\n";
+    }
+    if (tokenKindAt(tokens, start) == kindInteger() and end == start + 1) {
+        return "  " + resultName + " = call ptr @csec_bigint_from_i64(i64 " + tokenTextAt(tokens, start) + ")\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and end == start + 1) {
+        return "  " + resultName + " = load ptr, ptr %" +
+            lookupVisibleStorageName(tokens, start, tokenTextAt(tokens, start)) + "\n";
+    }
+    if (tokenKindAt(tokens, start) == kindIdentifier() and start + 1 < end and
+        tokenIs(tokens, start + 1, kindOperator(), "(") and
+        findClosingToken(tokens, start + 1, end, "(", ")") == end - 1) {
+        return generateLLVMCallArgumentLoadsI32(tokens, start + 2, end - 1, resultName) +
+            "  " + resultName + " = call ptr @" + llvmRuntimeCallName(tokenTextAt(tokens, start)) + "(" +
+            generateLLVMCallArgumentListI32(tokens, start + 2, end - 1, resultName) + ")\n";
+    }
+    if (tokenIs(tokens, start, kindOperator(), "(") and
+        findClosingToken(tokens, start, end, "(", ")") == end - 1) {
+        return generateLLVMExpressionNat(tokens, start + 1, end - 1, resultName);
+    }
+    val op: Int = expressionTopLevelOperator(tokens, start, end);
+    if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
+        val mnemonic: String = irOperatorName(tokenTextAt(tokens, op));
+        var fn: String = "";
+        if (strEq(mnemonic, "add")) { fn = "csec_bigint_add"; }
+        if (strEq(mnemonic, "sub")) { fn = "csec_bigint_sub"; }
+        if (strEq(mnemonic, "mul")) { fn = "csec_bigint_mul"; }
+        if (fn.length > 0) {
+            val lname: String = "%nat.l." + start;
+            val rname: String = "%nat.r." + op;
+            return natOperandCode(tokens, start, op, lname) +
+                natOperandCode(tokens, op + 1, end, rname) +
+                "  " + resultName + " = call ptr @" + fn + "(ptr " + lname + ", ptr " + rname + ")\n";
+        }
+    }
+    return "  " + resultName + " = call ptr @csec_bigint_from_i64(i64 0)\n";
+}
+
+def generateLLVMLocalNat(tokens: String, start: Int, end: Int): String {
+    val initializer: Int = findTopLevelOperator(tokens, start, end, 1);
+    val name: String = tokenTextAt(tokens, start + 1);
+    val storageName: String = name + ".addr." + start;
+    val initName: String = "%" + name + ".ninit." + start;
+    if (initializer >= start) {
+        return "  %" + storageName + " = alloca ptr\n" +
+            generateLLVMExpressionNat(tokens, initializer + 1, end, initName) +
+            "  store ptr " + initName + ", ptr %" + storageName + "\n";
+    }
+    return "  %" + storageName + " = alloca ptr\n" +
+        "  %" + name + ".nzero." + start + " = call ptr @csec_bigint_from_i64(i64 0)\n" +
+        "  store ptr %" + name + ".nzero." + start + ", ptr %" + storageName + "\n";
+}
+
 def llvmF64Value(tokens: String, start: Int, rawEnd: Int): String {
     val end: Int = trimExpressionEnd(tokens, start, rawEnd);
     if (end <= start) {
@@ -3369,6 +3465,15 @@ def generateLLVMConditionI1(tokens: String, start: Int, rawEnd: Int, resultName:
                 return "  " + resultName + ".right.i8 = load i8, ptr %" + storageName + "\n" +
                     "  " + resultName + " = icmp " + compareOp + " i8 " +
                     llvmCharI8Value(tokenTextAt(tokens, start)) + ", " + resultName + ".right.i8\n";
+            }
+            if (expressionIsNat(tokens, start, op) or expressionIsNat(tokens, op + 1, end)) {
+                val natL: String = resultName + ".natl";
+                val natR: String = resultName + ".natr";
+                val natCmp: String = resultName + ".natcmp";
+                return natOperandCode(tokens, start, op, natL) +
+                    natOperandCode(tokens, op + 1, end, natR) +
+                    "  " + natCmp + " = call i32 @csec_bigint_cmp(ptr " + natL + ", ptr " + natR + ")\n" +
+                    "  " + resultName + " = icmp " + compareOp + " i32 " + natCmp + ", 0\n";
             }
             val leftName: String = resultName + ".left.i32";
             val rightName: String = resultName + ".right.i32";
@@ -3721,12 +3826,16 @@ def generateLLVMFlatBodyI32(tokens: String, bodyStart: Int, bodyEnd: Int): Strin
             else if (strEq(localDeclarationType(tokens, cursor, next), "Char")) {
                 csec_string_builder_append(builder, generateLLVMLocalI8(tokens, cursor, next));
             }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Nat")) {
+                csec_string_builder_append(builder, generateLLVMLocalNat(tokens, cursor, next));
+            }
             if (strEq(irTypeName(localDeclarationType(tokens, cursor, next)), "ptr") and
                 !strEq(localDeclarationType(tokens, cursor, next), "Int") and
                 !strEq(localDeclarationType(tokens, cursor, next), "Boolean") and
                 !strEq(localDeclarationType(tokens, cursor, next), "Double") and
                 !strEq(localDeclarationType(tokens, cursor, next), "Long") and
-                !strEq(localDeclarationType(tokens, cursor, next), "Char")) {
+                !strEq(localDeclarationType(tokens, cursor, next), "Char") and
+                !strEq(localDeclarationType(tokens, cursor, next), "Nat")) {
                 csec_string_builder_append(builder, generateLLVMLocalPtr(tokens, cursor, next));
             }
         }
@@ -4148,6 +4257,9 @@ def generateLLVMMainBodyFromRange(tokens: String, bodyStart: Int, bodyEnd: Int):
             }
             if (strEq(localDeclarationType(tokens, cursor, next), "Char")) {
                 csec_string_builder_append(builder, generateLLVMLocalI8(tokens, cursor, next));
+            }
+            else if (strEq(localDeclarationType(tokens, cursor, next), "Nat")) {
+                csec_string_builder_append(builder, generateLLVMLocalNat(tokens, cursor, next));
             }
             else if (strEq(irTypeName(localDeclarationType(tokens, cursor, next)), "ptr")) {
                 csec_string_builder_append(builder, generateLLVMLocalPtr(tokens, cursor, next));
@@ -4867,6 +4979,13 @@ def generateLLVMModuleInto(tokens: String, builder: Long): Int {
     val appendHeader17: Int = csec_string_builder_append(builder, "declare ptr @csec_string_substring(ptr, i32, i32)\n");
     val appendHeader18: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_i64(i64)\n");
     val appendHeader19: Int = csec_string_builder_append(builder, "declare ptr @csec_to_string_char(i8)\n");
+    val appendHeaderNat1: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_from_i64(i64)\n");
+    val appendHeaderNat2: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_from_decimal(ptr)\n");
+    val appendHeaderNat3: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_add(ptr, ptr)\n");
+    val appendHeaderNat4: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_sub(ptr, ptr)\n");
+    val appendHeaderNat5: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_mul(ptr, ptr)\n");
+    val appendHeaderNat6: Int = csec_string_builder_append(builder, "declare i32 @csec_bigint_cmp(ptr, ptr)\n");
+    val appendHeaderNat7: Int = csec_string_builder_append(builder, "declare ptr @csec_bigint_to_string(ptr)\n");
     val appendHeader20: Int = csec_string_builder_append(builder, "declare ptr @csec_token_append_owned(ptr, i8, ptr)\n");
     val appendHeader21: Int = csec_string_builder_append(builder, "declare i64 @csec_token_builder_new()\n");
     val appendHeader22: Int = csec_string_builder_append(builder, "declare i32 @csec_token_builder_append(i64, i8, ptr)\n");
@@ -5001,6 +5120,13 @@ def generateLLVMModule(tokens: String): String {
         "declare ptr @csec_string_substring(ptr, i32, i32)\n" +
         "declare ptr @csec_to_string_i64(i64)\n" +
         "declare ptr @csec_to_string_char(i8)\n" +
+        "declare ptr @csec_bigint_from_i64(i64)\n" +
+        "declare ptr @csec_bigint_from_decimal(ptr)\n" +
+        "declare ptr @csec_bigint_add(ptr, ptr)\n" +
+        "declare ptr @csec_bigint_sub(ptr, ptr)\n" +
+        "declare ptr @csec_bigint_mul(ptr, ptr)\n" +
+        "declare i32 @csec_bigint_cmp(ptr, ptr)\n" +
+        "declare ptr @csec_bigint_to_string(ptr)\n" +
         "declare ptr @csec_token_append_owned(ptr, i8, ptr)\n" +
         "declare i64 @csec_token_builder_new()\n" +
         "declare i32 @csec_token_builder_append(i64, i8, ptr)\n" +

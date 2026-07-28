@@ -140,6 +140,20 @@ From the build output directory:
 ./out
 ```
 
+### Optimization
+
+Pass `-O0`, `-O1`, `-O2`, `-O3` (or `-O` for `-O2`) to control optimization of the
+emitted output. `-O1`/`-O2`/`-O3` run LLVM's per-module optimization pipeline
+(mem2reg, inlining, GVN, DCE, loop optimizations, ...); `-O0` emits unoptimized IR;
+with no flag the compiler only promotes stack slots to registers (mem2reg). The
+level applies to `--emit-ir`/`--emit-obj`/`--emit-exe` (and code run from that
+output, e.g. `--run-ir`); `--run` always uses the interpreter-safe mem2reg pipeline.
+
+```sh
+./csec++ --emit-exe program.csec -O2 -o program   # optimized native executable
+./csec++ --emit-ir  program.csec -O3 -o program.ll # inspect optimized IR
+```
+
 `--emit-obj` and `--emit-exe` call `llc`. The compiler searches for `llc` in:
 
 1. `LLVM_BIN`

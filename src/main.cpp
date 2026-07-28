@@ -73,6 +73,7 @@ void printUsage(const char* programName) {
         << "  --emit-obj, -c               Write native object code (.obj/.o)\n"
         << "  --emit-exe                   Write native executable (.exe)\n"
         << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
+        << "  -O0 / -O1 / -O2 / -O3 / -O   Optimization level (-O = -O2; default: mem2reg only)\n"
         << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
         << "  --link-path <path>           Add a native library search path\n"
         << "  --strict-ownership           Force M2 strict ownership on (default; move-check all non-copy types)\n"
@@ -1218,6 +1219,9 @@ int main(int argc, char** argv) {
     std::vector<std::string> linkPaths;
     std::vector<std::string> runtimeArgs;
     bool parsingRuntimeArgs = false;
+    // Optimization level: -1 = unspecified (legacy default: mem2reg only), 0 = -O0 (no passes),
+    // 1/2/3 = -O1/-O2/-O3 (LLVM per-module default pipeline).
+    int optLevel = -1;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (parsingRuntimeArgs) {
@@ -1272,6 +1276,10 @@ int main(int argc, char** argv) {
             outputMode = OutputMode::EmitExecutable;
             continue;
         }
+        if (arg == "-O0") { optLevel = 0; continue; }
+        if (arg == "-O1") { optLevel = 1; continue; }
+        if (arg == "-O2" || arg == "-O") { optLevel = 2; continue; }
+        if (arg == "-O3") { optLevel = 3; continue; }
         if (arg == "-o") {
             if (i + 1 >= argc) {
                 std::cerr << "Missing output path after -o" << std::endl;
@@ -1398,11 +1406,6 @@ int main(int argc, char** argv) {
     }
 
     llvm::PassBuilder PB;
-    llvm::ModulePassManager MPM;
-    llvm::FunctionPassManager FPM;
-    FPM.addPass(llvm::PromotePass());
-    MPM.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(FPM)));
-
     llvm::LoopAnalysisManager LAM;
     llvm::FunctionAnalysisManager FAM;
     llvm::CGSCCAnalysisManager CGAM;
@@ -1413,6 +1416,34 @@ int main(int argc, char** argv) {
     PB.registerLoopAnalyses(LAM);
     PB.registerCGSCCAnalyses(CGAM);
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    // Choose the optimization pipeline by -O level. -O1/-O2/-O3 run LLVM's full per-module pipeline
+    // (which already includes mem2reg, inlining, GVN, DCE, loop opts, ...). -O0 runs nothing. The
+    // legacy default (no -O flag) promotes allocas to registers only.
+    //
+    // The `--run` path executes with the LLVM *interpreter*, which cannot run fully optimized IR
+    // (vector ops, intrinsics), so it always uses the interpreter-safe mem2reg pipeline; the -O level
+    // takes effect for emitted output (--emit-ir/--emit-obj/--emit-exe), and a program run from that
+    // output (or via --run-ir) sees the optimization.
+    const bool interpreterRun = (outputMode == OutputMode::Run);
+    if (interpreterRun && optLevel >= 1) {
+        std::cerr << "Note: -O optimization applies to emitted output, not the --run interpreter; "
+                     "use --emit-ir/--emit-exe (or --run-ir) to run optimized code." << std::endl;
+    }
+
+    llvm::ModulePassManager MPM;
+    if (!interpreterRun && optLevel >= 1) {
+        llvm::OptimizationLevel level = llvm::OptimizationLevel::O2;
+        if (optLevel == 1) level = llvm::OptimizationLevel::O1;
+        else if (optLevel == 3) level = llvm::OptimizationLevel::O3;
+        MPM = PB.buildPerModuleDefaultPipeline(level);
+    }
+    else if (interpreterRun || optLevel < 0) {
+        llvm::FunctionPassManager FPM;
+        FPM.addPass(llvm::PromotePass());
+        MPM.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(FPM)));
+    }
+    // optLevel == 0 with an emit mode: leave the module unoptimized.
     MPM.run(*codeGen.module, MAM);
 
     if (outputMode == OutputMode::EmitIR || outputMode == OutputMode::EmitObject ||

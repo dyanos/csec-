@@ -102,6 +102,23 @@ std::string mapSystemPathToBuiltin(const std::vector<std::string>& pathComponent
 }
 }
 
+// Fold a dotted path (`a`, `a.b`, `a.b.c`, ...) into a left-nested AccessFieldNode chain so member
+// access is a first-class l-value/expression AST rather than a joined "a.b.c" identifier string.
+static std::unique_ptr<ASTNode> buildFieldChain(const std::vector<std::string>& comps) {
+    std::unique_ptr<ASTNode> node = std::make_unique<IdentifierNode>(comps[0]);
+    for (size_t i = 1; i < comps.size(); ++i) {
+        node = std::make_unique<AccessFieldNode>(std::move(node), std::make_unique<IdentifierNode>(comps[i]));
+    }
+    return node;
+}
+
+// A dotted path is a member-access l-value/expression (build a field chain) rather than a namespaced
+// name when it has >= 2 components and does not start with `this`/`super` (those keep their special
+// dotted-identifier handling).
+static bool isFieldChainPath(const std::vector<std::string>& comps) {
+    return comps.size() >= 2 && comps[0] != "this" && comps[0] != "super";
+}
+
 std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 	std::unique_ptr<ASTNode> expr;
 
@@ -252,14 +269,11 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
             std::string op = previous().value;
 			auto assignNode = std::make_unique<AssignmentExpressionNode>();
             assignNode->op = op;
-			// `base.member = ...` targets a field/vector-component: build an AccessFieldNode so the
-			// assignment resolves the element address (via codegenFieldPointer). `this`/`super` member
-			// writes keep their existing dotted-identifier handling.
-			if (pathComponents.size() == 2 &&
-			    pathComponents[0] != "this" && pathComponents[0] != "super") {
-				assignNode->left = std::make_unique<AccessFieldNode>(
-					std::make_unique<IdentifierNode>(pathComponents[0]),
-					std::make_unique<IdentifierNode>(pathComponents[1]));
+			// `base.member = ...` (any depth) targets a field/vector-component chain; build an
+			// AccessFieldNode l-value so the assignment resolves the element address. `this`/`super`
+			// member writes keep their existing dotted-identifier handling.
+			if (isFieldChainPath(pathComponents)) {
+				assignNode->left = buildFieldChain(pathComponents);
 			}
 			else {
 				assignNode->left = std::make_unique<IdentifierNode>(join(pathComponents, "."));
@@ -278,11 +292,8 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
             // read-back as AccessFieldNode l-values (matching plain `=`) rather than a dotted identifier,
             // so the field/component address resolves. `this`/`super` keep dotted-identifier handling.
             auto makeTarget = [&]() -> std::unique_ptr<ASTNode> {
-                if (pathComponents.size() == 2 &&
-                    pathComponents[0] != "this" && pathComponents[0] != "super") {
-                    return std::make_unique<AccessFieldNode>(
-                        std::make_unique<IdentifierNode>(pathComponents[0]),
-                        std::make_unique<IdentifierNode>(pathComponents[1]));
+                if (isFieldChainPath(pathComponents)) {
+                    return buildFieldChain(pathComponents);
                 }
                 return std::make_unique<IdentifierNode>(join(pathComponents, "."));
             };
@@ -294,10 +305,11 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
             return assignNode;
         }
 
-        if (pathComponents.size() == 2) {
-            return std::make_unique<AccessFieldNode>(
-                std::make_unique<IdentifierNode>(pathComponents[0]),
-                std::make_unique<IdentifierNode>(pathComponents[1]));
+        // Read-back of a dotted path: build an AccessFieldNode chain for any depth >= 2, including
+        // `this`/`super` member reads (e.g. `return this.value`). Unlike the assignment LHS, reads have
+        // no special dotted-identifier handling for this/super, so they must resolve via the chain too.
+        if (pathComponents.size() >= 2) {
+            return buildFieldChain(pathComponents);
         }
 
 		return std::make_unique<IdentifierNode>(join(pathComponents, "."));

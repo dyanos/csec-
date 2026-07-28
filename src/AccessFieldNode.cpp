@@ -37,6 +37,17 @@ llvm::Value* AccessFieldNode::codegen() {
         return nullptr;
     }
 
+    // Nested chain read (`a.b.c`): the base is an AccessFieldNode. Take the element address and load it.
+    if (dynamic_cast<AccessFieldNode*>(this->base.get())) {
+        auto& cg = CodeGenerator::getInstance();
+        llvm::Value* fieldPtr = codegenFieldPointer();
+        if (!fieldPtr) return nullptr;
+        llvm::Type* fieldLLVMType = getABIStorageType(getType().get());
+        if (!fieldLLVMType) return nullptr;
+        auto* fid = dynamic_cast<IdentifierNode*>(this->field.get());
+        return cg.builder.CreateLoad(fieldLLVMType, fieldPtr, (fid ? fid->value : "field") + ".value");
+    }
+
     auto* baseIdentifier = dynamic_cast<IdentifierNode*>(this->base.get());
     if (!baseIdentifier) {
         std::cerr << "Error: Base must be an identifier" << std::endl;
@@ -110,18 +121,49 @@ llvm::Value* AccessFieldNode::codegen() {
 }
 
 llvm::Value* AccessFieldNode::codegenFieldPointer() {
-    auto* baseIdentifier = dynamic_cast<IdentifierNode*>(this->base.get());
-    if (!baseIdentifier) {
-        std::cerr << "Error: Base must be an identifier" << std::endl;
-        return nullptr;
-    }
     auto* fieldIdentifier = dynamic_cast<IdentifierNode*>(this->field.get());
     if (!fieldIdentifier) {
         std::cerr << "Error: Field must be an identifier" << std::endl;
         return nullptr;
     }
-    auto baseType = stripBorrow(baseIdentifier->getType());
     const auto targetName = fieldIdentifier->value;
+
+    // Nested chain: `a.b.c` -- the base is itself an AccessFieldNode (`a.b`). Recurse to the pointer to
+    // the base value-struct, then StructGEP the field on the base's declared class/struct type. (Only
+    // inline value-struct fields chain this way; a reference field would need a load, not handled here.)
+    if (auto* baseField = dynamic_cast<AccessFieldNode*>(this->base.get())) {
+        auto& cg = CodeGenerator::getInstance();
+        llvm::Value* basePtr = baseField->codegenFieldPointer();
+        if (!basePtr) return nullptr;
+        auto baseTy = stripBorrow(baseField->getType());
+        if (!baseTy || baseTy->getKind() != Type::Kind::CLASS) {
+            std::cerr << "Error: '" << targetName << "' base is not a struct/class" << std::endl;
+            return nullptr;
+        }
+        auto* classSymbol = cg.symbolTable.lookupClass(baseTy->getName());
+        auto* structType = classSymbol ? llvm::dyn_cast<llvm::StructType>(classSymbol->classType) : nullptr;
+        if (!structType) {
+            std::cerr << "Error: '" << baseTy->getName() << "' has no struct layout" << std::endl;
+            return nullptr;
+        }
+        int fieldIndex = findFieldIndex(classSymbol, targetName);
+        if (fieldIndex == -1) {
+            std::cerr << "Error: Field '" << targetName << "' not found in '" << baseTy->getName() << "'" << std::endl;
+            return nullptr;
+        }
+        auto* targetPtrType = llvm::PointerType::getUnqual(structType);
+        if (basePtr->getType() != targetPtrType) {
+            basePtr = cg.builder.CreateBitCast(basePtr, targetPtrType, "obj.cast");
+        }
+        return cg.builder.CreateStructGEP(structType, basePtr, static_cast<unsigned>(fieldIndex), targetName);
+    }
+
+    auto* baseIdentifier = dynamic_cast<IdentifierNode*>(this->base.get());
+    if (!baseIdentifier) {
+        std::cerr << "Error: Base must be an identifier" << std::endl;
+        return nullptr;
+    }
+    auto baseType = stripBorrow(baseIdentifier->getType());
 
     // Vector component as an assignment target: `nvec.x = ...` -> address of element 0..3.
     if (baseType && TensorRuntime::isTensorTypeName(baseType->getName())) {

@@ -1,6 +1,10 @@
 #pragma once
 
-#if defined(_WIN32)
+#if defined(CSEC_NATIVE_STATIC)
+// Runtime compiled directly into an executable (--static): plain symbols, no
+// import/export decoration on any platform.
+#define CSEC_NATIVE_API
+#elif defined(_WIN32)
 #if defined(CSEC_NATIVE_RUNTIME_BUILD)
 #define CSEC_NATIVE_API __declspec(dllexport)
 #else

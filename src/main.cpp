@@ -67,11 +67,12 @@ void printUsage(const char* programName) {
         << "Usage: " << programName << " [options] <input.csec>\n"
         << "Options:\n"
         << "  --syntax-only, --parse-only  Parse only, no code generation\n"
-        << "  --run                        Generate and run with LLVM interpreter (default)\n"
+        << "  --run                        Generate and run with LLVM interpreter\n"
         << "  --run-ir <file.ll>            Run an existing LLVM IR module with the interpreter\n"
         << "  --emit-ir, -S                Write LLVM IR (.ll)\n"
         << "  --emit-obj, -c               Write native object code (.obj/.o)\n"
-        << "  --emit-exe                   Write native executable (.exe)\n"
+        << "  --emit-exe                   Write native executable (.exe) (default)\n"
+        << "  --static                     Link the runtime into the .exe (no System.Native.dll needed)\n"
         << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
         << "  -O0 / -O1 / -O2 / -O3 / -O   Optimization level (-O = -O2; default: mem2reg only)\n"
         << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
@@ -1032,7 +1033,7 @@ bool compileNativeRuntimeObject(const std::filesystem::path& linkPath, const std
     const auto sdkRoot = findWindowsSdkLibRoot();
     std::string command =
         quoteCommandArg(clPath.string()) +
-        " /nologo /c /EHsc /MT /O2 /DCSEC_NATIVE_RUNTIME_BUILD /D_CRT_SECURE_NO_WARNINGS /D_WINSOCK_DEPRECATED_NO_WARNINGS " +
+        " /nologo /c /EHsc /std:c++17 /MT /O2 /DCSEC_NATIVE_STATIC /D_CRT_SECURE_NO_WARNINGS /D_WINSOCK_DEPRECATED_NO_WARNINGS " +
         "/I" + quoteCommandArg(vcInclude.string()) + " ";
     if (!sdkRoot.empty()) {
         auto sdkBase = sdkRoot.parent_path().parent_path();
@@ -1058,7 +1059,8 @@ bool writeExecutableToFile(
     llvm::Module& module,
     const std::string& outputPath,
     const std::vector<std::string>& linkLibraries,
-    const std::vector<std::string>& linkPaths) {
+    const std::vector<std::string>& linkPaths,
+    bool staticRuntime) {
 #ifndef _WIN32
     std::filesystem::path tempObject = std::filesystem::path(outputPath).replace_extension(".tmp.o");
     if (!writeObjectToFile(module, tempObject.string(), false)) {
@@ -1068,16 +1070,41 @@ bool writeExecutableToFile(
     std::filesystem::path cxxPath = findToolPath("CXX", "c++");
     std::string cxx = cxxPath.string();
     std::vector<std::filesystem::path> runtimeLibrariesToCopy;
+
+    // --static: compile the native runtime (NativeRuntime.cpp + its .inc units) straight into a temp
+    // object and link it in, so the executable carries every csec_* symbol itself and does not depend
+    // on a System.Native shared object at run time.
+    std::filesystem::path staticRuntimeObject;
+    if (staticRuntime) {
+        staticRuntimeObject = std::filesystem::path(outputPath).replace_extension(".runtime.o");
+        std::filesystem::path runtimeSource = findNativeRuntimeSource();
+        std::string compileCommand =
+            quoteCommandArg(cxx) + " -std=c++17 -O2 -DCSEC_NATIVE_STATIC -c " +
+            quoteCommandArg(runtimeSource.string()) + " -o " + quoteCommandArg(staticRuntimeObject.string());
+        if (std::system(compileCommand.c_str()) != 0) {
+            std::cerr << "Failed to compile native runtime for --static from " << runtimeSource << std::endl;
+            std::filesystem::remove(tempObject);
+            return false;
+        }
+    }
+
     std::string linkCommand =
         quoteCommandArg(cxx) +
         " -o " + quoteCommandArg(outputPath) + " " +
         quoteCommandArg(tempObject.string());
+    if (staticRuntime) {
+        linkCommand += " " + quoteCommandArg(staticRuntimeObject.string());
+    }
     for (const auto& linkPathArg : linkPaths) {
         if (!linkPathArg.empty()) {
             linkCommand += " -L" + quoteCommandArg(linkPathArg);
         }
     }
     for (const auto& library : linkLibraries) {
+        // The runtime object already satisfies the System.* symbols under --static; skip its shared lib.
+        if (staticRuntime && startsWithSystemLibraryPrefix(library)) {
+            continue;
+        }
         std::string linkArg = resolvedNativeLinkLibraryArg(library, linkPaths, outputPath, runtimeLibrariesToCopy);
         if (!linkArg.empty()) {
             linkCommand += " " + linkArg;
@@ -1096,13 +1123,16 @@ bool writeExecutableToFile(
     int linkResult = std::system(linkCommand.c_str());
     std::error_code removeError;
     std::filesystem::remove(tempObject, removeError);
+    if (!staticRuntimeObject.empty()) {
+        std::filesystem::remove(staticRuntimeObject, removeError);
+    }
     if (linkResult != 0) {
         std::cerr << "Failed to emit executable via native linker. Command exited with code " << linkResult << std::endl;
         return false;
     }
 
     copyRuntimeLibrariesNextToOutput(runtimeLibrariesToCopy, outputPath);
-    std::cout << "Wrote executable: " << outputPath << std::endl;
+    std::cout << "Wrote executable: " << outputPath << (staticRuntime ? " (static runtime)" : "") << std::endl;
     return true;
 #else
     std::filesystem::path tempObject = std::filesystem::path(outputPath).replace_extension(".tmp.obj");
@@ -1120,6 +1150,20 @@ bool writeExecutableToFile(
         "/OUT:" + quoteCommandArg(outputPath),
         quoteCommandArg(tempObject.string())
     };
+
+    // --static: compile the native runtime (NativeRuntime.cpp + its .inc units) into a temp object with
+    // CSEC_NATIVE_STATIC (plain, undecorated symbols) and link it straight in, so the executable carries
+    // every csec_* symbol itself and needs no System.Native.dll beside it at run time.
+    std::filesystem::path staticRuntimeObject;
+    if (staticRuntime) {
+        staticRuntimeObject = std::filesystem::path(outputPath).replace_extension(".runtime.obj");
+        if (!compileNativeRuntimeObject(linkPath, staticRuntimeObject)) {
+            std::cerr << "Failed to build native runtime object for --static." << std::endl;
+            std::filesystem::remove(tempObject);
+            return false;
+        }
+        linkArgs.push_back(quoteCommandArg(staticRuntimeObject.string()));
+    }
 
     auto msvcLibPath = findMsvcX64LibPath(linkPath);
     if (!msvcLibPath.empty()) {
@@ -1143,6 +1187,11 @@ bool writeExecutableToFile(
     linkArgs.push_back("legacy_stdio_definitions.lib");
     for (const auto& library : linkLibraries) {
         if (!library.empty()) {
+            // The statically linked runtime object already satisfies the System.* symbols; skip its
+            // import lib so no System.Native.dll dependency (or DLL copy) is introduced.
+            if (staticRuntime && startsWithSystemLibraryPrefix(library)) {
+                continue;
+            }
             linkArgs.push_back(resolvedWindowsLinkLibraryArg(library, linkPaths, outputPath, runtimeLibrariesToCopy));
         }
     }
@@ -1158,13 +1207,16 @@ bool writeExecutableToFile(
     int result = std::system(command.c_str());
     std::error_code removeError;
     std::filesystem::remove(tempObject, removeError);
+    if (!staticRuntimeObject.empty()) {
+        std::filesystem::remove(staticRuntimeObject, removeError);
+    }
     if (result != 0) {
         std::cerr << "Failed to emit executable via link.exe. Command exited with code " << result << std::endl;
         return false;
     }
 
     copyRuntimeLibrariesNextToOutput(runtimeLibrariesToCopy, outputPath);
-    std::cout << "Wrote executable: " << outputPath << std::endl;
+    std::cout << "Wrote executable: " << outputPath << (staticRuntime ? " (static runtime)" : "") << std::endl;
     return true;
 #endif
 }
@@ -1211,7 +1263,7 @@ int main(int argc, char** argv) {
     else {
         std::cout << "get current directory: <unavailable>" << std::endl;
     }
-    OutputMode outputMode = OutputMode::Run;
+    OutputMode outputMode = OutputMode::EmitExecutable;
     std::string inputFile;
     bool inputFileSet = false;
     std::string outputFile;
@@ -1222,6 +1274,9 @@ int main(int argc, char** argv) {
     // Optimization level: -1 = unspecified (legacy default: mem2reg only), 0 = -O0 (no passes),
     // 1/2/3 = -O1/-O2/-O3 (LLVM per-module default pipeline).
     int optLevel = -1;
+    // --static: link the native runtime directly into the emitted executable (no System.Native.dll
+    // dependency at run time). Only affects --emit-exe.
+    bool staticRuntime = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (parsingRuntimeArgs) {
@@ -1274,6 +1329,10 @@ int main(int argc, char** argv) {
         }
         if (arg == "--emit-exe") {
             outputMode = OutputMode::EmitExecutable;
+            continue;
+        }
+        if (arg == "--static") {
+            staticRuntime = true;
             continue;
         }
         if (arg == "-O0") { optLevel = 0; continue; }
@@ -1482,7 +1541,7 @@ int main(int argc, char** argv) {
             }
             if (!exists) allLinkPaths.push_back(path);
         }
-        return writeExecutableToFile(*codeGen.module, outputFile, allLinkLibraries, allLinkPaths) ? 0 : 1;
+        return writeExecutableToFile(*codeGen.module, outputFile, allLinkLibraries, allLinkPaths, staticRuntime) ? 0 : 1;
     }
 
     std::string errStr;

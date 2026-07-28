@@ -47,26 +47,14 @@ entry:
 
 define double @_ratio() {
 entry:
-  %value = alloca double, align 8
-  store float 1.500000e+00, ptr %value, align 4
-  %value.load = load double, ptr %value, align 8
-  %value.load1 = load double, ptr %value, align 8
-  %faddtmp = fadd double %value.load1, 2.000000e+00
-  store double %faddtmp, ptr %value, align 8
-  %value.load2 = load double, ptr %value, align 8
-  ret double %value.load2
+  %faddtmp = fadd double 1.500000e+00, 2.000000e+00
+  ret double %faddtmp
 }
 
 define i64 @_wide() {
 entry:
-  %total = alloca i64, align 8
-  store i32 1000, ptr %total, align 4
-  %total.load = load i64, ptr %total, align 4
-  %total.load1 = load i64, ptr %total, align 4
-  %addtmp = add i64 %total.load1, 24
-  store i64 %addtmp, ptr %total, align 4
-  %total.load2 = load i64, ptr %total, align 4
-  ret i64 %total.load2
+  %addtmp = add i64 1000, 24
+  ret i64 %addtmp
 }
 
 define void @_touch() {
@@ -76,15 +64,11 @@ entry:
 
 define i32 @_main() {
 entry:
-  %scale = alloca double, align 8
-  store float 2.500000e+00, ptr %scale, align 4
   %calltmp = call ptr @_label()
   %calltmp1 = call i8 @_marker()
   %calltmp2 = call i64 @_wide()
   %calltmp4 = call i1 @_positive(i32 3)
-  %scale.load = load double, ptr %scale, align 8
   %calltmp5 = call double @_ratio()
-  store double %calltmp5, ptr %scale, align 8
   %calltmp6 = call ptr @_label()
   %calltmp7 = call i8 @_marker()
   %calltmp8 = call i64 @_wide()
@@ -96,8 +80,7 @@ and_rhs:                                          ; preds = %entry
 
 and_end:                                          ; preds = %and_rhs, %entry
   %and_result.0 = phi i1 [ %gttmp, %and_rhs ], [ false, %entry ]
-  %ifcond = icmp ne i1 %and_result.0, false
-  br i1 %ifcond, label %then, label %else
+  br i1 %and_result.0, label %then, label %else
 
 then:                                             ; preds = %and_end
   %addtmp = add i32 3, 1

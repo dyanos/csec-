@@ -22,8 +22,6 @@ declare void @println(ptr)
 
 define i32 @_main() {
 entry:
-  %ratio = alloca double, align 8
-  store float 2.500000e+00, ptr %ratio, align 4
   %addtmp = add i32 1, 6
   %shltmp = shl i32 %addtmp, 1
   %ortmp = or i32 %shltmp, 3
@@ -38,8 +36,7 @@ and_rhs:                                          ; preds = %entry
 
 and_end:                                          ; preds = %and_rhs, %entry
   %and_result.0 = phi i1 [ %gttmp, %and_rhs ], [ false, %entry ]
-  %ifcond = icmp ne i1 %and_result.0, false
-  br i1 %ifcond, label %then, label %else
+  br i1 %and_result.0, label %then, label %else
 
 then:                                             ; preds = %and_end
   %addtmp10 = add i32 %addtmp, 0

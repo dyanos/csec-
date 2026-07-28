@@ -274,10 +274,21 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
             match(TokenType::OPERATOR, "%=")) {
             std::string op = previous().value.substr(0, 1);
             auto assignNode = std::make_unique<AssignmentExpressionNode>();
-            auto leftName = join(pathComponents, ".");
-            assignNode->left = std::make_unique<IdentifierNode>(leftName);
+            // `base.member OP= x` desugars to `base.member = base.member OP x`; build the target and the
+            // read-back as AccessFieldNode l-values (matching plain `=`) rather than a dotted identifier,
+            // so the field/component address resolves. `this`/`super` keep dotted-identifier handling.
+            auto makeTarget = [&]() -> std::unique_ptr<ASTNode> {
+                if (pathComponents.size() == 2 &&
+                    pathComponents[0] != "this" && pathComponents[0] != "super") {
+                    return std::make_unique<AccessFieldNode>(
+                        std::make_unique<IdentifierNode>(pathComponents[0]),
+                        std::make_unique<IdentifierNode>(pathComponents[1]));
+                }
+                return std::make_unique<IdentifierNode>(join(pathComponents, "."));
+            };
+            assignNode->left = makeTarget();
             assignNode->right = std::make_unique<BinaryExpressionNode>(
-                std::make_unique<IdentifierNode>(leftName),
+                makeTarget(),
                 op,
                 parseExpression());
             return assignNode;

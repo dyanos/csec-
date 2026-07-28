@@ -811,6 +811,9 @@ static size_t csec_lex_number_end(const std::string& source, size_t index) {
 }
 
 static size_t csec_lex_operator_width(const std::string& source, size_t index) {
+    // Multi-character operators for the self-host lexer. The canonical set lives in docs/grammar.md and
+    // the csec++ lexer's initializeOperators() (src/lexer.cpp); keep the three in sync. Single-character
+    // operators are handled separately by the caller.
     static const char* const operators[] = {
         "[@", "=>", "<-", "->", "<=", ">=", "==", "&&", "||", "++", "--",
         "!=", "+=", "-=", "*=", "/=", "%=", "<<", ">>", "..", "$$", "**"

@@ -102,6 +102,9 @@ void Lexer::initializeKeywords() {
 }
 
 void Lexer::initializeOperators() {
+    // Canonical operator set (see docs/grammar.md). The self-host lexer keeps a matching multi-character
+    // list in native_runtime/lexer_runtime.inc (csec_operator_length); keep the two in sync when adding
+    // or removing an operator. Matched maximal-munch (longest operator first) in matchOperator().
     std::string ops[] = {
 		"=", "==", "!=", "+", "-", "*", "/", "%", "$", "$$", "\\", "<", ">", "<=", ">=", "<<", ">>",
 		"!", "&", "|", "^", "~", ":", ".", ",", ";", "(", ")", "{", "}", "[", "]", "[@", "<-", "->",

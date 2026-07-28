@@ -28,6 +28,12 @@ private:
     const Token& previous() const;
     bool check(TokenType type, const std::string& value = "") const;
     bool match(TokenType type, const std::string& value = "");
+    // Match a word by text whether it lexes as a KEYWORD or an IDENTIFIER. Used for contextual
+    // keywords (e.g. the physics-DSL body words `dt`, `step`, `from`) that are meaningful only inside
+    // their construct and are ordinary identifiers everywhere else.
+    bool checkWord(const std::string& value) const;
+    bool matchWord(const std::string& value);
+    void expectWord(const std::string& value);
     bool matchIdentifierName();
     // 현재 Token position 저장/복원
     bool saveTokenPosition();

@@ -150,11 +150,11 @@ std::unique_ptr<ASTNode> Parser::parseMoleculeSimulationExpression() {
 			return nullptr;
 		}
 
-		if (match(TokenType::KEYWORD, "atom")) {
-			if (!check(TokenType::KEYWORD, "at") && (match(TokenType::IDENTIFIER) || match(TokenType::KEYWORD))) {
+		if (matchWord("atom")) {
+			if (!checkWord("at") && (match(TokenType::IDENTIFIER) || match(TokenType::KEYWORD))) {
 				// Optional atom label or element symbol.
 			}
-			if (match(TokenType::KEYWORD, "at")) {
+			if (matchWord("at")) {
 				expect(TokenType::OPERATOR, "(");
 				parseExpression();
 				expect(TokenType::OPERATOR, ",");
@@ -166,7 +166,7 @@ std::unique_ptr<ASTNode> Parser::parseMoleculeSimulationExpression() {
 			++atomCount;
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "lattice")) {
+		else if (matchWord("lattice")) {
 			if (!match(TokenType::INTEGER_LITERAL)) {
 				error("Expected lattice width");
 			}
@@ -176,14 +176,14 @@ std::unique_ptr<ASTNode> Parser::parseMoleculeSimulationExpression() {
 				error("Expected lattice height");
 			}
 			int height = std::stoi(previous().value);
-			if (match(TokenType::KEYWORD, "spacing")) {
+			if (matchWord("spacing")) {
 				parsePrimaryExpression();
 			}
 			atomCount += width * height;
 			bondCount += (width > 1 ? (width - 1) * height : 0) + (height > 1 ? width * (height - 1) : 0);
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "bond")) {
+		else if (matchWord("bond")) {
 			parseExpression();
 			if (match(TokenType::OPERATOR, ",")) {
 				parseExpression();
@@ -194,15 +194,15 @@ std::unique_ptr<ASTNode> Parser::parseMoleculeSimulationExpression() {
 			++bondCount;
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "steps")) {
+		else if (matchWord("steps")) {
 			steps = parseExpression();
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "dt")) {
+		else if (matchWord("dt")) {
 			dt = parseExpression();
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "temperature")) {
+		else if (matchWord("temperature")) {
 			temperature = parseExpression();
 			match(TokenType::OPERATOR, ";");
 		}
@@ -242,7 +242,7 @@ std::unique_ptr<ASTNode> Parser::parseCfdSimulationExpression() {
 			return nullptr;
 		}
 
-		if (match(TokenType::KEYWORD, "grid")) {
+		if (matchWord("grid")) {
 			width = parseExpression();
 			if (match(TokenType::IDENTIFIER, "x") || match(TokenType::OPERATOR, ",")) {
 				height = parseExpression();
@@ -252,19 +252,19 @@ std::unique_ptr<ASTNode> Parser::parseCfdSimulationExpression() {
 			}
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "steps")) {
+		else if (matchWord("steps")) {
 			steps = parseExpression();
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "dt")) {
+		else if (matchWord("dt")) {
 			dt = parseExpression();
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "viscosity")) {
+		else if (matchWord("viscosity")) {
 			viscosity = parseExpression();
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "velocity")) {
+		else if (matchWord("velocity")) {
 			velocity = parseExpression();
 			match(TokenType::OPERATOR, ";");
 		}
@@ -302,7 +302,7 @@ std::unique_ptr<ASTNode> Parser::parseProteinMcmcExpression() {
 			return nullptr;
 		}
 
-		if (match(TokenType::KEYWORD, "chain")) {
+		if (matchWord("chain")) {
 			if (match(TokenType::STRING_LITERAL)) {
 				residueCount += static_cast<int>(previous().value.size());
 			}
@@ -311,12 +311,12 @@ std::unique_ptr<ASTNode> Parser::parseProteinMcmcExpression() {
 			}
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "mcmc")) {
-			expect(TokenType::KEYWORD, "steps");
+		else if (matchWord("mcmc")) {
+			expectWord("steps");
 			steps = parsePrimaryExpression();
 			match(TokenType::OPERATOR, ";");
 		}
-		else if (match(TokenType::KEYWORD, "temperature")) {
+		else if (matchWord("temperature")) {
 			temperature = parsePrimaryExpression();
 			match(TokenType::OPERATOR, ";");
 		}
@@ -336,7 +336,7 @@ std::unique_ptr<ASTNode> Parser::parseProteinMcmcExpression() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseOdeSimulationExpression() {
-	if (!match(TokenType::KEYWORD, "euler")) {
+	if (!matchWord("euler")) {
 		error("Expected ODE solver name 'euler'");
 	}
 
@@ -349,17 +349,17 @@ std::unique_ptr<ASTNode> Parser::parseOdeSimulationExpression() {
 		differentialFunction = std::make_unique<IdentifierNode>("unknown");
 	}
 
-	expect(TokenType::KEYWORD, "from");
+	expectWord("from");
 	expect(TokenType::OPERATOR, "(");
 	auto t0 = parsePrimaryExpression();
 	expect(TokenType::OPERATOR, ",");
 	auto y0 = parsePrimaryExpression();
 	expect(TokenType::OPERATOR, ")");
 
-	expect(TokenType::KEYWORD, "step");
+	expectWord("step");
 	auto h = parsePrimaryExpression();
 
-	expect(TokenType::KEYWORD, "steps");
+	expectWord("steps");
 	auto n = parsePrimaryExpression();
 
 	auto callNode = std::make_unique<FunctionCallNode>();

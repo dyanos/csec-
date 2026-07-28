@@ -48,6 +48,23 @@ bool Parser::match(TokenType type, const std::string& value) {
 	return false;
 }
 
+bool Parser::checkWord(const std::string& value) const {
+	if (isAtEnd()) return false;
+	const Token& t = tokens[position];
+	return (t.type == TokenType::IDENTIFIER || t.type == TokenType::KEYWORD) && t.value == value;
+}
+
+bool Parser::matchWord(const std::string& value) {
+	while (position < tokens.size() && tokens[position].type == TokenType::COMMENT) {
+		advance();
+	}
+	if (checkWord(value)) {
+		advance();
+		return true;
+	}
+	return false;
+}
+
 bool Parser::matchIdentifierName() {
 	if (match(TokenType::IDENTIFIER)) {
 		return true;
@@ -82,6 +99,14 @@ void Parser::expect(TokenType type, const std::string& value) {
 		std::string expected = value.empty() ? tokenTypeToString(type) : "'" + value + "'";
 		std::string found = isAtEnd() ? "end of input" : "'" + peek().value + "'";
 		error("Expected " + expected + ", but found " + found);
+	}
+	advance();
+}
+
+void Parser::expectWord(const std::string& value) {
+	if (!checkWord(value)) {
+		std::string found = isAtEnd() ? "end of input" : "'" + peek().value + "'";
+		error("Expected '" + value + "', but found " + found);
 	}
 	advance();
 }

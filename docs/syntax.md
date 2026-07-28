@@ -1,8 +1,8 @@
-# TensorScript Syntax Overview
+# CSEC Syntax Overview
 
-This document summarizes the current TensorScript/CSEC syntax supported by the
-compiler prototype. The language is still experimental, so this file describes
-the implemented surface rather than a stable specification.
+This document summarizes the current CSEC syntax supported by the compiler
+prototype. The language is still experimental, so this file describes the
+implemented surface rather than a stable specification.
 
 ## Files And Entry Point
 
@@ -390,11 +390,14 @@ while (i < 5) {
 
 ## Collections And Ranges
 
-Array literals and ranges are used by collection transforms:
+Array literals and ranges are used by collection transforms. A range is written
+with `to` (inclusive) or `until` (exclusive) and appears in `for` comprehensions
+and collection headers:
 
 ```ts
 val xs = [1, 2, 3, 4];
-val indices = 0..10;
+for (i <- 0 to 4)     { print(i); }   // 0,1,2,3,4
+for (i <- 0 until 4)  { print(i); }   // 0,1,2,3
 ```
 
 Mapping, filtering, and reduction syntax:

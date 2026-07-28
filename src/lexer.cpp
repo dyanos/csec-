@@ -80,18 +80,23 @@ Lexer::Lexer(const std::string& source)
 
 void Lexer::initializeKeywords() {
     std::string kws[] = {
-        "abstract", "case", "catch", "class", "def", "do", "else", "extends",
-        "false", "final", "finally", "for", "forSome", "if", "implicit",
-        "import", "lazy", "match", "new", "null", "object", "override",
-        "operator", "package", "private", "protected", "return", "sealed", "super",
-        "this", "throw", "trait", "try", "true", "type", "val", "var",
-		"while", "with", "yield", "to", "until", "and", "or", "xor", "map", "pmap", "reduce", "preduce", "filter", "external", "inline", "constexpr",
+        // Core language keywords actually used by the grammar. (Removed a block of Scala-heritage
+        // words -- abstract/catch/do/final/finally/forSome/implicit/lazy/package/private/protected/
+        // sealed/throw/trait/try/type/with/yield -- that were reserved but unused, so common names
+        // like `type`, `do`, `final`, and `private` are now usable as identifiers.)
+        "case", "class", "def", "else", "extends",
+        "false", "for", "if",
+        "import", "match", "new", "null", "object", "override",
+        "operator", "return", "super",
+        "this", "true", "val", "var",
+		"while", "to", "until", "and", "or", "xor", "map", "pmap", "reduce", "preduce", "filter", "external", "inline", "constexpr",
 		"template", "typename", "mut", "box", "unsafe", "unatomic", "struct",
 		"async", "await",
-        "molecule", "atom", "bond", "at", "steps", "dt", "temperature",
-        "cfd", "grid", "viscosity", "velocity",
-        "ode", "euler", "from", "step", "lattice", "spacing",
-        "protein", "chain", "mcmc"
+        // Physics-DSL entry keywords (dispatch a simulation block from statement position). The body
+        // words that appear only inside these blocks -- atom/bond/at/steps/dt/temperature/grid/
+        // viscosity/velocity/euler/from/step/lattice/spacing/chain/mcmc -- are NOT reserved; the DSL
+        // parser matches them contextually (Parser::matchWord), so they remain ordinary identifiers.
+        "molecule", "cfd", "ode", "protein"
     };
     keywords.insert(kws, kws + sizeof(kws) / sizeof(kws[0]));
 }

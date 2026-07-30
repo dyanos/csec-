@@ -280,9 +280,10 @@ val n = consume(<- b);   // move b into consume()
 free(c);                 // release c's memory early
 ```
 
-`clone(x)` produces a fresh owned copy; `free(x)` consumes and releases a named heap value; owned
-locals are otherwise dropped deterministically at end of scope, on every return
-path.
+`clone(x)` produces a fresh owned copy; `free(x)` consumes and releases a named heap value.
+Automatic scope-exit destruction currently covers `box`, `Tensor`, `Shared`, and `Weak`; heap
+classes and arrays/vectors must be released explicitly with `free(x)` until ownership-aware drop
+glue is implemented.
 
 **Shared / Weak** provide reference counting for shared ownership:
 

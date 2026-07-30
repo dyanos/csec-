@@ -11,6 +11,7 @@
 #include "MapStatementNode.h"
 #include "FilterStatementNode.h"
 #include "PMapStatementNode.h"
+#include "PrefixExpressionNode.h"
 #include "type_utils.h"
 
 #include <iostream>
@@ -164,6 +165,12 @@ llvm::Value* VariableDeclarationNode::codegen() {
         (dynamic_cast<CallExpressionNode*>(initializer.get()) != nullptr ||
          dynamic_cast<FunctionCallNode*>(initializer.get()) != nullptr);
 
+    // Keep a moved tensor as the original pointer value. Storing it in a new pointer slot would
+    // make a later return use a different LLVM Value and defeat cleanup ownership transfer.
+    const auto* prefixInitializer = dynamic_cast<PrefixExpressionNode*>(initializer.get());
+    const bool tensorMoveInitializer = type && type->getName() == "Tensor" &&
+        prefixInitializer && prefixInitializer->op == "<-";
+
     const bool bindPointerBackedValueDirectly =
         initValue &&
         initValue->getType()->isPointerTy() &&
@@ -181,7 +188,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
          (type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
          type->getKind() == Type::Kind::BOX ||
          (type->getKind() == Type::Kind::GENERIC && (type->getName() == "Shared" || type->getName() == "Weak")) ||
-         arrayVectorFromCall);
+         arrayVectorFromCall || tensorMoveInitializer);
 
     if (bindPointerBackedValueDirectly) {
         cg.symbolTable.addSymbol(
@@ -191,6 +198,11 @@ llvm::Value* VariableDeclarationNode::codegen() {
             cg.registerCleanup(initValue);
         }
         else if (type->getName() == "Tensor") {
+            if (tensorMoveInitializer) {
+                // The source and destination denote the same allocation. Transfer its one drop
+                // obligation to this binding instead of keeping two stale registrations.
+                cg.forgetCleanup(initValue);
+            }
             cg.registerTensorCleanup(initValue);
         }
         // Reference-class instances and array/vector locals are intentionally NOT auto-registered for

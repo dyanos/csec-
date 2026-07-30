@@ -45,7 +45,7 @@ lower learning cost, which is the stated goal.
 | Category | Examples | Assignment | Passed to fn | Destroyed |
 |---|---|---|---|---|
 | **Copy** | `Int Long Float Double Bool Char Byte Short`, small `@copy` structs | implicit copy | by value (copy) | trivially (no dtor) |
-| **Owned (non-copy)** | `box T`, heap classes, arrays/vectors, `String`, `Shared<T>` | **move** | move (consume) or `&`/`&mut` (borrow) | dtor at scope exit |
+| **Owned (non-copy)** | `box T`, heap classes, arrays/vectors, `String`, `Shared<T>` | **move** | move (consume) or `&`/`&mut` (borrow) | `box`/Tensor/Shared/Weak: scope-exit drop; classes/arrays: explicit `free` today |
 | **Borrow** | `&T`, `&mut T` | copy of the reference (still lexically bound) | by value | nothing (non-owning) |
 
 The compiler classifies a type as Copy iff it is a primitive scalar or a struct explicitly marked
@@ -114,8 +114,10 @@ destructures with `x, y, z = f()`. Full semantics in §4. **[plan]**
 ### 2.9 Destruction
 
 At scope exit — on **every** path (normal, `return`, early return, `break`, `continue`, unwind,
-panic, match-arm exit) — every still-`Owned` binding is destroyed in reverse declaration order.
-`Moved`, `Copy`, and `Destroyed` bindings are skipped. **[impl for `box` via cleanup scopes; §13]**
+panic, match-arm exit) — still-owned `box`, Tensor, Shared, and Weak bindings are destroyed in
+reverse declaration order. Heap classes and arrays/vectors currently require explicit `free` while
+their ownership-aware drop glue is under construction. `Moved`, `Copy`, and `Destroyed` bindings
+are skipped.
 
 ---
 

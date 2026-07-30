@@ -1,0 +1,11 @@
+// Invalid dynamic section descriptions must not read/write outside tensor storage.
+def main(): Int {
+    val a: Tensor<Double, 4> = new Tensor<Double, 4>(0.0);
+    val short: Tensor<Double, 3> = new Tensor<Double, 3>(1.0);
+    a[0:4:0] = 9.0;
+    a[0:4] = short;
+    if (a[0] == 0.0 and a[1] == 0.0 and a[2] == 0.0 and a[3] == 0.0) {
+        return 0;
+    }
+    return 1;
+}

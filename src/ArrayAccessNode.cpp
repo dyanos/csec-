@@ -168,15 +168,33 @@ llvm::Value* ArrayAccessNode::codegenSliceAssign(llvm::Value* rhs, const Type* r
     llvm::Value* step = spec->step ? toTensorIndex(cg, spec->step->codegen())
                                    : llvm::ConstantInt::get(i64Ty, 1);
 
+    // Never form sdiv by zero or access outside either buffer. Invalid dynamic sections lower to
+    // a zero-iteration assignment; semantic diagnostics for statically invalid sections remain a
+    // future improvement, but this preserves memory safety in emitted programs.
+    llvm::Value* stepPositive = cg.builder.CreateICmpSGT(step, llvm::ConstantInt::get(i64Ty, 0), "slice.step.positive");
+    llvm::Value* safeStep = cg.builder.CreateSelect(stepPositive, step, llvm::ConstantInt::get(i64Ty, 1), "slice.step.safe");
+    llvm::Value* startInRange = cg.builder.CreateAnd(
+        cg.builder.CreateICmpSGE(start, llvm::ConstantInt::get(i64Ty, 0)),
+        cg.builder.CreateICmpSLE(start, count), "slice.start.valid");
+    llvm::Value* endInRange = cg.builder.CreateAnd(
+        cg.builder.CreateICmpSGE(end, start),
+        cg.builder.CreateICmpSLE(end, count), "slice.end.valid");
+
     // Element count of the section: ceil((end - start) / step).
     llvm::Value* span = cg.builder.CreateSub(end, start, "slice.span");
     llvm::Value* n = cg.builder.CreateSDiv(
         cg.builder.CreateAdd(span, cg.builder.CreateSub(step, llvm::ConstantInt::get(i64Ty, 1))),
-        step, "slice.n");
+        safeStep, "slice.n");
 
     const bool rhsIsTensor = rhsType && TensorRuntime::isTensorTypeName(rhsType->getName());
     llvm::Value* rhsData = rhsIsTensor ? TensorRuntime::loadData(cg, rhs) : nullptr;
     llvm::Value* scalar = rhsIsTensor ? nullptr : TensorRuntime::toDouble(cg, rhs);
+    llvm::Value* valid = cg.builder.CreateAnd(stepPositive, cg.builder.CreateAnd(startInRange, endInRange), "slice.valid");
+    if (rhsIsTensor) {
+        llvm::Value* rhsCount = TensorRuntime::loadCount(cg, rhs);
+        valid = cg.builder.CreateAnd(valid, cg.builder.CreateICmpEQ(rhsCount, n, "slice.rhs.size"), "slice.rhs.valid");
+    }
+    n = cg.builder.CreateSelect(valid, n, llvm::ConstantInt::get(i64Ty, 0), "slice.safe.count");
 
     TensorRuntime::emitCountedLoop(cg, n, "slice.assign", [&](llvm::Value* k) {
         llvm::Value* idx = cg.builder.CreateAdd(start, cg.builder.CreateMul(k, step, "slice.k.step"), "slice.idx");

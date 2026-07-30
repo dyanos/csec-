@@ -1873,11 +1873,19 @@ llvm::Value* FunctionCallNode::codegen() {
         argTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
     }
 
-    // free(x): release a heap allocation made by `new` (arrays, class instances, boxes). The value
-    // is a pointer; hand it to the runtime `free`. Freeing a non-heap value (e.g. an array literal,
-    // which is stack-allocated) is undefined, exactly as in C.
+    // free(x): release a heap allocation made by `new`, an array literal, a class instance, or a
+    // box. The type checker limits this consuming operation to a named owned value.
     if (functionName == "free") {
         if (!argValues.empty() && argValues[0] && argValues[0]->getType()->isPointerTy()) {
+            // Prevent the lexical owner cleanup from freeing the same allocation a second time.
+            cg.forgetCleanup(argValues[0]);
+            if (!argTypes.empty() && argTypes[0] && TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
+                auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+                llvm::Value* dims = TensorRuntime::loadDims(cg, argValues[0]);
+                llvm::Value* data = TensorRuntime::loadData(cg, argValues[0]);
+                cg.builder.CreateCall(cg.freeFunction, {cg.builder.CreateBitCast(data, i8PtrTy, "tensor.data.free")});
+                cg.builder.CreateCall(cg.freeFunction, {cg.builder.CreateBitCast(dims, i8PtrTy, "tensor.dims.free")});
+            }
             llvm::Value* raw = cg.builder.CreateBitCast(
                 argValues[0], llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context)), "free.ptr");
             cg.builder.CreateCall(cg.freeFunction, { raw });

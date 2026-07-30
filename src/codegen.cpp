@@ -8,6 +8,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
+#include <algorithm>
 
 #include "ProgramNode.h"
 
@@ -115,6 +116,22 @@ void CodeGenerator::registerCleanup(llvm::Value* pointer) {
     cleanupScopes.back().push_back({ pointer, CleanupKind::Free });
 }
 
+void CodeGenerator::registerTensorCleanup(llvm::Value* tensor) {
+    if (!tensor || cleanupScopes.empty()) {
+        return;
+    }
+    cleanupScopes.back().push_back({ tensor, CleanupKind::TensorFree });
+}
+
+void CodeGenerator::forgetCleanup(llvm::Value* pointer) {
+    if (!pointer) return;
+    for (auto& scope : cleanupScopes) {
+        scope.erase(std::remove_if(scope.begin(), scope.end(), [&](const auto& entry) {
+            return entry.first == pointer;
+        }), scope.end());
+    }
+}
+
 void CodeGenerator::registerSharedCleanup(llvm::Value* controlBlock) {
     if (!controlBlock || cleanupScopes.empty()) {
         return;
@@ -137,7 +154,18 @@ void CodeGenerator::emitCleanupEntry(llvm::Value* pointer, CleanupKind kind, llv
     llvm::Value* raw = pointer->getType() == i8PtrTy
         ? pointer
         : builder.CreateBitCast(pointer, i8PtrTy, "cleanup.ptr");
-    if (kind == CleanupKind::SharedRelease || kind == CleanupKind::WeakRelease) {
+    if (kind == CleanupKind::TensorFree) {
+        // TensorRuntime allocates its header, dimension buffer, and element buffer independently.
+        // Dropping only the header leaks the latter two allocations.
+        llvm::Value* dims = TensorRuntime::loadDims(*this, pointer);
+        llvm::Value* data = TensorRuntime::loadData(*this, pointer);
+        llvm::Value* dimsRaw = builder.CreateBitCast(dims, i8PtrTy, "tensor.dims.free");
+        llvm::Value* dataRaw = builder.CreateBitCast(data, i8PtrTy, "tensor.data.free");
+        builder.CreateCall(freeFunction, { dataRaw });
+        builder.CreateCall(freeFunction, { dimsRaw });
+        builder.CreateCall(freeFunction, { raw });
+    }
+    else if (kind == CleanupKind::SharedRelease || kind == CleanupKind::WeakRelease) {
         // The control block is { i64 strong, i64 weak, payload }. A Shared owner decrements strong,
         // a Weak handle decrements weak. The block is freed only when BOTH counts reach zero (so a
         // live Weak keeps the block, and dropping the last Weak after all strong owners reclaims it).

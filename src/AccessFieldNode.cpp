@@ -146,6 +146,17 @@ llvm::Value* AccessFieldNode::codegenFieldPointer() {
             std::cerr << "Error: '" << baseTy->getName() << "' has no struct layout" << std::endl;
             return nullptr;
         }
+        // A reference-class field is stored as a pointer in its containing struct.  Its field
+        // address is therefore a pointer-to-pointer; load the referenced object before selecting
+        // the next member.  Value structs remain inline and can use their field address directly.
+        if (!isStructClassType(baseTy.get())) {
+            llvm::Type* storageType = getABIStorageType(baseTy.get());
+            if (!storageType || !storageType->isPointerTy()) {
+                std::cerr << "Error: Invalid reference field storage for '" << baseTy->getName() << "'" << std::endl;
+                return nullptr;
+            }
+            basePtr = cg.builder.CreateLoad(storageType, basePtr, "field.object");
+        }
         int fieldIndex = findFieldIndex(classSymbol, targetName);
         if (fieldIndex == -1) {
             std::cerr << "Error: Field '" << targetName << "' not found in '" << baseTy->getName() << "'" << std::endl;

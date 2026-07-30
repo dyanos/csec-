@@ -1012,6 +1012,21 @@ void TypeChecker::visit(FunctionCallNode& node) {
     if (!parameterTypes.empty()) {
         checkFunctionArguments(node.arguments, parameterTypes, node.functionName);
     }
+    if (node.functionName == "free" && node.arguments.size() == 1) {
+        const std::string name = identifierName(node.arguments[0].get());
+        if (name.empty()) {
+            reportError("Type error: free() requires a named owned value");
+        }
+        else {
+            auto* state = findOwnership(name);
+            if (!state || !state->owned) {
+                reportError("Type error: free() requires an owned value");
+            }
+            else {
+                markMoved(name);
+            }
+        }
+    }
     for (auto& arg : node.arguments) {
         bool mutableBorrowArg = false;
         if (isBorrowExpression(arg.get(), &mutableBorrowArg)) {

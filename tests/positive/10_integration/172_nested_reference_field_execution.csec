@@ -1,0 +1,8 @@
+class Inner(value: Int) {}
+class Outer(inner: Inner) {}
+
+def main(): Int {
+    val outer: Outer = new Outer(new Inner(42));
+    outer.inner.value = outer.inner.value + 1;
+    return outer.inner.value - 43;
+}

@@ -55,6 +55,10 @@ public:
     void enterCleanupScope();
     void exitCleanupScope();
     void registerCleanup(llvm::Value* pointer);
+    // Tensor storage consists of the header plus separately allocated dims/data buffers.
+    void registerTensorCleanup(llvm::Value* tensor);
+    // A manual free consumes a local allocation; remove its pending lexical drop.
+    void forgetCleanup(llvm::Value* pointer);
     // A Shared<T> control block: at scope exit its strong count is decremented; the block is freed
     // only when both strong and weak reach zero (reverse-order, like every other cleanup).
     void registerSharedCleanup(llvm::Value* controlBlock);
@@ -71,7 +75,7 @@ private:
     CodeGenerator();
     // Each cleanup is a (pointer, kind) pair — kind 0 frees the pointer, kind 1 releases a Shared
     // control block.
-    enum class CleanupKind { Free = 0, SharedRelease = 1, WeakRelease = 2 };
+    enum class CleanupKind { Free = 0, TensorFree = 1, SharedRelease = 2, WeakRelease = 3 };
     std::vector<std::vector<std::pair<llvm::Value*, CleanupKind>>> cleanupScopes;
     void emitCleanupEntry(llvm::Value* pointer, CleanupKind kind, llvm::Value* retainedPointer);
 };

@@ -190,6 +190,15 @@ llvm::Value* VariableDeclarationNode::codegen() {
         if (type->getKind() == Type::Kind::BOX) {
             cg.registerCleanup(initValue);
         }
+        else if (type->getName() == "Tensor") {
+            cg.registerTensorCleanup(initValue);
+        }
+        else if ((type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
+                 type->getKind() == Type::Kind::ARRAY ||
+                 (type->getKind() == Type::Kind::GENERIC &&
+                  (type->getName() == "Array" || type->getName() == "Vector"))) {
+            cg.registerCleanup(initValue);
+        }
         else if (type->getKind() == Type::Kind::GENERIC && type->getName() == "Shared") {
             // Each Shared<T> owner releases (decrements strong) at scope exit.
             cg.registerSharedCleanup(initValue);

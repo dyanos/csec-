@@ -280,7 +280,7 @@ val n = consume(<- b);   // move b into consume()
 free(c);                 // release c's memory early
 ```
 
-`clone(x)` produces a fresh owned copy; `free(x)` releases a heap value; owned
+`clone(x)` produces a fresh owned copy; `free(x)` consumes and releases a named heap value; owned
 locals are otherwise dropped deterministically at end of scope, on every return
 path.
 

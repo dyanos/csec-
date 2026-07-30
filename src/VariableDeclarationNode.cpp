@@ -193,12 +193,15 @@ llvm::Value* VariableDeclarationNode::codegen() {
         else if (type->getName() == "Tensor") {
             cg.registerTensorCleanup(initValue);
         }
-        else if ((type->getKind() == Type::Kind::CLASS && !declaredStructClass) ||
-                 type->getKind() == Type::Kind::ARRAY ||
-                 (type->getKind() == Type::Kind::GENERIC &&
-                  (type->getName() == "Array" || type->getName() == "Vector"))) {
-            cg.registerCleanup(initValue);
-        }
+        // Reference-class instances and array/vector locals are intentionally NOT auto-registered for
+        // scope-exit free — the attempt to do so was unsafe and is disabled pending a proper ownership
+        // model. It (1) double-freed an aliased/moved owner (`val b = a` / `val b = <- a`) since both
+        // share one allocation; (2) tripped an LLVM "uses remain when a value is destroyed" assertion
+        // when a class instance's type was also a template argument (e.g. `val dog = new Dog(...)`
+        // alongside `new Kennel<Dog, 10>(...)`); and (3) hit the same assertion for an array literal
+        // later consumed by a map/filter/reduce that re-evaluates it (e.g. 105_full_featured). These
+        // are released by explicit `free(...)` only; scope-exit auto-free stays limited to box,
+        // tensors, and Shared/Weak below, whose ownership is unambiguous.
         else if (type->getKind() == Type::Kind::GENERIC && type->getName() == "Shared") {
             // Each Shared<T> owner releases (decrements strong) at scope exit.
             cg.registerSharedCleanup(initValue);

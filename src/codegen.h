@@ -73,8 +73,9 @@ public:
 
 private:
     CodeGenerator();
-    // Each cleanup is a (pointer, kind) pair — kind 0 frees the pointer, kind 1 releases a Shared
-    // control block.
+    // Each cleanup is a (pointer, kind) pair: Free drops a single heap allocation, TensorFree also
+    // frees the tensor's separate dims/data buffers, and SharedRelease/WeakRelease decrement a
+    // Shared/Weak control block (freeing it only when both counts reach zero).
     enum class CleanupKind { Free = 0, TensorFree = 1, SharedRelease = 2, WeakRelease = 3 };
     std::vector<std::vector<std::pair<llvm::Value*, CleanupKind>>> cleanupScopes;
     void emitCleanupEntry(llvm::Value* pointer, CleanupKind kind, llvm::Value* retainedPointer);

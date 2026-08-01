@@ -1,0 +1,27 @@
+// Inheritance chain + method override (direct dispatch), a value struct field, member chains, and Int-array aggregation.
+// Self-checking: returns 0 on success.
+struct Point(x: Int, y: Int) {
+    def manhattan(): Int { return x + y; }
+}
+class Shape(origin: Point) {
+    def area(): Int { return 0; }
+    def where(): Int { return origin.manhattan(); }
+}
+class Rectangle(origin: Point, w: Int, h: Int) extends Shape {
+    override def area(): Int { return w * h; }
+}
+class Square(origin: Point, side: Int) extends Shape {
+    override def area(): Int { return side * side; }
+}
+def main(): Int {
+    val r: Rectangle = new Rectangle(new Point(1, 2), 3, 4);
+    val s: Square = new Square(new Point(5, 5), 6);
+    val areas = new Int[2];
+    areas[0] = r.area();
+    areas[1] = s.area();
+    val total: Int = areas[0] + areas[1];
+    val located: Int = r.where() + s.where();
+    free(areas); free(r); free(s);
+    if (total == 48 and located == 13) { return 0; }
+    return 1;
+}

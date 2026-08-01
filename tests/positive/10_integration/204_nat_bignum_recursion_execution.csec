@@ -1,0 +1,20 @@
+// Arbitrary-precision Nat: recursive factorial and a 2^80 power loop, exact beyond 64 bits.
+// Self-checking: returns 0 on success.
+def factorial(k: Int): Nat {
+    if (k <= 1) { return 1; }
+    return factorial(k - 1) * k;
+}
+def main(): Int {
+    val f25: Nat = factorial(25);
+    val f24: Nat = factorial(24);
+    val ratioOk: Boolean = (f24 * 25 == f25);        // 25!/24! == 25
+    var p80: Nat = 1;
+    var i: Int = 0;
+    while (i < 80) { p80 = p80 * 2; i = i + 1; }      // 2^80
+    var p79: Nat = 1;
+    var j: Int = 0;
+    while (j < 79) { p79 = p79 * 2; j = j + 1; }      // 2^79
+    val powOk: Boolean = (p79 * 2 == p80) and (p80 > f24);
+    if (ratioOk and powOk) { return 0; }
+    return 1;
+}

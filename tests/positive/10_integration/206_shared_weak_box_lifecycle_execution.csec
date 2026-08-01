@@ -1,0 +1,16 @@
+// Shared/Weak reference counting (clone + weak handle) and a box clone/move/free lifecycle.
+// Self-checking: returns 0 on success.
+def consume(b: box Int): Int = 99
+def main(): Int {
+    var s: Shared<Int> = Shared(42);
+    var t: Shared<Int> = s.clone();       // two strong owners
+    val w: Weak<Int> = Weak(s);           // non-owning handle
+    val shared: Int = s.get() + t.get() + w.get();   // 126
+
+    var b: box Int = 7;
+    var c: box Int = clone(b);            // deep copy
+    val moved: Int = consume(<- b);       // move b into consume -> 99
+    free(c);
+    if (shared == 126 and moved == 99) { return 0; }
+    return 1;
+}

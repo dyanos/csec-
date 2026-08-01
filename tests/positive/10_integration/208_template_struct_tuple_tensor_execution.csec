@@ -1,0 +1,31 @@
+// Value struct + template class + tuple destructuring + match + tensor trace, combined.
+// Self-checking: returns 0 on success.
+struct Pair(a: Int, b: Int) {
+    def sum(): Int { return a + b; }
+}
+template<typename T, Int N>
+class Grid(seedValue: Int) {
+    def tag(): Int { return N; }
+    def scaled(): Int { return seedValue * N; }
+}
+def divmod(x: Int, y: Int): (Int, Int) { return x / y, x % y; }
+def label(n: Int): Int {
+    return n match {
+        case 0 => 1;
+        case 1 => 2;
+        case _ => 3;
+    };
+}
+def main(): Int {
+    val p: Pair = new Pair(4, 6);              // value struct, method call
+    val g = new Grid<Int, 9>(p.sum());         // template class; seedValue = 10
+    q, r = divmod(g.scaled() + 1, 4);          // tuple destructure: divmod(91, 4) = (22, 3)
+    val t: Tensor<Double, 2, 2> = new Tensor<Double, 2, 2>(2.0);
+    var trace: Double = 0.0;
+    var i: Int = 0;
+    while (i < 2) { trace = trace + t[i, i]; i = i + 1; }   // 4.0
+    if (g.tag() == 9 and q == 22 and r == 3 and trace == 4.0 and label(r) == 3) {
+        return 0;
+    }
+    return 1;
+}

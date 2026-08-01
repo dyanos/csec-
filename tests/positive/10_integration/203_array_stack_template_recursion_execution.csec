@@ -1,0 +1,29 @@
+// A class-backed stack over an Array<Int> field, a template class with a non-type parameter, and recursion.
+// Self-checking: returns 0 on success.
+template<typename T, Int N>
+class Capacity(seed: T) {
+    def limit(): Int { return N; }
+}
+class IntStack(cap: Int) {
+    var count: Int = 0;
+    var data: Array<Int> = new Int[16];
+    def push(v: Int): Int { data[count] = v; count = count + 1; return count; }
+    def pop(): Int { count = count - 1; return data[count]; }
+    def size(): Int { return count; }
+}
+def sumTo(n: Int): Int {
+    if (n <= 0) { return 0; }
+    return n + sumTo(n - 1);
+}
+def main(): Int {
+    val cap = new Capacity<Int, 16>(0);
+    val st: IntStack = new IntStack(cap.limit());
+    var i: Int = 1;
+    while (i <= 5) { st.push(i * i); i = i + 1; }
+    var acc: Int = 0;
+    while (st.size() > 0) { acc = acc + st.pop(); }
+    free(st);
+    // 1+4+9+16+25 = 55 ; sumTo(10) = 55
+    if (acc == 55 and sumTo(10) == 55 and cap.limit() == 16) { return 0; }
+    return 1;
+}

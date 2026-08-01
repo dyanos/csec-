@@ -1,0 +1,18 @@
+// Closures with capture, higher-order functions (apply/twice), and a map over an array.
+// Self-checking: returns 0 on success.
+def apply(f: (Int) => Int, x: Int): Int { return f(x); }
+def twice(f: (Int) => Int, x: Int): Int { return f(f(x)); }
+def main(): Int {
+    val base: Int = 100;
+    val addBase = [=](x) -> { return x + base; };   // closure capture
+    val square  = [=](x) -> { return x * x; };
+    val xs = [1, 2, 3, 4];
+    val squares = map(x <- xs) { x * x; };
+    var total: Int = 0;
+    var i: Int = 0;
+    while (i < 4) { total = total + squares[i]; i = i + 1; }   // 1+4+9+16 = 30
+    val big: Int = apply(addBase, 41);    // 141
+    val q: Int = twice(square, 3);        // (3^2)^2 = 81
+    if (big == 141 and q == 81 and total == 30) { return 0; }
+    return 1;
+}

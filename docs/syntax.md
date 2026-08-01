@@ -1,8 +1,9 @@
-# CSEC Syntax Overview
+# Tessera Syntax Overview
 
-This document summarizes the current CSEC syntax supported by the compiler
+This document summarizes the current Tessera syntax supported by the compiler
 prototype. The language is still experimental, so this file describes the
-implemented surface rather than a stable specification.
+implemented surface rather than a stable specification. For the normative
+grammar, see [grammar.md](grammar.md).
 
 ## Files And Entry Point
 
@@ -14,6 +15,11 @@ def main(): Int {
     return 0;
 }
 ```
+
+A bare `csec++ app.csec` compiles straight to a native executable (`--emit-exe`
+is the default output mode); `--static` links the runtime into the binary so it
+needs no `System.Native` shared library beside it. `--emit-ir`, `--emit-obj`,
+and `--run`/`--run-ir` select the other output modes.
 
 ## Declarations
 
@@ -235,7 +241,7 @@ def main(): Int {
 
 ## Memory And Ownership
 
-CSEC uses a Rust-lite ownership model that is **strict by default**: values of
+Tessera uses a Rust-lite ownership model that is **strict by default**: values of
 an *owned* (non-copy) type must be explicitly moved with `<-` or borrowed with
 `&`/`&mut` — you cannot silently make a second owner. Pass `--no-strict-ownership`
 to fall back to the earlier box-only checking for unmigrated code.
@@ -434,14 +440,42 @@ are parsed before full backend lowering is implemented.
 
 ## Tensors
 
-Tensor types carry an element type and shape:
+Tensor types carry an element type and a compile-time shape, `Tensor<Elem, D1,
+D2, …>`. Construct one with `new`, giving a fill value; read and write elements
+with a comma-separated index list, which also serves as an l-value:
 
 ```ts
-val weights: Tensor<Double, 2, 3> = tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]);
+val m: Tensor<Double, 3, 3> = new Tensor<Double, 3, 3>(0.0);  // 3x3 of zeros
+m[0, 0] = 2.0;                 // element write (l-value)
+val trace = m[0, 0] + m[1, 1] + m[2, 2];
 ```
 
-The current runtime includes tensor-oriented helpers such as `sum`, `mean`,
-`norm`, `relu`, `softmax`, and `mse`.
+Whole-tensor arithmetic is component-wise, with scalar broadcast, and the
+product operators bind tighter than `+`/`-`:
+
+```ts
+val a: Tensor<Int, 2, 2> = new Tensor<Int, 2, 2>(1);
+val b: Tensor<Int, 2, 2> = new Tensor<Int, 2, 2>(2);
+val s   = a + b;        // component-wise add
+val sc  = a * 3;        // scalar broadcast
+val mm  = a @ b;        // matrix multiply
+val dot = a inner b;    // inner (dot) product; also `outer`, `tensor` (Kronecker)
+```
+
+Rank-1 tensors expose named components `x`/`y`/`z`/`w` (elements 0–3), so
+`v.x`, `v.y = …` work alongside `v[i]`. Fortran-style sections assign a scalar
+or matching tensor into a slice, e.g. `row[0:3] = 1.0`.
+
+```ts
+// One layer of a feed-forward network: h = ReLU(x @ W + b)
+def layer(x: Tensor<Double, 1, 3>, w: Tensor<Double, 3, 4>,
+          b: Tensor<Double, 1, 4>): Tensor<Double, 1, 4> {
+    return (x @ w) + b;   // then apply an activation element-wise
+}
+```
+
+A complete two-layer network is in
+[examples/feedforward_nn.csec](../examples/feedforward_nn.csec).
 
 ## Math And Set Helpers
 
@@ -505,7 +539,7 @@ val input: String = commandLineArg(1);
 Out-of-range indexes return an empty string.
 
 The local name `nativeCos` is intentionally different from the imported C symbol
-`"cos"`. A TensorScript call named `cos(...)` is already a built-in scalar math
+`"cos"`. A Tessera call named `cos(...)` is already a built-in scalar math
 call, so use a different local name when importing the C library symbol directly.
 
 ## LaTeX-Inspired Math

@@ -1,6 +1,6 @@
-# CSEC Grammar (normative)
+# Tessera Grammar (normative)
 
-This is the normative grammar for CSEC as implemented by the `csec++` front end
+This is the normative grammar for Tessera as implemented by the `csec++` front end
 (`src/lexer.cpp`, `src/parser.cpp`, `src/Token.cpp`, `src/Expression.cpp`,
 `src/Statement.cpp`, `src/Declaration.cpp`). The self-host lexer
 (`src/native_runtime/lexer_runtime.inc`) mirrors the lexical grammar; keep both
@@ -257,9 +257,10 @@ and should not be relied upon. Blocks (`{ … }`) do not require a trailing `;`.
 
 - `..` is **not** a range operator in `csec++` (ranges use `to`/`until`); the
   self-host lexer lists `..` but no parser production consumes it.
-- Member access on the left of an assignment builds an `AccessFieldNode` for a
-  two-component target (`a.b = …`, `a.b += …`); deeper chains (`a.b.c = …`) and
-  `this`/`super` targets still use dotted-identifier handling.
+- Member-access l-values of any depth are first-class `AccessFieldNode` chains
+  (`a.b.c = …`, `a.b.c += …`, and reads of the same nest left-to-right). The one
+  exception is a `this`/`super` **assignment target**, which still lowers via
+  dotted-identifier handling (reads through `this`/`super` use the chain).
 - `&&` / `||` tokenize as paired single-character operators and are not parsed as
   logical operators — use `and` / `or`.
 ```

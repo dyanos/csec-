@@ -1,27 +1,36 @@
-# TensorScript
+# Tessera
 
-TensorScript is an experimental language for numerical computing, data analysis,
-and scientific modeling. The compiler targets math-heavy programs that should be
-easy to write and still have a clear path to optimized CPU, SIMD, OpenMP, and GPU
-execution.
+Tessera is an experimental, tensor-first language for numerical computing, data
+analysis, and scientific modeling. The compiler targets math-heavy programs that
+should be easy to write and still have a clear path to optimized CPU, SIMD,
+OpenMP, and GPU execution. The name comes from *tesseract* (a four-dimensional
+tensor), reflecting the tensor-native core.
 
 This repository contains the current C++17 compiler prototype, its native runtime,
-and language regression fixtures. The compiler parses `.csec` source files, builds
-LLVM IR, and can either write IR/object files, emit native executables, or run
-through the configured LLVM execution backend when available.
+and language regression fixtures. The compiler (`csec++`) parses `.csec` source
+files, builds LLVM IR, and can emit a native executable (the default), write
+IR/object files, or run through the configured LLVM execution backend.
 
-For language syntax, see [docs/syntax.md](docs/syntax.md).
+For the language surface see [docs/syntax.md](docs/syntax.md); for the normative
+grammar see [docs/grammar.md](docs/grammar.md).
 
 ## What Is Implemented
 
 - Lexer/parser, AST, semantic checks, and LLVM IR generation for the current
-  TensorScript/CSEC syntax.
-- Scalar math, set helpers, tensor runtime helpers, and transformer-oriented
+  Tessera syntax.
+- **First-class tensors**: `Tensor<Elem, D1, D2, …>` shapes, `new` construction,
+  `t[i, j]` element access/assignment (any-depth member-access l-values too),
+  component-wise arithmetic with scalar broadcast, `@` matmul, `inner`/`outer`/
+  `tensor` products, named `x`/`y`/`z`/`w` components, and Fortran-style sections.
+  See [examples/feedforward_nn.csec](examples/feedforward_nn.csec).
+- Arbitrary-precision `Nat`, scalar math, set helpers, and transformer-oriented
   tensor test fixtures.
 - **Strict-by-default ownership**: Copy vs owned (affine) types, explicit `<-`
-  move and `&`/`&mut` borrows, use-after-move / borrow / alias checking,
-  deterministic scope-exit destruction, `clone`, `free`, `box T`, and
-  `Shared`/`Weak` reference counting. `--no-strict-ownership` opts out.
+  move and `&`/`&mut` borrows, use-after-move / borrow / alias checking, `clone`,
+  `free`, `box T`, and `Shared`/`Weak` reference counting. Scope-exit
+  destruction currently drops `box`, tensors, and `Shared`/`Weak` automatically;
+  heap classes and arrays/vectors are released with explicit `free` until
+  ownership-aware drop glue lands. `--no-strict-ownership` opts out.
 - **Multiple return values** with tuple return types and destructuring
   (`a, b = f()`, `_` to ignore), and value `struct`s.
 - **async / await** with the no-borrow-across-await rule (`await` currently
@@ -31,7 +40,8 @@ For language syntax, see [docs/syntax.md](docs/syntax.md).
 - `[@DllImport("library", "symbol")] external def ...` for native symbol imports.
 - `loadLibrary`, `getSymbol`, `closeLibrary`, `callNative*`, and
   `callNativeDouble*` for runtime dynamic library calls.
-- `--emit-ir`, `--emit-obj`, and `--emit-exe` output modes.
+- `--emit-exe` (default), `--emit-ir`, `--emit-obj`, `--run`/`--run-ir` output
+  modes, plus `--static` to link the runtime into a standalone executable.
 
 ## Current Focus
 
@@ -210,8 +220,8 @@ On macOS, use `.dylib` names such as `libm.dylib`. On Linux, use `.so` names suc
 as `libm.so.6`. Passing `0` to `getSymbol` searches the default process symbol
 scope on POSIX platforms.
 
-`nativeCos` is the TensorScript name used at the call site. The actual C symbol
-is the second `DllImport` argument, `"cos"`. Avoid declaring the TensorScript
+`nativeCos` is the Tessera name used at the call site. The actual C symbol
+is the second `DllImport` argument, `"cos"`. Avoid declaring the Tessera
 function itself as `cos`, because `cos(...)` is already a built-in scalar math
 helper and will normally resolve through the native runtime math path.
 

@@ -22,6 +22,11 @@ llvm::Value* UnaryExpressionNode::codegen()
 	}
 
 	if (op == "-") {
+		// Floating-point values need FP negation; CreateNeg is integer-only and asserts on a
+		// double/float operand (e.g. the literal `-1.0`).
+		if (value->getType()->isFloatingPointTy()) {
+			return CodeGenerator::getInstance().builder.CreateFNeg(value, "fnegtmp");
+		}
 		return CodeGenerator::getInstance().builder.CreateNeg(value, "negtmp");
 	}
 	else if (op == "+") {

@@ -437,6 +437,15 @@ std::unique_ptr<ASTNode> Parser::parsePrimaryExpression() {
 
 	if (match(TokenType::OPERATOR, "(")) {
 		auto grouped = parseExpression();
+		if (match(TokenType::OPERATOR, ",")) {
+			auto tuple = std::make_unique<TupleExpressionNode>();
+			tuple->elements.push_back(std::move(grouped));
+			do {
+				tuple->elements.push_back(parseExpression());
+			} while (match(TokenType::OPERATOR, ","));
+			expect(TokenType::OPERATOR, ")");
+			return tuple;
+		}
 		expect(TokenType::OPERATOR, ")");
 		return grouped;
 	}
@@ -739,8 +748,60 @@ std::unique_ptr<ASTNode> Parser::parsePrefixExpression()
 	}
 }
 
+namespace {
+// `value >>| f(a)` and `f(a) <<| value` both become `f(value, a)`.
+// Desugaring here preserves the usual call type checking and overload lookup.
+std::unique_ptr<ASTNode> applyPipeline(std::unique_ptr<ASTNode> callable,
+                                       std::unique_ptr<ASTNode> value) {
+    std::vector<std::unique_ptr<ASTNode>> values;
+    if (auto* tuple = dynamic_cast<TupleExpressionNode*>(value.get())) {
+        values = std::move(tuple->elements);
+    } else {
+        values.push_back(std::move(value));
+    }
+
+    auto prependValues = [&](std::vector<std::unique_ptr<ASTNode>>& arguments) {
+        for (auto it = values.rbegin(); it != values.rend(); ++it) {
+            arguments.insert(arguments.begin(), std::move(*it));
+        }
+    };
+    if (auto* call = dynamic_cast<FunctionCallNode*>(callable.get())) {
+        prependValues(call->arguments);
+        return callable;
+    }
+    if (auto* method = dynamic_cast<MethodCallNode*>(callable.get())) {
+        prependValues(method->arguments);
+        return callable;
+    }
+    if (auto* identifier = dynamic_cast<IdentifierNode*>(callable.get())) {
+        auto call = std::make_unique<FunctionCallNode>();
+        call->functionName = identifier->value;
+        call->arguments = std::move(values);
+        return call;
+    }
+    return nullptr;
+}
+}
+
+std::unique_ptr<ASTNode> Parser::parsePipelineExpression() {
+    auto expr = parseOrExpression();
+    while (match(TokenType::OPERATOR, ">>|") || match(TokenType::OPERATOR, "<<|")) {
+        const std::string op = previous().value;
+        auto other = parseOrExpression();
+        auto piped = op == ">>|"
+            ? applyPipeline(std::move(other), std::move(expr))
+            : applyPipeline(std::move(expr), std::move(other));
+        if (!piped) {
+            error("Pipeline operator requires a function, function call, or method call");
+            return nullptr;
+        }
+        expr = std::move(piped);
+    }
+    return expr;
+}
+
 std::unique_ptr<ASTNode> Parser::parseExpression() {
-	std::unique_ptr<ASTNode> expr = parseOrExpression();
+	std::unique_ptr<ASTNode> expr = parsePipelineExpression();
     if (!expr) {
         error("Expected expression");
     }

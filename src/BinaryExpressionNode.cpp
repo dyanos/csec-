@@ -4,6 +4,7 @@
 #include "TensorRuntime.h"
 
 #include <iostream>
+#include <vector>
 
 namespace {
 bool isArithmeticOperator(const std::string& op) {
@@ -187,6 +188,46 @@ llvm::Value* codegenStringConcat(CodeGenerator& cg, llvm::Value* leftValue, cons
         getOrCreateRuntimeFunction("csec_string_concat", i8PtrTy, {i8PtrTy, i8PtrTy}),
         {leftString, rightString},
         "str.concat");
+}
+
+void collectStringConcatOperands(ASTNode* node, std::vector<ASTNode*>& operands) {
+    auto* binary = dynamic_cast<BinaryExpressionNode*>(node);
+    auto nodeType = node ? node->getType() : nullptr;
+    if (binary && binary->op == "+" && nodeType && nodeType->isStringTy()) {
+        collectStringConcatOperands(binary->left.get(), operands);
+        collectStringConcatOperands(binary->right.get(), operands);
+        return;
+    }
+    operands.push_back(node);
+}
+
+llvm::Value* codegenStringConcatChain(CodeGenerator& cg, ASTNode* root) {
+    std::vector<ASTNode*> operands;
+    collectStringConcatOperands(root, operands);
+    if (operands.size() < 3) return nullptr;
+
+    auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    std::vector<llvm::Value*> strings;
+    strings.reserve(operands.size());
+    for (ASTNode* operand : operands) {
+        llvm::Value* value = operand ? operand->codegen() : nullptr;
+        auto type = operand ? operand->getType() : nullptr;
+        strings.push_back(coerceValueForString(cg, value, type.get()));
+    }
+    auto* arrayTy = llvm::ArrayType::get(i8PtrTy, strings.size());
+    auto* storage = cg.builder.CreateAlloca(arrayTy, nullptr, "str.parts");
+    for (size_t i = 0; i < strings.size(); ++i) {
+        auto* slot = cg.builder.CreateInBoundsGEP(arrayTy, storage,
+            {llvm::ConstantInt::get(i64Ty, 0), llvm::ConstantInt::get(i64Ty, i)}, "str.part");
+        cg.builder.CreateStore(strings[i], slot);
+    }
+    llvm::Value* first = cg.builder.CreateInBoundsGEP(arrayTy, storage,
+        {llvm::ConstantInt::get(i64Ty, 0), llvm::ConstantInt::get(i64Ty, 0)}, "str.parts.first");
+    return cg.builder.CreateCall(
+        getOrCreateRuntimeFunction("csec_string_concat_many", i8PtrTy, {i8PtrTy->getPointerTo(), i64Ty}),
+        {first, llvm::ConstantInt::get(i64Ty, strings.size())}, "str.concat.chain");
 }
 
 llvm::Value* codegenClassOperator(const std::string& op, llvm::Value* leftValue, ASTNode* leftNode, ASTNode* rightNode) {
@@ -518,6 +559,14 @@ static llvm::Value* codegenQuaternionOp(const std::string& op, llvm::Value* left
 }
 
 llvm::Value* BinaryExpressionNode::codegen() {
+    if (op == "+") {
+        auto resultType = getType();
+        if (resultType && resultType->isStringTy()) {
+            if (auto* concatenated = codegenStringConcatChain(CodeGenerator::getInstance(), this)) {
+                return concatenated;
+            }
+        }
+    }
     llvm::Value* leftValue = left->codegen();
     if (!leftValue) return nullptr;
 

@@ -322,6 +322,11 @@ def tokenIsTopLevelOperator(tokens: String, ordinal: Int, group: Int): Boolean {
         return strEq(text, "=") or strEq(text, "<-") or strEq(text, "+=") or strEq(text, "-=") or
             strEq(text, "*=") or strEq(text, "/=") or strEq(text, "%=");
     }
+    // Pipeline has lower precedence than boolean/logical operators, matching
+    // the hosted parser.
+    if (group == 13 and kind == kindOperator()) {
+        return strEq(text, ">>|") or strEq(text, "<<|");
+    }
     if (group == 2) {
         return (kind == kindKeyword() and strEq(text, "or")) or
             (kind == kindOperator() and (strEq(text, "||") or strEq(text, "|")));
@@ -703,6 +708,12 @@ def generateExpressionAST(tokens: String, rawStart: Int, rawEnd: Int): String {
             generateExpressionAST(tokens, start, op) + "] [" +
             generateExpressionAST(tokens, op + 1, end) + "]";
     }
+    op = findTopLevelOperator(tokens, start, end, 13);
+    if (op >= start) {
+        return "Expr pipeline " + tokenTextAt(tokens, op) + " [" +
+            generateExpressionAST(tokens, start, op) + "] [" +
+            generateExpressionAST(tokens, op + 1, end) + "]";
+    }
     op = findTopLevelOperator(tokens, start, end, 2);
     if (op >= start) {
         return "Expr binary " + tokenTextAt(tokens, op) + " [" +
@@ -1039,6 +1050,16 @@ def inferExpressionType(tokens: String, rawStart: Int, rawEnd: Int): String {
     if (kind == kindBool()) { return "Boolean"; }
     val lambda: String = summarizeLambdaExpression(tokens, start, end);
     if (lambda.length > 0) { return "Function"; }
+    var pipeline: Int = findTopLevelOperator(tokens, start, end, 13);
+    if (pipeline >= start) {
+        // A pipeline evaluates to the called function's result.  The right
+        // side may be either `f` or `f(existingArgs)`.
+        val rhs: Int = skipTrivia(tokens, pipeline + 1);
+        if (tokenKindAt(tokens, rhs) == kindIdentifier()) {
+            return lookupFunctionReturnType(tokens, tokenTextAt(tokens, rhs));
+        }
+        return "unknown";
+    }
     val matchAt: Int = findTopLevelMatch(tokens, start, end);
     if (matchAt > start) { return "unknown"; }
     var op: Int = findTopLevelOperator(tokens, start, end, 4);

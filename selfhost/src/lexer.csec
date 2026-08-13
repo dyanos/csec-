@@ -129,6 +129,12 @@ def lexBlockComment(source: String, index: Int): Int {
 }
 
 def operatorLength(source: String, index: Int): Int {
+    if (twoChars(source, index, "<<") and source.charAt(index + 2) == '|') {
+        return 3;
+    }
+    if (twoChars(source, index, ">>") and source.charAt(index + 2) == '|') {
+        return 3;
+    }
     if (twoChars(source, index, "[@")) {
         return 2;
     }

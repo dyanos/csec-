@@ -407,6 +407,36 @@ char* csec_string_concat(const char* left, const char* right) {
     return result;
 }
 
+// Concatenate a complete expression chain in one allocation. Repeated binary
+// concatenation recopies each prefix and becomes quadratic as a chain grows.
+char* csec_string_concat_many(const char* const* values, long long count) {
+    if (!values || count <= 0) {
+        char* empty = static_cast<char*>(std::malloc(1));
+        if (empty) empty[0] = '\0';
+        return empty;
+    }
+
+    size_t total = 0;
+    for (long long i = 0; i < count; ++i) {
+        const char* value = values[i] ? values[i] : "";
+        const size_t length = std::strlen(value);
+        if (length > static_cast<size_t>(-1) - total - 1) return nullptr;
+        total += length;
+    }
+
+    char* result = static_cast<char*>(std::malloc(total + 1));
+    if (!result) return nullptr;
+    char* cursor = result;
+    for (long long i = 0; i < count; ++i) {
+        const char* value = values[i] ? values[i] : "";
+        const size_t length = std::strlen(value);
+        std::memcpy(cursor, value, length);
+        cursor += length;
+    }
+    *cursor = '\0';
+    return result;
+}
+
 void csec_release_concat_strings(void) {
     clearAllTokenCaches();
 }
@@ -445,6 +475,8 @@ int csec_operator_length(const char* source, int index) {
     if (!source || index < 0 || source[index] == '\0') return 0;
     const char first = source[index];
     const char second = source[index + 1];
+    const char third = source[index + 2];
+    if ((first == '<' || first == '>') && second == first && third == '|') return 3;
     if (first == '[' && second == '@') return 2;
     const bool pair =
         (first == '=' && (second == '>' || second == '=')) ||

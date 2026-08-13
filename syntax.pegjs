@@ -125,13 +125,16 @@ Expression
   / AssignmentExpression
 
 MatchExpression
-  = OrExpression (_ "match" _ "{" _ MatchCase* _ "}")?
+  = PipelineExpression (_ "match" _ "{" _ MatchCase* _ "}")?
 
 MatchCase
   = "case" __ PrimaryExpression _ "=>" _ Expression
 
 AssignmentExpression
-  = OrExpression (_ ("=" / "<-" / "+=" / "-=" / "*=" / "/=" / "%=") _ Expression)?
+  = PipelineExpression (_ ("=" / "<-" / "+=" / "-=" / "*=" / "/=" / "%=") _ Expression)?
+
+PipelineExpression
+  = OrExpression (_ (">>|" / "<<|") _ OrExpression)*
 
 OrExpression
   = AndExpression (_ "or" __ AndExpression)*
@@ -184,6 +187,7 @@ PrimaryExpression
   / NewExpression
   / ArrayLiteral
   / Block
+  / "(" _ Expression (_ "," _ Expression)+ _ ")"
   / "(" _ Expression _ ")"
   / QualifiedName TemplateArguments? CallArguments?
   / Literal

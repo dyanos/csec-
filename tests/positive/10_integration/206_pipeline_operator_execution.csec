@@ -1,0 +1,13 @@
+def decorate(value: String, left: String, right: String): String {
+    return left + value + right;
+}
+
+def main(): Int {
+    val forward = "core" >>| decorate("[", "]");
+    val reverse = decorate("<", ">") <<| "core";
+    val expanded = ("core", "{", "}") >>| decorate;
+    if (forward == "[core]" and reverse == "<core>" and expanded == "{core}") {
+        return 0;
+    }
+    return 1;
+}

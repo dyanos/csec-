@@ -106,7 +106,7 @@ void Lexer::initializeOperators() {
     // list in native_runtime/lexer_runtime.inc (csec_operator_length); keep the two in sync when adding
     // or removing an operator. Matched maximal-munch (longest operator first) in matchOperator().
     std::string ops[] = {
-		"=", "==", "!=", "+", "-", "*", "/", "%", "$", "$$", "\\", "<", ">", "<=", ">=", "<<", ">>",
+		"=", "==", "!=", "+", "-", "*", "/", "%", "$", "$$", "\\", "<", ">", "<=", ">=", "<<", ">>", "<<|", ">>|",
 		"!", "&", "|", "^", "~", ":", ".", ",", ";", "(", ")", "{", "}", "[", "]", "[@", "<-", "->",
 		"++", "--", "+=", "-=", "*=", "/=", "%=", "**", "_", "=>", "<:", "<%", ">:", "#", "@", "'"
     };

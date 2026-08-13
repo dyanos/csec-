@@ -92,7 +92,8 @@ private:
     std::unique_ptr<ASTNode> parseBitwiseAndExpression();
 	std::unique_ptr<ASTNode> parseUnaryExpression();
 	std::unique_ptr<ASTNode> parsePostfixExpression();
-	std::unique_ptr<ASTNode> parsePrefixExpression();
+    std::unique_ptr<ASTNode> parsePrefixExpression();
+    std::unique_ptr<ASTNode> parsePipelineExpression();
     std::unique_ptr<ASTNode> parseExpression();
     std::vector<std::unique_ptr<ASTNode>> parseArgumentList();
     std::unique_ptr<Type> parseTemplateArgumentAsType();

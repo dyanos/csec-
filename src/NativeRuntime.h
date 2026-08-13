@@ -26,6 +26,7 @@ CSEC_NATIVE_API void csec_print_char(char value);
 CSEC_NATIVE_API void csec_print_newline(void);
 
 CSEC_NATIVE_API char* csec_string_concat(const char* left, const char* right);
+CSEC_NATIVE_API char* csec_string_concat_many(const char* const* values, long long count);
 CSEC_NATIVE_API void csec_release_concat_strings(void);
 CSEC_NATIVE_API int csec_lex_quoted(const char* source, int index);
 CSEC_NATIVE_API int csec_lex_number(const char* source, int index);

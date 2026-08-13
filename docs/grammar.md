@@ -74,6 +74,7 @@ assignment   = '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '<-' ;
 arithmetic   = '+' | '-' | '*' | '/' | '%' | '**' ;          (* '**' = power *)
 comparison   = '==' | '!=' | '<' | '>' | '<=' | '>=' ;
 bitwise      = '&' | '|' | '^' | '~' | '<<' | '>>' ;
+pipeline     = '>>|' | '<<|' ;                              (* x >>| f(a) = f(x, a); tuple input expands: (x, a) >>| f = f(x, a) *)
 increment    = '++' | '--' ;
 borrow/move  = '&' | '<-' ;                                  (* '&mut' = '&' 'mut' *)
 punct        = ':' '.' ',' ';' '(' ')' '{' '}' '[' ']' '_' ;

@@ -38,7 +38,8 @@ operator override return struct super this true val var while
 to until and or xor
 map pmap reduce preduce filter
 external inline constexpr template typename mut box unsafe unatomic
-async await
+        async await
+        build
 molecule cfd ode protein
 ```
 
@@ -164,7 +165,9 @@ l-value      = identifier
 if-stmt      = 'if' '(' expr ')' block [ 'else' ( block | if-stmt ) ] ;
 while-stmt   = 'while' '(' expr ')' block ;
 for-stmt     = 'for' '(' identifier '<-' iterable ')' block ;
+             | 'for' '(' identifier ',' identifier '<-' token-range ')' block ;
 iterable     = expr | range ;
+token-range  = identifier '.between(' expr ',' expr ')' [ '.withoutTrivia()' ] ;
 range        = expr ( 'to' | 'until' ) expr [ 'step' expr ] ;   (* 'to' inclusive, 'until' exclusive *)
 return-stmt  = 'return' [ expr { ',' expr } ] terminator ;   (* multiple values → tuple *)
 
@@ -212,6 +215,7 @@ index-list   = index { ',' index } ;
 index        = expr | [ expr ] ':' [ expr ] [ ':' expr ] ;  (* Fortran section t[i:j:k], t[:] *)
 
 primary      = literal | identifier | '(' expr ')'
+             | 'build' '{' { expr [ ';' ] } '}'
              | 'new' applied-type call-args
              | lambda | if-expr | match-expr | array-lit | latex-math
              | 'this' | 'super' | dsl-entry ;
@@ -221,6 +225,20 @@ if-expr      = 'if' '(' expr ')' block [ 'else' block ] ;
 latex-math   = '$' … '$' | '$$' … '$$' ;                     (* inline LaTeX-math evaluated to a value *)
 dsl-entry    = ( 'molecule' | 'cfd' | 'ode' | 'protein' ) … ;
 ```
+
+Token-processing sugar is intended for the self-hosted compiler:
+
+```csec
+for (text, ordinal <- tokens.between(start, end).withoutTrivia()) { ... }
+if (token(tokens, ordinal) is keyword("if")) { ... }
+```
+
+The loop lowers to an ordinal range loop and binds `text` to the current token
+text.  The pattern expression lowers to the native token-kind/text predicate.
+
+`build { ... }` concatenates its expression segments into a `String`.  A string
+literal may embed an identifier as `${name}`; it is equivalent to string
+concatenation and is batched with adjacent builder fragments.
 
 ### 5.1 `match`
 

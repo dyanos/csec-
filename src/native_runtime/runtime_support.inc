@@ -503,7 +503,7 @@ int csec_is_keyword(const char* text) {
         "val", "var", "if", "else", "for", "while", "match", "case", "map", "pmap", "filter",
         "reduce", "preduce", "template", "typename", "new", "this", "super", "unsafe", "unatomic",
         "constexpr", "box", "mut", "null", "inner", "outer", "tensor", "to", "until", "and", "or",
-        "xor", "ode", "molecule", "cfd", "protein", "cpu", "openmp", "gpu", "simd"
+        "xor", "ode", "molecule", "cfd", "protein", "cpu", "openmp", "gpu", "simd", "build"
     };
     for (const char* keyword : keywords) {
         if (std::strcmp(text, keyword) == 0) return 1;

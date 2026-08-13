@@ -91,7 +91,7 @@ void Lexer::initializeKeywords() {
         "this", "true", "val", "var",
 		"while", "to", "until", "and", "or", "xor", "map", "pmap", "reduce", "preduce", "filter", "external", "inline", "constexpr",
 		"template", "typename", "mut", "box", "unsafe", "unatomic", "struct",
-		"async", "await",
+        "async", "await", "build",
         // Physics-DSL entry keywords (dispatch a simulation block from statement position). The body
         // words that appear only inside these blocks -- atom/bond/at/steps/dt/temperature/grid/
         // viscosity/velocity/euler/from/step/lattice/spacing/chain/mcmc -- are NOT reserved; the DSL
@@ -225,7 +225,32 @@ bool Lexer::matchStringLiteral(std::vector<Token>& tokens) {
         }
         advance();  // ?좎뙠?먯삕 ?좎룞?쇿뜝?숈삕???좎룞?숉궢
         std::string strLiteral = decodeStringEscapes(source.substr(start + 1, position - start - 2));
-        tokens.push_back(Token{ TokenType::STRING_LITERAL, strLiteral, line, column });
+        // `${name}` is deliberately lowered in the lexer into ordinary string addition.  This keeps
+        // interpolation usable anywhere a string expression is accepted and lets the existing
+        // concat-chain codegen coalesce all fragments into one allocation.
+        size_t fragmentStart = 0;
+        bool emittedInterpolation = false;
+        for (size_t i = 0; i + 3 <= strLiteral.size(); ++i) {
+            if (strLiteral[i] != '$' || strLiteral[i + 1] != '{') continue;
+            size_t nameStart = i + 2;
+            if (nameStart >= strLiteral.size() || !isAsciiIdentifierStart(static_cast<unsigned char>(strLiteral[nameStart]))) continue;
+            size_t nameEnd = nameStart + 1;
+            while (nameEnd < strLiteral.size() && isAsciiIdentifierContinue(static_cast<unsigned char>(strLiteral[nameEnd]))) ++nameEnd;
+            if (nameEnd >= strLiteral.size() || strLiteral[nameEnd] != '}') continue;
+            if (i > fragmentStart) tokens.push_back(Token{ TokenType::STRING_LITERAL, strLiteral.substr(fragmentStart, i - fragmentStart), line, column });
+            if (i > fragmentStart) tokens.push_back(Token{ TokenType::OPERATOR, "+", line, column });
+            tokens.push_back(Token{ TokenType::IDENTIFIER, strLiteral.substr(nameStart, nameEnd - nameStart), line, column });
+            tokens.push_back(Token{ TokenType::OPERATOR, "+", line, column });
+            fragmentStart = nameEnd + 1;
+            i = nameEnd;
+            emittedInterpolation = true;
+        }
+        if (emittedInterpolation) {
+            tokens.push_back(Token{ TokenType::STRING_LITERAL, strLiteral.substr(fragmentStart), line, column });
+        }
+        else {
+            tokens.push_back(Token{ TokenType::STRING_LITERAL, strLiteral, line, column });
+        }
         return true;
     }
     return false;

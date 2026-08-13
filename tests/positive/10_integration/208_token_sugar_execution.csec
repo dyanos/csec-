@@ -1,0 +1,15 @@
+external def csec_tokenize_source(source: String): String;
+
+def main(): Int {
+    val tokens: String = csec_tokenize_source("if ready { return 0; }");
+    var matches: Int = 0;
+    for (text, ordinal <- tokens.between(0, 16).withoutTrivia()) {
+        if (token(tokens, ordinal) is keyword("if")) {
+            matches = matches + 1;
+        }
+    }
+    if (matches == 1) {
+        return 0;
+    }
+    return 1;
+}

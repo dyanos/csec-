@@ -74,7 +74,7 @@ def importCandidate(target: String): String {
     if (stringEndsWith(target, ".csec")) {
         return target;
     }
-    return target + ".csec";
+    return build { target; ".csec"; };
 }
 
 def resolveImportPath(currentPath: String, target: String): String {

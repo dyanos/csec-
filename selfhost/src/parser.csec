@@ -943,15 +943,12 @@ def findFunctionReturnTypeStart(tokens: String, declStart: Int): Int {
 }
 
 def collectTypeName(tokens: String, start: Int, end: Int): String {
-    var cursor: Int = start;
     var output: String = "";
-    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
-        val text: String = tokenTextAt(tokens, cursor);
+    for (text, cursor <- tokens.between(start, end).withoutTrivia()) {
         if (strEq(text, "{") or strEq(text, "=") or strEq(text, ";") or strEq(text, ",")) {
             return output;
         }
         output = output + text;
-        cursor = cursor + 1;
     }
     return output;
 }
@@ -1268,7 +1265,7 @@ def templateParameterSummary(tokens: String, ordinal: Int): String {
     var cursor: Int = open + 1;
     var output: String = "";
     while (tokenKindAt(tokens, cursor) != kindEof() and !tokenIs(tokens, cursor, kindOperator(), ">")) {
-        if (tokenIs(tokens, cursor, kindKeyword(), "typename") or tokenIs(tokens, cursor, kindKeyword(), "class")) {
+        if (token(tokens, cursor) is keyword("typename") or token(tokens, cursor) is keyword("class")) {
             output = output + " type " + tokenTextAt(tokens, cursor + 1);
             cursor = cursor + 2;
         }

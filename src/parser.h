@@ -79,6 +79,7 @@ private:
     std::unique_ptr<ASTNode> parseLatexCommand();
     std::unique_ptr<ASTNode> parseAssignmentExpression();
 	std::unique_ptr<ASTNode> parsePrimaryExpression();
+	std::unique_ptr<ASTNode> parseStringBuildExpression();
 	std::unique_ptr<ASTNode> parseMulDivExpression();
 	std::unique_ptr<ASTNode> parseAddSubExpression();
 	std::unique_ptr<ASTNode> parseComparisonExpression();

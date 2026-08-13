@@ -125,6 +125,9 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 	if (match(TokenType::KEYWORD, "if")) {
 		return parseIfStatement();
 	}
+    else if (match(TokenType::KEYWORD, "build")) {
+        return parseStringBuildExpression();
+    }
     else if (match(TokenType::KEYWORD, "molecule")) {
         return parseMoleculeSimulationExpression();
     }
@@ -541,7 +544,48 @@ std::unique_ptr<ASTNode> Parser::parseShiftExpression() {
 
 std::unique_ptr<ASTNode> Parser::parseEqualityExpression() {
 	std::unique_ptr<ASTNode> expr = parseComparisonExpression();
-	while (match(TokenType::OPERATOR, "==") || match(TokenType::OPERATOR, "!=") || check(TokenType::IDENTIFIER, "iff")) {
+	while (true) {
+        // Token-pattern sugar: `token(tokens, ordinal) is keyword("if")`.
+        // It is lowered before type checking to the native token matcher.
+        if (check(TokenType::IDENTIFIER, "is")) {
+            auto* tokenCall = dynamic_cast<FunctionCallNode*>(expr.get());
+            if (!tokenCall || tokenCall->functionName != "token" || tokenCall->arguments.size() != 2) break;
+            advance();
+            if (!(check(TokenType::IDENTIFIER) || check(TokenType::KEYWORD))) {
+                error("Expected token pattern kind after 'is'");
+                return nullptr;
+            }
+            std::string patternKind = peek().value;
+            advance();
+            expect(TokenType::OPERATOR, "(");
+            if (!check(TokenType::STRING_LITERAL)) {
+                error("Expected string literal token pattern");
+                return nullptr;
+            }
+            std::string patternText = peek().value;
+            advance();
+            expect(TokenType::OPERATOR, ")");
+            char kindCode = 'I';
+            if (patternKind == "keyword") kindCode = 'K';
+            else if (patternKind == "operator") kindCode = 'O';
+            else if (patternKind == "string") kindCode = 'S';
+            else if (patternKind == "integer") kindCode = 'N';
+            else if (patternKind == "comment") kindCode = 'M';
+            else if (patternKind != "identifier") {
+                error("Unknown token pattern kind: " + patternKind);
+                return nullptr;
+            }
+            auto matchCall = std::make_unique<FunctionCallNode>();
+            matchCall->functionName = "__token_matches";
+            matchCall->arguments.push_back(std::move(tokenCall->arguments[0]));
+            matchCall->arguments.push_back(std::move(tokenCall->arguments[1]));
+            matchCall->arguments.push_back(std::make_unique<ValueNode>(std::string("'") + kindCode + "'", TokenType::CHAR_LITERAL));
+            matchCall->arguments.push_back(std::make_unique<ValueNode>(patternText, TokenType::STRING_LITERAL));
+            expr = std::move(matchCall);
+            continue;
+        }
+        bool matched = match(TokenType::OPERATOR, "==") || match(TokenType::OPERATOR, "!=") || check(TokenType::IDENTIFIER, "iff");
+        if (!matched) break;
         if (check(TokenType::IDENTIFIER, "iff")) {
             advance();
         }
@@ -746,6 +790,19 @@ std::unique_ptr<ASTNode> Parser::parsePrefixExpression()
 	else {
 		return parsePostfixExpression();
 	}
+}
+
+std::unique_ptr<ASTNode> Parser::parseStringBuildExpression() {
+    expect(TokenType::OPERATOR, "{");
+    std::unique_ptr<ASTNode> result = std::make_unique<ValueNode>("", TokenType::STRING_LITERAL);
+    while (!check(TokenType::OPERATOR, "}") && !isAtEnd()) {
+        auto segment = parseExpression();
+        if (!segment) return nullptr;
+        result = std::make_unique<BinaryExpressionNode>(std::move(result), "+", std::move(segment));
+        match(TokenType::OPERATOR, ";");
+    }
+    expect(TokenType::OPERATOR, "}");
+    return result;
 }
 
 namespace {

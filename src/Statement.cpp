@@ -432,8 +432,44 @@ std::unique_ptr<ASTNode> Parser::parseForStatement() {
 
 	if (match(TokenType::IDENTIFIER)) {
 		forNode->variable = previous().value;
+		if (match(TokenType::OPERATOR, ",")) {
+			forNode->tokenValue = forNode->variable;
+			expect(TokenType::IDENTIFIER);
+			forNode->variable = previous().value;
+		}
 
 		if (match(TokenType::OPERATOR, "<-")) {
+			// Token-stream iteration sugar.  It preserves the ordinary range-loop
+			// representation so existing loop lowering remains the single backend.
+			if (check(TokenType::IDENTIFIER) && peek(1).type == TokenType::OPERATOR && peek(1).value == "." &&
+				peek(2).type == TokenType::IDENTIFIER && peek(2).value == "between") {
+				advance();
+				forNode->tokenStream = std::make_unique<IdentifierNode>(previous().value);
+				expect(TokenType::OPERATOR, ".");
+				expect(TokenType::IDENTIFIER, "between");
+				expect(TokenType::OPERATOR, "(");
+				auto startExpr = parseExpression();
+				expect(TokenType::OPERATOR, ",");
+				auto endExpr = parseExpression();
+				expect(TokenType::OPERATOR, ")");
+				if (match(TokenType::OPERATOR, ".")) {
+					expect(TokenType::IDENTIFIER, "withoutTrivia");
+					expect(TokenType::OPERATOR, "(");
+					expect(TokenType::OPERATOR, ")");
+					forNode->skipTrivia = true;
+				}
+				if (forNode->tokenValue.empty()) {
+					error("Token iteration requires both text and ordinal names");
+				}
+				forNode->isRange = true;
+				forNode->isInclusive = false;
+				auto rangeExpr = std::make_unique<RangeExpressionNode>();
+				rangeExpr->startExpr = std::move(startExpr);
+				rangeExpr->endExpr = std::move(endExpr);
+				rangeExpr->isInclusive = false;
+				forNode->iterableExpr = std::move(rangeExpr);
+			}
+			else {
 			auto startExpr = parseExpression();
 
 			if (match(TokenType::KEYWORD, "to") || match(TokenType::KEYWORD, "until")) {
@@ -451,6 +487,7 @@ std::unique_ptr<ASTNode> Parser::parseForStatement() {
 			}
 			else {
 				forNode->iterableExpr = std::move(startExpr);
+			}
 			}
 		}
 		else {

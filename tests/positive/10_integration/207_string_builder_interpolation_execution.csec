@@ -1,0 +1,9 @@
+def main(): Int {
+    val name: String = "world";
+    val fromBuild: String = build { "hello "; name; "!"; };
+    val fromInterpolation: String = "hello ${name}!";
+    if (fromBuild == "hello world!" and fromInterpolation == fromBuild) {
+        return 0;
+    }
+    return 1;
+}

@@ -1873,6 +1873,25 @@ llvm::Value* FunctionCallNode::codegen() {
         argTypes.push_back(argType ? argType->clone() : std::make_unique<UnknownType>());
     }
 
+    if (functionName == "__token_matches") {
+        if (argValues.size() != 4) {
+            std::cerr << "Error: internal token matcher requires four arguments" << std::endl;
+            return nullptr;
+        }
+        auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+        auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+        llvm::Value* ordinal = argValues[1];
+        if (!ordinal->getType()->isIntegerTy(32)) ordinal = cg.builder.CreateIntCast(ordinal, i32Ty, true, "token.pattern.ordinal");
+        llvm::Value* kind = argValues[2];
+        if (!kind->getType()->isIntegerTy(8)) kind = cg.builder.CreateTrunc(kind, i8Ty, "token.pattern.kind");
+        llvm::Value* raw = cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_token_is", i32Ty, {i8PtrTy, i32Ty, i8Ty, i8PtrTy}),
+            {asCStringPointer(cg, argValues[0]), ordinal, kind, asCStringPointer(cg, argValues[3])},
+            "token.pattern.raw");
+        return cg.builder.CreateICmpNE(raw, llvm::ConstantInt::get(i32Ty, 0), "token.pattern");
+    }
+
     // free(x): release a heap allocation made by `new`, an array literal, a class instance, or a
     // box. The type checker limits this consuming operation to a named owned value.
     if (functionName == "free") {
@@ -2314,6 +2333,9 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
     // free(x) is a statement-like builtin that releases a heap allocation; it yields no value.
     if (functionName == "free") {
         return std::make_unique<BasicType>("Unit");
+    }
+    if (functionName == "__token_matches") {
+        return std::make_unique<BasicType>("Boolean");
     }
 
     // clone(x) yields a fresh independently-owned value of the same type as x; it does not move x.

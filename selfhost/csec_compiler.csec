@@ -84,7 +84,7 @@ def isKeyword(text: String): Boolean {
         strEq(text, "to") or strEq(text, "until") or strEq(text, "and") or strEq(text, "or") or
         strEq(text, "xor") or strEq(text, "ode") or strEq(text, "molecule") or strEq(text, "cfd") or
         strEq(text, "protein") or strEq(text, "cpu") or strEq(text, "openmp") or
-        strEq(text, "gpu") or strEq(text, "simd");
+        strEq(text, "gpu") or strEq(text, "simd") or strEq(text, "build");
 }
 
 def appendToken(tokens: String, kind: Char, text: String): String {
@@ -1266,15 +1266,12 @@ def findFunctionReturnTypeStart(tokens: String, declStart: Int): Int {
 }
 
 def collectTypeName(tokens: String, start: Int, end: Int): String {
-    var cursor: Int = start;
     var output: String = "";
-    while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
-        val text: String = tokenTextAt(tokens, cursor);
+    for (text, cursor <- tokens.between(start, end).withoutTrivia()) {
         if (strEq(text, "{") or strEq(text, "=") or strEq(text, ";") or strEq(text, ",")) {
             return output;
         }
         output = output + text;
-        cursor = cursor + 1;
     }
     return output;
 }
@@ -1591,7 +1588,7 @@ def templateParameterSummary(tokens: String, ordinal: Int): String {
     var cursor: Int = open + 1;
     var output: String = "";
     while (tokenKindAt(tokens, cursor) != kindEof() and !tokenIs(tokens, cursor, kindOperator(), ">")) {
-        if (tokenIs(tokens, cursor, kindKeyword(), "typename") or tokenIs(tokens, cursor, kindKeyword(), "class")) {
+        if (token(tokens, cursor) is keyword("typename") or token(tokens, cursor) is keyword("class")) {
             output = output + " type " + tokenTextAt(tokens, cursor + 1);
             cursor = cursor + 2;
         }
@@ -5726,7 +5723,7 @@ def importCandidate(target: String): String {
     if (stringEndsWith(target, ".csec")) {
         return target;
     }
-    return target + ".csec";
+    return build { target; ".csec"; };
 }
 
 def resolveImportPath(currentPath: String, target: String): String {

@@ -5,6 +5,7 @@
 
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
 
 #include "RangeExpressionNode.h"
 #include "symbol.h"
@@ -107,6 +108,8 @@ llvm::Value* ForStatementNode::codegen() {
 
     llvm::BasicBlock* condBB = llvm::BasicBlock::Create(cg.context, "forcond", function);
     llvm::BasicBlock* loopBB = llvm::BasicBlock::Create(cg.context, "loop", function);
+    llvm::BasicBlock* loopBodyBB = tokenStream ? llvm::BasicBlock::Create(cg.context, "token.body", function) : loopBB;
+    llvm::BasicBlock* incrementBB = tokenStream ? llvm::BasicBlock::Create(cg.context, "token.next", function) : loopBB;
     llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(cg.context, "afterloop", function);
 
     if (beforeLoopBB && !beforeLoopBB->getTerminator()) {
@@ -126,14 +129,54 @@ llvm::Value* ForStatementNode::codegen() {
 
     // Loop body
     cg.builder.SetInsertPoint(loopBB);
+    if (tokenStream) {
+        auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+        auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+        llvm::Value* stream = tokenStream->codegen();
+        if (!stream || !stream->getType()->isPointerTy()) {
+            cg.symbolTable.exitScope();
+            return nullptr;
+        }
+        llvm::Value* ordinal = cg.builder.CreateLoad(startValue->getType(), value_ptr, variable + ".ordinal");
+        if (ordinal->getType() != i32Ty) ordinal = cg.builder.CreateIntCast(ordinal, i32Ty, true, "token.ordinal.i32");
+        if (skipTrivia) {
+            auto kindFn = cg.module->getOrInsertFunction("csec_token_kind_at", llvm::FunctionType::get(i8Ty, {i8PtrTy, i32Ty}, false));
+            llvm::Value* kind = cg.builder.CreateCall(kindFn, {stream, ordinal}, "token.kind");
+            llvm::Value* isComment = cg.builder.CreateICmpEQ(kind, llvm::ConstantInt::get(i8Ty, 'M'));
+            cg.builder.CreateCondBr(isComment, incrementBB, loopBodyBB);
+        }
+        else {
+            cg.builder.CreateBr(loopBodyBB);
+        }
+        cg.builder.SetInsertPoint(loopBodyBB);
+        auto textFn = cg.module->getOrInsertFunction("csec_token_text_at", llvm::FunctionType::get(i8PtrTy, {i8PtrTy, i32Ty}, false));
+        llvm::Value* text = cg.builder.CreateCall(textFn, {stream, ordinal}, tokenValue + ".text");
+        auto* textSlot = cg.builder.CreateAlloca(i8PtrTy, nullptr, tokenValue + "_ptr");
+        cg.builder.CreateStore(text, textSlot);
+        cg.symbolTable.addSymbol(tokenValue, std::make_unique<Symbol>(tokenValue, std::make_unique<BasicType>("String"), textSlot, false, SymbolType::VARIABLE));
+    }
     this->body->codegen();
 
     // Increment and branch back to condition
     if (!cg.builder.GetInsertBlock()->getTerminator()) {
+        if (tokenStream) {
+            cg.builder.CreateBr(incrementBB);
+        }
+        else {
+            auto* value = cg.builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
+            auto* one = llvm::ConstantInt::get(startValue->getType(), 1, true);
+            auto* next_value = cg.builder.CreateAdd(value, one, "next_i");
+            cg.builder.CreateStore(next_value, value_ptr);
+            cg.builder.CreateBr(condBB);
+        }
+    }
+
+    if (tokenStream) {
+        cg.builder.SetInsertPoint(incrementBB);
         auto* value = cg.builder.CreateLoad(startValue->getType(), value_ptr, this->variable.c_str());
         auto* one = llvm::ConstantInt::get(startValue->getType(), 1, true);
-        auto* next_value = cg.builder.CreateAdd(value, one, "next_i");
-        cg.builder.CreateStore(next_value, value_ptr);
+        cg.builder.CreateStore(cg.builder.CreateAdd(value, one, "next_i"), value_ptr);
         cg.builder.CreateBr(condBB);
     }
 

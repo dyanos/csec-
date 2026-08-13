@@ -11,6 +11,9 @@ public:
     ForStatementNode(const ForStatementNode& other)
         : variable(other.variable),
           iterableExpr(other.iterableExpr ? other.iterableExpr->clone() : nullptr),
+          tokenStream(other.tokenStream ? other.tokenStream->clone() : nullptr),
+          tokenValue(other.tokenValue),
+          skipTrivia(other.skipTrivia),
           isRange(other.isRange),
           isInclusive(other.isInclusive),
           body(other.body ? std::make_unique<BlockNode>(*other.body) : nullptr) {
@@ -20,6 +23,9 @@ public:
         if (this != &other) {
             variable = other.variable;
             iterableExpr = other.iterableExpr ? other.iterableExpr->clone() : nullptr;
+            tokenStream = other.tokenStream ? other.tokenStream->clone() : nullptr;
+            tokenValue = other.tokenValue;
+            skipTrivia = other.skipTrivia;
             isRange = other.isRange;
             isInclusive = other.isInclusive;
             body = other.body ? std::make_unique<BlockNode>(*other.body) : nullptr;
@@ -42,6 +48,11 @@ public:
 
     std::string variable;
     std::unique_ptr<ASTNode> iterableExpr;
+    // `for (text, ordinal <- tokens.between(begin, end).withoutTrivia())`
+    // lowers to a range loop while exposing the current token text.
+    std::unique_ptr<ASTNode> tokenStream;
+    std::string tokenValue;
+    bool skipTrivia = false;
     bool isRange = false;
     bool isInclusive = true;
     std::unique_ptr<BlockNode> body;

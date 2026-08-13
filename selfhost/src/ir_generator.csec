@@ -27,18 +27,15 @@ def appendCExpression(tokens: String, start: Int, rawEnd: Int): String {
     var output: String = "";
     while (cursor < end and tokenKindAt(tokens, cursor) != kindEof()) {
         val text: String = tokenTextAt(tokens, cursor);
-        if (tokenKindAt(tokens, cursor) == kindKeyword() and strEq(text, "and")) {
-            output = output + "&&";
-        }
-        else if (tokenKindAt(tokens, cursor) == kindKeyword() and strEq(text, "or")) {
-            output = output + "||";
-        }
-        else if (tokenKindAt(tokens, cursor) == kindKeyword() and strEq(text, "xor")) {
-            output = output + "^";
-        }
-        else {
-            output = output + text;
-        }
+        val cText: String = if (tokenKindAt(tokens, cursor) == kindKeyword()) {
+            text match {
+                case "and" => "&&"
+                case "or" => "||"
+                case "xor" => "^"
+                case _ => text
+            }
+        } else { text };
+        output = output + cText;
         if (cursor + 1 < end) {
             output = output + " ";
         }
@@ -48,17 +45,18 @@ def appendCExpression(tokens: String, start: Int, rawEnd: Int): String {
 }
 
 def cTypeName(typeName: String): String {
-    if (strEq(typeName, "Boolean")) { return "int"; }
-    if (strEq(typeName, "Char")) { return "char"; }
-    if (strEq(typeName, "Int")) { return "int"; }
-    if (strEq(typeName, "Long")) { return "long long"; }
-    if (strEq(typeName, "Float")) { return "float"; }
-    if (strEq(typeName, "Double")) { return "double"; }
-    if (strEq(typeName, "String")) { return "const char*"; }
-    if (strEq(typeName, "Regex")) { return "const char*"; }
-    if (typeName.startsWith("Array")) { return "void*"; }
-    if (strEq(typeName, "Unit")) { return "void"; }
-    return "void*";
+    return typeName match {
+        case "Boolean" => "int"
+        case "Char" => "char"
+        case "Int" => "int"
+        case "Long" => "long long"
+        case "Float" => "float"
+        case "Double" => "double"
+        case "String" => "const char*"
+        case "Regex" => "const char*"
+        case "Unit" => "void"
+        case _ => "void*"
+    };
 }
 
 def generateCBody(tokens: String, bodyStart: Int, bodyEnd: Int, indent: String): String {
@@ -122,10 +120,11 @@ def generateCBody(tokens: String, bodyStart: Int, bodyEnd: Int, indent: String):
             if (openParen >= cursor and closeParen > openParen and blockStart > closeParen and
                 blockEnd > blockStart and tokenKindAt(tokens, openParen + 1) == kindIdentifier() and
                 sourceArrow > openParen and rangeOp > sourceArrow) {
-                var compareOp: String = " < ";
-                if (strEq(tokenTextAt(tokens, rangeOp), "to") or strEq(tokenTextAt(tokens, rangeOp), "..")) {
-                    compareOp = " <= ";
-                }
+                val compareOp: String = tokenTextAt(tokens, rangeOp) match {
+                    case "to" => " <= "
+                    case ".." => " <= "
+                    case _ => " < "
+                };
                 val iteratorName: String = tokenTextAt(tokens, openParen + 1);
                 output = output + indent + "for (int " + iteratorName + " = " +
                     appendCExpression(tokens, sourceArrow + 1, rangeOp) + "; " +
@@ -234,48 +233,54 @@ def generateMainExecutionC(tokens: String): String {
 }
 
 def irTypeName(typeName: String): String {
-    if (strEq(typeName, "Boolean")) { return "i1"; }
-    if (strEq(typeName, "Char")) { return "i8"; }
-    if (strEq(typeName, "Int")) { return "i32"; }
-    if (strEq(typeName, "Long")) { return "i64"; }
-    if (strEq(typeName, "Float")) { return "float"; }
-    if (strEq(typeName, "Double")) { return "double"; }
-    if (strEq(typeName, "Unit")) { return "void"; }
-    if (strEq(typeName, "String")) { return "ptr"; }
-    if (strEq(typeName, "Regex")) { return "ptr"; }
-    if (strEq(typeName, "Range")) { return "ptr"; }
-    if (typeName.startsWith("Array")) { return "ptr"; }
-    if (typeName.length == 0) { return "ptr"; }
-    return "ptr";
+    return typeName match {
+        case "Boolean" => "i1"
+        case "Char" => "i8"
+        case "Int" => "i32"
+        case "Long" => "i64"
+        case "Float" => "float"
+        case "Double" => "double"
+        case "Unit" => "void"
+        case "String" => "ptr"
+        case "Regex" => "ptr"
+        case "Range" => "ptr"
+        case r"^Array.*$" => "ptr"
+        case _ => "ptr"
+    };
 }
 
 def irOperatorName(text: String): String {
-    if (strEq(text, "+")) { return "add"; }
-    if (strEq(text, "-")) { return "sub"; }
-    if (strEq(text, "*")) { return "mul"; }
-    if (strEq(text, "/")) { return "sdiv"; }
-    if (strEq(text, "%")) { return "srem"; }
-    if (strEq(text, "<<")) { return "shl"; }
-    if (strEq(text, ">>")) { return "ashr"; }
-    if (strEq(text, "&")) { return "and"; }
-    if (strEq(text, "|")) { return "or"; }
-    if (strEq(text, "^") or strEq(text, "xor")) { return "xor"; }
-    if (strEq(text, "and") or strEq(text, "&&")) { return "and"; }
-    if (strEq(text, "or") or strEq(text, "||")) { return "or"; }
-    if (strEq(text, "==")) { return "icmp_eq"; }
-    if (strEq(text, "!=")) { return "icmp_ne"; }
-    if (strEq(text, "<")) { return "icmp_slt"; }
-    if (strEq(text, "<=")) { return "icmp_sle"; }
-    if (strEq(text, ">")) { return "icmp_sgt"; }
-    if (strEq(text, ">=")) { return "icmp_sge"; }
-    if (strEq(text, "..")) { return "range"; }
-    if (strEq(text, "to")) { return "range_to"; }
-    if (strEq(text, "until")) { return "range_until"; }
-    if (strEq(text, "@")) { return "matmul"; }
-    if (strEq(text, "inner")) { return "inner"; }
-    if (strEq(text, "outer")) { return "outer"; }
-    if (strEq(text, "tensor")) { return "tensor"; }
-    return text;
+    return text match {
+        case "+" => "add"
+        case "-" => "sub"
+        case "*" => "mul"
+        case "/" => "sdiv"
+        case "%" => "srem"
+        case "<<" => "shl"
+        case ">>" => "ashr"
+        case "&" => "and"
+        case "|" => "or"
+        case "^" => "xor"
+        case "xor" => "xor"
+        case "and" => "and"
+        case "&&" => "and"
+        case "or" => "or"
+        case "||" => "or"
+        case "==" => "icmp_eq"
+        case "!=" => "icmp_ne"
+        case "<" => "icmp_slt"
+        case "<=" => "icmp_sle"
+        case ">" => "icmp_sgt"
+        case ">=" => "icmp_sge"
+        case ".." => "range"
+        case "to" => "range_to"
+        case "until" => "range_until"
+        case "@" => "matmul"
+        case "inner" => "inner"
+        case "outer" => "outer"
+        case "tensor" => "tensor"
+        case _ => text
+    };
 }
 
 def expressionTopLevelOperator(tokens: String, start: Int, end: Int): Int {
@@ -343,10 +348,10 @@ def generateIRAssignment(tokens: String, start: Int, end: Int): String {
     }
     val typeName: String = inferExpressionType(tokens, op + 1, end);
     val irType: String = irTypeName(typeName);
-    var binaryOp: String = opText.substring(0, 1);
-    if (strEq(opText, "%=")) {
-        binaryOp = "%";
-    }
+    val binaryOp: String = opText match {
+        case "%=" => "%"
+        case _ => opText.substring(0, 1)
+    };
     return "    %old." + name + " = load " + irType + ", ptr %" + name + "\n" +
         "    %new." + name + " = " + irOperatorName(binaryOp) + " " + irType +
         " %old." + name + ", (" + appendExpressionUntil(tokens, op + 1, trimExpressionEnd(tokens, op + 1, end)) + ")\n" +
@@ -617,40 +622,47 @@ def generateLLVMMainBody(tokens: String): String {
 def llvmCharI8Value(text: String): String {
     if (text.length == 0) { return "0"; }
     val ch: Char = text.charAt(0);
-    if (ch == 'I') { return "73"; }
-    if (ch == 'K') { return "75"; }
-    if (ch == 'N') { return "78"; }
-    if (ch == 'F') { return "70"; }
-    if (ch == 'S') { return "83"; }
-    if (ch == 'R') { return "82"; }
-    if (ch == 'C') { return "67"; }
-    if (ch == 'B') { return "66"; }
-    if (ch == 'O') { return "79"; }
-    if (ch == 'M') { return "77"; }
-    if (ch == 'E') { return "69"; }
-    if (ch == 'x') { return "120"; }
-    if (ch == 'y') { return "121"; }
-    if (ch == 'z') { return "122"; }
-    if (ch == 'a') { return "97"; }
-    if (ch == 't') { return "116"; }
-    if (ch == 'u') { return "117"; }
-    if (ch == '0') { return "48"; }
-    if (ch == '1') { return "49"; }
-    if (ch == '2') { return "50"; }
-    if (ch == '3') { return "51"; }
-    if (ch == '4') { return "52"; }
-    if (ch == '5') { return "53"; }
-    if (ch == '6') { return "54"; }
-    if (ch == '7') { return "55"; }
-    if (ch == '8') { return "56"; }
-    if (ch == '9') { return "57"; }
-    if (ch == '_') { return "95"; }
-    if (ch == ' ') { return "32"; }
-    if (ch == '"') { return "34"; }
-    if (ch == '\\' and text.length > 1 and text.charAt(1) == '\\') { return "92"; }
-    if (ch == '\\' and text.length > 1 and text.charAt(1) == 'n') { return "10"; }
-    if (ch == '\\' and text.length > 1 and text.charAt(1) == 't') { return "9"; }
-    return "0";
+    if (ch == '\\' and text.length > 1) {
+        return text.charAt(1) match {
+            case '\\' => "92"
+            case 'n' => "10"
+            case 't' => "9"
+            case _ => "0"
+        };
+    }
+    return ch match {
+        case 'I' => "73"
+        case 'K' => "75"
+        case 'N' => "78"
+        case 'F' => "70"
+        case 'S' => "83"
+        case 'R' => "82"
+        case 'C' => "67"
+        case 'B' => "66"
+        case 'O' => "79"
+        case 'M' => "77"
+        case 'E' => "69"
+        case 'x' => "120"
+        case 'y' => "121"
+        case 'z' => "122"
+        case 'a' => "97"
+        case 't' => "116"
+        case 'u' => "117"
+        case '0' => "48"
+        case '1' => "49"
+        case '2' => "50"
+        case '3' => "51"
+        case '4' => "52"
+        case '5' => "53"
+        case '6' => "54"
+        case '7' => "55"
+        case '8' => "56"
+        case '9' => "57"
+        case '_' => "95"
+        case ' ' => "32"
+        case '"' => "34"
+        case _ => "0"
+    };
 }
 
 def llvmI32Value(tokens: String, start: Int, rawEnd: Int): String {
@@ -1159,17 +1171,20 @@ def generateLLVMCallArgumentListI32(tokens: String, argsStart: Int, argsEnd: Int
 }
 
 def llvmRuntimeCallName(name: String): String {
-    if (strEq(name, "commandLineArgCount")) { return "csec_command_line_arg_count"; }
-    if (strEq(name, "commandLineArg")) { return "csec_command_line_arg"; }
-    return name;
+    return name match {
+        case "commandLineArgCount" => "csec_command_line_arg_count"
+        case "commandLineArg" => "csec_command_line_arg"
+        case _ => name
+    };
 }
 
 def llvmCallReturnsChar(tokens: String, name: String): Boolean {
-    if (name.startsWith("kind")) { return true; }
-    if (strEq(name, "tokenKindAt")) { return true; }
-    if (strEq(name, "csec_token_kind_at")) { return true; }
-    if (strEq(lookupFunctionReturnType(tokens, name), "Char")) { return true; }
-    return false;
+    return name match {
+        case r"^kind.*$" => true
+        case "tokenKindAt" => true
+        case "csec_token_kind_at" => true
+        case _ => strEq(lookupFunctionReturnType(tokens, name), "Char")
+    };
 }
 
 def generateLLVMExpressionI32(tokens: String, start: Int, rawEnd: Int, resultName: String): String {
@@ -1396,10 +1411,12 @@ def generateLLVMExpressionNat(tokens: String, rawStart: Int, rawEnd: Int, result
     val op: Int = expressionTopLevelOperator(tokens, start, end);
     if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
         val mnemonic: String = irOperatorName(tokenTextAt(tokens, op));
-        var fn: String = "";
-        if (strEq(mnemonic, "add")) { fn = "csec_bigint_add"; }
-        if (strEq(mnemonic, "sub")) { fn = "csec_bigint_sub"; }
-        if (strEq(mnemonic, "mul")) { fn = "csec_bigint_mul"; }
+        val fn: String = mnemonic match {
+            case "add" => "csec_bigint_add"
+            case "sub" => "csec_bigint_sub"
+            case "mul" => "csec_bigint_mul"
+            case _ => ""
+        };
         if (fn.length > 0) {
             val lname: String = "%nat.l." + start;
             val rname: String = "%nat.r." + op;
@@ -1452,11 +1469,13 @@ def generateLLVMLoadF64IfIdentifier(tokens: String, start: Int, rawEnd: Int): St
 
 // A vector's named component: x/y/z/w -> element index 0..3, or -1 for any other field.
 def tensorComponentIndex(name: String): Int {
-    if (strEq(name, "x")) { return 0; }
-    if (strEq(name, "y")) { return 1; }
-    if (strEq(name, "z")) { return 2; }
-    if (strEq(name, "w")) { return 3; }
-    return 0 - 1;
+    return name match {
+        case "x" => 0
+        case "y" => 1
+        case "z" => 2
+        case "w" => 3
+        case _ => 0 - 1
+    };
 }
 
 // Last top-level (depth-0) token whose text equals `word` -- used to find a tensor operator like `inner`
@@ -1549,11 +1568,13 @@ def generateLLVMExpressionF64(tokens: String, start: Int, rawEnd: Int, resultNam
     val op: Int = expressionTopLevelOperator(tokens, start, end);
     if (op > start and tokenKindAt(tokens, op) == kindOperator()) {
         val opText: String = tokenTextAt(tokens, op);
-        var mnemonic: String = "";
-        if (strEq(opText, "+")) { mnemonic = "fadd"; }
-        if (strEq(opText, "-")) { mnemonic = "fsub"; }
-        if (strEq(opText, "*")) { mnemonic = "fmul"; }
-        if (strEq(opText, "/")) { mnemonic = "fdiv"; }
+        val mnemonic: String = opText match {
+            case "+" => "fadd"
+            case "-" => "fsub"
+            case "*" => "fmul"
+            case "/" => "fdiv"
+            case _ => ""
+        };
         if (mnemonic.length > 0) {
             // Recurse on each operand so nested sub-expressions (parens, chained arithmetic) work,
             // instead of only leaf literals/identifiers.
@@ -1640,13 +1661,15 @@ def f64Operand(tokens: String, start: Int, end: Int, name: String): String {
 
 // Map an integer compare op (slt/sle/sgt/sge/eq/ne) to the ordered floating predicate.
 def fcmpPredicate(compareOp: String): String {
-    if (strEq(compareOp, "slt")) { return "olt"; }
-    if (strEq(compareOp, "sle")) { return "ole"; }
-    if (strEq(compareOp, "sgt")) { return "ogt"; }
-    if (strEq(compareOp, "sge")) { return "oge"; }
-    if (strEq(compareOp, "eq")) { return "oeq"; }
-    if (strEq(compareOp, "ne")) { return "one"; }
-    return "oeq";
+    return compareOp match {
+        case "slt" => "olt"
+        case "sle" => "ole"
+        case "sgt" => "ogt"
+        case "sge" => "oge"
+        case "eq" => "oeq"
+        case "ne" => "one"
+        case _ => "oeq"
+    };
 }
 
 def generateLLVMLocalF64(tokens: String, start: Int, end: Int): String {
@@ -1840,10 +1863,10 @@ def generateLLVMAssignmentI32(tokens: String, start: Int, end: Int): String {
         return generateLLVMExpressionI32(tokens, op + 1, end, resultName) +
             "  store i32 " + resultName + ", ptr %" + storageName + "\n";
     }
-    var binaryOp: String = opText.substring(0, 1);
-    if (strEq(opText, "%=")) {
-        binaryOp = "%";
-    }
+    val binaryOp: String = opText match {
+        case "%=" => "%"
+        case _ => opText.substring(0, 1)
+    };
     return "  %" + name + ".old." + start + " = load i32, ptr %" + storageName + "\n" +
         generateLLVMExpressionI32(tokens, op + 1, end, "%" + name + ".rhs." + start) +
         "  %" + name + ".next." + start + " = " + irOperatorName(binaryOp) + " i32 %" + name + ".old." + start + ", %" + name + ".rhs." + start + "\n" +

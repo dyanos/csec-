@@ -1,0 +1,42 @@
+{
+  "name": "tessera-language-support",
+  "displayName": "Tessera Language Support",
+  "description": "Syntax highlighting and editor configuration for Tessera (.csec) source files.",
+  "version": "0.1.0",
+  "publisher": "tessera-lang",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "tessera",
+    "csec",
+    "tensor",
+    "numerical"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "tessera",
+        "aliases": [
+          "Tessera",
+          "csec"
+        ],
+        "extensions": [
+          ".csec"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "tessera",
+        "scopeName": "source.tessera",
+        "path": "./syntaxes/tessera.tmLanguage.json"
+      }
+    ]
+  }
+}

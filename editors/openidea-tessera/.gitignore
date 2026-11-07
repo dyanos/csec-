@@ -1,0 +1,4 @@
+target/
+plugin/target/
+plugin/dist/
+*.oiplugin

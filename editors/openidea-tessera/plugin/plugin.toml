@@ -1,0 +1,33 @@
+id = "tessera-lang.tessera"
+name = "Tessera"
+version = "0.1.0"
+description = "Tessera (.csec) support: highlighting, structure view and folding, plus the tessera-lsp language server (csec++ diagnostics, completion, hover, navigation, rename) when it is installed."
+authors = ["Tessera contributors"]
+license = "MIT"
+change-notes = "0.1.0: first release — .csec detection, highlighting, structure view, folding, file template; language server via tessera-lsp."
+categories = ["languages"]
+icon = "icons/tessera.svg"
+icon-dark = "icons/tessera_dark.svg"
+# `icon` needs plugin API 1.2.
+engines.openidea = "^1.2"
+# Highlighting, structure and folding come from this component (the shared
+# tessera-syntax lexer); it is loaded when the first Tessera file is opened.
+wasm = "dist/plugin.wasm"
+activation = ["on-language:tessera"]
+
+# The language server in the definition needs `process:tessera-lsp`; it is
+# asked for on install and can be refused (highlighting keeps working).
+[[contributes.languages]]
+path = "languages/tessera.toml"
+
+[[contributes.fileIcons]]
+id = "tessera"
+patterns = ["*.csec"]
+icon = "icons/tessera.svg"
+iconDark = "icons/tessera_dark.svg"
+
+[[contributes.fileTemplates]]
+id = "tessera-file"
+name = "Tessera File"
+extension = "csec"
+path = "templates/main.csec"

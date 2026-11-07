@@ -1,0 +1,9 @@
+[package]
+name = "tessera-syntax"
+description = "Lexer, highlighting, outline and folding for Tessera (.csec) sources, shared by the OpenIDEA plugin and tessera-lsp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]

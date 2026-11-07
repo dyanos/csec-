@@ -13,3 +13,6 @@ documentation in sync as part of the same change.
   changed syntax is executable.
 - Do not mark a grammar change complete while either `LANGUAGE_SPEC.md` or the
   relevant `selfhost/` compiler code is stale.
+- Lexical changes (keywords, operators, literals) also go into the editor lexer in
+  `editors/openidea-tessera/crates/tessera-syntax/src/lexer.rs`; its `cargo test`
+  lexes every repository `.csec` file.

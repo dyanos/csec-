@@ -1,0 +1,14 @@
+class Counter(value: Int) {
+    def next(): Int { return value + 1; }
+}
+
+def main(): Int {
+    val counter: Counter = new Counter(41);
+    val values = new Int[2];
+    values[0] = counter.next();
+    values[1] = values[0] + 1;
+    val result: Int = values[1];
+    free(values);
+    free(counter);
+    return result - 43;
+}

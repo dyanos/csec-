@@ -1,0 +1,323 @@
+Program
+Decl external-function csec_lookup_function_return_type
+Decl function csec_lookup_function_return_type
+Decl external-function csec_advance_statement
+Decl function csec_advance_statement
+Decl external-function csec_advance_top_level_decl
+Decl function csec_advance_top_level_decl
+Decl external-function csec_find_decl_body_start
+Decl function csec_find_decl_body_start
+Decl external-function csec_find_decl_body_end
+Decl function csec_find_decl_body_end
+Decl external-function csec_function_param_end
+Decl function csec_function_param_end
+Decl external-function csec_function_llvm_param_list
+Decl function csec_function_llvm_param_list
+Decl external-function csec_function_llvm_param_allocas
+Decl function csec_function_llvm_param_allocas
+Decl external-function csec_llvm_name_with_number
+Decl function csec_llvm_name_with_number
+Decl external-function csec_function_return_type_at
+Decl function csec_function_return_type_at
+Decl function validateBalanced
+  Stmt variable cursor = Expr integer 0
+  Stmt variable paren = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr binary and [Expr binary and [Expr compare == [Expr identifier paren] [Expr integer 0]] [Expr compare == [Expr identifier brace] [Expr integer 0]]] [Expr compare == [Expr identifier bracket] [Expr integer 0]]
+Decl function startsTopLevelDeclaration
+  Stmt value kind = Expr call target=tokenKindAt argc=2
+  Stmt value text = Expr call target=tokenTextAt argc=2
+  Stmt if (kind == kindEof ( ))
+  Stmt if (kind == kindOperator ( ) and strEq ( text , [@ ))
+  Stmt return Expr identifier kind == kindKeyword ( ) and ( strEq ( text , import ) or strEq ( text , class ) or strEq ( text , object ) or strEq ( text , external ) or strEq ( text , def ) or strEq ( text , template ) or strEq ( text , val ) or strEq ( text , var ) or strEq ( text , unsafe ) or strEq ( text , unatomic ) or strEq ( text , constexpr ) )
+Decl function validateTopLevel
+  Body tokens=289
+Decl function parseProgram
+  Stmt if (! validateBalanced ( tokens ))
+  Stmt expression Expr call target=System . IO . File . WriteAllText argc=2
+  Stmt return Expr call target=validateTopLevel argc=1
+Decl function topLevelDeclKind
+  Body tokens=261
+Decl function topLevelDeclName
+  Body tokens=279
+Decl function advanceTopLevelDecl
+  Stmt return Expr call target=csec_advance_top_level_decl argc=2
+Decl function advanceTopLevelDeclSlow
+  Body tokens=266
+Decl function findDeclBodyStart
+  Stmt return Expr call target=csec_find_decl_body_start argc=2
+Decl function findDeclBodyStartSlow
+  Stmt variable cursor = Expr identifier ordinal
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function findDeclBodyEnd
+  Stmt return Expr call target=csec_find_decl_body_end argc=2
+Decl function findDeclBodyEndSlow
+  Stmt if (bodyStart < 0)
+  Stmt variable cursor = Expr identifier bodyStart
+  Stmt variable brace = Expr integer 1
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function statementKind
+  Body tokens=274
+Decl function appendExpressionUntil
+  Stmt variable cursor = Expr identifier start
+  Stmt variable output = Expr string 
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function tokenIsTopLevelOperator
+  Body tokens=503
+Decl function findTopLevelOperator
+  Stmt variable cursor = Expr binary - [Expr identifier end] [Expr integer 1]
+  Stmt variable paren = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt while (cursor >= start)
+  Stmt return Expr unary - [Expr integer 1]
+Decl function findTopLevelMatch
+  Stmt variable cursor = Expr identifier start
+  Stmt variable paren = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function findClosingToken
+  Stmt variable cursor = Expr identifier openOrdinal
+  Stmt variable depth = Expr integer 0
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function trimExpressionEnd
+  Stmt variable last = Expr identifier end
+  Stmt while (last > start and tokenKindAt ( tokens , last - 1 ) == kindComment ( ))
+  Stmt if (last > start and tokenIs ( tokens , last - 1 , kindOperator ( ) , ; ))
+  Stmt return Expr identifier last
+Decl function expressionLeafKind
+  Stmt if (end <= start)
+  Stmt value kind = Expr call target=tokenKindAt argc=2
+  Stmt if (kind == kindInteger ( ))
+  Stmt if (kind == kindFloat ( ))
+  Stmt if (kind == kindString ( ))
+  Stmt if (kind == kindRegex ( ))
+  Stmt if (kind == kindChar ( ))
+  Stmt if (kind == kindBool ( ))
+  Stmt if (kind == kindIdentifier ( ))
+  Stmt if (kind == kindKeyword ( ))
+  Stmt return Expr string unknown
+Decl function findTokenTextInRange
+  Stmt variable cursor = Expr identifier start
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function countMatchCases
+  Stmt value openBrace = Expr call target=findTokenTextInRange argc=4
+  Stmt if (openBrace < 0)
+  Stmt value closeBrace = Expr call target=findClosingToken argc=5
+  Stmt variable cursor = Expr binary + [Expr identifier openBrace] [Expr integer 1]
+  Stmt variable count = Expr integer 0
+  Stmt while (cursor < closeBrace and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier count
+Decl function findStatementParenStart
+  Stmt return Expr call target=findTokenTextInRange argc=4
+Decl function findStatementParenEnd
+  Stmt value openParen = Expr call target=findStatementParenStart argc=3
+  Stmt if (openParen < 0)
+  Stmt return Expr call target=findClosingToken argc=5
+Decl function findStatementBlockStart
+  Stmt value closeParen = Expr call target=findStatementParenEnd argc=3
+  Stmt if (closeParen >= 0)
+  Stmt return Expr call target=findTokenTextInRange argc=4
+Decl function findStatementBlockEnd
+  Stmt value openBrace = Expr call target=findStatementBlockStart argc=3
+  Stmt if (openBrace < 0)
+  Stmt return Expr call target=findClosingToken argc=5
+Decl function statementHeaderExpression
+  Stmt value openParen = Expr call target=findStatementParenStart argc=3
+  Stmt value closeParen = Expr call target=findStatementParenEnd argc=3
+  Stmt if (openParen >= 0 and closeParen > openParen)
+  Stmt return Expr string 
+Decl function countCommaSeparated
+  Stmt if (end <= start)
+  Stmt variable cursor = Expr identifier start
+  Stmt variable count = Expr integer 1
+  Stmt variable paren = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier count
+Decl function findLastTopLevelToken
+  Stmt variable cursor = Expr binary - [Expr identifier end] [Expr integer 1]
+  Stmt variable paren = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt while (cursor >= start)
+  Stmt return Expr unary - [Expr integer 1]
+Decl function summarizePostfixExpression
+  Stmt if (end <= start)
+  Stmt if (tokenIs ( tokens , end - 1 , kindOperator ( ) , ) ))
+  Stmt if (tokenIs ( tokens , end - 1 , kindOperator ( ) , ] ))
+  Stmt value dot = Expr call target=findLastTopLevelToken argc=4
+  Stmt if (dot > start)
+  Stmt return Expr string 
+Decl function findLambdaArrow
+  Stmt value closeCapture = Expr call target=findClosingToken argc=5
+  Stmt if (closeCapture < 0)
+  Stmt value openParams = Expr call target=skipTrivia argc=2
+  Stmt if (! tokenIs ( tokens , openParams , kindOperator ( ) , ( ))
+  Stmt value closeParams = Expr call target=findClosingToken argc=5
+  Stmt if (closeParams < 0)
+  Stmt value arrow = Expr call target=skipTrivia argc=2
+  Stmt if (tokenIs ( tokens , arrow , kindOperator ( ) , -> ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function lambdaCaptureSummary
+  Stmt value closeCapture = Expr call target=findClosingToken argc=5
+  Stmt if (closeCapture <= start + 1)
+  Stmt return Expr call target=appendExpressionUntil argc=3
+Decl function lambdaParameterCount
+  Stmt value closeCapture = Expr call target=findClosingToken argc=5
+  Stmt if (closeCapture < 0)
+  Stmt value openParams = Expr call target=skipTrivia argc=2
+  Stmt if (! tokenIs ( tokens , openParams , kindOperator ( ) , ( ))
+  Stmt value closeParams = Expr call target=findClosingToken argc=5
+  Stmt return Expr call target=countCommaSeparated argc=3
+Decl function summarizeLambdaExpression
+  Stmt if (! tokenIs ( tokens , start , kindOperator ( ) , [ ))
+  Stmt value arrow = Expr call target=findLambdaArrow argc=3
+  Stmt if (arrow < 0)
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr string Expr lambda capture=] [Expr call target=lambdaCaptureSummary argc=3]] [Expr string  params=]] [Expr call target=lambdaParameterCount argc=3]
+Decl function generateExpressionAST
+  Body tokens=1320
+Decl function advanceStatement
+  Stmt return Expr call target=csec_advance_statement argc=3
+Decl function advanceStatementSlow
+  Body tokens=386
+Decl function generateStatementAST
+  Body tokens=290
+Decl function generateBodyAST
+  Stmt variable output = Expr string 
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt while (cursor >= 0 and cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function findFunctionParamStart
+  Stmt variable cursor = Expr identifier declStart
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function findFunctionReturnTypeStart
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=findClosingToken argc=5
+  Stmt if (paramEnd < 0)
+  Stmt if (tokenIs ( tokens , paramEnd + 1 , kindOperator ( ) , : ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function collectTypeName
+  Stmt variable cursor = Expr identifier start
+  Stmt variable output = Expr string 
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function functionReturnType
+  Stmt return Expr call target=csec_function_return_type_at argc=2
+Decl function functionReturnTypeSlow
+  Stmt value typeStart = Expr call target=findFunctionReturnTypeStart argc=2
+  Stmt if (typeStart < 0)
+  Stmt value declEnd = Expr call target=advanceTopLevelDecl argc=2
+  Stmt value typeName = Expr call target=collectTypeName argc=3
+  Stmt if (typeName . length == 0)
+  Stmt return Expr identifier typeName
+Decl function countFunctionParams
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=findClosingToken argc=5
+  Stmt if (paramEnd <= paramStart + 1)
+  Stmt variable cursor = Expr binary + [Expr identifier paramStart] [Expr integer 1]
+  Stmt variable count = Expr integer 1
+  Stmt while (cursor < paramEnd)
+  Stmt return Expr identifier count
+Decl function typeSummary
+  Stmt if (tokenIs ( tokens , start , kindOperator ( ) , ( ))
+  Stmt return Expr call target=collectTypeName argc=3
+Decl function declaredValueType
+  Stmt variable cursor = Expr identifier declStart
+  Stmt while (cursor < declEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string infer
+Decl function lookupFunctionReturnType
+  Stmt value cached = Expr call target=csec_lookup_function_return_type argc=2
+  Stmt if (! strEq ( cached , unknown ))
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string unknown
+Decl function inferExpressionType
+  Body tokens=610
+Decl function declaredLocalType
+  Stmt variable cursor = Expr identifier start
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string 
+Decl function localDeclarationType
+  Stmt value explicitType = Expr call target=declaredLocalType argc=3
+  Stmt if (explicitType . length > 0)
+  Stmt value initializer = Expr call target=findTopLevelOperator argc=4
+  Stmt if (initializer >= start)
+  Stmt return Expr string unknown
+Decl function generateFunctionScopeSymbols
+  Body tokens=299
+Decl function generateFunctionParamSymbols
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=findClosingToken argc=5
+  Stmt variable cursor = Expr binary + [Expr identifier paramStart] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt while (cursor < paramEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function classMemberStart
+  Stmt if (tokenIs ( tokens , ordinal , kindKeyword ( ) , override ) or tokenIs ( tokens , ordinal , kindKeyword ( ) , unsafe ) or tokenIs ( tokens , ordinal , kindKeyword ( ) , constexpr ))
+  Stmt return Expr identifier ordinal
+Decl function classMemberKind
+  Stmt value start = Expr call target=classMemberStart argc=2
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , def ))
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , val ))
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , var ))
+  Stmt return Expr string member
+Decl function classMemberName
+  Stmt value start = Expr call target=classMemberStart argc=2
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , def ))
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , val ) or tokenIs ( tokens , start , kindKeyword ( ) , var ))
+  Stmt return Expr string <member>
+Decl function generateClassMemberSymbols
+  Stmt variable output = Expr string 
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt while (cursor >= 0 and cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function generateClassMemberAST
+  Stmt variable output = Expr string 
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt while (cursor >= 0 and cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function templateParameterSummary
+  Stmt if (! tokenIs ( tokens , ordinal , kindKeyword ( ) , template ))
+  Stmt value open = Expr call target=findTokenTextInRange argc=4
+  Stmt if (open < 0)
+  Stmt variable cursor = Expr binary + [Expr identifier open] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ) and ! tokenIs ( tokens , cursor , kindOperator ( ) , > ))
+  Stmt return Expr identifier output
+Decl function templateTargetKind
+  Stmt if (! tokenIs ( tokens , ordinal , kindKeyword ( ) , template ))
+  Stmt variable cursor = Expr binary + [Expr identifier ordinal] [Expr integer 1]
+  Stmt variable depth = Expr integer 0
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string 
+Decl function attributeSummary
+  Stmt if (! tokenIs ( tokens , ordinal , kindOperator ( ) , [@ ))
+  Stmt variable cursor = Expr binary + [Expr identifier ordinal] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ) and ! tokenIs ( tokens , cursor , kindOperator ( ) , ] ))
+  Stmt return Expr identifier output
+Decl function externalSymbolKind
+  Stmt value kind = Expr call target=topLevelDeclKind argc=2
+  Stmt if (strEq ( kind , external-function ))
+  Stmt if (strEq ( kind , external-class ))
+  Stmt if (strEq ( kind , external-object ))
+  Stmt return Expr identifier kind
+Decl function generateSymbolTable
+  Body tokens=546
+Decl function generateAST
+  Body tokens=373

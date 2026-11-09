@@ -1,0 +1,6 @@
+def main(): Int {
+    val values = new Int[2];
+    values[0] = 4;
+    free(values);
+    return 0;
+}

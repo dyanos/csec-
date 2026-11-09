@@ -1,0 +1,9 @@
+def take(value: box Int): Int = 1
+
+def main(): Int {
+    var a: box Int = 20;
+    var b: box Int = clone(a);
+    var x: Int = take(<-a);
+    var y: Int = take(<-b);
+    return x + y;
+}

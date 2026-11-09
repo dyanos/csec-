@@ -1,0 +1,10 @@
+class Animal(name: String, age: Int) {
+    def getAge(): Int = age
+}
+class Dog(name: String, age: Int, breed: String) extends Animal {
+    def bark(): Int = 1
+}
+def main(): Int {
+    val dog = new Dog("Rex", 3, "Labrador");
+    return dog.getAge();
+}

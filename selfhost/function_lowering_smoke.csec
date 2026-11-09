@@ -1,0 +1,16 @@
+def answer(): Int {
+    val value: Int = 42;
+    return value;
+}
+
+def enabled(): Boolean {
+    return true;
+}
+
+def greeting(): String {
+    return "hello";
+}
+
+def main(): Int {
+    return answer();
+}

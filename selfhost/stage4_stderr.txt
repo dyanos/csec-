@@ -1,0 +1,3 @@
+x64\Debug\csec++.exe: selfhost\stage3_selfhost_current.ll:105:4: error: expected instruction opcode
+   = icmp eq i32 0, 0
+   ^

@@ -1,0 +1,11 @@
+def describe(n: Int): String {
+    if (n > 0) { return "pos"; }
+    if (n < 0) { return "neg"; }
+    return "zero";
+}
+def main(): Int {
+    val p: String = describe(5);
+    val z: String = describe(0);
+    if (p == "pos" and z == "zero") { return 0; }
+    return 1;
+}

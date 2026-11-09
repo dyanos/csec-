@@ -1,0 +1,8 @@
+def apply(f: Int -> Int, x: Int): Int {
+    return f(x);
+}
+def main(): Int {
+    val g = [x: Int] -> Int { x * x };
+    if (apply(g, 6) == 36) { return 0; }
+    return 1;
+}

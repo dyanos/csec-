@@ -1,0 +1,7 @@
+def main(): Int {
+    var value: Int = 0;
+    while (value < 42) {
+        value = value + 1;
+    }
+    return value;
+}

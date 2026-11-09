@@ -1,0 +1,9 @@
+object O {
+    def p(x: Int): Unit {
+        print(x);
+    }
+}
+def main(): Int {
+    O.p(5);
+    return 0;
+}

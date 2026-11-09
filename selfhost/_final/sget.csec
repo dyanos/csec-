@@ -1,0 +1,9 @@
+class Counter(value: Int) {
+    def get(): Int {
+        return value;
+    }
+}
+def main(): Int {
+    val c = new Counter(10);
+    return c.get();
+}

@@ -85,7 +85,7 @@ bool Type::isSubtypeOf(const Type& other) const {
 
         return flag;
     }
-
+        
     case Kind::BOX:
     case Kind::BORROW:
     case Kind::MUTABLE_BORROW:

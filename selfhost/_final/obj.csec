@@ -1,0 +1,8 @@
+object Cfg {
+    val v: Int = 7;
+    def get(): Int = v
+    def getBlock(): Int { return v; }
+}
+def main(): Int {
+    return Cfg.get() + Cfg.getBlock();
+}

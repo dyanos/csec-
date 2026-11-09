@@ -1,0 +1,9 @@
+def repeat(s: String, n: Int): String {
+    if (n == 0) { return ""; }
+    return s + repeat(s, n - 1);
+}
+def main(): Int {
+    val r: String = repeat("ab", 3);
+    if (r.length == 6) { return 0; }
+    return 1;
+}

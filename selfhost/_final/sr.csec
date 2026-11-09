@@ -1,0 +1,8 @@
+class Node(value: Int) {
+    var next: Node = new Node(0);
+    def getValue(): Int = value
+}
+def main(): Int {
+    val n = new Node(10);
+    return n.getValue();
+}

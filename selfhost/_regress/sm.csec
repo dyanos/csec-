@@ -1,0 +1,11 @@
+class Greeter() {
+    def greet(name: String): String {
+        return name + "!";
+    }
+}
+def main(): Int {
+    val g = new Greeter();
+    val r: String = g.greet("hi");
+    if (r.length == 3) { return 0; }
+    return 1;
+}

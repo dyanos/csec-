@@ -1,0 +1,9 @@
+object O {
+    def pl(): Unit {
+        println();
+    }
+}
+def main(): Int {
+    O.pl();
+    return 0;
+}

@@ -1,0 +1,7 @@
+def main(): Int {
+    val s: String = "hello world";
+    val up: String = s.toUpper();
+    val sub: String = s.substring(0, 5);
+    if (up.length == 11 and sub == "hello") { return 0; }
+    return 1;
+}

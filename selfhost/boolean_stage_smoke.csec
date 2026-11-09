@@ -1,0 +1,8 @@
+def enabled(): Boolean = true
+
+def main(): Int {
+    if (enabled()) {
+        return 42;
+    }
+    return 1;
+}

@@ -1,0 +1,7 @@
+def first(left: Int, right: Int): Int {
+    return left;
+}
+
+def main(): Int {
+    return first(37, 5);
+}

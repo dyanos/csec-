@@ -30,6 +30,8 @@
 *.exe
 *.out
 *.app
+
+/.vs
 /.vs/csec++
 /.vscode
 /csec++/x64/Debug

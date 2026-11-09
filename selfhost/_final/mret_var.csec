@@ -1,0 +1,8 @@
+def load(): (Int, Int) {
+    return 20, 22;
+}
+def main(): Int {
+    var x = load();
+    a, b = x;
+    return a + b;
+}

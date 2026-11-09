@@ -1,0 +1,25 @@
+template<typename T, Int CAP>
+class Kennel(name: String) {
+    var count: Int = 0;
+    def getCapacity(): Int = CAP
+    def getCount(): Int = count
+    def add(): Int {
+        if (count < CAP) {
+            count = count + 1;
+        }
+        return count;
+    }
+}
+class Animal(name: String, age: Int) {
+    def getAge(): Int = age
+}
+class Dog(name: String, age: Int, breed: String) extends Animal {
+    def bark(): Int = 1
+}
+def main(): Int {
+    val kennel = new Kennel<Dog, 10>("Main");
+    kennel.add();
+    val count = kennel.getCount();
+    val cap = kennel.getCapacity();
+    return count + cap;
+}

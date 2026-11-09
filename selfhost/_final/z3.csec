@@ -1,0 +1,9 @@
+object O {
+    def p(x: Boolean): Unit {
+        print(x);
+    }
+}
+def main(): Int {
+    O.p(true);
+    return 0;
+}

@@ -1,0 +1,14 @@
+def countUp(n: Int): String {
+    var s: String = "";
+    var i: Int = 0;
+    while (i < n) {
+        s = s + "x";
+        i = i + 1;
+    }
+    return s;
+}
+def main(): Int {
+    val r: String = countUp(5);
+    if (r.length == 5) { return 0; }
+    return 1;
+}

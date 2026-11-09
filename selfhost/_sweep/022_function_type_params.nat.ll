@@ -1,0 +1,53 @@
+; ModuleID = 'main'
+source_filename = "main"
+
+define i32 @main(i32 %0, ptr %1) {
+entry:
+  call void @csec_set_command_line_args(i32 %0, ptr %1)
+  %user.main = call i32 @_main()
+  ret i32 %user.main
+}
+
+declare ptr @malloc(i64)
+
+declare void @free(ptr)
+
+declare ptr @toString(ptr)
+
+declare ptr @"operator+"(ptr, ptr)
+
+declare void @print(ptr)
+
+declare void @println(ptr)
+
+define i32 @_applyTwice(ptr %0, i32 %1) {
+entry:
+  %calltmp = call i32 %0(i32 %1)
+  %calltmp1 = call i32 %0(i32 %calltmp)
+  ret i32 %calltmp1
+}
+
+define i32 @_transform(ptr %0, i32 %1, i32 %2) {
+entry:
+  %calltmp = call i32 %0(i32 %1, i32 %2)
+  ret i32 %calltmp
+}
+
+define i1 @_predicate(ptr %0, i32 %1) {
+entry:
+  %calltmp = call i1 %0(i32 %1)
+  ret i1 %calltmp
+}
+
+define i32 @_main() {
+entry:
+  ret i32 0
+}
+
+declare void @csec_set_command_line_args(i32, ptr)
+
+define internal i32 @__csec_jit_entry() {
+entry:
+  %user.main = call i32 @_main()
+  ret i32 %user.main
+}

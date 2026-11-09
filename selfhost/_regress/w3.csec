@@ -1,0 +1,6 @@
+def main(): Int {
+    val big: Long = 5000000000;
+    val doubled: Long = big + big;
+    if (doubled == 10000000000) { return 0; }
+    return 1;
+}

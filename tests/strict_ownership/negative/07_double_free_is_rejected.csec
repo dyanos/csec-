@@ -1,0 +1,6 @@
+def main(): Int {
+    var value: box Int = 7;
+    free(value);
+    free(value);
+    return 0;
+}

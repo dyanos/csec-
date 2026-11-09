@@ -1,0 +1,27 @@
+def score(text: String): Int {
+    val normalized: String = text.trim().toUpper();
+    return normalized match {
+        case "ALPHA" => 3;
+        case "BETA" => 5;
+        case _ => 7;
+    };
+}
+
+def main(): Int {
+    var total: Int = 0;
+    var i: Int = 0;
+    while (i < 3) {
+        val current: Int = i match {
+            case 0 => score(" alpha ");
+            case 1 => score("beta");
+            case _ => score("other");
+        };
+        total = total + current;
+        i = i + 1;
+    }
+    if (total == 15 and "Tessera".startsWith("Tes") and
+        "Tessera".substring(0, 3) == "Tes") {
+        return 0;
+    }
+    return 1;
+}

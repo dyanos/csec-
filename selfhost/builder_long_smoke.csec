@@ -1,0 +1,18 @@
+external def csec_string_builder_new(): Long;
+external def csec_string_builder_append(builder: Long, text: String): Int;
+external def csec_string_builder_finish(builder: Long): String;
+
+def makeBuilder(): Long {
+    val builder: Long = csec_string_builder_new();
+    csec_string_builder_append(builder, "one");
+    return builder;
+}
+
+def main(): Int {
+    val builder: Long = makeBuilder();
+    val text: String = csec_string_builder_finish(builder);
+    if (text.length == 3) {
+        return 0;
+    }
+    return 1;
+}

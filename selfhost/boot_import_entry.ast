@@ -1,0 +1,1017 @@
+Program
+Decl external-function csec_token_append_owned
+Decl function csec_token_append_owned
+Decl external-function csec_token_builder_new
+Decl function csec_token_builder_new
+Decl external-function csec_token_builder_append
+Decl function csec_token_builder_append
+Decl external-function csec_token_builder_finish
+Decl function csec_token_builder_finish
+Decl external-function csec_tokenize_source
+Decl function csec_tokenize_source
+Decl external-function csec_token_kind_at
+Decl function csec_token_kind_at
+Decl external-function csec_token_text_at
+Decl function csec_token_text_at
+Decl external-function csec_token_is
+Decl function csec_token_is
+Decl external-function csec_expand_imports
+Decl function csec_expand_imports
+Decl external-function csec_string_builder_new_file
+Decl function csec_string_builder_new_file
+Decl external-function csec_lex_quoted
+Decl function csec_lex_quoted
+Decl external-function csec_lex_number
+Decl function csec_lex_number
+Decl external-function csec_lex_identifier
+Decl function csec_lex_identifier
+Decl external-function csec_digit_value
+Decl function csec_digit_value
+Decl external-function csec_lex_line_comment
+Decl function csec_lex_line_comment
+Decl external-function csec_lex_block_comment
+Decl function csec_lex_block_comment
+Decl function kindIdentifier
+Decl function kindKeyword
+Decl function kindInteger
+Decl function kindFloat
+Decl function kindString
+Decl function kindRegex
+Decl function kindChar
+Decl function kindBool
+Decl function kindOperator
+Decl function kindComment
+Decl function kindEof
+Decl function isWhitespace
+  Stmt value carriageReturn = Expr string \r
+  Stmt return Expr binary or [Expr binary or [Expr binary or [Expr compare == [Expr identifier ch] [Expr char  ]] [Expr compare == [Expr identifier ch] [Expr char \n]]] [Expr compare == [Expr identifier ch] [Expr call target=carriageReturn . charAt argc=1]]] [Expr compare == [Expr identifier ch] [Expr char \t]]
+Decl function isDigit
+  Stmt return Expr binary and [Expr compare >= [Expr identifier ch] [Expr char 0]] [Expr compare <= [Expr identifier ch] [Expr char 9]]
+Decl function digitValue
+  Stmt return Expr call target=csec_digit_value argc=1
+Decl function toInt
+  Stmt variable cursor = Expr integer 0
+  Stmt variable value = Expr integer 0
+  Stmt while (cursor < text . length and isDigit ( text . charAt ( cursor ) ))
+  Stmt return Expr identifier value
+Decl function isAlpha
+  Stmt return Expr binary or [Expr group (Expr binary and [Expr compare >= [Expr identifier ch] [Expr char a]] [Expr compare <= [Expr identifier ch] [Expr char z]])] [Expr group (Expr binary and [Expr compare >= [Expr identifier ch] [Expr char A]] [Expr compare <= [Expr identifier ch] [Expr char Z]])]
+Decl function isIdentifierStart
+  Stmt return Expr binary or [Expr call target=isAlpha argc=1] [Expr compare == [Expr identifier ch] [Expr char _]]
+Decl function isIdentifierPart
+  Stmt return Expr binary or [Expr call target=isIdentifierStart argc=1] [Expr call target=isDigit argc=1]
+Decl function strEq
+  Stmt return Expr binary and [Expr compare == [Expr member left.length] [Expr member right.length]] [Expr call target=left . startsWith argc=1]
+Decl function isKeyword
+  Body tokens=344
+Decl function appendToken
+  Stmt return Expr call target=csec_token_append_owned argc=3
+Decl function appendTokenTo
+  Stmt return Expr call target=csec_token_builder_append argc=3
+Decl function twoChars
+  Stmt if (index + 1 >= source . length)
+  Stmt return Expr binary and [Expr compare == [Expr call target=source . charAt argc=1] [Expr call target=text . charAt argc=1]] [Expr compare == [Expr call target=source . charAt argc=1] [Expr call target=text . charAt argc=1]]
+Decl function threeChars
+  Stmt if (index + 2 >= source . length)
+  Stmt return Expr identifier source . charAt ( index ) == text . charAt ( 0 ) and source . charAt ( index + 1 ) == text . charAt ( 1 ) and source . charAt ( index + 2 ) == text . charAt ( 2 )
+Decl function lexIdentifier
+  Stmt return Expr call target=csec_lex_identifier argc=2
+Decl function lexNumber
+  Stmt return Expr call target=csec_lex_number argc=2
+Decl function lexQuoted
+  Stmt return Expr call target=csec_lex_quoted argc=2
+Decl function lexLineComment
+  Stmt return Expr call target=csec_lex_line_comment argc=2
+Decl function lexBlockComment
+  Stmt return Expr call target=csec_lex_block_comment argc=2
+Decl function operatorLength
+  Stmt if (twoChars ( source , index , [@ ))
+  Stmt if (twoChars ( source , index , => ) or twoChars ( source , index , <- ) or twoChars ( source , index , -> ) or twoChars ( source , index , <= ) or twoChars ( source , index , >= ) or twoChars ( source , index , == ) or twoChars ( source , index , && ) or twoChars ( source , index , || ) or twoChars ( source , index , ++ ) or twoChars ( source , index , -- ) or twoChars ( source , index , != ) or twoChars ( source , index , += ) or twoChars ( source , index , -= ) or twoChars ( source , index , *= ) or twoChars ( source , index , /= ) or twoChars ( source , index , %= ) or twoChars ( source , index , << ) or twoChars ( source , index , >> ) or twoChars ( source , index , .. ) or twoChars ( source , index , $$ ) or twoChars ( source , index , ** ))
+  Stmt return Expr integer 1
+Decl function repairLeadingRTokenText
+  Stmt if (strEq ( text , eturn ))
+  Stmt if (strEq ( text , atio ))
+  Stmt if (strEq ( text , educe ))
+  Stmt if (strEq ( text , ange ))
+  Stmt if (strEq ( text , egex ))
+  Stmt if (strEq ( text , Regex ))
+  Stmt return Expr identifier text
+Decl function slice
+  Stmt if (end <= start)
+  Stmt return Expr call target=source . substring argc=2
+Decl function tokenize
+  Stmt return Expr call target=csec_tokenize_source argc=1
+Decl function tokenizeSlow
+  Body tokens=822
+Decl function lineStart
+  Stmt variable cursor = Expr integer 0
+  Stmt variable line = Expr integer 0
+  Stmt while (cursor < tokens . length and line < ordinal)
+  Stmt return Expr identifier cursor
+Decl function lineEnd
+  Stmt variable cursor = Expr identifier start
+  Stmt while (cursor < tokens . length and tokens . charAt ( cursor ) != \n)
+  Stmt return Expr identifier cursor
+Decl function tokenKindAt
+  Stmt return Expr call target=csec_token_kind_at argc=2
+Decl function tokenTextAt
+  Stmt return Expr call target=csec_token_text_at argc=2
+Decl function tokenIs
+  Stmt return Expr compare != [Expr call target=csec_token_is argc=4] [Expr integer 0]
+Decl function skipTrivia
+  Stmt variable cursor = Expr identifier ordinal
+  Stmt while (tokenKindAt ( tokens , cursor ) == kindComment ( ))
+  Stmt return Expr identifier cursor
+Decl external-function csec_lookup_function_return_type
+Decl function csec_lookup_function_return_type
+Decl external-function csec_advance_statement
+Decl function csec_advance_statement
+Decl external-function csec_advance_top_level_decl
+Decl function csec_advance_top_level_decl
+Decl external-function csec_find_decl_body_start
+Decl function csec_find_decl_body_start
+Decl external-function csec_find_decl_body_end
+Decl function csec_find_decl_body_end
+Decl external-function csec_function_param_end
+Decl function csec_function_param_end
+Decl external-function csec_function_llvm_param_list
+Decl function csec_function_llvm_param_list
+Decl external-function csec_function_llvm_param_allocas
+Decl function csec_function_llvm_param_allocas
+Decl external-function csec_llvm_name_with_number
+Decl function csec_llvm_name_with_number
+Decl external-function csec_function_return_type_at
+Decl function csec_function_return_type_at
+Decl function validateBalanced
+  Stmt variable cursor = Expr integer 0
+  Stmt variable paren = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr binary and [Expr binary and [Expr compare == [Expr identifier paren] [Expr integer 0]] [Expr compare == [Expr identifier brace] [Expr integer 0]]] [Expr compare == [Expr identifier bracket] [Expr integer 0]]
+Decl function startsTopLevelDeclaration
+  Stmt value kind = Expr call target=tokenKindAt argc=2
+  Stmt value text = Expr call target=tokenTextAt argc=2
+  Stmt if (kind == kindEof ( ))
+  Stmt if (kind == kindOperator ( ) and strEq ( text , [@ ))
+  Stmt return Expr identifier kind == kindKeyword ( ) and ( strEq ( text , import ) or strEq ( text , class ) or strEq ( text , object ) or strEq ( text , external ) or strEq ( text , def ) or strEq ( text , template ) or strEq ( text , val ) or strEq ( text , var ) or strEq ( text , unsafe ) or strEq ( text , unatomic ) or strEq ( text , constexpr ) )
+Decl function validateTopLevel
+  Body tokens=289
+Decl function parseProgram
+  Stmt if (! validateBalanced ( tokens ))
+  Stmt expression Expr call target=System . IO . File . WriteAllText argc=2
+  Stmt return Expr call target=validateTopLevel argc=1
+Decl function topLevelDeclKind
+  Body tokens=261
+Decl function topLevelDeclName
+  Body tokens=279
+Decl function advanceTopLevelDecl
+  Stmt return Expr call target=csec_advance_top_level_decl argc=2
+Decl function advanceTopLevelDeclSlow
+  Body tokens=266
+Decl function findDeclBodyStart
+  Stmt return Expr call target=csec_find_decl_body_start argc=2
+Decl function findDeclBodyStartSlow
+  Stmt variable cursor = Expr identifier ordinal
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function findDeclBodyEnd
+  Stmt return Expr call target=csec_find_decl_body_end argc=2
+Decl function findDeclBodyEndSlow
+  Stmt if (bodyStart < 0)
+  Stmt variable cursor = Expr identifier bodyStart
+  Stmt variable brace = Expr integer 1
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function statementKind
+  Body tokens=274
+Decl function appendExpressionUntil
+  Stmt variable cursor = Expr identifier start
+  Stmt variable output = Expr string 
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function tokenIsTopLevelOperator
+  Body tokens=503
+Decl function findTopLevelOperator
+  Stmt variable cursor = Expr binary - [Expr identifier end] [Expr integer 1]
+  Stmt variable paren = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt while (cursor >= start)
+  Stmt return Expr unary - [Expr integer 1]
+Decl function findTopLevelMatch
+  Stmt variable cursor = Expr identifier start
+  Stmt variable paren = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function findClosingToken
+  Stmt variable cursor = Expr identifier openOrdinal
+  Stmt variable depth = Expr integer 0
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function trimExpressionEnd
+  Stmt variable last = Expr identifier end
+  Stmt while (last > start and tokenKindAt ( tokens , last - 1 ) == kindComment ( ))
+  Stmt if (last > start and tokenIs ( tokens , last - 1 , kindOperator ( ) , ; ))
+  Stmt return Expr identifier last
+Decl function expressionLeafKind
+  Stmt if (end <= start)
+  Stmt value kind = Expr call target=tokenKindAt argc=2
+  Stmt if (kind == kindInteger ( ))
+  Stmt if (kind == kindFloat ( ))
+  Stmt if (kind == kindString ( ))
+  Stmt if (kind == kindRegex ( ))
+  Stmt if (kind == kindChar ( ))
+  Stmt if (kind == kindBool ( ))
+  Stmt if (kind == kindIdentifier ( ))
+  Stmt if (kind == kindKeyword ( ))
+  Stmt return Expr string unknown
+Decl function findTokenTextInRange
+  Stmt variable cursor = Expr identifier start
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function countMatchCases
+  Stmt value openBrace = Expr call target=findTokenTextInRange argc=4
+  Stmt if (openBrace < 0)
+  Stmt value closeBrace = Expr call target=findClosingToken argc=5
+  Stmt variable cursor = Expr binary + [Expr identifier openBrace] [Expr integer 1]
+  Stmt variable count = Expr integer 0
+  Stmt while (cursor < closeBrace and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier count
+Decl function findStatementParenStart
+  Stmt return Expr call target=findTokenTextInRange argc=4
+Decl function findStatementParenEnd
+  Stmt value openParen = Expr call target=findStatementParenStart argc=3
+  Stmt if (openParen < 0)
+  Stmt return Expr call target=findClosingToken argc=5
+Decl function findStatementBlockStart
+  Stmt value closeParen = Expr call target=findStatementParenEnd argc=3
+  Stmt if (closeParen >= 0)
+  Stmt return Expr call target=findTokenTextInRange argc=4
+Decl function findStatementBlockEnd
+  Stmt value openBrace = Expr call target=findStatementBlockStart argc=3
+  Stmt if (openBrace < 0)
+  Stmt return Expr call target=findClosingToken argc=5
+Decl function statementHeaderExpression
+  Stmt value openParen = Expr call target=findStatementParenStart argc=3
+  Stmt value closeParen = Expr call target=findStatementParenEnd argc=3
+  Stmt if (openParen >= 0 and closeParen > openParen)
+  Stmt return Expr string 
+Decl function countCommaSeparated
+  Stmt if (end <= start)
+  Stmt variable cursor = Expr identifier start
+  Stmt variable count = Expr integer 1
+  Stmt variable paren = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier count
+Decl function findLastTopLevelToken
+  Stmt variable cursor = Expr binary - [Expr identifier end] [Expr integer 1]
+  Stmt variable paren = Expr integer 0
+  Stmt variable bracket = Expr integer 0
+  Stmt variable brace = Expr integer 0
+  Stmt while (cursor >= start)
+  Stmt return Expr unary - [Expr integer 1]
+Decl function summarizePostfixExpression
+  Stmt if (end <= start)
+  Stmt if (tokenIs ( tokens , end - 1 , kindOperator ( ) , ) ))
+  Stmt if (tokenIs ( tokens , end - 1 , kindOperator ( ) , ] ))
+  Stmt value dot = Expr call target=findLastTopLevelToken argc=4
+  Stmt if (dot > start)
+  Stmt return Expr string 
+Decl function findLambdaArrow
+  Stmt value closeCapture = Expr call target=findClosingToken argc=5
+  Stmt if (closeCapture < 0)
+  Stmt value openParams = Expr call target=skipTrivia argc=2
+  Stmt if (! tokenIs ( tokens , openParams , kindOperator ( ) , ( ))
+  Stmt value closeParams = Expr call target=findClosingToken argc=5
+  Stmt if (closeParams < 0)
+  Stmt value arrow = Expr call target=skipTrivia argc=2
+  Stmt if (tokenIs ( tokens , arrow , kindOperator ( ) , -> ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function lambdaCaptureSummary
+  Stmt value closeCapture = Expr call target=findClosingToken argc=5
+  Stmt if (closeCapture <= start + 1)
+  Stmt return Expr call target=appendExpressionUntil argc=3
+Decl function lambdaParameterCount
+  Stmt value closeCapture = Expr call target=findClosingToken argc=5
+  Stmt if (closeCapture < 0)
+  Stmt value openParams = Expr call target=skipTrivia argc=2
+  Stmt if (! tokenIs ( tokens , openParams , kindOperator ( ) , ( ))
+  Stmt value closeParams = Expr call target=findClosingToken argc=5
+  Stmt return Expr call target=countCommaSeparated argc=3
+Decl function summarizeLambdaExpression
+  Stmt if (! tokenIs ( tokens , start , kindOperator ( ) , [ ))
+  Stmt value arrow = Expr call target=findLambdaArrow argc=3
+  Stmt if (arrow < 0)
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr string Expr lambda capture=] [Expr call target=lambdaCaptureSummary argc=3]] [Expr string  params=]] [Expr call target=lambdaParameterCount argc=3]
+Decl function generateExpressionAST
+  Body tokens=1320
+Decl function advanceStatement
+  Stmt return Expr call target=csec_advance_statement argc=3
+Decl function advanceStatementSlow
+  Body tokens=386
+Decl function generateStatementAST
+  Body tokens=290
+Decl function generateBodyAST
+  Stmt variable output = Expr string 
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt while (cursor >= 0 and cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function findFunctionParamStart
+  Stmt variable cursor = Expr identifier declStart
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function findFunctionReturnTypeStart
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=findClosingToken argc=5
+  Stmt if (paramEnd < 0)
+  Stmt if (tokenIs ( tokens , paramEnd + 1 , kindOperator ( ) , : ))
+  Stmt return Expr unary - [Expr integer 1]
+Decl function collectTypeName
+  Stmt variable cursor = Expr identifier start
+  Stmt variable output = Expr string 
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function functionReturnType
+  Stmt return Expr call target=csec_function_return_type_at argc=2
+Decl function functionReturnTypeSlow
+  Stmt value typeStart = Expr call target=findFunctionReturnTypeStart argc=2
+  Stmt if (typeStart < 0)
+  Stmt value declEnd = Expr call target=advanceTopLevelDecl argc=2
+  Stmt value typeName = Expr call target=collectTypeName argc=3
+  Stmt if (typeName . length == 0)
+  Stmt return Expr identifier typeName
+Decl function countFunctionParams
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=findClosingToken argc=5
+  Stmt if (paramEnd <= paramStart + 1)
+  Stmt variable cursor = Expr binary + [Expr identifier paramStart] [Expr integer 1]
+  Stmt variable count = Expr integer 1
+  Stmt while (cursor < paramEnd)
+  Stmt return Expr identifier count
+Decl function typeSummary
+  Stmt if (tokenIs ( tokens , start , kindOperator ( ) , ( ))
+  Stmt return Expr call target=collectTypeName argc=3
+Decl function declaredValueType
+  Stmt variable cursor = Expr identifier declStart
+  Stmt while (cursor < declEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string infer
+Decl function lookupFunctionReturnType
+  Stmt value cached = Expr call target=csec_lookup_function_return_type argc=2
+  Stmt if (! strEq ( cached , unknown ))
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string unknown
+Decl function inferExpressionType
+  Body tokens=610
+Decl function declaredLocalType
+  Stmt variable cursor = Expr identifier start
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string 
+Decl function localDeclarationType
+  Stmt value explicitType = Expr call target=declaredLocalType argc=3
+  Stmt if (explicitType . length > 0)
+  Stmt value initializer = Expr call target=findTopLevelOperator argc=4
+  Stmt if (initializer >= start)
+  Stmt return Expr string unknown
+Decl function generateFunctionScopeSymbols
+  Body tokens=299
+Decl function generateFunctionParamSymbols
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=findClosingToken argc=5
+  Stmt variable cursor = Expr binary + [Expr identifier paramStart] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt while (cursor < paramEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function classMemberStart
+  Stmt if (tokenIs ( tokens , ordinal , kindKeyword ( ) , override ) or tokenIs ( tokens , ordinal , kindKeyword ( ) , unsafe ) or tokenIs ( tokens , ordinal , kindKeyword ( ) , constexpr ))
+  Stmt return Expr identifier ordinal
+Decl function classMemberKind
+  Stmt value start = Expr call target=classMemberStart argc=2
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , def ))
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , val ))
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , var ))
+  Stmt return Expr string member
+Decl function classMemberName
+  Stmt value start = Expr call target=classMemberStart argc=2
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , def ))
+  Stmt if (tokenIs ( tokens , start , kindKeyword ( ) , val ) or tokenIs ( tokens , start , kindKeyword ( ) , var ))
+  Stmt return Expr string <member>
+Decl function generateClassMemberSymbols
+  Stmt variable output = Expr string 
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt while (cursor >= 0 and cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function generateClassMemberAST
+  Stmt variable output = Expr string 
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt while (cursor >= 0 and cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function templateParameterSummary
+  Stmt if (! tokenIs ( tokens , ordinal , kindKeyword ( ) , template ))
+  Stmt value open = Expr call target=findTokenTextInRange argc=4
+  Stmt if (open < 0)
+  Stmt variable cursor = Expr binary + [Expr identifier open] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ) and ! tokenIs ( tokens , cursor , kindOperator ( ) , > ))
+  Stmt return Expr identifier output
+Decl function templateTargetKind
+  Stmt if (! tokenIs ( tokens , ordinal , kindKeyword ( ) , template ))
+  Stmt variable cursor = Expr binary + [Expr identifier ordinal] [Expr integer 1]
+  Stmt variable depth = Expr integer 0
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string 
+Decl function attributeSummary
+  Stmt if (! tokenIs ( tokens , ordinal , kindOperator ( ) , [@ ))
+  Stmt variable cursor = Expr binary + [Expr identifier ordinal] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ) and ! tokenIs ( tokens , cursor , kindOperator ( ) , ] ))
+  Stmt return Expr identifier output
+Decl function externalSymbolKind
+  Stmt value kind = Expr call target=topLevelDeclKind argc=2
+  Stmt if (strEq ( kind , external-function ))
+  Stmt if (strEq ( kind , external-class ))
+  Stmt if (strEq ( kind , external-object ))
+  Stmt return Expr identifier kind
+Decl function generateSymbolTable
+  Body tokens=546
+Decl function generateAST
+  Body tokens=373
+Decl external-function csec_string_builder_new
+Decl function csec_string_builder_new
+Decl external-function csec_string_builder_append
+Decl function csec_string_builder_append
+Decl external-function csec_string_builder_finish
+Decl function csec_string_builder_finish
+Decl external-function csec_string_builder_write_to_file
+Decl function csec_string_builder_write_to_file
+Decl external-function csec_llvm_string_literal_bytes
+Decl function csec_llvm_string_literal_bytes
+Decl external-function csec_llvm_string_literal_byte_length
+Decl function csec_llvm_string_literal_byte_length
+Decl external-function csec_enclosing_function_decl_start
+Decl function csec_enclosing_function_decl_start
+Decl external-function csec_enclosing_function_body_start
+Decl function csec_enclosing_function_body_start
+Decl external-function csec_enclosing_function_body_end
+Decl function csec_enclosing_function_body_end
+Decl external-function csec_llvm_lexer_helper_definition
+Decl function csec_llvm_lexer_helper_definition
+Decl function parseReturnIntegerInRange
+  Stmt variable cursor = Expr identifier start
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr integer 0
+Decl function appendCExpression
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt variable cursor = Expr identifier start
+  Stmt variable output = Expr string 
+  Stmt while (cursor < end and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function cTypeName
+  Stmt if (strEq ( typeName , Boolean ))
+  Stmt if (strEq ( typeName , Char ))
+  Stmt if (strEq ( typeName , Int ))
+  Stmt if (strEq ( typeName , Long ))
+  Stmt if (strEq ( typeName , Float ))
+  Stmt if (strEq ( typeName , Double ))
+  Stmt if (strEq ( typeName , String ))
+  Stmt if (strEq ( typeName , Regex ))
+  Stmt if (typeName . startsWith ( Array ))
+  Stmt if (strEq ( typeName , Unit ))
+  Stmt return Expr string void*
+Decl function generateCBody
+  Body tokens=1005
+Decl function generateCStatement
+  Body tokens=268
+Decl function parseMainReturnInt
+  Stmt variable cursor = Expr integer 0
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr integer 0
+Decl function generateMainExecutionC
+  Stmt variable cursor = Expr integer 0
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string 
+Decl function irTypeName
+  Stmt if (strEq ( typeName , Boolean ))
+  Stmt if (strEq ( typeName , Char ))
+  Stmt if (strEq ( typeName , Int ))
+  Stmt if (strEq ( typeName , Long ))
+  Stmt if (strEq ( typeName , Float ))
+  Stmt if (strEq ( typeName , Double ))
+  Stmt if (strEq ( typeName , Unit ))
+  Stmt if (strEq ( typeName , String ))
+  Stmt if (strEq ( typeName , Regex ))
+  Stmt if (strEq ( typeName , Range ))
+  Stmt if (typeName . startsWith ( Array ))
+  Stmt if (typeName . length == 0)
+  Stmt return Expr string ptr
+Decl function irOperatorName
+  Body tokens=374
+Decl function expressionTopLevelOperator
+  Body tokens=271
+Decl function generateIRExpression
+  Body tokens=259
+Decl function generateIRAssignment
+  Stmt value op = Expr call target=findTopLevelOperator argc=4
+  Stmt if (op <= start or tokenKindAt ( tokens , start ) != kindIdentifier ( ))
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value opText = Expr call target=tokenTextAt argc=2
+  Stmt value rhs = Expr call target=generateIRExpression argc=3
+  Stmt if (strEq ( opText , = ) or strEq ( opText , <- ))
+  Stmt value typeName = Expr call target=inferExpressionType argc=3
+  Stmt value irType = Expr call target=irTypeName argc=1
+  Stmt variable binaryOp = Expr call target=opText . substring argc=2
+  Stmt if (strEq ( opText , %= ))
+  Stmt return Expr string     %old. + name +  = load  + irType + , ptr % + name + \n +     %new. + name +  =  + irOperatorName ( binaryOp ) +   + irType +  %old. + name + , ( + appendExpressionUntil ( tokens , op + 1 , trimExpressionEnd ( tokens , op + 1 , end ) ) + )\n +     store  + irType +  %new. + name + , ptr % + name + \n
+Decl function generateIRParamList
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=csec_function_param_end argc=2
+  Stmt variable cursor = Expr binary + [Expr identifier paramStart] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt variable first = Expr bool true
+  Stmt while (cursor < paramEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function generateIRFlatBody
+  Body tokens=374
+Decl function generateIRElseFlatBody
+  Stmt if (! hasElse)
+  Stmt value elseStart = Expr call target=skipTrivia argc=2
+  Stmt if (tokenIs ( tokens , elseStart , kindOperator ( ) , { ))
+  Stmt if (tokenIs ( tokens , elseStart , kindKeyword ( ) , if ))
+  Stmt return Expr string     ; malformed else body\n
+Decl function generateIRIf
+  Stmt value openParen = Expr call target=findStatementParenStart argc=3
+  Stmt value closeParen = Expr call target=findStatementParenEnd argc=3
+  Stmt value thenStart = Expr call target=findStatementBlockStart argc=3
+  Stmt value thenEnd = Expr call target=findClosingToken argc=5
+  Stmt if (openParen < 0 or closeParen <= openParen or thenStart < 0 or thenEnd <= thenStart)
+  Stmt value labelSeed = Expr binary + [Expr string ] [Expr identifier start]
+  Stmt value possibleElse = Expr call target=skipTrivia argc=2
+  Stmt variable hasElse = Expr bool false
+  Stmt if (possibleElse < end and tokenIs ( tokens , possibleElse , kindKeyword ( ) , else ))
+  Stmt return Expr string     %cond. + labelSeed +  =  + generateIRExpression ( tokens , openParen + 1 , closeParen ) + \n +     br i1 %cond. + labelSeed + , label %if.then. + labelSeed + , label %if.else. + labelSeed + \n + if.then. + labelSeed + :\n + generateIRFlatBody ( tokens , thenStart + 1 , thenEnd ) +     br label %if.end. + labelSeed + \n + if.else. + labelSeed + :\n + generateIRElseFlatBody ( tokens , possibleElse , end , hasElse ) +     br label %if.end. + labelSeed + \n + if.end. + labelSeed + :\n
+Decl function generateIRWhile
+  Stmt value openParen = Expr call target=findStatementParenStart argc=3
+  Stmt value closeParen = Expr call target=findStatementParenEnd argc=3
+  Stmt value bodyStart = Expr call target=findStatementBlockStart argc=3
+  Stmt value bodyEnd = Expr call target=findClosingToken argc=5
+  Stmt if (openParen < 0 or closeParen <= openParen or bodyStart < 0 or bodyEnd <= bodyStart)
+  Stmt value labelSeed = Expr binary + [Expr string ] [Expr identifier start]
+  Stmt return Expr string     br label %while.cond. + labelSeed + \n + while.cond. + labelSeed + :\n +     %whilecond. + labelSeed +  =  + generateIRExpression ( tokens , openParen + 1 , closeParen ) + \n +     br i1 %whilecond. + labelSeed + , label %while.body. + labelSeed + , label %while.end. + labelSeed + \n + while.body. + labelSeed + :\n + generateIRFlatBody ( tokens , bodyStart + 1 , bodyEnd ) +     br label %while.cond. + labelSeed + \n + while.end. + labelSeed + :\n
+Decl function generateIRFor
+  Stmt value openParen = Expr call target=findStatementParenStart argc=3
+  Stmt value closeParen = Expr call target=findStatementParenEnd argc=3
+  Stmt value bodyStart = Expr call target=findStatementBlockStart argc=3
+  Stmt value bodyEnd = Expr call target=findClosingToken argc=5
+  Stmt if (openParen < 0 or closeParen <= openParen or bodyStart < 0 or bodyEnd <= bodyStart)
+  Stmt value iteratorName = Expr call target=tokenTextAt argc=2
+  Stmt value arrow = Expr call target=findTokenTextInRange argc=4
+  Stmt if (arrow < 0)
+  Stmt value labelSeed = Expr binary + [Expr string ] [Expr identifier start]
+  Stmt return Expr string     ; for source  + generateIRExpression ( tokens , arrow + 1 , closeParen ) + \n +     % + iteratorName +  = alloca ptr\n +     br label %for.cond. + labelSeed + \n + for.cond. + labelSeed + :\n +     ; iterator next  + iteratorName + \n +     br i1 %for.hasnext. + labelSeed + , label %for.body. + labelSeed + , label %for.end. + labelSeed + \n + for.body. + labelSeed + :\n + generateIRFlatBody ( tokens , bodyStart + 1 , bodyEnd ) +     br label %for.cond. + labelSeed + \n + for.end. + labelSeed + :\n
+Decl function generateIRBody
+  Body tokens=428
+Decl function generateIRDeclarations
+  Body tokens=259
+Decl function generateIR
+  Stmt if (! parseProgram ( tokens ))
+  Stmt value returnValue = Expr call target=parseMainReturnInt argc=1
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr string module csec.selfhost\n] [Expr call target=generateSymbolTable argc=1]] [Expr string entry main\n]] [Expr string lowering llvm-text\n]] [Expr call target=generateIRDeclarations argc=1]] [Expr string main.return ]] [Expr identifier returnValue]] [Expr string \n]
+Decl function generateLLVMMainBody
+  Stmt value returnValue = Expr call target=parseMainReturnInt argc=1
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr string entry:\n] [Expr string   ret i32 ]] [Expr identifier returnValue]] [Expr string \n]
+Decl function llvmCharI8Value
+  Body tokens=436
+Decl function llvmI32Value
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (end <= start)
+  Stmt if (tokenKindAt ( tokens , start ) == kindInteger ( ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindChar ( ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr string %tmp
+Decl function lookupFunctionParamType
+  Stmt value decl = Expr call target=csec_enclosing_function_decl_start argc=2
+  Stmt if (decl < 0)
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=findClosingToken argc=5
+  Stmt if (paramEnd <= paramStart)
+  Stmt variable cursor = Expr binary + [Expr identifier paramStart] [Expr integer 1]
+  Stmt while (cursor < paramEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string unknown
+Decl function lookupVisibleValueType
+  Stmt value paramType = Expr call target=lookupFunctionParamType argc=3
+  Stmt if (! strEq ( paramType , unknown ))
+  Stmt value functionStart = Expr call target=csec_enclosing_function_body_start argc=2
+  Stmt value functionEnd = Expr call target=csec_enclosing_function_body_end argc=2
+  Stmt variable cursor = Expr identifier functionStart
+  Stmt if (cursor < 0)
+  Stmt variable found = Expr string 
+  Stmt while (cursor < limit and ( functionEnd < 0 or cursor < functionEnd ) and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt if (found . length == 0)
+  Stmt return Expr identifier found
+Decl function lookupVisibleStorageName
+  Body tokens=353
+Decl function llvmLoadForValueType
+  Stmt value storageName = Expr call target=lookupVisibleStorageName argc=3
+  Stmt if (strEq ( valueType , Boolean ))
+  Stmt if (strEq ( valueType , Char ))
+  Stmt if (strEq ( valueType , Double ))
+  Stmt if (strEq ( valueType , Long ))
+  Stmt if (strEq ( irTypeName ( valueType ) , ptr ))
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr string   ] [Expr identifier resultName]] [Expr string  = load i32, ptr %]] [Expr identifier storageName]] [Expr string \n]
+Decl function generateLLVMLoadIfIdentifier
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr string 
+Decl function llvmI1Value
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (end <= start)
+  Stmt if (tokenKindAt ( tokens , start ) == kindBool ( ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr string %btmp
+Decl function generateLLVMLoadBoolIfIdentifier
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr string 
+Decl function llvmI32CallArgumentValue
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (end <= start)
+  Stmt if (tokenKindAt ( tokens , start ) == kindInteger ( ) and end == start + 1)
+  Stmt return Expr binary + [Expr binary + [Expr identifier resultName] [Expr string .arg]] [Expr identifier index]
+Decl function llvmCallArgumentType
+  Body tokens=443
+Decl function llvmCallArgumentValue
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (end <= start)
+  Stmt if (tokenKindAt ( tokens , start ) == kindInteger ( ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindChar ( ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindBool ( ) and end == start + 1)
+  Stmt return Expr binary + [Expr binary + [Expr identifier resultName] [Expr string .arg]] [Expr identifier index]
+Decl function generateLLVMCallArgumentLoadI32
+  Body tokens=2088
+Decl function firstTopLevelComma
+  Stmt variable depth = Expr integer 0
+  Stmt variable cursor = Expr identifier start
+  Stmt while (cursor < end)
+  Stmt return Expr binary - [Expr integer 0] [Expr integer 1]
+Decl function generateLLVMCallArgumentLoadsI32
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt value builder = Expr call target=csec_string_builder_new argc=0
+  Stmt variable argStart = Expr call target=skipTrivia argc=2
+  Stmt variable index = Expr integer 0
+  Stmt while (argStart < end)
+  Stmt return Expr call target=csec_string_builder_finish argc=1
+Decl function generateLLVMCallArgumentListI32
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt value builder = Expr call target=csec_string_builder_new argc=0
+  Stmt variable argStart = Expr call target=skipTrivia argc=2
+  Stmt variable index = Expr integer 0
+  Stmt while (argStart < end)
+  Stmt return Expr call target=csec_string_builder_finish argc=1
+Decl function llvmRuntimeCallName
+  Stmt if (strEq ( name , commandLineArgCount ))
+  Stmt if (strEq ( name , commandLineArg ))
+  Stmt return Expr identifier name
+Decl function llvmCallReturnsChar
+  Stmt if (name . startsWith ( kind ))
+  Stmt if (strEq ( name , tokenKindAt ))
+  Stmt if (strEq ( name , csec_token_kind_at ))
+  Stmt if (strEq ( lookupFunctionReturnType ( tokens , name ) , Char ))
+  Stmt return Expr bool false
+Decl function generateLLVMExpressionI32
+  Body tokens=842
+Decl function generateLLVMLocalI32
+  Stmt value initializer = Expr call target=findTopLevelOperator argc=4
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr binary + [Expr binary + [Expr identifier name] [Expr string .addr.]] [Expr identifier start]
+  Stmt value initName = Expr binary + [Expr binary + [Expr binary + [Expr string %] [Expr identifier name]] [Expr string .init.]] [Expr identifier start]
+  Stmt if (initializer >= start)
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr string   %] [Expr identifier storageName]] [Expr string  = alloca i32\n]] [Expr string   store i32 0, ptr %]] [Expr identifier storageName]] [Expr string \n]
+Decl function llvmI64Value
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (end <= start)
+  Stmt if (tokenKindAt ( tokens , start ) == kindInteger ( ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr string %ltmp
+Decl function generateLLVMLoadI64IfIdentifier
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr string 
+Decl function generateLLVMExpressionI64
+  Body tokens=400
+Decl function generateLLVMLocalI64
+  Stmt value initializer = Expr call target=findTopLevelOperator argc=4
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr binary + [Expr binary + [Expr identifier name] [Expr string .addr.]] [Expr identifier start]
+  Stmt value initName = Expr binary + [Expr binary + [Expr binary + [Expr string %] [Expr identifier name]] [Expr string .linit.]] [Expr identifier start]
+  Stmt if (initializer >= start)
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr string   %] [Expr identifier storageName]] [Expr string  = alloca i64\n]] [Expr string   store i64 0, ptr %]] [Expr identifier storageName]] [Expr string \n]
+Decl function expressionIsNat
+  Stmt value start = Expr call target=skipTrivia argc=2
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (end <= start)
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and start + 1 < end and tokenIs ( tokens , start + 1 , kindOperator ( ) , ( ) and findClosingToken ( tokens , start + 1 , end , ( , ) ) == end - 1)
+  Stmt value op = Expr call target=expressionTopLevelOperator argc=3
+  Stmt if (op > start and tokenKindAt ( tokens , op ) == kindOperator ( ))
+  Stmt return Expr bool false
+Decl function natOperandCode
+  Stmt value start = Expr call target=skipTrivia argc=2
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (tokenKindAt ( tokens , start ) == kindInteger ( ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr call target=generateLLVMExpressionNat argc=4
+Decl function generateLLVMExpressionNat
+  Body tokens=456
+Decl function generateLLVMLocalNat
+  Stmt value initializer = Expr call target=findTopLevelOperator argc=4
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr binary + [Expr binary + [Expr identifier name] [Expr string .addr.]] [Expr identifier start]
+  Stmt value initName = Expr binary + [Expr binary + [Expr binary + [Expr string %] [Expr identifier name]] [Expr string .ninit.]] [Expr identifier start]
+  Stmt if (initializer >= start)
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr string   %] [Expr identifier storageName]] [Expr string  = alloca ptr\n]] [Expr string   %]] [Expr identifier name]] [Expr string .nzero.]] [Expr identifier start]] [Expr string  = call ptr @csec_bigint_from_i64(i64 0)\n]] [Expr string   store ptr %]] [Expr identifier name]] [Expr string .nzero.]] [Expr identifier start]] [Expr string , ptr %]] [Expr identifier storageName]] [Expr string \n]
+Decl function llvmF64Value
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (end <= start)
+  Stmt if (( tokenKindAt ( tokens , start ) == kindFloat ( ) or tokenKindAt ( tokens , start ) == kindInteger ( ) ) and end == start + 1)
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr string %ftmp
+Decl function generateLLVMLoadF64IfIdentifier
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt if (tokenKindAt ( tokens , start ) == kindIdentifier ( ) and end == start + 1)
+  Stmt return Expr string 
+Decl function tensorComponentIndex
+  Stmt if (strEq ( name , x ))
+  Stmt if (strEq ( name , y ))
+  Stmt if (strEq ( name , z ))
+  Stmt if (strEq ( name , w ))
+  Stmt return Expr binary - [Expr integer 0] [Expr integer 1]
+Decl function findTopLevelKeywordOperator
+  Stmt value end = Expr call target=trimExpressionEnd argc=3
+  Stmt variable depth = Expr integer 0
+  Stmt variable cursor = Expr identifier start
+  Stmt variable found = Expr binary - [Expr integer 0] [Expr integer 1]
+  Stmt while (cursor < end)
+  Stmt return Expr identifier found
+Decl function generateLLVMExpressionF64
+  Body tokens=884
+Decl function expressionIsString
+  Body tokens=292
+Decl function expressionIsDouble
+  Body tokens=418
+Decl function f64Operand
+  Stmt if (expressionIsDouble ( tokens , start , end ))
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr call target=generateLLVMExpressionI32 argc=4] [Expr string   ]] [Expr identifier name]] [Expr string  = sitofp i32 ]] [Expr identifier name]] [Expr string .i32 to double\n]
+Decl function fcmpPredicate
+  Stmt if (strEq ( compareOp , slt ))
+  Stmt if (strEq ( compareOp , sle ))
+  Stmt if (strEq ( compareOp , sgt ))
+  Stmt if (strEq ( compareOp , sge ))
+  Stmt if (strEq ( compareOp , eq ))
+  Stmt if (strEq ( compareOp , ne ))
+  Stmt return Expr string oeq
+Decl function generateLLVMLocalF64
+  Stmt value initializer = Expr call target=findTopLevelOperator argc=4
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr binary + [Expr binary + [Expr identifier name] [Expr string .addr.]] [Expr identifier start]
+  Stmt value initName = Expr binary + [Expr binary + [Expr binary + [Expr string %] [Expr identifier name]] [Expr string .finit.]] [Expr identifier start]
+  Stmt if (initializer >= start)
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr string   %] [Expr identifier storageName]] [Expr string  = alloca double\n]] [Expr string   store double 0.000000e+00, ptr %]] [Expr identifier storageName]] [Expr string \n]
+Decl function generateLLVMLocalI8
+  Body tokens=500
+Decl function generateLLVMAssignmentF64
+  Stmt value op = Expr call target=findTopLevelOperator argc=4
+  Stmt if (op <= start or tokenKindAt ( tokens , start ) != kindIdentifier ( ))
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr call target=lookupVisibleStorageName argc=3
+  Stmt value opText = Expr call target=tokenTextAt argc=2
+  Stmt if (strEq ( opText , = ) or strEq ( opText , <- ))
+  Stmt return Expr string 
+Decl function generateLLVMAssignmentPtr
+  Body tokens=725
+Decl function generateLLVMAssignmentI8
+  Body tokens=502
+Decl function generateLLVMAssignmentI32
+  Stmt value op = Expr call target=findTopLevelOperator argc=4
+  Stmt if (op <= start or tokenKindAt ( tokens , start ) != kindIdentifier ( ))
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr call target=lookupVisibleStorageName argc=3
+  Stmt value opText = Expr call target=tokenTextAt argc=2
+  Stmt if (strEq ( opText , = ) or strEq ( opText , <- ))
+  Stmt variable binaryOp = Expr call target=opText . substring argc=2
+  Stmt if (strEq ( opText , %= ))
+  Stmt return Expr string   % + name + .old. + start +  = load i32, ptr % + storageName + \n + generateLLVMExpressionI32 ( tokens , op + 1 , end , % + name + .rhs. + start ) +   % + name + .next. + start +  =  + irOperatorName ( binaryOp ) +  i32 % + name + .old. + start + , % + name + .rhs. + start + \n +   store i32 % + name + .next. + start + , ptr % + storageName + \n
+Decl function generateLLVMAssignmentI64
+  Stmt value op = Expr call target=findTopLevelOperator argc=4
+  Stmt if (op <= start or tokenKindAt ( tokens , start ) != kindIdentifier ( ))
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr call target=lookupVisibleStorageName argc=3
+  Stmt value opText = Expr call target=tokenTextAt argc=2
+  Stmt if (strEq ( opText , = ) or strEq ( opText , <- ))
+  Stmt variable binaryOp = Expr call target=opText . substring argc=2
+  Stmt if (strEq ( opText , %= ))
+  Stmt return Expr string   % + name + .lold. + start +  = load i64, ptr % + storageName + \n + generateLLVMExpressionI64 ( tokens , op + 1 , end , % + name + .lrhs. + start ) +   % + name + .lnext. + start +  =  + irOperatorName ( binaryOp ) +  i64 % + name + .lold. + start + , % + name + .lrhs. + start + \n +   store i64 % + name + .lnext. + start + , ptr % + storageName + \n
+Decl function generateLLVMConditionI1
+  Body tokens=984
+Decl function generateLLVMExpressionI1
+  Body tokens=1001
+Decl function generateLLVMLocalI1
+  Stmt value initializer = Expr call target=findTopLevelOperator argc=4
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr binary + [Expr binary + [Expr identifier name] [Expr string .addr.]] [Expr identifier start]
+  Stmt value initName = Expr binary + [Expr binary + [Expr binary + [Expr string %] [Expr identifier name]] [Expr string .binit.]] [Expr identifier start]
+  Stmt if (initializer >= start)
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr string   %] [Expr identifier storageName]] [Expr string  = alloca i1\n]] [Expr string   store i1 false, ptr %]] [Expr identifier storageName]] [Expr string \n]
+Decl function generateLLVMAssignmentI1
+  Stmt value op = Expr call target=findTopLevelOperator argc=4
+  Stmt if (op <= start or tokenKindAt ( tokens , start ) != kindIdentifier ( ))
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr call target=lookupVisibleStorageName argc=3
+  Stmt value opText = Expr call target=tokenTextAt argc=2
+  Stmt if (strEq ( opText , = ) or strEq ( opText , <- ))
+  Stmt return Expr string 
+Decl function llvmBlockEndsWithTopLevelReturn
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt variable result = Expr bool false
+  Stmt while (cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier result
+Decl function expressionIsTensor
+  Body tokens=343
+Decl function tensorNewDimText
+  Stmt variable lt = Expr identifier start
+  Stmt while (lt < end and ! tokenIs ( tokens , lt , kindOperator ( ) , < ))
+  Stmt if (lt >= end)
+  Stmt value gt = Expr call target=findClosingToken argc=5
+  Stmt variable cursor = Expr binary + [Expr identifier lt] [Expr integer 1]
+  Stmt variable seen = Expr integer 0
+  Stmt while (cursor < gt)
+  Stmt return Expr string 
+Decl function generateTensorElementSet
+  Body tokens=326
+Decl function generateLLVMExpressionPtr
+  Body tokens=2023
+Decl function generateLLVMLocalPtr
+  Stmt value initializer = Expr call target=findTopLevelOperator argc=4
+  Stmt value name = Expr call target=tokenTextAt argc=2
+  Stmt value storageName = Expr binary + [Expr binary + [Expr identifier name] [Expr string .addr.]] [Expr identifier start]
+  Stmt value initName = Expr binary + [Expr binary + [Expr binary + [Expr string %] [Expr identifier name]] [Expr string .pinit.]] [Expr identifier start]
+  Stmt if (initializer >= start)
+  Stmt return Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr binary + [Expr string   %] [Expr identifier storageName]] [Expr string  = alloca ptr\n]] [Expr string   store ptr null, ptr %]] [Expr identifier storageName]] [Expr string \n]
+Decl function llvmExpressionLooksPtr
+  Body tokens=326
+Decl function generateLLVMFlatBodyI32
+  Body tokens=2848
+Decl function generateLLVMIfI32
+  Body tokens=365
+Decl function generateLLVMWhileI32
+  Stmt value openParen = Expr call target=findStatementParenStart argc=3
+  Stmt value closeParen = Expr call target=findStatementParenEnd argc=3
+  Stmt value bodyStart = Expr call target=findStatementBlockStart argc=3
+  Stmt value bodyEnd = Expr call target=findClosingToken argc=5
+  Stmt if (openParen < 0 or closeParen <= openParen or bodyStart < 0 or bodyEnd <= bodyStart)
+  Stmt value labelSeed = Expr binary + [Expr string ] [Expr identifier start]
+  Stmt value body = Expr call target=generateLLVMFlatBodyI32 argc=3
+  Stmt variable continueBranch = Expr binary + [Expr binary + [Expr string   br label %while.cond.] [Expr identifier labelSeed]] [Expr string \n]
+  Stmt if (llvmBlockEndsWithTopLevelReturn ( tokens , bodyStart + 1 , bodyEnd ))
+  Stmt return Expr string   br label %while.cond. + labelSeed + \n + while.cond. + labelSeed + :\n + generateLLVMExpressionI1 ( tokens , openParen + 1 , closeParen , %whilecond. + labelSeed ) +   br i1 %whilecond. + labelSeed + , label %while.body. + labelSeed + , label %while.end. + labelSeed + \n + while.body. + labelSeed + :\n + body + continueBranch + while.end. + labelSeed + :\n
+Decl function generateLLVMForI32
+  Body tokens=436
+Decl function generateLLVMReturnI32
+  Stmt variable cursor = Expr identifier bodyStart
+  Stmt while (cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr string   ret i32 0\n
+Decl function generateLLVMDottedStatementCall
+  Body tokens=363
+Decl function generateLLVMMainBodyFromRange
+  Body tokens=1406
+Decl function generateLLVMParamList
+  Stmt return Expr call target=csec_function_llvm_param_list argc=2
+Decl function generateLLVMParamListSlow
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=csec_function_param_end argc=2
+  Stmt if (paramEnd <= paramStart)
+  Stmt variable cursor = Expr binary + [Expr identifier paramStart] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt variable first = Expr bool true
+  Stmt while (cursor < paramEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function generateLLVMParamAllocas
+  Stmt return Expr call target=csec_function_llvm_param_allocas argc=2
+Decl function generateLLVMParamAllocasSlow
+  Stmt value paramStart = Expr call target=findFunctionParamStart argc=2
+  Stmt if (paramStart < 0)
+  Stmt value paramEnd = Expr call target=findClosingToken argc=5
+  Stmt if (paramEnd <= paramStart)
+  Stmt variable cursor = Expr binary + [Expr identifier paramStart] [Expr integer 1]
+  Stmt variable output = Expr string 
+  Stmt while (cursor < paramEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt return Expr identifier output
+Decl function generateLLVMBooleanBodyFromRange
+  Body tokens=898
+Decl function generateLLVMCharBodyFromRange
+  Body tokens=374
+Decl function generateLLVMDoubleBodyFromRange
+  Body tokens=272
+Decl function generateLLVMLongBodyFromRange
+  Body tokens=257
+Decl function llvmStringLiteralByteLength
+  Stmt return Expr call target=csec_llvm_string_literal_byte_length argc=1
+Decl function generateLLVMPointerBodyFromRange
+  Body tokens=869
+Decl function generateLLVMVoidBodyFromRange
+  Stmt variable cursor = Expr call target=skipTrivia argc=2
+  Stmt value builder = Expr call target=csec_string_builder_new argc=0
+  Stmt while (cursor < bodyEnd and tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt expression Expr call target=csec_string_builder_append argc=2
+  Stmt return Expr call target=csec_string_builder_finish argc=1
+Decl function llvmStringLiteralBytes
+  Stmt return Expr call target=csec_llvm_string_literal_bytes argc=1
+Decl function generateLLVMStringLiteralGlobals
+  Stmt variable cursor = Expr integer 0
+  Stmt value builder = Expr call target=csec_string_builder_new argc=0
+  Stmt variable emitted = Expr bool false
+  Stmt while (tokenKindAt ( tokens , cursor ) != kindEof ( ))
+  Stmt if (emitted)
+  Stmt return Expr call target=csec_string_builder_finish argc=1
+Decl function generateLLVMFunctionDefinition
+  Body tokens=1438
+Decl function generateLLVMModuleInto
+  Body tokens=1588
+Decl function generateLLVMModule
+  Body tokens=432
+Decl function generateExecutionC
+  Stmt if (! parseProgram ( tokens ))
+  Stmt return Expr call target=generateMainExecutionC argc=1
+Decl function trimAscii
+  Stmt variable start = Expr integer 0
+  Stmt variable end = Expr member text.length
+  Stmt while (start < end and isWhitespace ( text . charAt ( start ) ))
+  Stmt while (end > start and isWhitespace ( text . charAt ( end - 1 ) ))
+  Stmt return Expr call target=text . substring argc=2
+Decl function stringEndsWith
+  Stmt if (suffix . length > text . length)
+  Stmt value start = Expr binary - [Expr member text.length] [Expr member suffix.length]
+  Stmt value tail = Expr call target=text . substring argc=2
+  Stmt return Expr call target=tail . startsWith argc=1
+Decl function parentDirectory
+  Stmt variable cursor = Expr binary - [Expr member path.length] [Expr integer 1]
+  Stmt while (cursor >= 0)
+  Stmt return Expr string .
+Decl function replaceDotsWithSlash
+  Stmt variable cursor = Expr integer 0
+  Stmt variable output = Expr string 
+  Stmt while (cursor < text . length)
+  Stmt return Expr identifier output
+Decl function importTargetFromLine
+  Stmt value trimmed = Expr call target=trimAscii argc=1
+  Stmt if (trimmed . startsWith ( // ) or ! trimmed . startsWith ( import ))
+  Stmt if (trimmed . length > 6)
+  Stmt variable rest = Expr call target=trimAscii argc=1
+  Stmt if (rest . length > 0 and rest . charAt ( rest . length - 1 ) == ;)
+  Stmt if (rest . length >= 2 and ( ( rest . charAt ( 0 ) == " and rest . charAt ( rest . length - 1 ) == " ) or ( rest . charAt ( 0 ) == \' and rest . charAt ( rest . length - 1 ) == \' ) ))
+  Stmt return Expr identifier rest
+Decl function importCandidate
+  Stmt if (stringEndsWith ( target , .csec ))
+  Stmt return Expr binary + [Expr identifier target] [Expr string .csec]
+Decl function resolveImportPath
+  Stmt value base = Expr call target=parentDirectory argc=1
+  Stmt value direct = Expr call target=importCandidate argc=1
+  Stmt value fromBase = Expr binary + [Expr binary + [Expr identifier base] [Expr string /]] [Expr identifier direct]
+  Stmt if (System . IO . File . Exists ( fromBase ))
+  Stmt if (System . IO . File . Exists ( direct ))
+  Stmt value dotted = Expr call target=importCandidate argc=1
+  Stmt value dottedFromBase = Expr binary + [Expr binary + [Expr identifier base] [Expr string /]] [Expr identifier dotted]
+  Stmt if (System . IO . File . Exists ( dottedFromBase ))
+  Stmt return Expr identifier fromBase
+Decl function expandImportsFromFile
+  Body tokens=269
+Decl function compileSource
+  Stmt value tokens = Expr call target=tokenize argc=1
+  Stmt if (mode . startsWith ( tokenlen ))
+  Stmt if (mode . startsWith ( tokens ))
+  Stmt if (mode . startsWith ( ast ))
+  Stmt if (mode . startsWith ( symbols ))
+  Stmt if (mode . startsWith ( ir ))
+  Stmt if (mode . startsWith ( llvm ))
+  Stmt return Expr call target=generateExecutionC argc=1
+Decl function compileFile
+  Stmt value source = Expr call target=csec_expand_imports argc=1
+  Stmt if (mode . startsWith ( llvm ))
+  Stmt value output = Expr call target=compileSource argc=2
+  Stmt if (output . length == 0)
+  Stmt expression Expr call target=System . IO . File . WriteAllText argc=2
+  Stmt return Expr integer 0
+Decl function main
+  Stmt value argc = Expr call target=commandLineArgCount argc=0
+  Stmt if (argc >= 4)
+  Stmt return Expr call target=compileFile argc=3

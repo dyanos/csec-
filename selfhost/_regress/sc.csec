@@ -1,0 +1,8 @@
+def label(n: Int): String {
+    return "n=" + n;
+}
+def main(): Int {
+    val s: String = label(7);
+    if (s.length == 3) { return 0; }
+    return 1;
+}

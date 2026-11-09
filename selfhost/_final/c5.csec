@@ -1,0 +1,5 @@
+def main(): Int {
+    val nested = [[1, 2], [3, 4]];
+    val row = nested[0];
+    return row[1];
+}

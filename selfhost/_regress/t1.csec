@@ -1,0 +1,6 @@
+def main(): Int {
+    val c: Char = 'A';
+    val n: Int = c;
+    if (n == 65) { return 0; }
+    return 1;
+}

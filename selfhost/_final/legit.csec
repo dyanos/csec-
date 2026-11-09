@@ -1,0 +1,10 @@
+class Box(value: Int) {
+    def get(): Int = value
+}
+class Wrap(inner: Box) {
+    def unwrap(): Int = inner.get()
+}
+def main(): Int {
+    val w = new Wrap(new Box(42));
+    return w.unwrap();
+}

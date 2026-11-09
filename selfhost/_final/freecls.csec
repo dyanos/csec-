@@ -1,0 +1,11 @@
+class Point(x: Int, y: Int) {
+    def sum(): Int {
+        return x + y;
+    }
+}
+def main(): Int {
+    val p = new Point(19, 23);
+    val s = p.sum();
+    free(p);
+    return s;
+}

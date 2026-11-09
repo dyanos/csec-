@@ -1,0 +1,8 @@
+object O {
+    def p(x: String): Unit { print(x); }
+    def p(x: Int): Unit { print(x); }
+}
+def main(): Int {
+    O.p(1);
+    return 0;
+}

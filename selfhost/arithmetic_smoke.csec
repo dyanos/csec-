@@ -1,0 +1,7 @@
+def add(left: Int, right: Int): Int {
+    return left + right;
+}
+
+def main(): Int {
+    return add(37, 5);
+}

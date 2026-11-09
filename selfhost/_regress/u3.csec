@@ -1,0 +1,10 @@
+def max3(a: Int, b: Int, c: Int): Int {
+    var m: Int = a;
+    if (b > m) { m = b; }
+    if (c > m) { m = c; }
+    return m;
+}
+def main(): Int {
+    if (max3(3, 9, 5) == 9 and max3(7, 2, 4) == 7) { return 0; }
+    return 1;
+}

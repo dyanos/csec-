@@ -1,0 +1,8 @@
+def take(v: box Int): Int = 1
+def main(): Int {
+    var a: box Int = 5;
+    if (1 == 1) {
+        var x: Int = take(<-a);
+    }
+    return take(<-a);
+}

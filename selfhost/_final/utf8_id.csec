@@ -1,0 +1,4 @@
+def main(): Int {
+    val 수 = 5
+    return 수
+}

@@ -1,0 +1,8 @@
+def main(): Int {
+    val arr = new Int[3];
+    arr[0] = 20;
+    arr[1] = 22;
+    val v = arr[0] + arr[1];
+    free(arr);
+    return v;
+}

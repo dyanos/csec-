@@ -1,0 +1,8 @@
+template<typename T, Int CAP>
+class Box(name: String) {
+    def getCap(): Int = CAP
+}
+def main(): Int {
+    val b = new Box<Int, 10>("x");
+    return b.getCap();
+}

@@ -1,0 +1,10 @@
+external def csec_llvm_name_with_number(prefix: String, number: Int): String;
+
+def main(): Int {
+    val name: String = csec_llvm_name_with_number("%ret.", 42);
+    val instruction: String = "  " + name + " = icmp eq i32 0, 0\n";
+    if (instruction.startsWith("  %ret.42")) {
+        return 0;
+    }
+    return 1;
+}

@@ -1,0 +1,3 @@
+import abc
+
+def main(): Int = 0

@@ -1,0 +1,13 @@
+def moveAndReturn(): Tensor<Double, 2> {
+    val source: Tensor<Double, 2> = new Tensor<Double, 2>(3.0);
+    val destination: Tensor<Double, 2> = <- source;
+    return destination;
+}
+
+def main(): Int {
+    val result: Tensor<Double, 2> = moveAndReturn();
+    if (result[0] == 3.0 and result[1] == 3.0) {
+        return 0;
+    }
+    return 1;
+}

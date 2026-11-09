@@ -1,0 +1,9 @@
+def consume(value: Tensor<Double, 2>): Int {
+    return 0;
+}
+
+def main(): Int {
+    val source: Tensor<Double, 2> = new Tensor<Double, 2>(1.0);
+    val ignored: Int = consume(<- source);
+    return source[0];
+}

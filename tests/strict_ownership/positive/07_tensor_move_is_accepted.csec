@@ -1,0 +1,8 @@
+def main(): Int {
+    val source: Tensor<Double, 2> = new Tensor<Double, 2>(1.0);
+    val destination: Tensor<Double, 2> = <- source;
+    if (destination[0] == 1.0) {
+        return 0;
+    }
+    return 1;
+}

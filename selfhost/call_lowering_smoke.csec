@@ -1,0 +1,5 @@
+external def csec_lex_quoted(source: String, index: Int): Int;
+
+def wrapper(source: String, index: Int): Int {
+    return csec_lex_quoted(source, index);
+}

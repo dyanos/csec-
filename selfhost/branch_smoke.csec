@@ -1,0 +1,10 @@
+def select(value: Int): Int {
+    if (value > 10) {
+        return 42;
+    }
+    return 1;
+}
+
+def main(): Int {
+    return select(11);
+}

@@ -1,0 +1,18 @@
+struct Point(x: Int, y: Int) {
+    def sum(): Int { return x + y; }
+}
+
+class Segment(start: Point, end: Point) {
+    def delta(): Int { return end.sum() - start.sum(); }
+}
+
+def main(): Int {
+    val segment: Segment = new Segment(new Point(2, 3), new Point(7, 11));
+    segment.end.x = segment.end.x + 1;
+    if (segment.start.y == 3 and segment.end.x == 8 and segment.delta() == 14) {
+        free(segment);
+        return 0;
+    }
+    free(segment);
+    return 1;
+}

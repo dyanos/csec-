@@ -1,0 +1,9 @@
+def rep(s: String, n: Int): String {
+    if (n == 0) { return ""; }
+    return s + rep(s, n - 1);
+}
+def main(): Int {
+    val joined: String = "<" + rep("x", 2) + ">";
+    if (joined.length == 4) { return 0; }
+    return 1;
+}

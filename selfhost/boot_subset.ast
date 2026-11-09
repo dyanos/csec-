@@ -1,0 +1,44 @@
+Program
+Decl function adjust
+  Stmt variable local = Expr identifier value
+  Stmt expression Expr assign = [Expr identifier local] [Expr binary + [Expr identifier local] [Expr integer 2]]
+  Stmt return Expr identifier local
+Decl function positive
+  Stmt return Expr compare > [Expr identifier value] [Expr integer 0]
+Decl function label
+  Stmt variable text = Expr string ready
+  Stmt expression Expr assign = [Expr identifier text] [Expr string done]
+  Stmt return Expr identifier text
+Decl function marker
+  Stmt variable ch = Expr char I
+  Stmt expression Expr assign = [Expr identifier ch] [Expr char x]
+  Stmt return Expr identifier ch
+Decl function ratio
+  Stmt variable value = Expr float 1.5
+  Stmt expression Expr assign = [Expr identifier value] [Expr binary + [Expr identifier value] [Expr float 2.0]]
+  Stmt return Expr identifier value
+Decl function wide
+  Stmt variable total = Expr integer 1000
+  Stmt expression Expr assign = [Expr identifier total] [Expr binary + [Expr identifier total] [Expr integer 24]]
+  Stmt return Expr identifier total
+Decl function touch
+  Stmt return Expr empty
+Decl function main
+  Stmt variable current = Expr integer 3
+  Stmt variable enabled = Expr bool true
+  Stmt value scale = Expr float 2.5
+  Stmt value name = Expr call target=label argc=0
+  Stmt value code = Expr call target=marker argc=0
+  Stmt value wideValue = Expr call target=wide argc=0
+  Stmt expression Expr assign = [Expr identifier enabled] [Expr bool false]
+  Stmt expression Expr assign = [Expr identifier enabled] [Expr call target=positive argc=1]
+  Stmt expression Expr assign = [Expr identifier scale] [Expr call target=ratio argc=0]
+  Stmt expression Expr assign = [Expr identifier name] [Expr call target=label argc=0]
+  Stmt expression Expr assign = [Expr identifier code] [Expr call target=marker argc=0]
+  Stmt expression Expr assign = [Expr identifier wideValue] [Expr call target=wide argc=0]
+  Stmt if (enabled and current > 0)
+  Stmt while (current > 1)
+  Stmt for (i <- 0 until 3)
+  Stmt for (j <- 1 to 2)
+  Stmt expression Expr assign = [Expr identifier current] [Expr call target=adjust argc=1]
+  Stmt return Expr identifier current

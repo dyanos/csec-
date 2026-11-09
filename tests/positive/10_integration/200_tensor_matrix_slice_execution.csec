@@ -1,0 +1,11 @@
+def main(): Int {
+    val matrix: Tensor<Double, 2, 3> = new Tensor<Double, 2, 3>(1.0);
+    matrix[0, 1] = 4.0;
+    matrix[1, 2] = 7.0;
+    val doubled: Tensor<Double, 2, 3> = matrix * 2.0;
+    val row: Tensor<Double, 3> = doubled[1, :];
+    if (doubled[0, 1] == 8.0 and row[0] == 2.0 and row[1] == 2.0 and row[2] == 14.0) {
+        return 0;
+    }
+    return 1;
+}

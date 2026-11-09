@@ -1,0 +1,12 @@
+def classify(n: Int): Int {
+    val label = n match {
+        case 0 => 100
+        case 1 => 200
+        case _ => n * 10
+    };
+    return label;
+}
+def main(): Int {
+    if (classify(0) == 100 and classify(5) == 50) { return 0; }
+    return 1;
+}

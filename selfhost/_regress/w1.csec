@@ -1,0 +1,13 @@
+class Account(balance: Int) {
+    def deposit(amount: Int): Int {
+        return balance + amount;
+    }
+    def report(): String {
+        return "balance";
+    }
+}
+def main(): Int {
+    val a = new Account(100);
+    if (a.deposit(50) == 150) { return 0; }
+    return 1;
+}

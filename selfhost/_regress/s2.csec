@@ -1,0 +1,8 @@
+def main(): Int {
+    var acc: Int = 0;
+    for (i <- 1 to 100) {
+        acc = acc + i;
+    }
+    if (acc == 5050) { return 0; }
+    return 1;
+}

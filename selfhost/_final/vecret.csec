@@ -1,0 +1,10 @@
+def build(n: Int): Vector[Int] {
+    val v = new Int[n];
+    v[0] = 5;
+    v[1] = 9;
+    return v;
+}
+def main(): Int {
+    val r: Vector[Int] = build(2);
+    return r[0] + r[1];
+}

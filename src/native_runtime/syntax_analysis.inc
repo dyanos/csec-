@@ -257,7 +257,8 @@ static bool csec_native_starts_top_level_declaration(const char* tokens, int ord
            std::strcmp(text, "def") == 0 || std::strcmp(text, "template") == 0 ||
            std::strcmp(text, "val") == 0 || std::strcmp(text, "var") == 0 ||
            std::strcmp(text, "unsafe") == 0 || std::strcmp(text, "unatomic") == 0 ||
-           std::strcmp(text, "constexpr") == 0;
+           std::strcmp(text, "constexpr") == 0 ||
+           (std::strcmp(text, "async") == 0 && csec_native_token_is(tokens, ordinal + 1, 'K', "def"));
 }
 
 int csec_starts_top_level_declaration(const char* tokens, int ordinal) {
@@ -287,7 +288,7 @@ int csec_validate_top_level(const char* tokens) {
                 --brace;
                 if (brace == 0 && paren == 0 && bracket == 0) expectingDecl = true;
             }
-            if (std::strcmp(text, "[") == 0) ++bracket;
+            if (std::strcmp(text, "[") == 0 || std::strcmp(text, "[@") == 0) ++bracket;
             if (std::strcmp(text, "]") == 0) --bracket;
             if (std::strcmp(text, ";") == 0 && brace == 0 && paren == 0 && bracket == 0) expectingDecl = true;
         }
@@ -311,7 +312,7 @@ char* csec_top_level_decl_kind(const char* tokens, int ordinal) {
             return const_cast<char*>("external");
         }
         if (std::strcmp(text, "unsafe") == 0 || std::strcmp(text, "unatomic") == 0 ||
-            std::strcmp(text, "constexpr") == 0) {
+            std::strcmp(text, "constexpr") == 0 || std::strcmp(text, "async") == 0) {
             ++ordinal;
             continue;
         }
@@ -327,6 +328,11 @@ char* csec_top_level_decl_kind(const char* tokens, int ordinal) {
 }
 
 char* csec_top_level_decl_name(const char* tokens, int ordinal) {
+    // Declaration modifiers precede the declaring keyword: `async def f`, `unsafe def f`.
+    while (csec_native_token_is(tokens, ordinal, 'K', "async") || csec_native_token_is(tokens, ordinal, 'K', "unsafe") ||
+           csec_native_token_is(tokens, ordinal, 'K', "unatomic") || csec_native_token_is(tokens, ordinal, 'K', "constexpr")) {
+        ++ordinal;
+    }
     const char* kind = csec_top_level_decl_kind(tokens, ordinal);
     if (std::strcmp(kind, "external-class") == 0 || std::strcmp(kind, "external-object") == 0 ||
         std::strcmp(kind, "external-function") == 0) {
@@ -565,7 +571,13 @@ int csec_advance_top_level_decl(const char* tokens, int ordinal) {
     int brace = 0;
     int bracket = 0;
     while (csec_token_kind_at(tokens, cursor) != 'E') {
-        if (cursor > ordinal && paren == 0 && brace == 0 && bracket == 0 &&
+        // A declaring keyword right after a modifier (`async def`, `unsafe def`) continues the
+        // same declaration.
+        const bool afterModifier = cursor > ordinal &&
+            (csec_native_token_is(tokens, cursor - 1, 'K', "async") || csec_native_token_is(tokens, cursor - 1, 'K', "unsafe") ||
+             csec_native_token_is(tokens, cursor - 1, 'K', "external") ||
+             csec_native_token_is(tokens, cursor - 1, 'K', "unatomic") || csec_native_token_is(tokens, cursor - 1, 'K', "constexpr"));
+        if (cursor > ordinal && paren == 0 && brace == 0 && bracket == 0 && !afterModifier &&
             csec_native_starts_top_level_declaration(tokens, cursor)) {
             return cursor;
         }
@@ -578,7 +590,7 @@ int csec_advance_top_level_decl(const char* tokens, int ordinal) {
                 --brace;
                 if (brace == 0 && paren == 0 && bracket == 0) return cursor + 1;
             }
-            if (std::strcmp(text, "[") == 0) ++bracket;
+            if (std::strcmp(text, "[") == 0 || std::strcmp(text, "[@") == 0) ++bracket;
             if (std::strcmp(text, "]") == 0) --bracket;
             if (std::strcmp(text, ";") == 0 && brace == 0 && paren == 0 && bracket == 0) {
                 return cursor + 1;
@@ -589,8 +601,44 @@ int csec_advance_top_level_decl(const char* tokens, int ordinal) {
     return cursor;
 }
 
+// ---- Intrinsics (`[@Intrinsic] external def name(...)`, see LANGUAGE_SPEC.md 1.2) ----------------
+// True when the declaration starting at `ordinal` (an `external` keyword) is preceded by
+// `[@Intrinsic]` or `[@Intrinsic(...)]`.
+static bool csec_decl_has_intrinsic_attribute(const char* tokens, int ordinal) {
+    if (ordinal < 2 || !csec_native_token_is(tokens, ordinal - 1, 'O', "]")) return false;
+    int depth = 0;
+    for (int cursor = ordinal - 1; cursor >= 0; --cursor) {
+        if (csec_native_token_is(tokens, cursor, 'O', "]")) ++depth;
+        else if (csec_native_token_is(tokens, cursor, 'O', "[")) --depth;
+        else if (csec_native_token_is(tokens, cursor, 'O', "[@")) {
+            --depth;
+            if (depth == 0) return csec_native_token_is(tokens, cursor + 1, 'I', "Intrinsic");
+        }
+        if (depth == 0) return false;
+    }
+    return false;
+}
+
+// True when some imported module declared `name` as an intrinsic. Only then does the self-host lower
+// a call of `name` with its built-in meaning (mirrors the native compiler's declaredIntrinsics()).
+static bool csec_is_declared_intrinsic(const char* tokens, const char* name) {
+    for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'K', "external") &&
+            csec_native_token_is(tokens, cursor + 1, 'K', "def") &&
+            csec_native_token_is(tokens, cursor + 2, 'I', name) &&
+            csec_decl_has_intrinsic_attribute(tokens, cursor)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int csec_find_decl_body_start(const char* tokens, int ordinal) {
     int tokenCount = tokenCountCached(tokens ? tokens : "");
+    while (csec_native_token_is(tokens, ordinal, 'K', "async") || csec_native_token_is(tokens, ordinal, 'K', "unsafe") ||
+           csec_native_token_is(tokens, ordinal, 'K', "unatomic") || csec_native_token_is(tokens, ordinal, 'K', "constexpr")) {
+        ++ordinal;
+    }
     for (int cursor = ordinal; cursor < tokenCount; ++cursor) {
         if (cursor > ordinal && csec_native_starts_top_level_declaration(tokens, cursor)) return -1;
         if (csec_native_token_is(tokens, cursor, 'O', "{")) return cursor + 1;
@@ -991,6 +1039,8 @@ static std::string csec_c_local_type(const char* tokens, int start, int end, int
     }
     if (initializer >= start) {
         const char kind = csec_token_kind_at(tokens, initializer + 1);
+        // `val f = async work(1)` holds a Future handle (a ptr).
+        if (csec_native_token_is(tokens, initializer + 1, 'K', "async")) return "Future";
         if (kind == 'N') return "Int";
         if (kind == 'F') return "Double";
         if (kind == 'S') return "String";

@@ -1,0 +1,6 @@
+import std.microthread
+def main(): Int {
+    var x: Int = 1;
+    spawn([&]() -> { x = 2; return 0; });
+    return 0;
+}

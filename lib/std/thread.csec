@@ -1,0 +1,87 @@
+// std.thread -- OS threads, mutexes, atomics, and channels.
+//
+//     import std.thread
+//
+// Unlike std.microthread processes, threads run truly in parallel on separate OS threads and may
+// share memory through the synchronisation objects below. All objects are 64-bit handles (Long).
+// Each OS thread has its own microthread scheduler, so a thread may spawn processes of its own.
+
+// threadStart(body): run `body` (a zero-parameter `[=]` lambda literal or function returning Int) on a
+// new OS thread. Captures are copied into the thread. Returns the thread handle.
+[@Intrinsic] external def threadStart(body: () => Int): Long;
+
+external def csec_thread_join(handle: Long): Int;
+external def csec_thread_is_finished(handle: Long): Int;
+external def csec_thread_current_id(): Long;
+external def csec_thread_sleep(milliseconds: Int): Void;
+external def csec_thread_yield(): Void;
+external def csec_thread_hardware_concurrency(): Int;
+
+external def csec_mutex_new(): Long;
+external def csec_mutex_lock(handle: Long): Int;
+external def csec_mutex_try_lock(handle: Long): Int;
+external def csec_mutex_unlock(handle: Long): Int;
+external def csec_mutex_free(handle: Long): Void;
+
+external def csec_atomic_new(initial: Long): Long;
+external def csec_atomic_get(handle: Long): Long;
+external def csec_atomic_set(handle: Long, value: Long): Void;
+external def csec_atomic_add(handle: Long, delta: Long): Long;
+external def csec_atomic_compare_exchange(handle: Long, expected: Long, desired: Long): Int;
+external def csec_atomic_free(handle: Long): Void;
+
+external def csec_channel_new(): Long;
+external def csec_channel_send(handle: Long, value: Long): Int;
+external def csec_channel_receive(handle: Long, fallback: Long): Long;
+external def csec_channel_try_receive(handle: Long, fallback: Long): Long;
+external def csec_channel_size(handle: Long): Int;
+external def csec_channel_close(handle: Long): Void;
+
+// Wait for a thread to finish; returns the Int its body returned.
+def threadJoin(handle: Long): Int = csec_thread_join(handle)
+def threadFinished(handle: Long): Boolean = csec_thread_is_finished(handle) != 0
+def threadId(): Long = csec_thread_current_id()
+def threadSleep(milliseconds: Int): Int {
+    csec_thread_sleep(milliseconds);
+    return 0;
+}
+def threadYield(): Int {
+    csec_thread_yield();
+    return 0;
+}
+def hardwareThreads(): Int = csec_thread_hardware_concurrency()
+
+def mutexNew(): Long = csec_mutex_new()
+def mutexLock(handle: Long): Boolean = csec_mutex_lock(handle) != 0
+def mutexTryLock(handle: Long): Boolean = csec_mutex_try_lock(handle) != 0
+def mutexUnlock(handle: Long): Boolean = csec_mutex_unlock(handle) != 0
+def mutexFree(handle: Long): Int {
+    csec_mutex_free(handle);
+    return 0;
+}
+
+def atomicNew(initial: Long): Long = csec_atomic_new(initial)
+def atomicGet(handle: Long): Long = csec_atomic_get(handle)
+def atomicSet(handle: Long, value: Long): Int {
+    csec_atomic_set(handle, value);
+    return 0;
+}
+// Atomically add `delta`; returns the new value.
+def atomicAdd(handle: Long, delta: Long): Long = csec_atomic_add(handle, delta)
+def atomicCompareExchange(handle: Long, expected: Long, desired: Long): Boolean = csec_atomic_compare_exchange(handle, expected, desired) != 0
+def atomicFree(handle: Long): Int {
+    csec_atomic_free(handle);
+    return 0;
+}
+
+// Channels carry Long values between OS threads (blocking, FIFO).
+def channelNew(): Long = csec_channel_new()
+def channelSend(handle: Long, value: Long): Boolean = csec_channel_send(handle, value) != 0
+// Blocks the calling OS thread; returns `fallback` once the channel is closed and empty.
+def channelReceive(handle: Long, fallback: Long): Long = csec_channel_receive(handle, fallback)
+def channelTryReceive(handle: Long, fallback: Long): Long = csec_channel_try_receive(handle, fallback)
+def channelSize(handle: Long): Int = csec_channel_size(handle)
+def channelClose(handle: Long): Int {
+    csec_channel_close(handle);
+    return 0;
+}

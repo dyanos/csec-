@@ -1,0 +1,6 @@
+import std.microthread
+def work(n: Int): Int = n
+def main(): Int {
+    spawn(work);
+    return 0;
+}

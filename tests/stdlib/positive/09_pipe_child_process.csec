@@ -1,0 +1,20 @@
+import std.pipe
+// Talk to a child OS process through its stdin/stdout: feed `sort`, read its sorted output.
+def main(): Int {
+    val sorter = pipeOpenProcess("sort");
+    if (sorter == 0) { return 1; }
+    processWriteLine(sorter, "pear");
+    processWriteLine(sorter, "apple");
+    processWriteLine(sorter, "mango");
+    processCloseInput(sorter);
+    if (processReadLine(sorter) != "apple") { return 2; }
+    if (processReadLine(sorter) != "mango") { return 3; }
+    if (processReadLine(sorter) != "pear") { return 4; }
+    if (processFinish(sorter) != 0) { return 5; }
+
+    val echoer = pipeOpenProcess("echo piped");
+    val all = processReadAll(echoer);
+    if (!all.startsWith("piped")) { return 6; }
+    processFinish(echoer);
+    return 0;
+}

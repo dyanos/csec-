@@ -1,0 +1,6 @@
+import std.microthread
+def main(): Int {
+    val f = [=]() -> { return 0; };
+    spawn(f);
+    return 0;
+}

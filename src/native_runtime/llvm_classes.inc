@@ -136,6 +136,7 @@ static std::string csec_class_method_symbol(const char* tokens, int classStart, 
 static int csec_resolve_class_method_by_args(const char* tokens, int classStart, const char* methodName, int argStart, int argClose);
 static int csec_local_instance_class(const char* tokens, int ordinal, const char* name);
 static int csec_top_level_function_declaration(const char* tokens, const char* name);
+static int csec_top_level_external_function_declaration(const char* tokens, const char* name);
 
 static std::vector<std::pair<std::string, std::string>> csec_class_constructor_params(const char* tokens, int classStart) {
     std::vector<std::pair<std::string, std::string>> params;
@@ -1150,6 +1151,19 @@ static bool csec_function_parameter_returns_boolean(const char* tokens, int ordi
             std::strcmp(csec_token_text_at(tokens, close + 2), "Boolean") == 0;
     }
     return false;
+}
+
+// The `external def name(...)` declaration (not an [@Intrinsic] one), or -1.
+static int csec_top_level_external_function_declaration(const char* tokens, const char* name) {
+    for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E';) {
+        const int next = csec_advance_top_level_decl(tokens, cursor);
+        if (next <= cursor) break;
+        if (std::strcmp(csec_top_level_decl_kind(tokens, cursor), "external-function") == 0 &&
+            std::strcmp(csec_top_level_decl_name(tokens, cursor), name ? name : "") == 0 &&
+            !csec_decl_has_intrinsic_attribute(tokens, cursor)) return cursor;
+        cursor = next;
+    }
+    return -1;
 }
 
 static int csec_top_level_function_declaration(const char* tokens, const char* name) {

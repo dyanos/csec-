@@ -36,6 +36,10 @@ public:
     std::vector<std::string> captureVariables;
     std::vector<std::unique_ptr<ASTNode>> arguments;
     std::unique_ptr<ASTNode> body;
+    // The captured environment's LLVM type, recorded by codegen(). spawn()/threadStart() snapshot that
+    // many bytes into the new task. The size is emitted as a sizeof constant expression so it follows
+    // the final target data layout (the module has no data layout yet during codegen).
+    llvm::Type* environmentType = nullptr;
 
     void accept(ASTVisitor& visitor) override;
 

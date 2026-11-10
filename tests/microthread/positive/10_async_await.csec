@@ -1,0 +1,20 @@
+// `async f(args)` runs a call in its own microthread and returns a Future; `await` waits for it.
+def square(n: Int): Int {
+    return n * n;
+}
+
+def half(x: Double): Double {
+    return x / 2.0;
+}
+
+def main(): Int {
+    val a = async square(6);
+    val b: Future<Int> = async square(7);
+    val c = async half(5.0);
+    val total = await a + await b;
+    if (total != 85) { return 1; }
+    if (await c != 2.5) { return 2; }
+    // Awaiting the same future again returns the same value.
+    if (await a != 36) { return 3; }
+    return 0;
+}

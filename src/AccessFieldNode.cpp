@@ -1,5 +1,6 @@
 ﻿#include "codegen.h"
 #include "AccessFieldNode.h"
+#include "builtin_structs.h"
 #include "ASTVisitor.h"
 #include "utils.h"
 #include "type_utils.h"
@@ -46,6 +47,22 @@ llvm::Value* AccessFieldNode::codegen() {
         if (!fieldLLVMType) return nullptr;
         auto* fid = dynamic_cast<IdentifierNode*>(this->field.get());
         return cg.builder.CreateLoad(fieldLLVMType, fieldPtr, (fid ? fid->value : "field") + ".value");
+    }
+
+    // Built-in value aggregates (Complex/Rational/Quaternion): any expression may be the base, e.g.
+    // `conj(z).im`; the field is an extractvalue of the aggregate value.
+    if (auto* builtinField = dynamic_cast<IdentifierNode*>(this->field.get())) {
+        auto aggregateType = stripBorrow(this->base->getType());
+        const int builtinIndex = aggregateType ? builtinValueStructFieldIndex(aggregateType->getName(), builtinField->value) : -1;
+        if (builtinIndex >= 0) {
+            auto& cg = CodeGenerator::getInstance();
+            llvm::Value* aggregate = this->base->codegen();
+            if (!aggregate) return nullptr;
+            if (aggregate->getType()->isPointerTy()) {
+                aggregate = cg.builder.CreateLoad(cg.getLLVMType(aggregateType.get()), aggregate, "aggregate.value");
+            }
+            return cg.builder.CreateExtractValue(aggregate, { static_cast<unsigned>(builtinIndex) }, builtinField->value);
+        }
     }
 
     auto* baseIdentifier = dynamic_cast<IdentifierNode*>(this->base.get());
@@ -264,6 +281,9 @@ std::unique_ptr<Type> AccessFieldNode::getType() {
     if (baseType && fieldIdentifier && TensorRuntime::isTensorTypeName(baseType->getName()) &&
         tensorComponentIndex(fieldIdentifier->value) >= 0) {
         return std::make_unique<BasicType>("Double");
+    }
+    if (baseType && fieldIdentifier && builtinValueStructFieldIndex(baseType->getName(), fieldIdentifier->value) >= 0) {
+        return std::make_unique<BasicType>(builtinValueStructFieldType(baseType->getName()));
     }
     if (baseType && baseType->isStringTy() && fieldIdentifier) {
         const std::string& targetName = fieldIdentifier->value;

@@ -1,0 +1,15 @@
+import std.thread
+import std.microthread
+// Each OS thread has its own microthread scheduler.
+def main(): Int {
+    val t = threadStart([=]() -> {
+        val me = self();
+        spawn([=]() -> {
+            send(me, 21);
+            return 0;
+        });
+        return receive() * 2;
+    });
+    if (threadJoin(t) != 42) { return 1; }
+    return 0;
+}

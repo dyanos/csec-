@@ -1,0 +1,16 @@
+import std.microthread
+// receiveTimeout(ms, fallback) returns fallback when nothing arrives in time.
+def main(): Int {
+    val parent = self();
+    val none = receiveTimeout(20, -1);
+    if (none != -1) { return 1; }
+    spawn([=]() -> {
+        // Sleep cooperatively by waiting on an empty mailbox, then reply.
+        receiveTimeout(10, 0);
+        send(parent, 42);
+        return 0;
+    });
+    val got = receiveTimeout(1000, -1);
+    if (got != 42) { return 2; }
+    return 0;
+}

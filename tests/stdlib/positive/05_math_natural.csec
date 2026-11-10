@@ -1,0 +1,27 @@
+import std.math.natural
+// Exact natural-number arithmetic beyond 64 bits.
+def main(): Int {
+    val f30 = factorial(30);
+    if (natToString(f30) != "265252859812191058636308480000000") { return 1; }
+    if (digitCount(f30) != 33) { return 2; }
+    val ten: Nat = 10;
+    if (natMod(f30, ten) != 0) { return 3; }
+    val q = natDiv(f30, factorial(28));
+    if (q != 870) { return 4; }
+    val twoTo100 = natPow(2, 100);
+    if (natToString(twoTo100) != "1267650600228229401496703205376") { return 5; }
+    if (natSqrt(twoTo100) != natPow(2, 50)) { return 6; }
+    val a: Nat = 84;
+    val b: Nat = 36;
+    if (natGcd(a, b) != 12) { return 7; }
+    if (natLcm(a, b) != 252) { return 8; }
+    if (binomial(50, 25) != natDiv(factorial(50), factorial(25) * factorial(25))) { return 9; }
+    val mersenne = natPow(2, 61) - 1;
+    if (!isPrime(mersenne)) { return 10; }
+    if (isPrime(natPow(2, 61) + 1)) { return 11; }
+    val hundred: Nat = 100;
+    if (nextPrime(hundred) != 101) { return 12; }
+    if (natToString(fibonacci(100)) != "354224848179261915075") { return 13; }
+    if (natToLong(q) != 870) { return 14; }
+    return 0;
+}

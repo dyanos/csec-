@@ -1,0 +1,27 @@
+import std.thread
+// A producer thread streams values through a channel; the main thread sums them.
+def main(): Int {
+    val ch = channelNew();
+    val producer = threadStart([=]() -> {
+        var i: Int = 1;
+        while (i <= 100) {
+            channelSend(ch, i);
+            i = i + 1;
+        }
+        channelClose(ch);
+        return 0;
+    });
+    var total: Long = 0;
+    var running: Boolean = true;
+    while (running) {
+        val v = channelReceive(ch, -1);
+        if (v < 0) {
+            running = false;
+        } else {
+            total = total + v;
+        }
+    }
+    threadJoin(producer);
+    if (total != 5050) { return 1; }
+    return 0;
+}

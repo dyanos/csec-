@@ -1,0 +1,6 @@
+// A user-defined function named like a builtin keeps working.
+def send(a: Int, b: Int): Int = a + b
+def main(): Int {
+    if (send(40, 2) != 42) { return 1; }
+    return 0;
+}

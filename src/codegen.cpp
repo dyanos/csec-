@@ -292,10 +292,14 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         if (classSymbol) {
             return classSymbol->classType;
 		}
-		else {
-			std::cerr << "Error: Undefined class type '" << type->getName() << "'" << std::endl;
-			return nullptr;
+		// Built-in value aggregates (Complex, Rational, Quaternion) are StructSymbols, not classes.
+		if (auto* structSymbol = dynamic_cast<StructSymbol*>(symbolTable.lookup(type->getName()))) {
+			if (structSymbol->structType) {
+				return structSymbol->structType;
+			}
 		}
+		std::cerr << "Error: Undefined class type '" << type->getName() << "'" << std::endl;
+		return nullptr;
     }
     else if (type->getKind() == Type::Kind::GENERIC) {
         auto* genericType = static_cast<const GenericType*>(type);
@@ -313,6 +317,10 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         }
         if (genericType->baseType->getName() == "Tensor") {
             return TensorRuntime::getTensorPointerType(*this);
+        }
+        if (genericType->baseType->getName() == "Future") {
+            // Future<T>: opaque runtime handle filled by an `async` call (process_runtime.inc).
+            return llvm::PointerType::getUnqual(context);
         }
         // Check if this is a template class instantiation: e.g. Pair<Int, String>
         std::string baseName = genericType->baseType->getName();

@@ -1,0 +1,32 @@
+// std.process -- OS processes (not to be confused with std.microthread's lightweight processes).
+//
+//     import std.process
+//
+// Commands are run through the platform shell (cmd.exe /c on Windows, /bin/sh -c elsewhere).
+
+external def csec_os_process_run(command: String): Int;
+external def csec_os_process_output(command: String): String;
+external def csec_os_process_start(command: String): Long;
+external def csec_os_process_wait(handle: Long): Int;
+external def csec_os_process_is_running(handle: Long): Int;
+external def csec_os_process_kill(handle: Long): Int;
+external def csec_os_process_id(): Int;
+external def csec_os_process_exit(code: Int): Void;
+
+// Run a command and wait for it; returns its exit code (-1 if it could not be started).
+def runCommand(command: String): Int = csec_os_process_run(command)
+// Run a command and return everything it wrote to standard output.
+def commandOutput(command: String): String = csec_os_process_output(command)
+// Start a command without waiting; returns a handle for waitProcess/killProcess (0 on failure).
+def startProcess(command: String): Long = csec_os_process_start(command)
+// Wait for a started command and return its exit code.
+def waitProcess(handle: Long): Int = csec_os_process_wait(handle)
+def processRunning(handle: Long): Boolean = csec_os_process_is_running(handle) != 0
+def killProcess(handle: Long): Boolean = csec_os_process_kill(handle) != 0
+// Identifier of the current OS process.
+def currentProcessId(): Int = csec_os_process_id()
+// Terminate the current OS process immediately with `code`.
+def exitProcess(code: Int): Int {
+    csec_os_process_exit(code);
+    return code;
+}

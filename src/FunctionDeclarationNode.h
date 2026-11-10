@@ -37,6 +37,7 @@ public:
         isConstexpr = other.isConstexpr;
         isUnsafe = other.isUnsafe;
         isAsync = other.isAsync;
+        isIntrinsic = other.isIntrinsic;
         isOverride = other.isOverride;
         dllImportLibrary = other.dllImportLibrary;
         externalSymbolName = other.externalSymbolName;
@@ -66,6 +67,8 @@ public:
     bool isConstexpr = false;
     bool isUnsafe = false;
     bool isAsync = false;
+    // Declared with [@Intrinsic]: names a compiler intrinsic; emits no code (see intrinsics.h).
+    bool isIntrinsic = false;
     bool isOverride = false;
     std::string dllImportLibrary;
     std::string externalSymbolName;

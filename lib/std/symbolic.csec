@@ -1,0 +1,74 @@
+// std.symbolic -- symbolic algebra: build, simplify, differentiate, integrate, solve, evaluate.
+//
+//     import std.symbolic
+//     val f = sym("x^3 + 2*x");
+//     val text = symText(diff(f, "x"));      // "3*x^2 + 2"
+//
+// Expressions are immutable and identified by Long handles (0 = invalid / not computable).
+// Supported functions: sin cos tan exp ln sqrt abs. Numbers are floating point.
+
+external def csec_sym_num(value: Double): Long;
+external def csec_sym_var(name: String): Long;
+external def csec_sym_add(a: Long, b: Long): Long;
+external def csec_sym_sub(a: Long, b: Long): Long;
+external def csec_sym_mul(a: Long, b: Long): Long;
+external def csec_sym_div(a: Long, b: Long): Long;
+external def csec_sym_pow(a: Long, b: Long): Long;
+external def csec_sym_neg(a: Long): Long;
+external def csec_sym_func(name: String, a: Long): Long;
+external def csec_sym_parse(text: String): Long;
+external def csec_sym_simplify(e: Long): Long;
+external def csec_sym_expand(e: Long): Long;
+external def csec_sym_diff(e: Long, variable: String): Long;
+external def csec_sym_integrate(e: Long, variable: String): Long;
+external def csec_sym_subst(e: Long, variable: String, replacement: Long): Long;
+external def csec_sym_eval(e: Long, variable: String, value: Double): Double;
+external def csec_sym_eval_env(e: Long, bindings: String): Double;
+external def csec_sym_is_number(e: Long): Int;
+external def csec_sym_number_value(e: Long): Double;
+external def csec_sym_equals(a: Long, b: Long): Int;
+external def csec_sym_depends_on(e: Long, variable: String): Int;
+external def csec_sym_coefficient(e: Long, variable: String, degree: Int): Long;
+external def csec_sym_degree(e: Long, variable: String): Int;
+external def csec_sym_solve(e: Long, variable: String): String;
+external def csec_sym_to_string(e: Long): String;
+external def csec_sym_to_latex(e: Long): String;
+
+// Parse an infix expression such as "sin(x)^2 + 3*x - 1" (0 on a syntax error).
+def sym(text: String): Long = csec_sym_parse(text)
+def symVar(name: String): Long = csec_sym_var(name)
+def symNum(value: Double): Long = csec_sym_num(value)
+def symAdd(a: Long, b: Long): Long = csec_sym_add(a, b)
+def symSub(a: Long, b: Long): Long = csec_sym_sub(a, b)
+def symMul(a: Long, b: Long): Long = csec_sym_mul(a, b)
+def symDiv(a: Long, b: Long): Long = csec_sym_div(a, b)
+def symPow(a: Long, b: Long): Long = csec_sym_pow(a, b)
+def symNeg(a: Long): Long = csec_sym_neg(a)
+// Apply a named function: "sin", "cos", "tan", "exp", "ln", "sqrt", "abs".
+def symApply(function: String, a: Long): Long = csec_sym_func(function, a)
+
+def simplify(e: Long): Long = csec_sym_simplify(e)
+def expand(e: Long): Long = csec_sym_expand(e)
+// d e / d variable, simplified.
+def diff(e: Long, variable: String): Long = csec_sym_diff(e, variable)
+// An antiderivative (0 when none of the built-in rules apply).
+def integrate(e: Long, variable: String): Long = csec_sym_integrate(e, variable)
+// Replace every occurrence of `variable` with `replacement`.
+def subst(e: Long, variable: String, replacement: Long): Long = csec_sym_subst(e, variable, replacement)
+// Evaluate with one variable bound (NaN if another free variable remains).
+def evalAt(e: Long, variable: String, value: Double): Double = csec_sym_eval(e, variable, value)
+// Evaluate with bindings such as "x=1.5;y=2".
+def evalWith(e: Long, bindings: String): Double = csec_sym_eval_env(e, bindings)
+def isNumber(e: Long): Boolean = csec_sym_is_number(e) != 0
+def numberValue(e: Long): Double = csec_sym_number_value(e)
+// True when a - b simplifies to 0.
+def symEquals(a: Long, b: Long): Boolean = csec_sym_equals(a, b) != 0
+def dependsOn(e: Long, variable: String): Boolean = csec_sym_depends_on(e, variable) != 0
+// Coefficient of variable^degree in the expanded polynomial.
+def coefficient(e: Long, variable: String, degree: Int): Long = csec_sym_coefficient(e, variable, degree)
+// Polynomial degree in `variable` (-1 if not a polynomial).
+def degree(e: Long, variable: String): Int = csec_sym_degree(e, variable)
+// Roots of e = 0 for degree-1/2 polynomials, separated by ";" (complex roots as "a+bi").
+def solve(e: Long, variable: String): String = csec_sym_solve(e, variable)
+def symText(e: Long): String = csec_sym_to_string(e)
+def symLatex(e: Long): String = csec_sym_to_latex(e)

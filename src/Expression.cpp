@@ -775,6 +775,16 @@ std::unique_ptr<ASTNode> Parser::parsePrefixExpression()
 		auto rightCopy = parsePrefixExpression();
 		return std::make_unique<PrefixExpressionNode>("<-", std::move(rightCopy));
 	}
+	else if (match(TokenType::KEYWORD, "async")) {
+		// `async f(args)` runs the call in a new microthread and yields a Future<T> for `await`.
+		auto rightCopy = parsePrefixExpression();
+		return std::make_unique<PrefixExpressionNode>("async", std::move(rightCopy));
+	}
+	else if (match(TokenType::KEYWORD, "go")) {
+		// `go f(args)` runs the call in a new microthread, discarding its result; yields the pid.
+		auto rightCopy = parsePrefixExpression();
+		return std::make_unique<PrefixExpressionNode>("go", std::move(rightCopy));
+	}
 	else if (match(TokenType::KEYWORD, "await")) {
 		// `await expr` suspends until expr's async result is ready. Modelled as a prefix op so no new
 		// AST node is needed; the type checker enforces async-context + the no-borrow-across-await

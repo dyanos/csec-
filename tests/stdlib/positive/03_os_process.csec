@@ -1,0 +1,12 @@
+import std.process
+// Run child OS processes through the shell.
+def main(): Int {
+    if (runCommand("exit 3") != 3) { return 1; }
+    val out = commandOutput("echo hello");
+    if (!out.startsWith("hello")) { return 2; }
+    val h = startProcess("exit 5");
+    if (h == 0) { return 3; }
+    if (waitProcess(h) != 5) { return 4; }
+    if (currentProcessId() <= 0) { return 5; }
+    return 0;
+}

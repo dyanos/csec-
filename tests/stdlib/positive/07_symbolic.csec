@@ -1,0 +1,27 @@
+import std.symbolic
+// Symbolic differentiation, integration, expansion, solving, and evaluation.
+def main(): Int {
+    val f = sym("x^3 + 2*x");
+    if (symText(diff(f, "x")) != "3*x^2 + 2") { return 1; }
+    if (symText(expand(sym("(x+1)^2"))) != "x^2 + 2*x + 1") { return 2; }
+    if (solve(sym("x^2 - 5*x + 6"), "x") != "2;3") { return 3; }
+    if (solve(sym("x^2 + 1"), "x") != "i;-i") { return 4; }
+    if (evalAt(f, "x", 2.0) != 12.0) { return 5; }
+    if (evalWith(sym("x*y + 1"), "x=2;y=3") != 7.0) { return 6; }
+    // Integrate then differentiate back.
+    val g = sym("cos(x) + 3*x^2");
+    if (!symEquals(diff(integrate(g, "x"), "x"), g)) { return 7; }
+    // Build expressions programmatically: (x + y) * x
+    val x = symVar("x");
+    val y = symVar("y");
+    val h = symMul(symAdd(x, y), x);
+    if (degree(h, "x") != 2) { return 8; }
+    if (symText(coefficient(h, "x", 1)) != "y") { return 9; }
+    if (!dependsOn(h, "y")) { return 10; }
+    val atY = subst(h, "y", symNum(1.0));
+    if (evalAt(atY, "x", 3.0) != 12.0) { return 11; }
+    if (!symEquals(sym("x*y"), sym("y*x"))) { return 12; }
+    if (symLatex(sym("1/x")) != "\\frac{1}{x}") { return 13; }
+    if (sym("2 x") != 0) { return 14; }
+    return 0;
+}

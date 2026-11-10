@@ -1,0 +1,37 @@
+import std.microthread
+// Self-host: yield, isAlive, monitor, receiveTimeout, mailboxSize, joinProcesses. Exit code 42.
+def ticker(): Int {
+    send(1, 1);
+    yield();
+    send(1, 2);
+    return 0;
+}
+
+def main(): Int {
+    val none: Int = receiveTimeout(10, 0 - 1);
+    if (none != 0 - 1) {
+        return 1;
+    }
+    val pid: Int = spawn(ticker);
+    if (!isAlive(pid)) {
+        return 2;
+    }
+    monitor(pid, 100);
+    val left: Int = joinProcesses();
+    if (left != 0) {
+        return 3;
+    }
+    if (mailboxSize() != 3) {
+        return 4;
+    }
+    val a: Int = receive();
+    val b: Int = receive();
+    val down: Int = receive();
+    if (down != 100) {
+        return 5;
+    }
+    if (processCount() != 1) {
+        return 6;
+    }
+    return a * 10 + b * 16;
+}

@@ -52,6 +52,12 @@ llvm::Value* AttributeNode::codegen() {
     };
     auto& codeGen = CodeGenerator::getInstance();
 
+    if (auto* function = dynamic_cast<FunctionDeclarationNode*>(this->target.get())) {
+        if (function->isIntrinsic) {
+            return nullptr;
+        }
+    }
+
     if (auto* callNode = dynamic_cast<FunctionCallNode*>(this->expr.get())) {
         if (callNode->functionName == "LinkLibrary" || callNode->functionName == "NativeLibrary") {
             codeGen.addExternalLinkLibrary(stringArgument(callNode, 0));

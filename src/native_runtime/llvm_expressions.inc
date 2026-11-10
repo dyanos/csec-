@@ -1,5 +1,309 @@
+extern "C++" {
+// ---- Concurrency: std.microthread / std.thread intrinsics, `go`, `async`, `await` ------------------
+// Mirrors the native compiler (LANGUAGE_SPEC.md sections 1.2 and 3). In the self-host, spawn/threadStart and
+// go/async take named functions only. Every path here is guarded by an intrinsic declaration or a
+// go/async/await keyword, so programs that use neither (including csec_compiler.csec) are unaffected.
+
+static std::vector<std::pair<int, int>> csec_call_argument_ranges(const char* tokens, int open, int close) {
+    std::vector<std::pair<int, int>> ranges;
+    int argumentStart = open + 1;
+    for (int cursor = argumentStart; cursor <= close; ++cursor) {
+        if (cursor == close || csec_is_argument_separator(tokens, close, cursor)) {
+            if (cursor > argumentStart) ranges.push_back({ argumentStart, cursor });
+            argumentStart = cursor + 1;
+        }
+    }
+    return ranges;
+}
+
+// The closing paren when `name(...)` spans exactly [start, end); otherwise -1.
+static int csec_whole_call_close(const char* tokens, int start, int end) {
+    if (csec_token_kind_at(tokens, start) != 'I' || !csec_native_token_is(tokens, start + 1, 'O', "(")) return -1;
+    const int close = csec_find_closing_token(tokens, start + 1, end, "(", ")");
+    return close == end - 1 ? close : -1;
+}
+
+static bool csec_is_intrinsic_call(const char* tokens, int start, int end, const char* name) {
+    return csec_native_token_is(tokens, start, 'I', name) && csec_whole_call_close(tokens, start, end) >= 0 &&
+        csec_is_declared_intrinsic(tokens, name);
+}
+
+static std::string csec_emit_value_of_llvm_type(const char* tokens, int start, int end, const std::string& llvmType, const std::string& name) {
+    if (llvmType == "i64") return csec_emit_i64_expression(tokens, start, end, name);
+    if (llvmType == "double") return csec_emit_f64_expression(tokens, start, end, name);
+    if (llvmType == "float") return csec_emit_f32_expression(tokens, start, end, name);
+    if (llvmType == "i1") return csec_emit_i1_expression(tokens, start, end, name);
+    if (llvmType == "ptr") return csec_emit_ptr_expression(tokens, start, end, name);
+    if (llvmType == "i8") return csec_emit_i8_expression(tokens, start, end, name);
+    if (llvmType == "i16") return csec_emit_i16_expression(tokens, start, end, name);
+    return csec_emit_i32_expression(tokens, start, end, name);
+}
+
+// Widen a value to the 64-bit Future payload.
+static std::string csec_task_payload(const std::string& value, const std::string& llvmType, const std::string& out) {
+    if (llvmType == "i64") return "  " + out + " = add i64 " + value + ", 0\n";
+    if (llvmType == "i1") return "  " + out + " = zext i1 " + value + " to i64\n";
+    if (llvmType == "i32" || llvmType == "i16" || llvmType == "i8") return "  " + out + " = sext " + llvmType + " " + value + " to i64\n";
+    if (llvmType == "double") return "  " + out + " = bitcast double " + value + " to i64\n";
+    if (llvmType == "float") return "  " + out + ".wide = fpext float " + value + " to double\n  " + out + " = bitcast double " + out + ".wide to i64\n";
+    return "  " + out + " = ptrtoint ptr " + value + " to i64\n";
+}
+
+static std::string csec_task_env_type_name(int site) { return "%csec.task.env." + std::to_string(site); }
+static std::string csec_task_function_name(int site) { return "csec_task_" + std::to_string(site); }
+
+static std::string csec_task_callee_symbol(const char* name) {
+    return std::strcmp(name, "main") == 0 ? std::string("csec_user_main") : std::string(name);
+}
+
+// Start the call that follows the `go`/`async` keyword at `site` in a new microthread. The arguments
+// are evaluated here and copied (with the future) into the task environment; `async` yields the
+// Future in `resultName`, `go` yields the pid.
+static std::string csec_emit_task_start(const char* tokens, int site, int end, const std::string& resultName, bool wantFuture) {
+    const int callStart = site + 1;
+    const int close = csec_whole_call_close(tokens, callStart, end);
+    const int callee = close >= 0 ? csec_top_level_function_declaration(tokens, csec_token_text_at(tokens, callStart)) : -1;
+    if (callee < 0) {
+        return wantFuture ? "  " + resultName + " = getelementptr i8, ptr null, i64 0\n" : "  " + resultName + " = add i32 0, 0\n";
+    }
+    const auto parameters = csec_function_params(tokens, callee);
+    const auto arguments = csec_call_argument_ranges(tokens, callStart + 1, close);
+    const std::string envType = csec_task_env_type_name(site);
+    const std::string env = resultName + ".env";
+    std::string output;
+    const std::string future = wantFuture ? resultName : std::string("null");
+    if (wantFuture) output += "  " + resultName + " = call ptr @csec_future_new()\n";
+    output += "  " + env + " = alloca " + envType + "\n";
+    output += "  " + env + ".f = getelementptr inbounds " + envType + ", ptr " + env + ", i32 0, i32 0\n";
+    output += "  store ptr " + future + ", ptr " + env + ".f\n";
+    for (size_t index = 0; index < arguments.size() && index < parameters.size(); ++index) {
+        const std::string llvmType = csec_llvm_type_for_name(parameters[index].second.c_str());
+        const std::string value = resultName + ".arg" + std::to_string(index);
+        output += csec_emit_value_of_llvm_type(tokens, arguments[index].first, arguments[index].second, llvmType, value);
+        output += "  " + value + ".slot = getelementptr inbounds " + envType + ", ptr " + env + ", i32 0, i32 " + std::to_string(index + 1) + "\n";
+        output += "  store " + llvmType + " " + value + ", ptr " + value + ".slot\n";
+    }
+    const std::string pid = wantFuture ? resultName + ".pid" : resultName;
+    output += "  " + pid + " = call i32 @csec_process_spawn(ptr @" + csec_task_function_name(site) + ", ptr " + env +
+        ", i64 ptrtoint (ptr getelementptr (" + envType + ", ptr null, i32 1) to i64))\n";
+    return output;
+}
+
+// `await e` where e is a Future local or an inline `async f(...)`: the raw 64-bit payload.
+static std::string csec_emit_await_payload(const char* tokens, int start, int end, const std::string& rawName) {
+    std::string output;
+    const std::string future = rawName + ".future";
+    if (csec_native_token_is(tokens, start + 1, 'K', "async")) {
+        output += csec_emit_task_start(tokens, start + 1, end, future, true);
+    } else if (csec_token_kind_at(tokens, start + 1) == 'I' && start + 2 == end) {
+        const char* storage = csec_lookup_visible_storage_name(tokens, start + 1, csec_token_text_at(tokens, start + 1));
+        output += "  " + future + " = load ptr, ptr %" + std::string(storage) + "\n";
+    } else {
+        output += csec_emit_ptr_expression(tokens, start + 1, end, future);
+    }
+    output += "  " + rawName + " = call i64 @csec_future_await(ptr " + future + ")\n";
+    return output;
+}
+
+// `await e` that waits on a Future: `e` is an inline `async f(...)` or a local holding a Future.
+// Any other `await e` (e.g. awaiting a call of an `async def`) yields `e` unchanged, as in the native
+// compiler.
+static bool csec_is_await_expression(const char* tokens, int start, int end) {
+    if (!csec_native_token_is(tokens, start, 'K', "await") || start + 1 >= end) return false;
+    if (csec_native_token_is(tokens, start + 1, 'K', "async")) return csec_whole_call_close(tokens, start + 2, end) >= 0;
+    if (csec_token_kind_at(tokens, start + 1) == 'I' && start + 2 == end) {
+        // The local's own declaration statement decides (an annotation `: Future<...>` or an
+        // `= async ...` initializer).
+        const int declaration = csec_find_visible_local(tokens, start + 1, csec_token_text_at(tokens, start + 1));
+        if (declaration < 0) return false;
+        const int statementEnd = csec_advance_statement(tokens, declaration, start + 1);
+        const int initializer = csec_find_top_level_operator(tokens, declaration, statementEnd, 1);
+        return csec_c_local_type(tokens, declaration, statementEnd, initializer).rfind("Future", 0) == 0;
+    }
+    return false;
+}
+
+static bool csec_is_await_identity(const char* tokens, int start, int end) {
+    return csec_native_token_is(tokens, start, 'K', "await") && start + 1 < end && !csec_is_await_expression(tokens, start, end);
+}
+
+static bool csec_is_task_expression(const char* tokens, int start, int end, const char* keyword) {
+    return csec_native_token_is(tokens, start, 'K', keyword) && csec_whole_call_close(tokens, start + 1, end) >= 0;
+}
+
+// i32-valued microthread intrinsics; "" when [start, end) is not one of them.
+static std::string csec_emit_i32_intrinsic(const char* tokens, int start, int end, const std::string& r) {
+    if (csec_token_kind_at(tokens, start) != 'I') return "";
+    const char* name = csec_token_text_at(tokens, start);
+    static const char* const names[] = { "spawn", "self", "send", "receive", "receiveTimeout", "yield", "isAlive",
+        "monitor", "mailboxSize", "processCount", "joinProcesses" };
+    bool known = false;
+    for (const char* candidate : names) known = known || std::strcmp(name, candidate) == 0;
+    if (!known || !csec_is_intrinsic_call(tokens, start, end, name)) return "";
+    const int close = end - 1;
+    const auto args = csec_call_argument_ranges(tokens, start + 1, close);
+    auto arg32 = [&](size_t index, const std::string& out) {
+        return index < args.size() ? csec_emit_i32_expression(tokens, args[index].first, args[index].second, out)
+                                   : "  " + out + " = add i32 0, 0\n";
+    };
+    auto arg64 = [&](size_t index, const std::string& out) {
+        return arg32(index, out + ".narrow") + "  " + out + " = sext i32 " + out + ".narrow to i64\n";
+    };
+    const std::string n = name;
+    if (n == "spawn") {
+        if (args.size() == 1 && csec_token_kind_at(tokens, args[0].first) == 'I' && args[0].first + 1 == args[0].second) {
+            const char* function = csec_token_text_at(tokens, args[0].first);
+            return "  " + r + " = call i32 @csec_process_spawn(ptr @" + csec_task_callee_symbol(function) + ", ptr null, i64 0)\n";
+        }
+        return "  " + r + " = add i32 0, 0\n"; // the self-host spawns named functions only
+    }
+    if (n == "self") return "  " + r + " = call i32 @csec_process_self()\n";
+    if (n == "send") return arg32(0, r + ".pid") + arg64(1, r + ".msg") +
+        "  " + r + " = call i32 @csec_process_send(i32 " + r + ".pid, i64 " + r + ".msg)\n";
+    if (n == "receive") return "  " + r + ".wide = call i64 @csec_process_receive()\n  " + r + " = trunc i64 " + r + ".wide to i32\n";
+    if (n == "receiveTimeout") return arg64(0, r + ".ms") + arg64(1, r + ".fallback") +
+        "  " + r + ".wide = call i64 @csec_process_receive_timeout(i64 " + r + ".ms, i64 " + r + ".fallback)\n  " + r + " = trunc i64 " + r + ".wide to i32\n";
+    if (n == "yield") return "  call void @csec_process_yield()\n  " + r + " = add i32 0, 0\n";
+    if (n == "isAlive") return arg32(0, r + ".pid") + "  " + r + " = call i32 @csec_process_alive(i32 " + r + ".pid)\n";
+    if (n == "monitor") return arg32(0, r + ".pid") + arg64(1, r + ".msg") +
+        "  " + r + " = call i32 @csec_process_monitor(i32 " + r + ".pid, i64 " + r + ".msg)\n";
+    if (n == "mailboxSize") return "  " + r + " = call i32 @csec_process_mailbox_size()\n";
+    if (n == "processCount") return "  " + r + " = call i32 @csec_process_count()\n";
+    return "  " + r + " = call i32 @csec_process_join()\n";
+}
+
+// Declarations and task thunks for a module that uses concurrency; "" for every other module.
+static bool csec_module_uses_concurrency(const char* tokens) {
+    for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
+        if (csec_native_token_is(tokens, cursor, 'K', "go") || csec_native_token_is(tokens, cursor, 'K', "await") ||
+            (csec_native_token_is(tokens, cursor, 'K', "async") && !csec_native_token_is(tokens, cursor + 1, 'K', "def")) ||
+            (csec_native_token_is(tokens, cursor, 'O', "[@") && csec_native_token_is(tokens, cursor + 1, 'I', "Intrinsic"))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static std::string csec_concurrency_definitions(const char* tokens) {
+    if (!csec_module_uses_concurrency(tokens)) return "";
+    std::string output =
+        "declare i32 @csec_process_spawn(ptr, ptr, i64)\n"
+        "declare i32 @csec_process_self()\n"
+        "declare i32 @csec_process_send(i32, i64)\n"
+        "declare i64 @csec_process_receive()\n"
+        "declare i64 @csec_process_receive_timeout(i64, i64)\n"
+        "declare void @csec_process_yield()\n"
+        "declare i32 @csec_process_alive(i32)\n"
+        "declare i32 @csec_process_monitor(i32, i64)\n"
+        "declare i32 @csec_process_mailbox_size()\n"
+        "declare i32 @csec_process_count()\n"
+        "declare i32 @csec_process_join()\n"
+        "declare ptr @csec_future_new()\n"
+        "declare void @csec_future_complete(ptr, i64)\n"
+        "declare i64 @csec_future_await(ptr)\n"
+        "declare i64 @csec_thread_start(ptr, ptr, i64)\n\n";
+    const int tokenCount = tokenCountCached(tokens ? tokens : "");
+    for (int site = 0; site < tokenCount; ++site) {
+        const bool isGo = csec_native_token_is(tokens, site, 'K', "go");
+        const bool isAsync = csec_native_token_is(tokens, site, 'K', "async");
+        if (!isGo && !isAsync) continue;
+        if (csec_token_kind_at(tokens, site + 1) != 'I' || !csec_native_token_is(tokens, site + 2, 'O', "(")) continue;
+        const int close = csec_find_closing_token(tokens, site + 2, tokenCount, "(", ")");
+        const int callee = close >= 0 ? csec_top_level_function_declaration(tokens, csec_token_text_at(tokens, site + 1)) : -1;
+        if (callee < 0) continue;
+        const auto parameters = csec_function_params(tokens, callee);
+        const auto arguments = csec_call_argument_ranges(tokens, site + 2, close);
+        const std::string envType = csec_task_env_type_name(site);
+        std::string fields = "ptr";
+        std::string loads;
+        std::string callArguments;
+        for (size_t index = 0; index < arguments.size() && index < parameters.size(); ++index) {
+            const std::string llvmType = csec_llvm_type_for_name(parameters[index].second.c_str());
+            const std::string value = "%arg" + std::to_string(index);
+            fields += ", " + llvmType;
+            loads += "  " + value + ".slot = getelementptr inbounds " + envType + ", ptr %env, i32 0, i32 " + std::to_string(index + 1) + "\n";
+            loads += "  " + value + " = load " + llvmType + ", ptr " + value + ".slot\n";
+            if (!callArguments.empty()) callArguments += ", ";
+            callArguments += llvmType + " " + value;
+        }
+        const std::string returnType = csec_llvm_type_for_name(csec_function_return_type_at(tokens, callee));
+        output += envType + " = type { " + fields + " }\n\n";
+        output += "define internal void @" + csec_task_function_name(site) + "(ptr %env) {\nentry:\n";
+        output += "  %future.slot = getelementptr inbounds " + envType + ", ptr %env, i32 0, i32 0\n";
+        output += "  %future = load ptr, ptr %future.slot\n";
+        output += loads;
+        output += "  %result = call " + returnType + " @" + csec_task_callee_symbol(csec_token_text_at(tokens, site + 1)) + "(" + callArguments + ")\n";
+        output += csec_task_payload("%result", returnType, "%payload");
+        output += "  call void @csec_future_complete(ptr %future, i64 %payload)\n  ret void\n}\n\n";
+    }
+    return output;
+}
+
+
+// A whole-range call `name(args)` of an `external def` (not an intrinsic, not shadowed by a `def`):
+// arguments follow the declared parameter types and the result is converted to `contextType`.
+// Returns "" when [start, end) is not such a call or the result cannot be converted.
+static std::string csec_emit_external_call(const char* tokens, int start, int end, const std::string& resultName, const std::string& contextType) {
+    const int close = csec_whole_call_close(tokens, start, end);
+    if (close < 0) return "";
+    const char* name = csec_token_text_at(tokens, start);
+    int declaration = csec_top_level_function_declaration(tokens, name);
+    if (declaration >= 0) {
+        // A `def` callee takes this path only when it has a Long parameter (which the older call paths
+        // pass as i32) and every parameter is a plain scalar or String.
+        // The i64 call path also passes String arguments as i64, so String parameters qualify there.
+        bool hasWide = false;
+        bool hasString = false;
+        for (const auto& parameter : csec_function_params(tokens, declaration)) {
+            const std::string& type = parameter.second;
+            if (type != "Int" && type != "Long" && type != "Boolean" && type != "Double" && type != "String") return "";
+            hasWide = hasWide || type == "Long";
+            hasString = hasString || type == "String";
+        }
+        if (!hasWide && !(contextType == "i64" && hasString)) return "";
+    } else {
+        declaration = csec_top_level_external_function_declaration(tokens, name);
+    }
+    if (declaration < 0) return "";
+    const auto parameters = csec_function_params(tokens, declaration);
+    const auto arguments = csec_call_argument_ranges(tokens, start + 1, close);
+    if (arguments.size() != parameters.size()) return "";
+    const std::string returnType = csec_llvm_type_for_name(csec_function_return_type_at(tokens, declaration));
+    const bool integerReturn = returnType == "i32" || returnType == "i64" || returnType == "i1" || returnType == "i8" || returnType == "i16";
+    const bool integerContext = contextType == "i32" || contextType == "i64" || contextType == "i1";
+    if (returnType != contextType && !(integerReturn && integerContext)) return "";
+    std::string output;
+    std::string argumentList;
+    for (size_t index = 0; index < arguments.size(); ++index) {
+        const std::string type = csec_llvm_type_for_name(parameters[index].second);
+        const std::string value = resultName + ".x" + std::to_string(index);
+        output += csec_emit_value_of_llvm_type(tokens, arguments[index].first, arguments[index].second, type, value);
+        if (!argumentList.empty()) argumentList += ", ";
+        argumentList += type + " " + value;
+    }
+    const std::string raw = returnType == contextType ? resultName : resultName + ".raw";
+    output += "  " + raw + " = call " + returnType + " @" + csec_task_callee_symbol(name) + "(" + argumentList + ")\n";
+    if (raw == resultName) return output;
+    if (contextType == "i1") return output + "  " + resultName + " = icmp ne " + returnType + " " + raw + ", 0\n";
+    if (returnType == "i1") return output + "  " + resultName + " = zext i1 " + raw + " to " + contextType + "\n";
+    const int fromBits = returnType == "i64" ? 64 : (returnType == "i16" ? 16 : (returnType == "i8" ? 8 : 32));
+    const int toBits = contextType == "i64" ? 64 : 32;
+    return output + "  " + resultName + " = " + std::string(fromBits < toBits ? "sext " : "trunc ") + returnType + " " + raw + " to " + contextType + "\n";
+}
+} // extern "C++"
+
 static std::string csec_emit_ptr_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
+    if (csec_is_task_expression(tokens, start, end, "async")) return csec_emit_task_start(tokens, start, end, resultName, true);
+    if (csec_is_await_identity(tokens, start, end)) return csec_emit_ptr_expression(tokens, start + 1, end, resultName);
+    if (csec_is_await_expression(tokens, start, end)) {
+        return csec_emit_await_payload(tokens, start, end, resultName + ".raw") +
+            "  " + resultName + " = inttoptr i64 " + resultName + ".raw to ptr\n";
+    }
+    {
+        const std::string external = csec_emit_external_call(tokens, start, end, resultName, "ptr");
+        if (!external.empty()) return external;
+    }
     const std::string indexedArray = csec_emit_ptr_array_index(tokens, start, end, resultName);
     if (!indexedArray.empty()) return indexedArray;
     // Use the string-literal-aware scan here so a concatenation chain whose operands include string
@@ -154,6 +458,20 @@ static std::string csec_emit_ptr_expression(const char* tokens, int start, int e
 static std::string csec_emit_i32_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = add i32 0, 0\n";
+    if (csec_is_task_expression(tokens, start, end, "go")) return csec_emit_task_start(tokens, start, end, resultName, false);
+    if (csec_is_await_identity(tokens, start, end)) return csec_emit_i32_expression(tokens, start + 1, end, resultName);
+    if (csec_is_await_expression(tokens, start, end)) {
+        return csec_emit_await_payload(tokens, start, end, resultName + ".raw") +
+            "  " + resultName + " = trunc i64 " + resultName + ".raw to i32\n";
+    }
+    {
+        const std::string intrinsic = csec_emit_i32_intrinsic(tokens, start, end, resultName);
+        if (!intrinsic.empty()) return intrinsic;
+    }
+    {
+        const std::string external = csec_emit_external_call(tokens, start, end, resultName, "i32");
+        if (!external.empty()) return external;
+    }
     if (csec_native_token_is(tokens, start, 'O', "{") &&
         csec_find_closing_token(tokens, start, end, "{", "}") == end - 1) {
         return csec_emit_i32_block_expression(tokens, start, end, resultName);
@@ -625,6 +943,10 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
         if (close > start + 1) {
             const int callee = csec_top_level_function_declaration(tokens, csec_token_text_at(tokens, start));
             const auto parameters = callee >= 0 ? csec_function_params(tokens, callee) : std::vector<std::pair<std::string, std::string>>{};
+            // 64-bit parameters (Long, also of `external def` callees) must receive i64 arguments; this
+            // is the only use of the external declaration here, so other argument lowering is unchanged.
+            const int wideDeclaration = callee >= 0 ? callee : csec_top_level_external_function_declaration(tokens, csec_token_text_at(tokens, start));
+            const auto wideParameters = wideDeclaration >= 0 ? csec_function_params(tokens, wideDeclaration) : std::vector<std::pair<std::string, std::string>>{};
             std::string output;
             std::string arguments;
             int argumentStart = start + 2;
@@ -649,6 +971,10 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                                csec_is_string_class_constructor_param(tokens, argumentStart, csec_token_text_at(tokens, argumentStart)))))) {
                             output += csec_emit_ptr_expression(tokens, argumentStart, cursor, argumentName);
                             arguments += "ptr " + argumentName;
+                        } else if (argumentIndex < static_cast<int>(wideParameters.size()) &&
+                                   std::strcmp(csec_llvm_type_for_name(wideParameters[argumentIndex].second), "i64") == 0) {
+                            output += csec_emit_i64_expression(tokens, argumentStart, cursor, argumentName);
+                            arguments += "i64 " + argumentName;
                         } else {
                             const bool booleanArgument = argumentIndex < static_cast<int>(parameters.size()) && parameters[argumentIndex].second == "Boolean";
                             output += booleanArgument
@@ -794,6 +1120,15 @@ static std::string csec_emit_f32_expression(const char* tokens, int start, int e
 static std::string csec_emit_f64_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = fadd double 0.000000e+00, 0.000000e+00\n";
+    if (csec_is_await_identity(tokens, start, end)) return csec_emit_f64_expression(tokens, start + 1, end, resultName);
+    if (csec_is_await_expression(tokens, start, end)) {
+        return csec_emit_await_payload(tokens, start, end, resultName + ".raw") +
+            "  " + resultName + " = bitcast i64 " + resultName + ".raw to double\n";
+    }
+    {
+        const std::string external = csec_emit_external_call(tokens, start, end, resultName, "double");
+        if (!external.empty()) return external;
+    }
     if (csec_native_token_is(tokens, start, 'O', "(") && csec_find_closing_token(tokens, start, end, "(", ")") == end - 1)
         return csec_emit_f64_expression(tokens, start + 1, end - 1, resultName);
     if (csec_native_token_is(tokens, start, 'O', "+") && start + 1 < end)
@@ -898,6 +1233,23 @@ static std::string csec_emit_f64_expression(const char* tokens, int start, int e
 static std::string csec_emit_i64_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = add i64 0, 0\n";
+    if (csec_is_await_identity(tokens, start, end)) return csec_emit_i64_expression(tokens, start + 1, end, resultName);
+    if (csec_is_await_expression(tokens, start, end)) {
+        return csec_emit_await_payload(tokens, start, end, resultName + ".raw") +
+            "  " + resultName + " = add i64 " + resultName + ".raw, 0\n";
+    }
+    if (csec_is_intrinsic_call(tokens, start, end, "threadStart")) {
+        const auto args = csec_call_argument_ranges(tokens, start + 1, end - 1);
+        if (args.size() == 1 && csec_token_kind_at(tokens, args[0].first) == 'I' && args[0].first + 1 == args[0].second) {
+            return "  " + resultName + " = call i64 @csec_thread_start(ptr @" +
+                csec_task_callee_symbol(csec_token_text_at(tokens, args[0].first)) + ", ptr null, i64 0)\n";
+        }
+        return "  " + resultName + " = add i64 0, 0\n";
+    }
+    {
+        const std::string external = csec_emit_external_call(tokens, start, end, resultName, "i64");
+        if (!external.empty()) return external;
+    }
     const std::string indexedArray = csec_emit_i64_array_index(tokens, start, end, resultName);
     if (!indexedArray.empty()) return indexedArray;
     if (csec_native_token_is(tokens, start, 'O', "(") && csec_find_closing_token(tokens, start, end, "(", ")") == end - 1)
@@ -924,6 +1276,17 @@ static std::string csec_emit_i64_expression(const char* tokens, int start, int e
         const int function = csec_enclosing_function_declaration(tokens, start);
         if (function >= 0) for (const auto& parameter : csec_function_params(tokens, function)) if (parameter.first == name && csec_is_i64_type_name(parameter.second))
             return "  " + resultName + " = load i64, ptr %" + csec_lookup_visible_storage_name(tokens, start, name.c_str()) + "\n";
+        // A narrower Int/Boolean local or parameter read in a 64-bit context: load it from its slot and
+        // widen it (previously this referenced the bare name, which is not an SSA value).
+        std::string narrowType;
+        if (declaration >= 0) narrowType = csec_c_local_type(tokens, declaration, declarationEnd, initializer);
+        else if (function >= 0) for (const auto& parameter : csec_function_params(tokens, function)) if (parameter.first == name) narrowType = parameter.second;
+        if (narrowType == "Int" || narrowType == "Boolean") {
+            const char* storage = csec_lookup_visible_storage_name(tokens, start, name.c_str());
+            const bool boolean = narrowType == "Boolean";
+            return "  " + resultName + ".narrow = load " + std::string(boolean ? "i1" : "i32") + ", ptr %" + storage + "\n" +
+                "  " + resultName + " = " + std::string(boolean ? "zext i1 " : "sext i32 ") + resultName + ".narrow to i64\n";
+        }
         return "  " + resultName + " = load i64, ptr %" + name + "\n";
     }
     if (csec_token_kind_at(tokens, start) == 'I' && start + 1 < end && csec_native_token_is(tokens, start + 1, 'O', "(")) {
@@ -1122,6 +1485,19 @@ static std::string csec_emit_i16_expression(const char* tokens, int start, int e
 static std::string csec_emit_i1_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = icmp eq i32 0, 1\n";
+    if (csec_is_await_identity(tokens, start, end)) return csec_emit_i1_expression(tokens, start + 1, end, resultName);
+    if (csec_is_await_expression(tokens, start, end)) {
+        return csec_emit_await_payload(tokens, start, end, resultName + ".raw") +
+            "  " + resultName + " = icmp ne i64 " + resultName + ".raw, 0\n";
+    }
+    if (csec_is_intrinsic_call(tokens, start, end, "isAlive")) {
+        return csec_emit_i32_intrinsic(tokens, start, end, resultName + ".i32") +
+            "  " + resultName + " = icmp ne i32 " + resultName + ".i32, 0\n";
+    }
+    {
+        const std::string external = csec_emit_external_call(tokens, start, end, resultName, "i1");
+        if (!external.empty()) return external;
+    }
     if (csec_native_token_is(tokens, start, 'O', "(") &&
         csec_find_closing_token(tokens, start, end, "(", ")") == end - 1) {
         return csec_emit_i1_expression(tokens, start + 1, end - 1, resultName);

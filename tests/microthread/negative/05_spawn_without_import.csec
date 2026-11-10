@@ -1,0 +1,5 @@
+// Microthread intrinsics are only available after `import std.microthread`.
+def main(): Int {
+    val pid = spawn([=]() -> { return 0; });
+    return pid;
+}

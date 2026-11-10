@@ -1,0 +1,87 @@
+// std.math.natural -- tools for natural numbers.
+//
+//     import std.math.natural
+//
+// `Nat` is the built-in arbitrary-precision natural number (it never overflows); + - * and
+// comparisons are built into the language. This module adds division, powers, gcd/lcm, roots,
+// primality, and conversions.
+
+external def csec_bigint_div(a: Nat, b: Nat): Nat;
+external def csec_bigint_mod(a: Nat, b: Nat): Nat;
+external def csec_bigint_pow(a: Nat, exponent: Long): Nat;
+external def csec_bigint_gcd(a: Nat, b: Nat): Nat;
+external def csec_bigint_isqrt(a: Nat): Nat;
+external def csec_bigint_to_i64(a: Nat): Long;
+external def csec_bigint_to_double(a: Nat): Double;
+external def csec_bigint_digit_count(a: Nat): Int;
+external def csec_bigint_is_prime(a: Nat): Int;
+external def csec_bigint_to_string(a: Nat): String;
+
+// Integer quotient a / b (0 when b is 0).
+def natDiv(a: Nat, b: Nat): Nat = csec_bigint_div(a, b)
+// Remainder a mod b (0 when b is 0).
+def natMod(a: Nat, b: Nat): Nat = csec_bigint_mod(a, b)
+def natPow(base: Nat, exponent: Int): Nat = csec_bigint_pow(base, exponent)
+def natGcd(a: Nat, b: Nat): Nat = csec_bigint_gcd(a, b)
+def natLcm(a: Nat, b: Nat): Nat {
+    val g: Nat = csec_bigint_gcd(a, b);
+    if (g == 0) { return g; }
+    return csec_bigint_div(a * b, g);
+}
+// Floor of the square root.
+def natSqrt(a: Nat): Nat = csec_bigint_isqrt(a)
+// Primality test (deterministic below 3.3e24, probabilistic with error < 4^-13 above).
+def isPrime(a: Nat): Boolean = csec_bigint_is_prime(a) != 0
+def digitCount(a: Nat): Int = csec_bigint_digit_count(a)
+def natToLong(a: Nat): Long = csec_bigint_to_i64(a)
+def natToDouble(a: Nat): Double = csec_bigint_to_double(a)
+def natToString(a: Nat): String = csec_bigint_to_string(a)
+
+def factorial(n: Int): Nat {
+    var result: Nat = 1;
+    var i: Int = 2;
+    while (i <= n) {
+        result = result * i;
+        i = i + 1;
+    }
+    return result;
+}
+
+// Binomial coefficient C(n, k), exact.
+def binomial(n: Int, k: Int): Nat {
+    var result: Nat = 1;
+    if (k < 0 or k > n) {
+        result = 0;
+        return result;
+    }
+    var i: Int = 1;
+    while (i <= k) {
+        val step: Nat = n - k + i;
+        val divisor: Nat = i;
+        result = csec_bigint_div(result * step, divisor);
+        i = i + 1;
+    }
+    return result;
+}
+
+def fibonacci(n: Int): Nat {
+    var a: Nat = 0;
+    var b: Nat = 1;
+    var i: Int = 0;
+    while (i < n) {
+        val next: Nat = a + b;
+        a = b;
+        b = next;
+        i = i + 1;
+    }
+    return a;
+}
+
+// The smallest prime strictly greater than n.
+def nextPrime(n: Nat): Nat {
+    var candidate: Nat = n + 1;
+    while (csec_bigint_is_prime(candidate) == 0) {
+        candidate = candidate + 1;
+    }
+    return candidate;
+}

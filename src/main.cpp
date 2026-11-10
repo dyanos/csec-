@@ -76,6 +76,7 @@ void printUsage(const char* programName) {
         << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
         << "  -O0 / -O1 / -O2 / -O3 / -O   Optimization level (-O = -O2; default: mem2reg only)\n"
         << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
+        << "  --lib-path <dir>             Add a standard-library root searched by import\n"
         << "  --link-path <path>           Add a native library search path\n"
         << "  --strict-ownership           Force M2 strict ownership on (default; move-check all non-copy types)\n"
         << "  --no-strict-ownership        Opt out of default strict ownership (box-only move-checking)\n"
@@ -454,6 +455,12 @@ std::filesystem::path resolveImportPath(
         if (std::filesystem::exists(candidate, ec) && std::filesystem::is_regular_file(candidate, ec)) {
             return candidate;
         }
+    }
+    // Fall back to the standard library shipped with the compiler (shared with the self-host path).
+    if (char* library = csec_find_library_module(target.c_str())) {
+        std::string found = library;
+        std::free(library);
+        if (!found.empty()) return utf8Path(found);
     }
     return candidates.front();
 }
@@ -1346,6 +1353,14 @@ int main(int argc, char** argv) {
                 return 1;
             }
             outputFile = argv[++i];
+            continue;
+        }
+        if (arg == "--lib-path") {
+            if (i + 1 >= argc) {
+                std::cerr << "Error: --lib-path requires a directory" << std::endl;
+                return 1;
+            }
+            csec_add_library_root(argv[++i]);
             continue;
         }
         if (arg == "--link-lib") {

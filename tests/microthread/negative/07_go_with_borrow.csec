@@ -1,0 +1,6 @@
+def look(v: &Int): Int = 0
+def main(): Int {
+    var x: Int = 1;
+    go look(&x);
+    return 0;
+}

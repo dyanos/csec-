@@ -1,0 +1,11 @@
+import std.symbolic
+// Self-host: symbolic library through external declarations. Exit code 42.
+def main(): Int {
+    val f: Long = sym("x^2 + 2*x");
+    val df: Long = diff(f, "x");
+    val v: Double = evalAt(df, "x", 20.0);
+    if (v != 42.0) {
+        return 1;
+    }
+    return 42;
+}

@@ -146,6 +146,7 @@ llvm::Value* LambdaExpressionNode::codegen() {
     // lambda values one representation, so a function-type parameter can be called the same way
     // whether or not the lambda it received captures anything.
     llvm::StructType* envType = llvm::StructType::get(cg.context, envFieldTypes);
+    environmentType = envType;
 
     std::vector<llvm::Type*> paramTypes;
     paramTypes.push_back(opaquePtr);
@@ -221,10 +222,20 @@ llvm::Value* LambdaExpressionNode::codegen() {
     llvm::Value* environment = cg.builder.CreateAlloca(envType, nullptr, "lambda.env");
     for (size_t i = 0; i < captured.size(); ++i) {
         llvm::Value* slot = cg.builder.CreateStructGEP(envType, environment, static_cast<unsigned>(i), captured[i].name + ".store");
+        // A function parameter is bound to its SSA llvm::Argument rather than to storage: capture
+        // its value directly, or spill it to a slot so a by-reference capture has an address.
+        const bool isSsaParameter = llvm::isa<llvm::Argument>(captured[i].outerValue);
         if (capturesByReference) {
-            cg.builder.CreateStore(captured[i].outerValue, slot);
+            llvm::Value* storage = captured[i].outerValue;
+            if (isSsaParameter) {
+                storage = cg.builder.CreateAlloca(storage->getType(), nullptr, captured[i].name + ".spill");
+                cg.builder.CreateStore(captured[i].outerValue, storage);
+            }
+            cg.builder.CreateStore(storage, slot);
         } else {
-            llvm::Value* value = cg.builder.CreateLoad(captured[i].fieldType, captured[i].outerValue, captured[i].name + ".take");
+            llvm::Value* value = isSsaParameter
+                ? captured[i].outerValue
+                : cg.builder.CreateLoad(captured[i].fieldType, captured[i].outerValue, captured[i].name + ".take");
             cg.builder.CreateStore(value, slot);
         }
     }

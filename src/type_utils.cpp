@@ -1,4 +1,5 @@
 #include "type_utils.h"
+#include "builtin_structs.h"
 
 #include "codegen.h"
 #include "IdentifierNode.h"
@@ -95,6 +96,9 @@ bool isStructClassType(const Type* type) {
         return false;
     }
 
+    if (builtinValueStructFields(type->getName())) {
+        return true; // Complex / Rational / Quaternion are value aggregates
+    }
     auto& cg = CodeGenerator::getInstance();
     auto* classSymbol = cg.symbolTable.lookupClass(type->getName());
     return classSymbol && classSymbol->isStruct;

@@ -1,0 +1,65 @@
+// std.math.complex -- complex numbers (re + im*i).
+//
+//     import std.math.complex
+//
+// `Complex` is a built-in value type: `new Complex(re, im)`, fields `.re` and `.im`, and
+// + - * / between Complex values. This module adds the imaginary unit and the usual functions.
+
+def complex(re: Double, im: Double): Complex = new Complex(re, im)
+// The imaginary unit i.
+def imaginaryUnit(): Complex = new Complex(0.0, 1.0)
+// A purely imaginary number b*i.
+def imaginary(b: Double): Complex = new Complex(0.0, b)
+def realPart(z: Complex): Double = z.re
+def imagPart(z: Complex): Double = z.im
+def conj(z: Complex): Complex = new Complex(z.re, 0.0 - z.im)
+def cabs(z: Complex): Double = sqrt(z.re * z.re + z.im * z.im)
+def cnorm(z: Complex): Double = z.re * z.re + z.im * z.im
+// Argument (phase) in (-pi, pi].
+def carg(z: Complex): Double {
+    if (z.re > 0.0) { return arctan(z.im / z.re); }
+    if (z.re < 0.0 and z.im >= 0.0) { return arctan(z.im / z.re) + 3.141592653589793e0; }
+    if (z.re < 0.0 and z.im < 0.0) { return arctan(z.im / z.re) - 3.141592653589793e0; }
+    if (z.im > 0.0) { return 1.5707963267948966e0; }
+    if (z.im < 0.0) { return -1.5707963267948966e0; }
+    return 0.0;
+}
+def polar(r: Double, theta: Double): Complex = new Complex(r * cos(theta), r * sin(theta))
+def cscale(z: Complex, k: Double): Complex = new Complex(z.re * k, z.im * k)
+def cneg(z: Complex): Complex = new Complex(0.0 - z.re, 0.0 - z.im)
+def cexp(z: Complex): Complex {
+    val m: Double = exp(z.re);
+    return new Complex(m * cos(z.im), m * sin(z.im));
+}
+// Principal natural logarithm.
+def clog(z: Complex): Complex = new Complex(ln(cabs(z)), carg(z))
+// Principal square root.
+def csqrt(z: Complex): Complex {
+    val r: Double = cabs(z);
+    val a: Double = sqrt((r + z.re) / 2.0);
+    var b: Double = sqrt((r - z.re) / 2.0);
+    if (z.im < 0.0) { b = 0.0 - b; }
+    return new Complex(a, b);
+}
+// z^n for an integer n (repeated squaring; a negative n inverts).
+def cpowInt(z: Complex, n: Int): Complex {
+    var result: Complex = new Complex(1.0, 0.0);
+    var base: Complex = z;
+    var k: Int = n;
+    if (k < 0) { k = 0 - k; }
+    while (k > 0) {
+        if (k % 2 == 1) { result = result * base; }
+        base = base * base;
+        k = k / 2;
+    }
+    if (n < 0) { return new Complex(1.0, 0.0) / result; }
+    return result;
+}
+// z^w = exp(w * log z), principal branch.
+def cpow(z: Complex, w: Complex): Complex {
+    if (z.re == 0.0 and z.im == 0.0) { return new Complex(0.0, 0.0); }
+    return cexp(w * clog(z));
+}
+def csin(z: Complex): Complex = new Complex(sin(z.re) * cosh(z.im), cos(z.re) * sinh(z.im))
+def ccos(z: Complex): Complex = new Complex(cos(z.re) * cosh(z.im), 0.0 - sin(z.re) * sinh(z.im))
+def capprox(a: Complex, b: Complex, tolerance: Double): Boolean = cabs(a - b) <= tolerance

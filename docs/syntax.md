@@ -331,6 +331,143 @@ currently lowers to sequential evaluation (async functions run as ordinary
 synchronous calls) until a coroutine runtime is added; the surface syntax and
 the borrow rule are enforced today.
 
+## Processes (Erlang-Style Microthreads)
+
+Lightweight processes are spawned with `spawn` and communicate only by message
+passing. Each process has its own stack and a private FIFO mailbox of `Int`
+messages; processes share nothing. The builtins come from the standard library
+module `std.microthread` (see *Standard Library* below and `LANGUAGE_SPEC.md`).
+
+```tessera
+import std.microthread
+
+def main(): Int {
+    val parent = self();
+    val worker = spawn([=]() -> {
+        val n = receive();          // blocks this process only
+        send(parent, n * 2);
+        return 0;
+    });
+    send(worker, 21);
+    return receive();               // 42
+}
+```
+
+| Builtin | Meaning |
+| --- | --- |
+| `spawn(f): Int` | Start a process running `f`; returns its pid. `f` is a zero-parameter `[=]` lambda literal or the name of a zero-parameter function. |
+| `self(): Int` | Pid of the current process (`main` is pid 1). |
+| `send(pid, msg: Int): Int` | Append `msg` to `pid`'s mailbox. Returns 1, or 0 if `pid` is no longer alive (not an error). |
+| `receive(): Int` | Take the oldest message, blocking while the mailbox is empty. |
+| `receiveTimeout(ms, fallback): Int` | Like `receive`, but returns `fallback` if nothing arrives within `ms` milliseconds (Erlang's `after`). |
+| `yield(): Int` | Let other runnable processes run. |
+| `isAlive(pid): Boolean` | Whether `pid` has not finished yet. |
+| `monitor(pid, tag: Int): Int` | Deliver `tag` to the caller when `pid` exits (immediately if it already has). |
+| `mailboxSize(): Int` | Number of messages waiting for the current process. |
+| `processCount(): Int` | Number of live processes, including the caller. |
+| `joinProcesses(): Int` | Run other processes until none can make progress; returns how many are still alive (blocked forever). |
+
+Semantics:
+
+- **Share nothing.** A spawned lambda's by-value captures are copied into the
+  new process when it is spawned, so later changes on either side are not
+  visible to the other. `spawn` rejects `[&]` lambdas, lambdas with
+  parameters, and closure-valued variables (pass the lambda literal directly).
+- **Scheduling.** Cooperative and M:1: all processes run on the OS thread that
+  spawned them, switching only at `receive`/`receiveTimeout` (with an empty
+  mailbox), `yield`, `joinProcesses`, and process exit. A process that loops
+  without doing any of these keeps the others from running. Processes are run in
+  FIFO order. (Fibers on Windows, `ucontext` on POSIX; 512 KiB reserved stack
+  per process.)
+- **Lifetime.** When `main` returns the program exits, even if other processes
+  are still alive; call `joinProcesses()` first to let them finish. If every
+  process is blocked in `receive` with no timeout pending, the runtime reports
+  `deadlock` and exits with code 70.
+- Without `import std.microthread` these names are ordinary identifiers.
+
+### `go`, `async`, and `await`
+
+`go f(args)` runs a call in a new microthread and discards its result (it yields
+the new pid). `async f(args)` does the same but yields a `Future<T>`; `await`
+blocks the current microthread until the future is ready and yields the `T`.
+Arguments are evaluated immediately in the caller and copied into the task.
+
+```tessera
+def square(n: Int): Int = n * n
+
+def main(): Int {
+    val a = async square(6);
+    val b: Future<Int> = async square(7);
+    go square(1);                 // fire and forget
+    return await a + await b;     // 85
+}
+```
+
+`await` of a non-future value is only allowed inside an `async def` (which still
+runs synchronously when called). The operand of `go`/`async` must be a call of a
+named function and may not take borrows.
+
+## Standard Library
+
+`import a.b.c` also searches the standard-library roots (`lib/` next to the
+compiler runtime, `--lib-path <dir>`, and `CSEC_LIB_PATH`). The shipped modules
+live in `lib/std`:
+
+| Module | Highlights |
+| --- | --- |
+| `std.microthread` | `spawn`, `send`, `receive`, `receiveTimeout`, `self`, `yield`, `monitor`, `joinProcesses` |
+| `std.thread` | `threadStart(lambda)`, `threadJoin`, `mutexNew/Lock/Unlock`, `atomicNew/Add/Get`, `channelNew/Send/Receive/Close` |
+| `std.process` | `runCommand`, `commandOutput`, `startProcess`, `waitProcess`, `killProcess`, `currentProcessId` |
+| `std.math.natural` | `natDiv`, `natMod`, `natPow`, `natGcd`, `natLcm`, `natSqrt`, `isPrime`, `factorial`, `binomial`, `fibonacci` |
+| `std.math.real` | `pi()`, `euler()`, `approxEqual`, `hypot`, `cbrt`, `nthRoot`, `logBase`, ... |
+| `std.math.complex` | `imaginaryUnit()`, `complex`, `conj`, `cabs`, `carg`, `cexp`, `clog`, `csqrt`, `cpowInt`, `cpow`, `csin`, `ccos` |
+| `std.symbolic` | `sym("x^2+1")`, `diff`, `integrate`, `expand`, `simplify`, `subst`, `solve`, `evalAt`, `symText`, `symLatex` |
+| `std.pipe` | `pipeNew`, `pipeWriteLine`, `pipeReadLine`, `pipeClose`, `pipeAtEnd`; `pipeOpenProcess(cmd)` with `processWriteLine`/`processReadLine`/`processFinish` |
+| `std.shared` | `sharedNew(bytes)`, `sharedOpen(name, bytes)`, `sharedGet/SetLong`, `sharedAddLong`, `sharedRead/WriteString`, `sharedLock/Unlock` |
+| `std.mail` | `mailSender(box, name)`, `mailReceiver(box)`, `mailSend`, `mailReceive`, `mailReceiveTimeout`, `mailLastSender`, `mailLastTag` |
+
+Pipes, shared memory, and mail work between OS threads and microthreads, and named
+shared memory and mailboxes also work between OS processes. Their blocking
+operations yield to other microthreads while waiting. Microthreads can also exchange
+strings directly with `sendText(pid, text)` / `receiveText()`. See
+`LANGUAGE_SPEC.md` section 6.
+
+```tessera
+import std.mail
+import std.microthread
+
+def main(): Int {
+    val inbox = mailReceiver("orders");
+    spawn([=]() -> {
+        mailSend(mailSender("orders", "kitchen"), "pizza");
+        return 0;
+    });
+    val order = mailReceive(inbox);          // "pizza"; the sender ran while main waited
+    val from = mailLastSender(inbox);        // "kitchen"
+    return 0;
+}
+```
+
+A module enables compiler intrinsics by declaring them with
+`[@Intrinsic] external def name(...)`; this is how `std.microthread` and
+`std.thread` expose `spawn`/`threadStart`.
+
+`Complex`, `Rational`, and `Quaternion` are built-in value types:
+`new Complex(1.0, 2.0) * new Complex(0.0, 1.0)`, with fields `.re`/`.im`.
+
+```tessera
+import std.symbolic
+import std.math.complex
+
+def main(): Int {
+    val f = sym("x^3 + 2*x");
+    val df = symText(diff(f, "x"));          // "3*x^2 + 2"
+    val i = imaginaryUnit();
+    val minusOne = i * i;                    // -1 + 0i
+    return 0;
+}
+```
+
 ## Templates
 
 Function and class templates use C++-style `template<...>` declarations with

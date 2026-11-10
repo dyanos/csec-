@@ -101,6 +101,9 @@ llvm::Function* FunctionDeclarationNode::declarePrototype() {
 }
 
 llvm::Value* FunctionDeclarationNode::codegen() {
+    if (isIntrinsic) {
+        return nullptr;
+    }
     auto updateOrRegisterFunctionSymbol = [&](std::unique_ptr<Type> functionType, llvm::Function* function, bool isExternalSymbol) -> FunctionSymbol* {
         return updateOrRegisterFunctionSymbolNamed(this->name, std::move(functionType), function, isExternalSymbol);
     };

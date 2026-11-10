@@ -1,0 +1,43 @@
+import std.microthread
+// The spawning function returns before the child first runs; the child's copied environment
+// stays valid. Also exercises 10000 simultaneously-blocked processes.
+def startAdder(offset: Int, replyTo: Int): Int {
+    return spawn([=]() -> {
+        val n = receive();
+        send(replyTo, n + offset);
+        return 0;
+    });
+}
+
+def main(): Int {
+    val parent = self();
+    val count = 10000;
+    var first: Int = 0;
+    var i: Int = 0;
+    while (i < count) {
+        val pid = startAdder(i % 7, parent);
+        if (i == 0) { first = pid; }
+        i = i + 1;
+    }
+    if (processCount() != count + 1) { return 1; }
+    var j: Int = 0;
+    while (j < count) {
+        send(first + j, 1);
+        j = j + 1;
+    }
+    var total: Int = 0;
+    var k: Int = 0;
+    while (k < count) {
+        total = total + receive();
+        k = k + 1;
+    }
+    var expected: Int = 0;
+    var m: Int = 0;
+    while (m < count) {
+        expected = expected + 1 + m % 7;
+        m = m + 1;
+    }
+    if (total != expected) { return 2; }
+    if (joinProcesses() != 0) { return 3; }
+    return 0;
+}

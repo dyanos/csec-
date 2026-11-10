@@ -1,0 +1,9 @@
+// Self-host: `async def` declarations and `await` of a non-future value (identity). Exit code 42.
+async def fetch(): Int = 42
+async def run(): Int {
+    var x: Int = await fetch();
+    return x;
+}
+def main(): Int {
+    return run();
+}

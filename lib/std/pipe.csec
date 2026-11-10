@@ -1,0 +1,69 @@
+// std.pipe -- byte/line pipes between threads, microthreads, and OS processes.
+//
+//     import std.pipe
+//
+// In-process pipes (pipeNew) connect OS threads and microthreads of one program: writers append text,
+// readers wait for it. Piped processes (pipeOpenProcess) run a shell command whose stdin and stdout
+// are connected to the caller, so programs can be chained into pipelines. Reading waits
+// cooperatively: a microthread waiting on a pipe lets the other microthreads of its thread run.
+
+external def csec_pipe_new(): Long;
+external def csec_pipe_write(handle: Long, text: String): Int;
+external def csec_pipe_read(handle: Long, maxBytes: Int): String;
+external def csec_pipe_read_line(handle: Long): String;
+external def csec_pipe_close(handle: Long): Void;
+external def csec_pipe_eof(handle: Long): Int;
+external def csec_pipe_available(handle: Long): Int;
+external def csec_pipe_free(handle: Long): Void;
+
+external def csec_piped_process_open(command: String): Long;
+external def csec_piped_process_write(handle: Long, text: String): Int;
+external def csec_piped_process_close_input(handle: Long): Void;
+external def csec_piped_process_read_line(handle: Long): String;
+external def csec_piped_process_read_all(handle: Long): String;
+external def csec_piped_process_eof(handle: Long): Int;
+external def csec_piped_process_wait(handle: Long): Int;
+
+// ---- in-process pipes ----
+def pipeNew(): Long = csec_pipe_new()
+// Append text; returns the bytes written (0 once the pipe is closed).
+def pipeWrite(pipe: Long, text: String): Int = csec_pipe_write(pipe, text)
+def pipeWriteLine(pipe: Long, text: String): Int {
+    val line: String = text + "\n";
+    return csec_pipe_write(pipe, line);
+}
+// Up to maxBytes (everything buffered when maxBytes <= 0); waits for data or end of input.
+def pipeRead(pipe: Long, maxBytes: Int): String = csec_pipe_read(pipe, maxBytes)
+// The next line without its terminator; "" at end of input (see pipeAtEnd).
+def pipeReadLine(pipe: Long): String = csec_pipe_read_line(pipe)
+// Close the writing side: readers drain the rest, then see end of input.
+def pipeClose(pipe: Long): Int {
+    csec_pipe_close(pipe);
+    return 0;
+}
+def pipeAtEnd(pipe: Long): Boolean = csec_pipe_eof(pipe) != 0
+def pipeAvailable(pipe: Long): Int = csec_pipe_available(pipe)
+def pipeFree(pipe: Long): Int {
+    csec_pipe_free(pipe);
+    return 0;
+}
+
+// ---- piped OS processes ----
+// Start a shell command with its stdin/stdout connected to this program (0 on failure).
+def pipeOpenProcess(command: String): Long = csec_piped_process_open(command)
+def processWrite(process: Long, text: String): Int = csec_piped_process_write(process, text)
+def processWriteLine(process: Long, text: String): Int {
+    val line: String = text + "\n";
+    return csec_piped_process_write(process, line);
+}
+// Signal end of input to the child.
+def processCloseInput(process: Long): Int {
+    csec_piped_process_close_input(process);
+    return 0;
+}
+def processReadLine(process: Long): String = csec_piped_process_read_line(process)
+// Everything the child writes until it closes its output.
+def processReadAll(process: Long): String = csec_piped_process_read_all(process)
+def processOutputEnded(process: Long): Boolean = csec_piped_process_eof(process) != 0
+// Close input, wait for exit, and return the exit code.
+def processFinish(process: Long): Int = csec_piped_process_wait(process)

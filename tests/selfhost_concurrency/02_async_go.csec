@@ -1,0 +1,18 @@
+import std.microthread
+// Self-host: async/await and go with named functions. Exit code 42.
+def square(n: Int): Int {
+    return n * n;
+}
+
+def notify(target: Int, value: Int): Int {
+    send(target, value);
+    return 0;
+}
+
+def main(): Int {
+    val a = async square(6);
+    go notify(1, 6);
+    val sq: Int = await a;
+    val extra: Int = receive();
+    return sq + extra;
+}

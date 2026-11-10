@@ -1,0 +1,5 @@
+import std.microthread
+def main(): Int {
+    spawn([=](n: Int) -> { return n; });
+    return 0;
+}

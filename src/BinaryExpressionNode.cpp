@@ -1,5 +1,6 @@
 #include "codegen.h"
 #include "BinaryExpressionNode.h"
+#include "builtin_structs.h"
 #include "ASTVisitor.h"
 #include "TensorRuntime.h"
 
@@ -584,7 +585,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
         const bool loadStringSlot = leftType->isStringTy() && llvm::isa<llvm::AllocaInst>(leftValue);
         if (!TensorRuntime::isTensorTypeName(leftType->getName()) &&
             (!leftType->isStringTy() || loadStringSlot) &&
-            leftType->getKind() != Type::Kind::CLASS) {
+            (leftType->getKind() != Type::Kind::CLASS || builtinValueStructFields(leftType->getName()))) {
             leftValue = cg.builder.CreateLoad(cg.getLLVMType(leftType.get()), leftValue, "loadtmp");
         }
     }
@@ -712,7 +713,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
         const bool loadStringSlot = rightType->isStringTy() && llvm::isa<llvm::AllocaInst>(rightValue);
         if (!TensorRuntime::isTensorTypeName(rightType->getName()) &&
             (!rightType->isStringTy() || loadStringSlot) &&
-            rightType->getKind() != Type::Kind::CLASS) {
+            (rightType->getKind() != Type::Kind::CLASS || builtinValueStructFields(rightType->getName()))) {
             rightValue = cg.builder.CreateLoad(cg.getLLVMType(rightType.get()), rightValue, "loadtmp");
         }
     }

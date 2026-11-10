@@ -1,0 +1,5 @@
+def main(): Int {
+    val x = 3;
+    val f = async x;
+    return 0;
+}

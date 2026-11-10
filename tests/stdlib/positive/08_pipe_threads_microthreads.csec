@@ -1,0 +1,68 @@
+import std.pipe
+import std.thread
+import std.microthread
+// Pipes between an OS thread and main, and a three-stage microthread pipeline:
+// producer -> doubler -> collector, connected by pipes.
+def main(): Int {
+    // Thread -> main.
+    val fromThread = pipeNew();
+    val t = threadStart([=]() -> {
+        var i: Int = 1;
+        while (i <= 3) {
+            pipeWriteLine(fromThread, "line" + i);
+            i = i + 1;
+        }
+        pipeClose(fromThread);
+        return 0;
+    });
+    if (pipeReadLine(fromThread) != "line1") { return 1; }
+    if (pipeReadLine(fromThread) != "line2") { return 2; }
+    if (pipeReadLine(fromThread) != "line3") { return 3; }
+    if (pipeReadLine(fromThread) != "") { return 4; }
+    if (!pipeAtEnd(fromThread)) { return 5; }
+    threadJoin(t);
+
+    // Microthread pipeline: each stage blocks on its input pipe without stalling the others.
+    val stage1 = pipeNew();
+    val stage2 = pipeNew();
+    val parent = self();
+    spawn([=]() -> {
+        var n: Int = 1;
+        while (n <= 5) {
+            pipeWriteLine(stage1, "" + n);
+            n = n + 1;
+        }
+        pipeClose(stage1);
+        return 0;
+    });
+    spawn([=]() -> {
+        var running: Boolean = true;
+        while (running) {
+            val item = pipeReadLine(stage1);
+            if (pipeAtEnd(stage1) and item == "") {
+                running = false;
+            } else {
+                pipeWriteLine(stage2, item + item);
+            }
+        }
+        pipeClose(stage2);
+        return 0;
+    });
+    spawn([=]() -> {
+        var joined: String = "";
+        var running: Boolean = true;
+        while (running) {
+            val item = pipeReadLine(stage2);
+            if (pipeAtEnd(stage2) and item == "") {
+                running = false;
+            } else {
+                joined = joined + item + ",";
+            }
+        }
+        sendText(parent, joined);
+        return 0;
+    });
+    val result = receiveText();
+    if (result != "11,22,33,44,55,") { return 6; }
+    return 0;
+}

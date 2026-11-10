@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "all_ast.h"
+#include "intrinsics.h"
 
 
 // parser占쏙옙占쏙옙占쏙옙 parsing占쏙옙 占쏙옙占쏙옙構占? symbol 占쏙옙占?占쏙옙 占싯삼옙占쏙옙 codegen占쌀띰옙 占쏙옙占?
@@ -250,7 +251,9 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 	}
 
 	bool isAsyncFunction = false;
-	if (check(TokenType::KEYWORD, "async")) {
+	// `async` is a declaration modifier only before `def`; otherwise it starts an `async call`.
+	if (check(TokenType::KEYWORD, "async") && peek(1).type == TokenType::KEYWORD &&
+	    (peek(1).value == "def" || peek(1).value == "unsafe")) {
 		isAsyncFunction = true;
 		advance();
 	}
@@ -343,6 +346,16 @@ std::unique_ptr<ASTNode> Parser::parseTopStatement() {
 			return nullptr;
 		}
 		attrNode->target = std::move(node);
+		// `[@Intrinsic] external def name(...)` enables the compiler intrinsic `name` (see intrinsics.h).
+		if (auto* function = dynamic_cast<FunctionDeclarationNode*>(attrNode->target.get())) {
+			const ASTNode* attrExpr = attrNode->expr.get();
+			const auto* attrIdent = dynamic_cast<const IdentifierNode*>(attrExpr);
+			const auto* attrCall = dynamic_cast<const FunctionCallNode*>(attrExpr);
+			if ((attrIdent && attrIdent->value == "Intrinsic") || (attrCall && attrCall->functionName == "Intrinsic")) {
+				function->isIntrinsic = true;
+				declaredIntrinsics().insert(function->name);
+			}
+		}
 		return attributeNode;
 	}
 

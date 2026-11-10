@@ -1,0 +1,54 @@
+import std.microthread
+import std.pipe
+import std.mail
+import std.shared
+// Self-host: a pipe, a mailbox, shared memory, and text messages between microthreads. The pipe handle
+// is handed to the producer as an Int message (the self-host spawns named functions, without
+// captures). Exit code 42.
+def producer(): Int {
+    val handle: Int = receive();
+    val pipe: Long = handle;
+    pipeWriteLine(pipe, "alpha");
+    pipeWriteLine(pipe, "beta");
+    pipeClose(pipe);
+    val outbox: Long = mailSender("csec_selfhost_box", "producer");
+    mailSend(outbox, "mail-ok");
+    sendText(1, "text-ok");
+    return 0;
+}
+
+def main(): Int {
+    val inbox: Long = mailReceiver("csec_selfhost_box");
+    val pipe: Long = pipeNew();
+    val pid: Int = spawn(producer);
+    val handle: Int = pipe;
+    send(pid, handle);
+    val first: String = pipeReadLine(pipe);
+    if (first != "alpha") {
+        return 1;
+    }
+    val second: String = pipeReadLine(pipe);
+    if (second != "beta") {
+        return 2;
+    }
+    val mail: String = mailReceive(inbox);
+    if (mail != "mail-ok") {
+        return 3;
+    }
+    val sender: String = mailLastSender(inbox);
+    if (sender != "producer") {
+        return 4;
+    }
+    val text: String = receiveText();
+    if (text != "text-ok") {
+        return 5;
+    }
+    val memory: Long = sharedNew(64);
+    sharedAddLong(memory, 0, 40);
+    sharedAddLong(memory, 0, 2);
+    val total: Long = sharedGetLong(memory, 0);
+    if (total != 42) {
+        return 6;
+    }
+    return 42;
+}

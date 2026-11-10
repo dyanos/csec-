@@ -1,0 +1,29 @@
+import std.microthread
+import std.thread
+// Regression: a captured environment mixing Int and Long ({ i32, i64 }) must be copied in full. Its
+// size used to be computed with the default data layout (i64 aligned to 4 => 12 bytes) while the
+// target lays it out in 16, so the Long arrived corrupted in the new task.
+def addTo(big: Long, small: Int): Long = big + small
+
+def main(): Int {
+    val small: Int = 3;
+    val big: Long = 5000000000;
+    val parent = self();
+    spawn([=]() -> {
+        if (big == 5000000000 and small == 3) {
+            send(parent, 1);
+        } else {
+            send(parent, 0);
+        }
+        return 0;
+    });
+    if (receive() != 1) { return 1; }
+    val t = threadStart([=]() -> {
+        if (big == 5000000000 and small == 3) { return 7; }
+        return 0;
+    });
+    if (threadJoin(t) != 7) { return 2; }
+    val f = async addTo(big, small);
+    if (await f != 5000000003) { return 3; }
+    return 0;
+}

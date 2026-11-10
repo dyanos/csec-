@@ -1,0 +1,14 @@
+import std.microthread
+// Self-host: spawn a named function, exchange messages. Exit code 42.
+def worker(): Int {
+    val n: Int = receive();
+    send(1, n * 2);
+    return 0;
+}
+
+def main(): Int {
+    val pid: Int = spawn(worker);
+    send(pid, 21);
+    val reply: Int = receive();
+    return reply;
+}

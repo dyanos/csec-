@@ -1,0 +1,26 @@
+import std.microthread
+// yield() lets runnable processes interleave in FIFO order.
+def main(): Int {
+    val parent = self();
+    spawn([=]() -> {
+        send(parent, 1);
+        yield();
+        send(parent, 3);
+        return 0;
+    });
+    spawn([=]() -> {
+        send(parent, 2);
+        yield();
+        send(parent, 4);
+        return 0;
+    });
+    joinProcesses();
+    var order: Int = 0;
+    var n: Int = 0;
+    while (n < 4) {
+        order = order * 10 + receive();
+        n = n + 1;
+    }
+    if (order != 1234) { return order; }
+    return 0;
+}

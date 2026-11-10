@@ -740,7 +740,7 @@ static bool csec_lex_is_keyword(const std::string& text) {
         "unatomic", "unsafe", "val", "var", "while", "xor", "and", "or",
         "to", "until", "inner", "outer", "tensor", "box", "extends", "mut",
         "null", "ode", "molecule", "cfd", "protein", "cpu", "openmp", "gpu",
-        "simd"
+        "simd", "async", "await", "go"
     };
     for (const char* keyword : keywords) {
         if (text == keyword) return true;

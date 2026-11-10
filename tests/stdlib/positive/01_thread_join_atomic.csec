@@ -1,0 +1,27 @@
+import std.thread
+// Four OS threads each add their captured share to a shared atomic counter.
+def main(): Int {
+    val counter = atomicNew(0);
+    val lock = mutexNew();
+    var handles: Long = 0;
+    val t1 = threadStart([=]() -> {
+        var i: Int = 0;
+        while (i < 1000) { atomicAdd(counter, 1); i = i + 1; }
+        return 1;
+    });
+    val t2 = threadStart([=]() -> {
+        var i: Int = 0;
+        while (i < 1000) { atomicAdd(counter, 2); i = i + 1; }
+        return 2;
+    });
+    val r = threadJoin(t1) + threadJoin(t2);
+    if (r != 3) { return 1; }
+    if (atomicGet(counter) != 3000) { return 2; }
+    if (!mutexLock(lock)) { return 3; }
+    if (mutexTryLock(lock)) { return 4; }
+    mutexUnlock(lock);
+    if (!atomicCompareExchange(counter, 3000, 7)) { return 5; }
+    if (atomicGet(counter) != 7) { return 6; }
+    if (hardwareThreads() < 1) { return 7; }
+    return 0;
+}

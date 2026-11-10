@@ -1,0 +1,4 @@
+def main(): Int {
+    val t = threadStart([=]() -> { return 0; });
+    return 0;
+}

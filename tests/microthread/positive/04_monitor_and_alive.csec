@@ -1,0 +1,22 @@
+import std.microthread
+// monitor(pid, tag) delivers `tag` to the watcher when the watched process exits.
+def worker(): Int {
+    yield();
+    return 0;
+}
+
+def main(): Int {
+    val pid = spawn(worker);
+    if (!isAlive(pid)) { return 1; }
+    monitor(pid, 777);
+    val down = receive();
+    if (down != 777) { return 2; }
+    if (isAlive(pid)) { return 3; }
+    // Monitoring a dead process notifies immediately.
+    monitor(pid, 778);
+    if (mailboxSize() != 1) { return 4; }
+    if (receive() != 778) { return 5; }
+    // Sending to a dead process is not an error, it just reports 0.
+    if (send(pid, 1) != 0) { return 6; }
+    return 0;
+}

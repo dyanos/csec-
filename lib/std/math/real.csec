@@ -1,0 +1,40 @@
+// std.math.real -- tools for real numbers (Double / Real).
+// Constants are written in exponent form (e.g. 3.14...e0): a plain decimal literal such as 3.14 is
+// a 32-bit Float literal, which would lose precision.
+//
+//     import std.math.real
+
+def pi(): Double = 3.141592653589793e0
+def euler(): Double = 2.718281828459045e0
+def tau(): Double = 6.283185307179586e0
+def goldenRatio(): Double = 1.618033988749895e0
+
+// |a - b| <= tolerance * max(1, |a|, |b|)
+def approxEqual(a: Double, b: Double, tolerance: Double): Boolean {
+    var scale: Double = 1.0;
+    if (abs(a) > scale) { scale = abs(a); }
+    if (abs(b) > scale) { scale = abs(b); }
+    return abs(a - b) <= tolerance * scale;
+}
+
+def hypot(x: Double, y: Double): Double = sqrt(x * x + y * y)
+def toRadians(degrees: Double): Double = degrees * 3.141592653589793e0 / 180.0
+def toDegrees(radians: Double): Double = radians * 180.0 / 3.141592653589793e0
+def logBase(base: Double, x: Double): Double = ln(x) / ln(base)
+// Real cube root (negative for negative x).
+def cbrt(x: Double): Double {
+    if (x < 0.0) { return 0.0 - pow(0.0 - x, 1.0e0 / 3.0e0); }
+    return pow(x, 1.0e0 / 3.0e0);
+}
+// Real n-th root; odd roots of negative numbers are negative.
+def nthRoot(x: Double, n: Int): Double {
+    val k: Double = n;
+    if (x < 0.0 and n % 2 == 1) { return 0.0 - pow(0.0 - x, 1.0 / k); }
+    return pow(x, 1.0 / k);
+}
+def lerp(a: Double, b: Double, t: Double): Double = a + (b - a) * t
+// True for an ordinary finite number (false for NaN and +/-infinity).
+def isFiniteReal(x: Double): Boolean {
+    val difference: Double = x - x;
+    return difference >= 0.0 and difference <= 0.0;
+}

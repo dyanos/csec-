@@ -1,0 +1,43 @@
+import std.mail
+import std.thread
+import std.microthread
+// Mail senders and receivers across an OS thread, microthreads, and main.
+def main(): Int {
+    val inbox = mailReceiver("csec_test_orders");
+    while (mailPoll(inbox)) { }   // start from an empty mailbox
+
+    val t = threadStart([=]() -> {
+        val out = mailSender("csec_test_orders", "kitchen-thread");
+        mailSendTagged(out, 7, "pizza");
+        return 0;
+    });
+    if (mailReceive(inbox) != "pizza") { return 1; }
+    if (mailLastSender(inbox) != "kitchen-thread") { return 2; }
+    if (mailLastTag(inbox) != 7) { return 3; }
+    threadJoin(t);
+
+    // A microthread sender; main waits for mail cooperatively, so the sender gets to run.
+    spawn([=]() -> {
+        val out = mailSender("csec_test_orders", "waiter");
+        mailSend(out, "salad");
+        mailSend(out, "soup");
+        return 0;
+    });
+    if (mailReceive(inbox) != "salad") { return 4; }
+    if (mailReceive(inbox) != "soup") { return 5; }
+    if (mailLastSender(inbox) != "waiter") { return 6; }
+
+    if (mailReceiveTimeout(inbox, 20, "none") != "none") { return 7; }
+    if (mailHasMail(inbox)) { return 8; }
+    mailClose(inbox);
+
+    // Microthread text messages.
+    val me = self();
+    spawn([=]() -> {
+        sendText(me, "hello " + "world");
+        return 0;
+    });
+    if (receiveText() != "hello world") { return 9; }
+    if (receiveTextTimeout(10, "quiet") != "quiet") { return 10; }
+    return 0;
+}

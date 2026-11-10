@@ -1,0 +1,33 @@
+import std.math.real
+import std.math.complex
+// Complex numbers with the imaginary unit, plus real-number helpers.
+def main(): Int {
+    val i = imaginaryUnit();
+    val minusOne = i * i;
+    if (minusOne.re != -1.0 or minusOne.im != 0.0) { return 1; }
+    val z = complex(3.0, 4.0);
+    if (cabs(z) != 5.0) { return 2; }
+    if (conj(z).im != -4.0) { return 3; }
+    // e^(i*pi) + 1 = 0
+    val euler = cexp(imaginary(pi())) + complex(1.0, 0.0);
+    if (cabs(euler) > 0.000000001) { return 4; }
+    // sqrt(-4) = 2i
+    val r = csqrt(complex(-4.0, 0.0));
+    if (!capprox(r, imaginary(2.0), 0.000000001)) { return 5; }
+    // i^4 = 1, i^-1 = -i
+    if (!capprox(cpowInt(i, 4), complex(1.0, 0.0), 0.000000001)) { return 6; }
+    if (!capprox(cpowInt(i, -1), imaginary(-1.0), 0.000000001)) { return 7; }
+    // i^i = e^(-pi/2), a real number
+    val ii = cpow(i, i);
+    if (!approxEqual(ii.re, exp(0.0 - pi() / 2.0), 0.000000001)) { return 8; }
+    if (abs(ii.im) > 0.000000001) { return 9; }
+    if (!approxEqual(carg(complex(-1.0, 0.0)), pi(), 0.000000001)) { return 10; }
+    if (!approxEqual(hypot(3.0, 4.0), 5.0, 0.000000001)) { return 11; }
+    if (!approxEqual(cbrt(-27.0), -3.0, 0.000000001)) { return 12; }
+    if (!approxEqual(nthRoot(16.0, 4), 2.0, 0.000000001)) { return 13; }
+    if (!approxEqual(toDegrees(pi()), 180.0, 0.000000001)) { return 14; }
+    if (!approxEqual(logBase(2.0, 1024.0), 10.0, 0.000000001)) { return 15; }
+    val q = complex(1.0, 2.0) / complex(3.0, 4.0);
+    if (!capprox(q * complex(3.0, 4.0), complex(1.0, 2.0), 0.000000001)) { return 16; }
+    return 0;
+}

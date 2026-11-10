@@ -1,0 +1,16 @@
+// Many async tasks; arguments are evaluated eagerly when the task is created.
+def fib(n: Int): Int {
+    if (n < 2) { return n; }
+    return fib(n - 1) + fib(n - 2);
+}
+
+def main(): Int {
+    var i: Int = 0;
+    var sum: Int = 0;
+    val f1 = async fib(10);
+    val f2 = async fib(15);
+    val f3 = async fib(20);
+    sum = await f1 + await f2 + await f3;
+    if (sum != 55 + 610 + 6765) { return 1; }
+    return 0;
+}

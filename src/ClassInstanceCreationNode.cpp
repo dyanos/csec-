@@ -16,6 +16,7 @@
 #include "VariableDeclarationNode.h"
 #include "TensorRuntime.h"
 #include "type_utils.h"
+#include "builtin_structs.h"
 
 #include <iostream>
 #include <llvm/IR/DataLayout.h>
@@ -251,6 +252,36 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
             fillValue = arguments.front()->codegen();
         }
         return TensorRuntime::createTensor(cg, dims, fillValue);
+    }
+
+    // Built-in value aggregates: `new Complex(re, im)` etc. produce a struct value.
+    if (const auto* builtinFields = builtinValueStructFields(className)) {
+        auto* structSymbol = dynamic_cast<StructSymbol*>(cg.symbolTable.lookup(className));
+        auto* structType = structSymbol ? llvm::dyn_cast_or_null<llvm::StructType>(structSymbol->structType) : nullptr;
+        if (!structType) {
+            std::cerr << "Error: built-in type '" << className << "' is unavailable" << std::endl;
+            return nullptr;
+        }
+        if (arguments.size() != builtinFields->size()) {
+            std::cerr << "Error: new " << className << "(...) takes " << builtinFields->size() << " arguments" << std::endl;
+            return nullptr;
+        }
+        llvm::Value* aggregate = llvm::UndefValue::get(structType);
+        for (size_t i = 0; i < arguments.size(); ++i) {
+            llvm::Value* value = arguments[i] ? arguments[i]->codegen() : nullptr;
+            if (!value) return nullptr;
+            llvm::Type* fieldType = structType->getElementType(static_cast<unsigned>(i));
+            if (fieldType->isDoubleTy()) {
+                if (value->getType()->isIntegerTy()) value = cg.builder.CreateSIToFP(value, fieldType);
+                else if (value->getType()->isFloatTy()) value = cg.builder.CreateFPExt(value, fieldType);
+            } else if (fieldType->isIntegerTy() && value->getType()->isIntegerTy() && value->getType() != fieldType) {
+                value = cg.builder.CreateSExtOrTrunc(value, fieldType);
+            } else if (fieldType->isIntegerTy() && value->getType()->isFloatingPointTy()) {
+                value = cg.builder.CreateFPToSI(value, fieldType);
+            }
+            aggregate = cg.builder.CreateInsertValue(aggregate, value, { static_cast<unsigned>(i) });
+        }
+        return aggregate;
     }
 
     std::string resolvedClassName = className;

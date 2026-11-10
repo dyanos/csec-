@@ -1,0 +1,19 @@
+import std.microthread
+// A spawned lambda's captures are copied at spawn time: later changes in the parent are not seen,
+// and the child's own mutations do not leak back.
+def main(): Int {
+    val parent = self();
+    var value: Int = 5;
+    val child = spawn([=]() -> {
+        receive();
+        send(parent, value);
+        value = 99;
+        return 0;
+    });
+    value = 6;
+    send(child, 0);
+    val seen = receive();
+    if (seen != 5) { return 1; }
+    if (value != 6) { return 2; }
+    return 0;
+}

@@ -1,0 +1,34 @@
+import std.microthread
+// A ring of 100 processes; a token travels around the ring 5 times, incremented at each hop.
+def main(): Int {
+    val size = 100;
+    val laps = 5;
+    val parent = self();
+    var next: Int = parent;
+    var i: Int = 0;
+    while (i < size) {
+        val target = next;
+        next = spawn([=]() -> {
+            var hops: Int = 0;
+            while (hops < laps) {
+                val token = receive();
+                send(target, token + 1);
+                hops = hops + 1;
+            }
+            return 0;
+        });
+        i = i + 1;
+    }
+    val first = next;
+    var lap: Int = 0;
+    var token: Int = 0;
+    while (lap < laps) {
+        send(first, token);
+        token = receive();
+        lap = lap + 1;
+    }
+    if (token != size * laps) { return 1; }
+    if (joinProcesses() != 0) { return 2; }
+    if (processCount() != 1) { return 3; }
+    return 0;
+}

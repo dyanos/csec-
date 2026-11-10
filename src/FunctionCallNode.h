@@ -1,6 +1,9 @@
 #pragma once
 #include "ast.h"
 
+// True when `name` resolves to an Erlang-style microthread builtin (spawn/send/receive/...).
+bool isNativeMicrothreadFunction(const std::string& name);
+
 class FunctionCallNode : public ASTNode {
 public:
     FunctionCallNode() {

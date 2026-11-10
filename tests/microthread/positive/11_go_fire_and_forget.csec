@@ -1,0 +1,17 @@
+import std.microthread
+// `go f(args)` starts a call in a new microthread and discards its result.
+def report(target: Int, value: Int): Int {
+    send(target, value * 10);
+    return 0;
+}
+
+def main(): Int {
+    val me = self();
+    go report(me, 1);
+    go report(me, 2);
+    val pid = go report(me, 3);
+    if (pid <= 1) { return 1; }
+    val total = receive() + receive() + receive();
+    if (total != 60) { return 2; }
+    return 0;
+}

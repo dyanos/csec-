@@ -169,7 +169,9 @@ bool isCopyType(const Type* type) {
             // reference `class` owns identity/resources and moves. isStructClassType consults the
             // class symbol's `isStruct` flag. Nat is an immutable arbitrary-precision number whose
             // handle is a shared value (like String), so it is Copy too -- `b = a` needs no `<-`.
-            return isStructClassType(type) || type->getName() == "Nat";
+            // The built-in number structs Complex/Rational/Quaternion are plain value aggregates too.
+            return isStructClassType(type) || type->getName() == "Nat" || type->getName() == "Complex" ||
+                   type->getName() == "Rational" || type->getName() == "Quaternion";
         case Type::Kind::ARRAY:
         case Type::Kind::BOX:
             return false;
@@ -248,6 +250,15 @@ std::string identifierName(ASTNode* node) {
 bool isMoveExpression(ASTNode* node) {
     auto* prefix = dynamic_cast<PrefixExpressionNode*>(node);
     return prefix && prefix->op == "<-";
+}
+
+// Future<A> vs Future<B>: compare the payload types by name (GenericType::equals is identity-only).
+bool sameFirstTypeArgument(const Type* left, const Type* right) {
+    auto* l = dynamic_cast<const GenericType*>(left);
+    auto* r = dynamic_cast<const GenericType*>(right);
+    if (!l || !r || l->typeArguments.empty() || r->typeArguments.empty()) return false;
+    if (!l->typeArguments[0] || !r->typeArguments[0]) return false;
+    return l->typeArguments[0]->getName() == r->typeArguments[0]->getName();
 }
 
 bool isBorrowExpression(ASTNode* node, bool* isMutableBorrow = nullptr) {
@@ -489,7 +500,8 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
                      !canInitializeOwnershipType(node.type.get(), initType.get()) &&
                      !(node.type->getKind() == Type::Kind::GENERIC && initType->getKind() == Type::Kind::GENERIC &&
                        node.type->getName() == initType->getName() &&
-                       (node.type->getName() == "Shared" || node.type->getName() == "Weak")) &&
+                       (node.type->getName() == "Shared" || node.type->getName() == "Weak" ||
+                        (node.type->getName() == "Future" && sameFirstTypeArgument(node.type.get(), initType.get())))) &&
                      !(isTensorLikeType(node.type) && isTensorLikeType(initType)) &&
                      !isArrayVectorAlias(node.type, initType) &&
                      !initType->isSubtypeOf(node.type) &&
@@ -1012,6 +1024,36 @@ void TypeChecker::visit(FunctionCallNode& node) {
     if (!parameterTypes.empty()) {
         checkFunctionArguments(node.arguments, parameterTypes, node.functionName);
     }
+    // spawn(f): processes share nothing. The body must be a zero-argument lambda literal that
+    // captures by value (its environment is copied into the child) or a named zero-argument function.
+    if ((node.functionName == "spawn" || node.functionName == "threadStart") &&
+        isNativeMicrothreadFunction(node.functionName)) {
+        const std::string fn = node.functionName;
+        if (node.arguments.size() != 1) {
+            reportError("Type error: " + fn + "() takes exactly one argument (a zero-argument lambda or function)");
+        }
+        else if (auto* lambda = dynamic_cast<LambdaExpressionNode*>(node.arguments[0].get())) {
+            if (lambda->capturesByReference) {
+                reportError("Type error: " + fn + "() lambda may not capture by reference ([&]); processes share nothing, capture by value with [=]");
+            }
+            if (!lambda->arguments.empty()) {
+                reportError("Type error: " + fn + "() lambda must take no parameters; capture its inputs instead");
+            }
+        }
+        else if (auto* ident = dynamic_cast<IdentifierNode*>(node.arguments[0].get())) {
+            auto* symbol = cg.symbolTable.lookup(ident->value);
+            auto* fnType = symbol ? dynamic_cast<FunctionType*>(symbol->type.get()) : nullptr;
+            if (!symbol || symbol->symbolType != SymbolType::FUNCTION || !fnType) {
+                reportError("Type error: " + fn + "() expects a lambda literal or the name of a function, not '" + ident->value + "'");
+            }
+            else if (!fnType->parameterTypes.empty()) {
+                reportError("Type error: " + fn + "() function '" + ident->value + "' must take no parameters");
+            }
+        }
+        else {
+            reportError("Type error: " + fn + "() expects a lambda literal or the name of a function");
+        }
+    }
     if (node.functionName == "free" && node.arguments.size() == 1) {
         const std::string name = identifierName(node.arguments[0].get());
         if (name.empty()) {
@@ -1167,8 +1209,35 @@ void TypeChecker::visit(PrefixExpressionNode& node) {
             markBorrowed(sourceName, node.op == "&mut");
         }
     }
+    else if (node.op == "async" || node.op == "go") {
+        // A concurrent call shares nothing with its caller: the operand must be a direct call of a
+        // named function, and no argument may be a borrow (the task may outlive the borrow).
+        auto* call = dynamic_cast<FunctionCallNode*>(node.expression.get());
+        auto& cg = CodeGenerator::getInstance();
+        auto* symbol = call ? cg.symbolTable.lookup(call->functionName) : nullptr;
+        if (!call) {
+            reportError("Type error: '" + node.op + "' must be followed by a function call, e.g. '" + node.op + " work(1)'");
+        }
+        else if (!symbol || (symbol->symbolType != SymbolType::FUNCTION && symbol->symbolType != SymbolType::TEMPLATE)) {
+            reportError("Type error: '" + node.op + "' requires a call of a named function, not '" + call->functionName + "'");
+        }
+        else {
+            for (auto& arg : call->arguments) {
+                if (isBorrowExpression(arg.get(), nullptr)) {
+                    reportError("Type error: '" + node.op + " " + call->functionName +
+                                "(...)' cannot take a borrow; tasks share nothing, pass values");
+                }
+            }
+        }
+        node.type = node.getType();
+        checkTypeResolved(node.type, "'" + node.op + "' expression");
+        return;
+    }
     else if (node.op == "await") {
-        if (!inAsyncFunction) {
+        const bool awaitsFuture = node.expression &&
+            dynamic_cast<GenericType*>(node.expression->getType().get()) &&
+            node.expression->getType()->getName() == "Future";
+        if (!inAsyncFunction && !awaitsFuture) {
             reportError("Type error: 'await' is only valid inside an 'async def' function");
         }
         // M8: a borrow may not be held live across an await point. After suspension another task may
@@ -1185,6 +1254,9 @@ void TypeChecker::visit(PrefixExpressionNode& node) {
         }
     }
     node.type = node.expression ? node.expression->getType() : std::make_unique<UnknownType>();
+    if (node.op == "await") {
+        node.type = node.getType();
+    }
     if (node.op == "&") {
         node.type = std::make_unique<BorrowType>(node.type, false);
     }
@@ -1195,6 +1267,11 @@ void TypeChecker::visit(PrefixExpressionNode& node) {
 }
 
 void TypeChecker::visit(AttributeNode& node) {
+    if (auto* function = dynamic_cast<FunctionDeclarationNode*>(node.target.get())) {
+        if (function->isIntrinsic) {
+            return;
+        }
+    }
     if (node.target) {
         node.target->accept(*this);
     }

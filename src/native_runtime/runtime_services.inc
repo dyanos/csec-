@@ -583,6 +583,77 @@ std::string csecImportTarget(const std::string& line) {
     return rest;
 }
 
+// Standard-library roots searched for `import a.b.c` after the importing file's directory and the
+// working directory. The compiler author ships the library as plain .csec modules under `lib/`;
+// a module decides which compiler intrinsics it exposes (see `[@Intrinsic]`). Order: roots added
+// with --lib-path, then CSEC_LIB_PATH entries (';' separated on Windows, ':' elsewhere), then `lib/`
+// next to the runtime library and up to two parent directories (x64/Debug -> repository root).
+std::vector<std::filesystem::path>& csecExtraLibraryRoots() {
+    static std::vector<std::filesystem::path> roots;
+    return roots;
+}
+
+std::filesystem::path csecRuntimeModuleDirectory() {
+#ifdef _WIN32
+    HMODULE module = nullptr;
+    if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           reinterpret_cast<LPCWSTR>(&csecRuntimeModuleDirectory), &module)) {
+        wchar_t buffer[MAX_PATH];
+        DWORD length = GetModuleFileNameW(module, buffer, MAX_PATH);
+        if (length > 0 && length < MAX_PATH) return std::filesystem::path(buffer).parent_path();
+    }
+    return {};
+#else
+    Dl_info info;
+    if (dladdr(reinterpret_cast<void*>(&csecRuntimeModuleDirectory), &info) && info.dli_fname) {
+        return std::filesystem::path(info.dli_fname).parent_path();
+    }
+    return {};
+#endif
+}
+
+std::vector<std::filesystem::path> csecLibraryRoots() {
+    std::vector<std::filesystem::path> roots = csecExtraLibraryRoots();
+    if (const char* env = std::getenv("CSEC_LIB_PATH")) {
+#ifdef _WIN32
+        const char separator = ';';
+#else
+        const char separator = ':';
+#endif
+        std::string list = env;
+        size_t start = 0;
+        while (start <= list.size()) {
+            size_t end = list.find(separator, start);
+            if (end == std::string::npos) end = list.size();
+            if (end > start) roots.push_back(std::filesystem::u8path(list.substr(start, end - start)));
+            start = end + 1;
+        }
+    }
+    std::filesystem::path base = csecRuntimeModuleDirectory();
+    for (int depth = 0; depth < 3 && !base.empty(); ++depth) {
+        roots.push_back(base / "lib");
+        if (!base.has_parent_path() || base.parent_path() == base) break;
+        base = base.parent_path();
+    }
+    return roots;
+}
+
+// Resolve `std.math.complex` to <root>/std/math/complex.csec in the first root that has it.
+std::filesystem::path csecFindLibraryModule(const std::string& target) {
+    if (target.empty() || target.find('/') != std::string::npos || target.find('\\') != std::string::npos) return {};
+    std::string relative = target;
+    for (char& ch : relative) {
+        if (ch == '.') ch = static_cast<char>(std::filesystem::path::preferred_separator);
+    }
+    std::filesystem::path module = std::filesystem::u8path(relative + ".csec");
+    std::error_code ec;
+    for (const auto& root : csecLibraryRoots()) {
+        auto candidate = root / module;
+        if (std::filesystem::exists(candidate, ec) && std::filesystem::is_regular_file(candidate, ec)) return candidate;
+    }
+    return {};
+}
+
 std::filesystem::path csecResolveImportPath(
     const std::filesystem::path& includingFile,
     const std::string& target) {
@@ -621,6 +692,8 @@ std::filesystem::path csecResolveImportPath(
             return candidate;
         }
     }
+    auto library = csecFindLibraryModule(target);
+    if (!library.empty()) return library;
     return candidates.front();
 }
 
@@ -707,6 +780,16 @@ char* csec_expand_imports(const char* path) {
     std::memcpy(result, expanded.data(), expanded.size());
     result[expanded.size()] = '\0';
     return result;
+}
+
+// Library lookup shared by both compilers: the path of the std-library module for a dotted import
+// target, or "" when no library root provides it.
+char* csec_find_library_module(const char* target) {
+    return csec_owned_string(csecFindLibraryModule(target ? target : "").u8string());
+}
+
+void csec_add_library_root(const char* path) {
+    if (path && *path) csecExtraLibraryRoots().push_back(std::filesystem::u8path(path));
 }
 
 char* csec_resolve_import_path(const char* currentPath, const char* target) {

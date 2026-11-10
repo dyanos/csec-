@@ -1,0 +1,34 @@
+// std.microthread -- Erlang-style lightweight processes.
+//
+//     import std.microthread
+//
+// Each process has its own stack and a private FIFO mailbox of Int messages; processes share
+// nothing and communicate only with send/receive. Scheduling is cooperative on the spawning OS
+// thread (see docs/syntax.md, "Processes"). These are compiler intrinsics: declaring them here with
+// [@Intrinsic] is what makes them available to a program that imports this module.
+
+[@Intrinsic] external def spawn(body: () => Int): Int;
+[@Intrinsic] external def self(): Int;
+[@Intrinsic] external def send(pid: Int, message: Int): Int;
+[@Intrinsic] external def receive(): Int;
+[@Intrinsic] external def receiveTimeout(milliseconds: Int, fallback: Int): Int;
+[@Intrinsic] external def yield(): Int;
+[@Intrinsic] external def isAlive(pid: Int): Boolean;
+[@Intrinsic] external def monitor(pid: Int, message: Int): Int;
+[@Intrinsic] external def mailboxSize(): Int;
+[@Intrinsic] external def processCount(): Int;
+[@Intrinsic] external def joinProcesses(): Int;
+
+// ---- Text messages ----
+// Each process also has a FIFO mailbox of strings; the text is copied to the receiver.
+external def csec_process_send_text(pid: Int, text: String): Int;
+external def csec_process_receive_text(): String;
+external def csec_process_receive_text_timeout(milliseconds: Long, fallback: String): String;
+external def csec_process_text_count(): Int;
+
+// Send `text` to process `pid` (0 if it is no longer alive).
+def sendText(pid: Int, text: String): Int = csec_process_send_text(pid, text)
+// Wait for the next text message.
+def receiveText(): String = csec_process_receive_text()
+def receiveTextTimeout(milliseconds: Int, fallback: String): String = csec_process_receive_text_timeout(milliseconds, fallback)
+def textMailboxSize(): Int = csec_process_text_count()

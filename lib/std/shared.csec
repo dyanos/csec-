@@ -1,0 +1,74 @@
+// std.shared -- shared memory between threads, microthreads, and OS processes.
+//
+//     import std.shared
+//
+// sharedNew(bytes) is private to this program (for its threads and microthreads). sharedOpen(name,
+// bytes) is named and visible to every process of the user session that opens the same name; the
+// first opener creates it zero-filled. Memory is addressed as Long/Double slots (index * 8 bytes),
+// bytes, or NUL-terminated strings at a byte offset. Out-of-range accesses read 0 and are ignored.
+// sharedLock/sharedUnlock is a region-wide lock that also works across processes.
+
+external def csec_shm_new(bytes: Long): Long;
+external def csec_shm_open(name: String, bytes: Long): Long;
+external def csec_shm_size(handle: Long): Long;
+external def csec_shm_get_long(handle: Long, index: Long): Long;
+external def csec_shm_set_long(handle: Long, index: Long, value: Long): Void;
+external def csec_shm_add_long(handle: Long, index: Long, delta: Long): Long;
+external def csec_shm_compare_exchange_long(handle: Long, index: Long, expected: Long, desired: Long): Int;
+external def csec_shm_get_double(handle: Long, index: Long): Double;
+external def csec_shm_set_double(handle: Long, index: Long, value: Double): Void;
+external def csec_shm_get_byte(handle: Long, offset: Long): Int;
+external def csec_shm_set_byte(handle: Long, offset: Long, value: Int): Void;
+external def csec_shm_write_string(handle: Long, offset: Long, text: String): Int;
+external def csec_shm_read_string(handle: Long, offset: Long): String;
+external def csec_shm_lock(handle: Long): Void;
+external def csec_shm_unlock(handle: Long): Void;
+external def csec_shm_close(handle: Long): Void;
+external def csec_shm_remove(name: String): Void;
+
+def sharedNew(bytes: Long): Long = csec_shm_new(bytes)
+def sharedOpen(name: String, bytes: Long): Long = csec_shm_open(name, bytes)
+def sharedSize(shared: Long): Long = csec_shm_size(shared)
+
+def sharedGetLong(shared: Long, index: Long): Long = csec_shm_get_long(shared, index)
+def sharedSetLong(shared: Long, index: Long, value: Long): Int {
+    csec_shm_set_long(shared, index, value);
+    return 0;
+}
+// Atomically add `delta` to slot `index`; returns the new value.
+def sharedAddLong(shared: Long, index: Long, delta: Long): Long = csec_shm_add_long(shared, index, delta)
+def sharedCompareExchange(shared: Long, index: Long, expected: Long, desired: Long): Boolean = csec_shm_compare_exchange_long(shared, index, expected, desired) != 0
+
+def sharedGetDouble(shared: Long, index: Long): Double = csec_shm_get_double(shared, index)
+def sharedSetDouble(shared: Long, index: Long, value: Double): Int {
+    csec_shm_set_double(shared, index, value);
+    return 0;
+}
+
+def sharedGetByte(shared: Long, offset: Long): Int = csec_shm_get_byte(shared, offset)
+def sharedSetByte(shared: Long, offset: Long, value: Int): Int {
+    csec_shm_set_byte(shared, offset, value);
+    return 0;
+}
+
+// Store / load a string at a byte offset (returns the bytes stored, 0 if it does not fit).
+def sharedWriteString(shared: Long, offset: Long, text: String): Int = csec_shm_write_string(shared, offset, text)
+def sharedReadString(shared: Long, offset: Long): String = csec_shm_read_string(shared, offset)
+
+def sharedLock(shared: Long): Int {
+    csec_shm_lock(shared);
+    return 0;
+}
+def sharedUnlock(shared: Long): Int {
+    csec_shm_unlock(shared);
+    return 0;
+}
+def sharedClose(shared: Long): Int {
+    csec_shm_close(shared);
+    return 0;
+}
+// Remove a named region (and a mailbox of the same name) on POSIX; a no-op on Windows.
+def sharedRemove(name: String): Int {
+    csec_shm_remove(name);
+    return 0;
+}

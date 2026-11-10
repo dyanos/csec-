@@ -1,0 +1,56 @@
+// std.mail -- named mailboxes with mail senders and receivers.
+//
+//     import std.mail
+//     val outbox = mailSender("orders", "web-frontend");
+//     mailSend(outbox, "pizza x2");
+//     val inbox = mailReceiver("orders");
+//     val order = mailReceive(inbox);          // "pizza x2"
+//     val who = mailLastSender(inbox);         // "web-frontend"
+//
+// A mailbox is identified by its name, so senders and receivers can be in different threads,
+// microthreads, or OS processes of the same user session. Messages are strings with an optional
+// Long tag; they are copied, and delivered in FIFO order (about 1 MiB of queued mail per mailbox).
+// Receiving waits cooperatively, so a microthread waiting for mail lets the others of its thread run.
+
+external def csec_mail_open(mailbox: String, sender: String): Long;
+external def csec_mail_send(endpoint: Long, tag: Long, body: String): Int;
+external def csec_mail_receive(endpoint: Long, timeoutMs: Long): Int;
+external def csec_mail_last_body(endpoint: Long): String;
+external def csec_mail_last_sender(endpoint: Long): String;
+external def csec_mail_last_tag(endpoint: Long): Long;
+external def csec_mail_count(endpoint: Long): Int;
+external def csec_mail_close(endpoint: Long): Void;
+
+// An endpoint that sends to `mailbox`, signing messages with `senderName`.
+def mailSender(mailbox: String, senderName: String): Long = csec_mail_open(mailbox, senderName)
+// An endpoint that receives from `mailbox`.
+def mailReceiver(mailbox: String): Long = csec_mail_open(mailbox, "")
+
+// Queue a message (false if the mailbox is full).
+def mailSend(sender: Long, body: String): Boolean = csec_mail_send(sender, 0, body) != 0
+def mailSendTagged(sender: Long, tag: Long, body: String): Boolean = csec_mail_send(sender, tag, body) != 0
+
+// Wait for the next message and return its body.
+def mailReceive(receiver: Long): String {
+    csec_mail_receive(receiver, -1);
+    return csec_mail_last_body(receiver);
+}
+// Like mailReceive, but returns `fallback` if nothing arrives within `milliseconds`.
+def mailReceiveTimeout(receiver: Long, milliseconds: Int, fallback: String): String {
+    if (csec_mail_receive(receiver, milliseconds) == 0) {
+        return fallback;
+    }
+    return csec_mail_last_body(receiver);
+}
+// Take a message if one is waiting; true if it did (then read it with mailLastBody).
+def mailPoll(receiver: Long): Boolean = csec_mail_receive(receiver, 0) != 0
+def mailLastBody(receiver: Long): String = csec_mail_last_body(receiver)
+// Sender name and tag of the message most recently received through this endpoint.
+def mailLastSender(receiver: Long): String = csec_mail_last_sender(receiver)
+def mailLastTag(receiver: Long): Long = csec_mail_last_tag(receiver)
+def mailCount(endpoint: Long): Int = csec_mail_count(endpoint)
+def mailHasMail(endpoint: Long): Boolean = csec_mail_count(endpoint) > 0
+def mailClose(endpoint: Long): Int {
+    csec_mail_close(endpoint);
+    return 0;
+}

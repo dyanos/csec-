@@ -1,0 +1,16 @@
+// Regression: a lambda capturing an enclosing function's parameter (bound to an SSA argument, not a
+// stack slot) by value or by reference must compile and see the parameter's value.
+def apply(f: () => Int): Int {
+    return f();
+}
+def byValue(offset: Int): Int {
+    return apply([=]() -> { return offset + 1; });
+}
+def byReference(offset: Int): Int {
+    return apply([&]() -> { return offset + 2; });
+}
+def main(): Int {
+    if (byValue(41) != 42) { return 1; }
+    if (byReference(40) != 42) { return 2; }
+    return 0;
+}

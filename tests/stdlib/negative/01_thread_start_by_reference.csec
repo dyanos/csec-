@@ -1,0 +1,6 @@
+import std.thread
+def main(): Int {
+    var x: Int = 1;
+    val t = threadStart([&]() -> { x = 2; return 0; });
+    return threadJoin(t);
+}

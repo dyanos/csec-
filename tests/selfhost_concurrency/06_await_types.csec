@@ -1,0 +1,31 @@
+// Self-host: futures carrying Double, Long and Boolean results. Exit code 42.
+def half(x: Double): Double {
+    return x / 2.0;
+}
+
+def big(n: Long): Long {
+    return n * 1000000000;
+}
+
+def positive(n: Int): Boolean {
+    return n > 0;
+}
+
+def main(): Int {
+    val h = async half(84.0);
+    val g = async big(3);
+    val p = async positive(5);
+    val hv: Double = await h;
+    val gv: Long = await g;
+    val pv: Boolean = await p;
+    if (gv != 3000000000) {
+        return 1;
+    }
+    if (!pv) {
+        return 2;
+    }
+    if (hv != 42.0) {
+        return 3;
+    }
+    return 42;
+}

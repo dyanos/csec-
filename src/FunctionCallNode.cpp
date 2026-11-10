@@ -9,6 +9,8 @@
 #include "ClassInstanceCreationNode.h"
 #include "IdentifierNode.h"
 #include "IfStatementNode.h"
+#include "LambdaExpressionNode.h"
+#include "intrinsics.h"
 #include "ReturnStatementNode.h"
 #include "VariableDeclarationNode.h"
 #include "TensorRuntime.h"
@@ -84,6 +86,25 @@ bool isNativeParallelFunction(const std::string& name) {
            name == "setParallelThreads" ||
            name == "parallelBackendAvailable" ||
            name == "parallelBackendImplemented";
+}
+
+// Erlang-style microthread builtins (runtime: native_runtime/process_runtime.inc). A user-declared
+// function or variable of the same name takes precedence, so these never shadow existing programs.
+bool isNativeMicrothreadName(const std::string& name) {
+    static const char* names[] = {
+        "spawn", "self", "send", "receive", "receiveTimeout", "yield",
+        "isAlive", "monitor", "mailboxSize", "processCount", "joinProcesses",
+        "threadStart"
+    };
+    for (const char* candidate : names) {
+        if (name == candidate) return true;
+    }
+    return false;
+}
+
+bool resolvesToMicrothreadBuiltin(const std::string& name) {
+    // Only active once a library module declared it `[@Intrinsic]` (e.g. `import std.microthread`).
+    return isNativeMicrothreadName(name) && isDeclaredIntrinsic(name);
 }
 
 bool isNativeDynamicLibraryFunction(const std::string& name) {
@@ -823,6 +844,111 @@ llvm::Value* codegenNativePosixCall(
         return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_posix_errno", i32Ty, {}), {}, "posix.errno");
     }
 
+    return nullptr;
+}
+
+llvm::Value* codegenNativeMicrothreadCall(
+    const std::string& functionName,
+    const std::vector<std::unique_ptr<ASTNode>>& arguments,
+    const std::vector<llvm::Value*>& argValues) {
+    auto& cg = CodeGenerator::getInstance();
+    auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* voidTy = llvm::Type::getVoidTy(cg.context);
+    auto* opaquePtr = llvm::PointerType::getUnqual(cg.context);
+    auto requireArgCount = [&](size_t count) {
+        if (argValues.size() == count) return true;
+        std::cerr << "Error: " << functionName << "() requires " << count << " argument(s)" << std::endl;
+        return false;
+    };
+    auto asPid = [&](llvm::Value* value) {
+        return cg.builder.CreateTrunc(coerceMathValueToI64(cg, value), i32Ty, "proc.pid");
+    };
+    auto asMessageResult = [&](llvm::Value* raw) {
+        return cg.builder.CreateTrunc(raw, i32Ty, "proc.msg");
+    };
+
+    if (functionName == "spawn" || functionName == "threadStart") {
+        if (!requireArgCount(1)) return nullptr;
+        llvm::Value* closure = argValues[0];
+        if (!closure || !closure->getType()->isPointerTy()) {
+            std::cerr << "Error: " << functionName << "() expects a zero-argument lambda or function" << std::endl;
+            return nullptr;
+        }
+        // Closures are { code, env }. The runtime copies `envSize` bytes of the environment so the
+        // child shares nothing with (and does not depend on) the spawning frame.
+        auto* closureType = llvm::StructType::get(cg.context, { opaquePtr, opaquePtr });
+        llvm::Value* code = cg.builder.CreateLoad(opaquePtr,
+            cg.builder.CreateStructGEP(closureType, closure, 0, "spawn.code.ptr"), "spawn.code");
+        llvm::Value* env = cg.builder.CreateLoad(opaquePtr,
+            cg.builder.CreateStructGEP(closureType, closure, 1, "spawn.env.ptr"), "spawn.env");
+        // sizeof(env) as a constant expression, resolved with the target's data layout.
+        llvm::Constant* envSizeValue = llvm::ConstantInt::get(i64Ty, 0);
+        if (auto* lambda = dynamic_cast<LambdaExpressionNode*>(arguments[0].get())) {
+            if (lambda->environmentType) {
+                envSizeValue = llvm::ConstantExpr::getPtrToInt(llvm::ConstantExpr::getGetElementPtr(lambda->environmentType,
+                    llvm::ConstantPointerNull::get(opaquePtr), llvm::ArrayRef<llvm::Constant*>{ llvm::ConstantInt::get(i32Ty, 1) }), i64Ty);
+            }
+        }
+        if (functionName == "threadStart") {
+            return cg.builder.CreateCall(
+                getOrCreateRuntimeFunction(cg, "csec_thread_start", i64Ty, {opaquePtr, opaquePtr, i64Ty}),
+                {code, env, envSizeValue}, "thread.start");
+        }
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_process_spawn", i32Ty, {opaquePtr, opaquePtr, i64Ty}),
+            {code, env, envSizeValue}, "proc.spawn");
+    }
+    if (functionName == "self") {
+        if (!requireArgCount(0)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_process_self", i32Ty, {}), {}, "proc.self");
+    }
+    if (functionName == "send") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_process_send", i32Ty, {i32Ty, i64Ty}),
+            {asPid(argValues[0]), coerceMathValueToI64(cg, argValues[1])}, "proc.send");
+    }
+    if (functionName == "receive") {
+        if (!requireArgCount(0)) return nullptr;
+        return asMessageResult(cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_process_receive", i64Ty, {}), {}, "proc.receive"));
+    }
+    if (functionName == "receiveTimeout") {
+        if (!requireArgCount(2)) return nullptr;
+        return asMessageResult(cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_process_receive_timeout", i64Ty, {i64Ty, i64Ty}),
+            {coerceMathValueToI64(cg, argValues[0]), coerceMathValueToI64(cg, argValues[1])}, "proc.receive.timeout"));
+    }
+    if (functionName == "yield") {
+        if (!requireArgCount(0)) return nullptr;
+        cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_process_yield", voidTy, {}), {});
+        return llvm::ConstantInt::get(i32Ty, 0);
+    }
+    if (functionName == "isAlive") {
+        if (!requireArgCount(1)) return nullptr;
+        llvm::Value* raw = cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_process_alive", i32Ty, {i32Ty}), {asPid(argValues[0])}, "proc.alive.raw");
+        return cg.builder.CreateICmpNE(raw, llvm::ConstantInt::get(i32Ty, 0), "proc.alive");
+    }
+    if (functionName == "monitor") {
+        if (!requireArgCount(2)) return nullptr;
+        return cg.builder.CreateCall(
+            getOrCreateRuntimeFunction(cg, "csec_process_monitor", i32Ty, {i32Ty, i64Ty}),
+            {asPid(argValues[0]), coerceMathValueToI64(cg, argValues[1])}, "proc.monitor");
+    }
+    if (functionName == "mailboxSize") {
+        if (!requireArgCount(0)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_process_mailbox_size", i32Ty, {}), {}, "proc.mailbox");
+    }
+    if (functionName == "processCount") {
+        if (!requireArgCount(0)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_process_count", i32Ty, {}), {}, "proc.count");
+    }
+    if (functionName == "joinProcesses") {
+        if (!requireArgCount(0)) return nullptr;
+        return cg.builder.CreateCall(getOrCreateRuntimeFunction(cg, "csec_process_join", i32Ty, {}), {}, "proc.join");
+    }
     return nullptr;
 }
 
@@ -1995,6 +2121,9 @@ llvm::Value* FunctionCallNode::codegen() {
     if (isNativeSystemFileFunction(functionName)) {
         return codegenNativeSystemFileCall(functionName, argValues);
     }
+    if (resolvesToMicrothreadBuiltin(functionName)) {
+        return codegenNativeMicrothreadCall(functionName, arguments, argValues);
+    }
     if (isNativeParallelFunction(functionName)) {
         return codegenNativeParallelCall(functionName, argValues);
     }
@@ -2423,6 +2552,11 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
         }
         return std::make_unique<BasicType>("Int");
     }
+    if (resolvesToMicrothreadBuiltin(functionName)) {
+        if (functionName == "isAlive") return std::make_unique<BasicType>("Boolean");
+        if (functionName == "threadStart") return std::make_unique<BasicType>("Long");
+        return std::make_unique<BasicType>("Int");
+    }
     if (isNativeParallelFunction(functionName)) {
         return std::make_unique<BasicType>("Int");
     }
@@ -2552,4 +2686,8 @@ std::unique_ptr<Type> FunctionCallNode::getType() {
     }
 
     return std::make_unique<UnknownType>();
+}
+
+bool isNativeMicrothreadFunction(const std::string& name) {
+    return resolvesToMicrothreadBuiltin(name);
 }

@@ -1,0 +1,17 @@
+import std.thread
+// Self-host: OS thread + atomic counter via the std.thread library. Exit code 42.
+def addMany(): Int {
+    return 21;
+}
+
+def main(): Int {
+    val counter: Long = atomicNew(40);
+    atomicAdd(counter, 2);
+    val t: Long = threadStart(addMany);
+    val r: Int = threadJoin(t);
+    val total: Long = atomicGet(counter);
+    if (total != 42) {
+        return 1;
+    }
+    return r * 2;
+}

@@ -415,6 +415,9 @@ static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bo
                 : (floating ? csec_emit_f32_expression(tokens, cursor + 2, next, value)
                             : csec_emit_i32_expression(tokens, cursor + 2, next, value))));
             output += std::string("  store ") + (boolean ? "i1 " : (pointer ? "ptr " : (doubling ? "double " : (floating ? "float " : "i32 ")))) + value + ", ptr %" + storage + "\n";
+        } else if ((csec_native_token_is(tokens, cursor, 'K', "go") || csec_native_token_is(tokens, cursor, 'K', "await")) &&
+                   cursor + 1 < next) {
+            output += csec_emit_i32_expression(tokens, cursor, next, "%discard." + std::to_string(cursor));
         } else if (!csec_emit_println_statement(tokens, cursor, next).empty()) {
             output += csec_emit_println_statement(tokens, cursor, next);
         } else if (csec_native_token_is(tokens, cursor, 'I', "free") &&
@@ -551,6 +554,8 @@ int csec_generate_llvm_module_into(const char* tokens, long long builder) {
     if (!lambdaTypeDefinitions.empty() && csec_string_builder_append(builder, lambdaTypeDefinitions.c_str()) != 0) return -1;
     const std::string lambdaDefinitions = csec_lambda_definitions(tokens);
     if (!lambdaDefinitions.empty() && csec_string_builder_append(builder, lambdaDefinitions.c_str()) != 0) return -1;
+    const std::string concurrencyDefinitions = csec_concurrency_definitions(tokens);
+    if (!concurrencyDefinitions.empty() && csec_string_builder_append(builder, concurrencyDefinitions.c_str()) != 0) return -1;
 
     bool compilerDriver = false;
     for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E';) {
@@ -579,7 +584,9 @@ int csec_generate_llvm_module_into(const char* tokens, long long builder) {
         const int next = csec_advance_top_level_decl(tokens, cursor);
         if (next <= cursor) break;
         const char* declarationKind = csec_top_level_decl_kind(tokens, cursor);
-        if (std::strcmp(declarationKind, "external-function") == 0) {
+        if (std::strcmp(declarationKind, "external-function") == 0 && csec_decl_has_intrinsic_attribute(tokens, cursor)) {
+            // An intrinsic declaration only enables the built-in lowering; it has no symbol.
+        } else if (std::strcmp(declarationKind, "external-function") == 0) {
             std::string declaration = "declare ";
             declaration += csec_llvm_type_for_name(csec_function_return_type_at(tokens, cursor));
             declaration += " @";

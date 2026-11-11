@@ -251,6 +251,19 @@ CSEC_NATIVE_API void csec_future_complete(void* future, long long value);
 CSEC_NATIVE_API int csec_future_ready(void* future);
 CSEC_NATIVE_API long long csec_future_await(void* future);
 CSEC_NATIVE_API int csec_async_start(void* code, void* env, long long envSize);
+// Chunked binary file input (native_runtime/io_runtime.inc).
+CSEC_NATIVE_API long long csec_io_file_size(const char* path);
+CSEC_NATIVE_API long long csec_io_open_read(const char* path);
+CSEC_NATIVE_API int csec_io_seek(long long handle, long long offset);
+CSEC_NATIVE_API char* csec_io_read(long long handle, int maxBytes);
+CSEC_NATIVE_API long long csec_io_last_count(long long handle);
+CSEC_NATIVE_API void csec_io_close(long long handle);
+CSEC_NATIVE_API void csec_string_release(char* text);
+CSEC_NATIVE_API long long csec_io_parse_long(const char* text, long long fallback);
+CSEC_NATIVE_API long long csec_io_map_open(const char* path);
+CSEC_NATIVE_API char* csec_io_map_data(long long handle);
+CSEC_NATIVE_API long long csec_io_map_size(long long handle);
+CSEC_NATIVE_API void csec_io_map_close(long long handle);
 // Pipes, shared memory, mail (native_runtime/ipc_runtime.inc) and microthread text messages.
 CSEC_NATIVE_API int csec_process_send_text(int pid, const char* text);
 CSEC_NATIVE_API char* csec_process_receive_text(void);

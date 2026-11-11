@@ -397,6 +397,30 @@ static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bo
             const std::string fieldType =
                 (boolean || pointer || floating || doubling || csec_find_visible_local(tokens, cursor, name.c_str()) >= 0)
                     ? std::string() : csec_class_field_llvm_type(tokens, cursor, name.c_str());
+            // A Long local or parameter is assigned a 64-bit value (previously an i32 was stored into
+            // its 8-byte slot, dropping the high half).
+            bool wideLocal = false;
+            if (!boolean && !pointer && !floating && !doubling) {
+                const int declaration = csec_find_visible_local(tokens, cursor, name.c_str());
+                if (declaration >= 0) {
+                    const int declarationEnd = csec_advance_statement(tokens, declaration, 1000000000);
+                    const int initializer = csec_find_top_level_operator(tokens, declaration, declarationEnd, 1);
+                    wideLocal = csec_is_i64_type_name(csec_c_local_type(tokens, declaration, declarationEnd, initializer));
+                } else {
+                    const int function = csec_enclosing_function_declaration(tokens, cursor);
+                    if (function >= 0) {
+                        for (const auto& parameter : csec_function_params(tokens, function)) {
+                            if (parameter.first == name && csec_is_i64_type_name(parameter.second)) wideLocal = true;
+                        }
+                    }
+                }
+            }
+            if (wideLocal) {
+                output += csec_emit_i64_expression(tokens, cursor + 2, next, value);
+                output += "  store i64 " + value + ", ptr %" + storage + "\n";
+                cursor = csec_expression_ast_skip_trivia(tokens, next);
+                continue;
+            }
             if (!fieldType.empty() && fieldType != "i32") {
                 if (fieldType == "i64") output += csec_emit_i64_expression(tokens, cursor + 2, next, value);
                 else if (fieldType == "double") output += csec_emit_f64_expression(tokens, cursor + 2, next, value);

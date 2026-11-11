@@ -425,6 +425,7 @@ live in `lib/std`:
 | `std.pipe` | `pipeNew`, `pipeWriteLine`, `pipeReadLine`, `pipeClose`, `pipeAtEnd`; `pipeOpenProcess(cmd)` with `processWriteLine`/`processReadLine`/`processFinish` |
 | `std.shared` | `sharedNew(bytes)`, `sharedOpen(name, bytes)`, `sharedGet/SetLong`, `sharedAddLong`, `sharedRead/WriteString`, `sharedLock/Unlock` |
 | `std.mail` | `mailSender(box, name)`, `mailReceiver(box)`, `mailSend`, `mailReceive`, `mailReceiveTimeout`, `mailLastSender`, `mailLastTag` |
+| `std.io` | `openRead`, `readChunk`, `lastReadCount`, `releaseChunk`, `mapFile`, `mappedBytes`, `mappedSize`, `fileSize`, `parseInt` |
 
 Pipes, shared memory, and mail work between OS threads and microthreads, and named
 shared memory and mailboxes also work between OS processes. Their blocking
@@ -467,6 +468,32 @@ def main(): Int {
     return 0;
 }
 ```
+
+### String bytes
+
+`text[i]` reads byte `i` of a String as a `Char` with a single load, which is what byte-scanning
+loops need (it is vectorised at `-O3`). It is valid for `0 <= i <= text.length` and is not
+bounds-checked. The bounds-safe but O(i) alternative is `text.charAt(i)`.
+
+```tessera
+import std.io
+
+def countLines(path: String): Long {
+    val mapping = mapFile(path);
+    val view = mappedBytes(mapping);
+    var lines: Long = 0;
+    var i: Long = 0;
+    while (i < mappedSize(mapping)) {
+        if (view[i] == '\n') { lines = lines + 1; }
+        i = i + 1;
+    }
+    unmapFile(mapping);
+    return lines;
+}
+```
+
+`examples/parallel_wc.csec` splits this loop across OS threads (`std.thread`). Build it with
+`csec++ -O3 -march=native --emit-exe examples/parallel_wc.csec -o parallel_wc.exe`.
 
 ## Templates
 

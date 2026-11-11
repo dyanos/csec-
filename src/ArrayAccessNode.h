@@ -86,6 +86,11 @@ public:
             }
         }
         if (!resolvedArrayType) return std::make_unique<UnknownType>();
+        // `text[i]` reads byte i of a String as a Char.
+        if (resolvedArrayType->isStringTy() && indices.size() <= 1 &&
+            (indices.empty() || (indices[0] && !indices[0]->isSlice))) {
+            return std::make_unique<BasicType>("Char");
+        }
 
         bool containsSlice = false;
         for (const auto& spec : indices) {

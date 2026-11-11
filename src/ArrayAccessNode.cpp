@@ -58,6 +58,22 @@ llvm::Value* ArrayAccessNode::codegen() {
     }
 
     auto arrayTypeInfo = stripBorrow(array->getType());
+    // `text[i]`: byte i of a String, read with a single load (no call, no scan), so byte loops compile
+    // to tight machine code. Valid for 0 <= i <= text.length (index text.length is the terminating NUL);
+    // other indices are out of bounds, as for a C string.
+    if (arrayTypeInfo && arrayTypeInfo->isStringTy() && specs.size() == 1 && specs[0] && !specs[0]->isSlice && specs[0]->index) {
+        auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
+        auto* ptrTy = llvm::PointerType::getUnqual(cg.context);
+        llvm::Value* base = arrayValue;
+        if (auto* slot = llvm::dyn_cast<llvm::AllocaInst>(base)) {
+            if (slot->getAllocatedType()->isPointerTy()) base = cg.builder.CreateLoad(ptrTy, slot, "str.base");
+        }
+        llvm::Value* position = specs[0]->index->codegen();
+        if (!position) return nullptr;
+        position = toTensorIndex(cg, position);
+        llvm::Value* address = cg.builder.CreateInBoundsGEP(i8Ty, base, position, "str.byte.ptr");
+        return cg.builder.CreateLoad(i8Ty, address, "str.byte");
+    }
     if (arrayTypeInfo && TensorRuntime::isTensorTypeName(arrayTypeInfo->getName())) {
         std::vector<bool> isSlice;
         std::vector<llvm::Value*> starts;

@@ -64,6 +64,7 @@ name that no imported module declared is an ordinary unresolved call (an error).
 | `std.pipe` | byte/line pipes between threads and microthreads; child processes with piped stdin/stdout (§6) |
 | `std.shared` | shared memory: private (threads/microthreads) or named (across OS processes) (§6) |
 | `std.mail` | named mailboxes with mail senders and receivers, across threads, microthreads, and processes (§6) |
+| `std.io` | chunked binary file reads, memory-mapped files, `parseInt`/`parseLong` (§7) |
 
 ## 2. Microthreads (`import std.microthread`)
 
@@ -165,6 +166,30 @@ accesses read 0 and are ignored. `sharedAddLong` and `sharedCompareExchange` are
 copied and delivered FIFO. A mailbox holds about 1 MiB of queued mail, and a send to a
 full mailbox returns `false`.
 
+## 7. String bytes and file input
+
+**`text[i]`.** Indexing a `String` with one integer (`Int` or `Long`) yields byte `i` as a `Char`.
+It compiles to a single load, with no call and no scan, so byte loops optimise like C loops (and
+are vectorised at `-O2`/`-O3`). Valid indices are `0 <= i <= text.length`, where index
+`text.length` is the terminating NUL. As with C strings, other indices are out of bounds and are not
+checked. Slices of strings are not supported. (`text.charAt(i)` remains available; it is bounds
+safe but scans from the start, i.e. O(i).)
+
+**`std.io`.**
+- `openRead(path)`, `seekTo(file, offset)`, `readChunk(file, maxBytes)`, and `lastReadCount(file)`
+  read a file in binary mode in chunks. The byte count is reported separately, so data containing
+  NUL bytes is exact. Each chunk is a fresh allocation; free it with `releaseChunk`.
+- `mapFile(path)` maps a whole file read-only. `mappedBytes(m)` is a view for `view[i]`,
+  `0 <= i < mappedSize(m)` (use a `Long` index beyond 2 GiB). It is not NUL-terminated and stays
+  valid until `unmapFile(m)`. One mapping can be scanned by several threads.
+- `fileSize(path)`, `parseInt(text, fallback)`, `parseLong(text, fallback)`.
+
+**Target.** The native compiler gives every module the host's target triple and data layout before
+code generation. The default CPU is the portable baseline (SSE2 on x86-64); `-march=native` targets
+the build machine's CPU (e.g. AVX2/AVX-512).
+
+`examples/parallel_wc.csec` is a parallel `wc -l` built from these pieces.
+
 ## 5. Self-hosted compiler support
 
 The self-hosted compiler (`selfhost/`, whose emitter lives in `src/native_runtime/*.inc`) implements:
@@ -175,7 +200,8 @@ The self-hosted compiler (`selfhost/`, whose emitter lives in `src/native_runtim
 - all `std.microthread` intrinsics and `threadStart`;
 - `go`, `async`, and `await` (§3), including `async def` as a declaration modifier, with
   futures of `Int`, `Long`, `Boolean`, `Double`, and pointer-represented results;
-- calls through `std.thread`, `std.process`, `std.pipe`, `std.shared`, `std.mail`,
+- `text[i]` on String locals and parameters, and escaped `Char` literals (`'\n'`, `'\t'`, ...);
+- calls through `std.io`, `std.thread`, `std.process`, `std.pipe`, `std.shared`, `std.mail`,
   `std.math.natural`, `std.math.real`, and `std.symbolic`, which are ordinary functions
   over `external def` runtime entry points. `external def` declarations are emitted with
   their declared signature, and calls to them pass arguments of the declared types.

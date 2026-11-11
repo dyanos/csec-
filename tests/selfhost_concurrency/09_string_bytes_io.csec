@@ -1,0 +1,46 @@
+import std.io
+// Self-host: String byte indexing, escaped Char literals, and std.io (memory-mapped and chunked
+// reads). Counts the newlines of this very file both ways; exit code 42 when they agree.
+def countText(text: String, count: Long): Long {
+    var lines: Long = 0;
+    var i: Long = 0;
+    while (i < count) {
+        if (text[i] == '\n') {
+            lines = lines + 1;
+        }
+        i = i + 1;
+    }
+    return lines;
+}
+
+def main(): Int {
+    val path: String = "tests/selfhost_concurrency/09_string_bytes_io.csec";
+    val sample: String = "a\tb\nc";
+    if (sample[1] != '\t') {
+        return 1;
+    }
+    val mapping: Long = mapFile(path);
+    if (mapping == 0) {
+        return 2;
+    }
+    val size: Long = mappedSize(mapping);
+    val view: String = mappedBytes(mapping);
+    val mapped: Long = countText(view, size);
+    unmapFile(mapping);
+    val file: Long = openRead(path);
+    val chunk: String = readChunk(file, 1000000);
+    val got: Long = lastReadCount(file);
+    val read: Long = countText(chunk, got);
+    releaseChunk(chunk);
+    closeFile(file);
+    if (got != size) {
+        return 3;
+    }
+    if (mapped != read) {
+        return 4;
+    }
+    if (mapped < 10) {
+        return 5;
+    }
+    return 42;
+}

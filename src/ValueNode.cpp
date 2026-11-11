@@ -60,6 +60,8 @@ llvm::Value* ValueNode::codegen() {
                     switch (value[2]) {
                     case 'n': ch = '\n'; break;
                     case 't': ch = '\t'; break;
+                    case 'r': ch = '\r'; break;
+                    case '0': ch = '\0'; break;
                     case '\\': ch = '\\'; break;
                     case '\'': ch = '\''; break;
                     default: ch = value[2]; break;

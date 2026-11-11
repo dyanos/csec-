@@ -222,6 +222,8 @@ set(_
     "type_checker.h"
     "type_utils.h"
     "utils.h"
+    "intrinsics.h"
+    "builtin_structs.h"
 )
 source_group("?ㅻ뜑 ?뚯씪" FILES ${_})
 

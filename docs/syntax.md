@@ -326,10 +326,11 @@ def main(): Int {
 
 The ownership rule extends across suspension points: a borrow (`&`/`&mut`) may
 not be held live across an `await`, because after suspension another task could
-mutate or drop the borrowed value. End the borrow before awaiting. `await`
-currently lowers to sequential evaluation (async functions run as ordinary
-synchronous calls) until a coroutine runtime is added; the surface syntax and
-the borrow rule are enforced today.
+mutate or drop the borrowed value. End the borrow before awaiting. Calling an
+`async def` directly still runs it synchronously, and awaiting its (non-future)
+result yields the value. For real concurrency use `async f(x)`, which runs the
+call in a microthread and yields a `Future<T>` to `await` (see *Processes*
+below).
 
 ## Processes (Erlang-Style Microthreads)
 

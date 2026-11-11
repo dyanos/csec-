@@ -33,8 +33,23 @@ grammar see [docs/grammar.md](docs/grammar.md).
   ownership-aware drop glue lands. `--no-strict-ownership` opts out.
 - **Multiple return values** with tuple return types and destructuring
   (`a, b = f()`, `_` to ignore), and value `struct`s.
-- **async / await** with the no-borrow-across-await rule (`await` currently
-  lowers to sequential evaluation).
+- **Concurrency**: Erlang-style microthreads (`spawn`/`send`/`receive`, mailboxes,
+  monitors, share-nothing captures), `go f(x)` and `async f(x)` / `await` with
+  `Future<T>`, OS threads with mutexes/atomics/channels, and inter-task
+  communication through pipes, shared memory (also across OS processes), and
+  named mailboxes (mail senders/receivers). `async def` keeps the
+  no-borrow-across-await rule.
+- **Standard library** in `lib/std`, found by `import` (`std.microthread`,
+  `std.thread`, `std.process`, `std.pipe`, `std.shared`, `std.mail`, `std.io`,
+  `std.math.natural`/`real`/`complex`, `std.symbolic`). A library module enables
+  compiler intrinsics with `[@Intrinsic] external def ...`.
+- **Math**: arbitrary-precision `Nat` with division/powers/gcd/primality,
+  built-in `Complex`/`Rational`/`Quaternion` value types, and a symbolic algebra
+  engine (simplify, expand, differentiate, integrate, solve, LaTeX output).
+- `text[i]` byte indexing of strings (a single load, vectorisable) and
+  memory-mapped / chunked binary file input (`std.io`). See
+  [examples/parallel_wc.csec](examples/parallel_wc.csec), a parallel `wc -l`
+  that runs at about 92% of a C++ mmap+SIMD reference.
 - Native runtime support for printing, input, math functions, sockets, POSIX-like
   file/process helpers, parallel helpers, and dynamic library interop.
 - `[@DllImport("library", "symbol")] external def ...` for native symbol imports.
@@ -162,7 +177,21 @@ output, e.g. `--run-ir`); `--run` always uses the interpreter-safe mem2reg pipel
 ```sh
 ./csec++ --emit-exe program.csec -O2 -o program   # optimized native executable
 ./csec++ --emit-ir  program.csec -O3 -o program.ll # inspect optimized IR
+./csec++ --emit-exe program.csec -O3 -march=native -o program  # use this CPU's vector ISA
 ```
+
+Modules are generated for the host target triple and data layout. The default CPU
+is the portable baseline (SSE2 on x86-64); `-march=native` targets the build
+machine's CPU (e.g. AVX2/AVX-512).
+
+### Standard Library Path
+
+`import std.io` resolves to `lib/std/io.csec`. The compiler looks in the
+importing file's directory and the working directory, then in the
+standard-library roots: directories given with `--lib-path <dir>`, entries of
+`CSEC_LIB_PATH`, and `lib/` next to the runtime library (or up to two parent
+directories, so a build in `x64/Debug` finds the repository `lib/`). See
+`LANGUAGE_SPEC.md`.
 
 `--emit-obj` and `--emit-exe` call `llc`. The compiler searches for `llc` in:
 

@@ -15,6 +15,13 @@ each compiler-runtime area a focused file.
 | `llvm_arrays.inc` | Array recognition, allocation, indexing, and element access lowering. |
 | `llvm_expressions.inc` | Scalar, pointer, and aggregate LLVM expression lowering. |
 | `llvm_module.inc` | Flat-body and module-level LLVM generation. |
-| `runtime_services.inc` | Function definition lowering and operating-system/runtime service exports. |
+| `runtime_services.inc` | Function definition lowering, operating-system/runtime service exports, and the import / standard-library resolver shared by both compilers. |
+| `bigint_runtime.inc` | Arbitrary-precision `Nat` arithmetic (`csec_bigint_*`), including division, powers, gcd, isqrt, and primality. |
+| `tensor_runtime.inc` | Tensor storage and operations (`csec_tensor_*`). |
+| `process_runtime.inc` | Microthread scheduler (Win32 fibers / ucontext), Int and text mailboxes, futures for `async`/`await`. |
+| `thread_runtime.inc` | OS threads, mutexes, atomics, channels, and OS processes (`std.thread`, `std.process`). |
+| `ipc_runtime.inc` | Pipes, shared memory, and mail (`std.pipe`, `std.shared`, `std.mail`), all with cooperative waiting. |
+| `io_runtime.inc` | Chunked binary file reads and memory-mapped files (`std.io`). |
+| `symbolic_runtime.inc` | Symbolic algebra engine (`csec_sym_*`, `std.symbolic`). |
 
 Keep cross-module helpers private unless they are needed by a separately compiled target.

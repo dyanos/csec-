@@ -45,6 +45,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include "llvm_compat.h"
 #include <llvm/Transforms/Utils/Mem2Reg.h>
 
 #include "ProgramNode.h"
@@ -207,8 +208,8 @@ llvm::Function* rebuildRuntimeMain(CodeGenerator& codeGen) {
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(codeGen.context, "entry", codeGen.mainFunction);
     llvm::IRBuilder<> builder(entry);
 
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(codeGen.context));
-    auto* argvTy = llvm::PointerType::getUnqual(i8PtrTy);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(codeGen.context);
+    auto* argvTy = llvm::PointerType::getUnqual(i8PtrTy->getContext());
     auto* setArgs = codeGen.module->getFunction("csec_set_command_line_args");
     if (!setArgs) {
         setArgs = llvm::Function::Create(
@@ -1249,23 +1250,20 @@ HostTarget createHostTarget(bool nativeCpu) {
     HostTarget host;
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
-    const std::string triple = llvm::sys::getDefaultTargetTriple();
+    const llvm::Triple triple(llvm::sys::getDefaultTargetTriple());
     std::string error;
-    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(triple, error);
+    const llvm::Target* target = csec_llvm::lookupTarget(triple, error);
     if (!target) return host;
     host.cpu = "generic";
     if (nativeCpu) {
         host.cpu = llvm::sys::getHostCPUName().str();
-        llvm::StringMap<bool> hostFeatures;
-        if (llvm::sys::getHostCPUFeatures(hostFeatures)) {
-            for (const auto& feature : hostFeatures) {
-                if (!host.features.empty()) host.features += ",";
-                host.features += (feature.getValue() ? "+" : "-") + feature.getKey().str();
-            }
+        for (const auto& feature : csec_llvm::hostCPUFeatures()) {
+            if (!host.features.empty()) host.features += ",";
+            host.features += (feature.getValue() ? "+" : "-") + feature.getKey().str();
         }
     }
     llvm::TargetOptions options;
-    host.machine.reset(target->createTargetMachine(triple, host.cpu, host.features, options, llvm::Reloc::PIC_));
+    host.machine.reset(csec_llvm::createTargetMachine(*target, triple, host.cpu, host.features, options, llvm::Reloc::PIC_));
     return host;
 }
 
@@ -1491,7 +1489,7 @@ int main(int argc, char** argv) {
     HostTarget hostTarget = createHostTarget(marchNative);
     if (hostTarget.machine) {
         auto& targetModule = *CodeGenerator::getInstance().module;
-        targetModule.setTargetTriple(hostTarget.machine->getTargetTriple().str());
+        csec_llvm::setTargetTriple(targetModule, hostTarget.machine->getTargetTriple());
         targetModule.setDataLayout(hostTarget.machine->createDataLayout());
     }
 
@@ -1517,7 +1515,7 @@ int main(int argc, char** argv) {
     llvm::Function* runtimeEntry = rebuildRuntimeMain(codeGen);
     if (codeGen.mainFunction && !codeGen.mainFunction->empty()) {
         llvm::BasicBlock& rootEntry = codeGen.mainFunction->getEntryBlock();
-        if (!rootEntry.getTerminator()) {
+        if (!csec_llvm::terminatorOrNull(&rootEntry)) {
             llvm::IRBuilder<> rootBuilder(&rootEntry);
             rootBuilder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGen.context), 0));
         }
@@ -1526,7 +1524,8 @@ int main(int argc, char** argv) {
     if (llvm::verifyModule(*codeGen.module, &llvm::errs())) {
         std::cerr << "Generated LLVM IR is invalid. Aborting execution." << std::endl;
         // Debug aid: CSEC_DUMP_INVALID_IR=<path> writes the rejected module for inspection.
-        if (const char* dumpPath = std::getenv("CSEC_DUMP_INVALID_IR")) {
+        const std::string dumpPath = getEnvironmentVariable("CSEC_DUMP_INVALID_IR");
+        if (!dumpPath.empty()) {
             std::error_code dumpError;
             llvm::raw_fd_ostream dump(dumpPath, dumpError, llvm::sys::fs::OF_Text);
             if (!dumpError) codeGen.module->print(dump, nullptr);

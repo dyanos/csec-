@@ -378,7 +378,8 @@ Semantics:
   spawned them, switching only at `receive`/`receiveTimeout` (with an empty
   mailbox), `yield`, `joinProcesses`, and process exit. A process that loops
   without doing any of these keeps the others from running. Processes are run in
-  FIFO order. (Fibers on Windows, `ucontext` on POSIX; 512 KiB reserved stack
+  FIFO order. (Fibers on Windows; an assembly stack switch on x86-64/arm64 Linux and
+  macOS, `ucontext` on other POSIX targets; 512 KiB reserved stack
   per process.)
 - **Lifetime.** When `main` returns the program exits, even if other processes
   are still alive; call `joinProcesses()` first to let them finish. If every

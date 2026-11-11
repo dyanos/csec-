@@ -237,7 +237,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         uint64_t typeSize = dl.getTypeAllocSize(type);
         llvm::Value* allocSize = llvm::ConstantInt::get(llvm::Type::getInt64Ty(cg.context), typeSize);
         llvm::Value* rawPtr = cg.builder.CreateCall(cg.mallocFunction, allocSize, "malloc");
-        return cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(type), "newptr");
+        return cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(type->getContext()), "newptr");
     }
 
     if (className == "Tensor") {
@@ -315,7 +315,7 @@ llvm::Value* ClassInstanceCreationNode::codegen() {
         uint64_t typeSize = dl.getTypeAllocSize(classType);
         llvm::Value* allocSize = llvm::ConstantInt::get(llvm::Type::getInt64Ty(cg.context), typeSize);
         llvm::Value* rawPtr = cg.builder.CreateCall(cg.mallocFunction, allocSize, "newobj.malloc");
-        instance = cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(classType), "newobj");
+        instance = cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(classType->getContext()), "newobj");
     }
 
     unsigned fieldIndex = 0;

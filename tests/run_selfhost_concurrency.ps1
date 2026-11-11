@@ -1,6 +1,8 @@
 param(
     [string]$Filter = "*",
-    [int]$TimeoutSeconds = 120
+    [int]$TimeoutSeconds = 120,
+    # Compiler to test (default: the Debug build). E.g. x64\Release\csec++.exe for another LLVM build.
+    [string]$Compiler = ""
 )
 
 # Concurrency and standard-library features through BOTH compilers. Each fixture in
@@ -11,6 +13,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $exe = Join-Path $repoRoot "x64\Debug\csec++.exe"
+if ($Compiler) { $exe = (Resolve-Path $Compiler).Path }
 $stage = Join-Path $repoRoot "selfhost\nativeflow_stage5_current.ll"
 $root = Join-Path $PSScriptRoot "selfhost_concurrency"
 

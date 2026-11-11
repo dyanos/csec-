@@ -6,6 +6,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include "llvm_compat.h"
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>

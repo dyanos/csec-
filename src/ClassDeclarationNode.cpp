@@ -298,7 +298,7 @@ llvm::Function* ClassDeclarationNode::defineMethod(FunctionDeclarationNode* meth
 
     llvm::Value* thisValue = &*argIt++;
     thisValue->setName("this");
-    auto* classPtrType = llvm::PointerType::getUnqual(classType);
+    auto* classPtrType = llvm::PointerType::getUnqual(classType->getContext());
     if (thisValue->getType() != classPtrType) {
         thisValue = cg.builder.CreateBitCast(thisValue, classPtrType, "this.class");
     }
@@ -363,7 +363,7 @@ llvm::Function* ClassDeclarationNode::defineMethod(FunctionDeclarationNode* meth
     method->body->codegen();
 
     llvm::BasicBlock* currentBlock = cg.builder.GetInsertBlock();
-    if (currentBlock && !currentBlock->getTerminator()) {
+    if (currentBlock && !csec_llvm::terminatorOrNull(currentBlock)) {
         llvm::Type* returnType = function->getReturnType();
         if (returnType->isVoidTy()) {
             cg.builder.CreateRetVoid();

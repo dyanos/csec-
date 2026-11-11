@@ -269,7 +269,7 @@ llvm::Value* LambdaExpressionNode::codegen() {
     }
 
     llvm::Value* bodyValue = body ? body->codegen() : nullptr;
-    if (!cg.builder.GetInsertBlock()->getTerminator()) {
+    if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
         if (bodyValue && !returnType->isVoidTy()) cg.builder.CreateRet(bodyValue);
         else if (!returnType->isVoidTy()) cg.builder.CreateRet(defaultReturnValue(returnType));
         else cg.builder.CreateRetVoid();

@@ -39,15 +39,15 @@ inline llvm::StructType* getTensorStructType(CodeGenerator& cg) {
     auto* tensorTy = llvm::StructType::create(cg.context, "csec.tensor");
     tensorTy->setBody({
         i64Ty,
-        llvm::PointerType::getUnqual(i64Ty),
+        llvm::PointerType::getUnqual(i64Ty->getContext()),
         i64Ty,
-        llvm::PointerType::getUnqual(f64Ty)
+        llvm::PointerType::getUnqual(f64Ty->getContext())
     });
     return tensorTy;
 }
 
 inline llvm::PointerType* getTensorPointerType(CodeGenerator& cg) {
-    return llvm::PointerType::getUnqual(getTensorStructType(cg));
+    return llvm::PointerType::getUnqual((getTensorStructType(cg))->getContext());
 }
 
 inline llvm::ConstantInt* i64(CodeGenerator& cg, int64_t value) {
@@ -68,7 +68,7 @@ inline llvm::Value* loadRank(CodeGenerator& cg, llvm::Value* tensor) {
 }
 
 inline llvm::Value* loadDims(CodeGenerator& cg, llvm::Value* tensor) {
-    auto* i64PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt64Ty(cg.context));
+    auto* i64PtrTy = llvm::PointerType::getUnqual(cg.context);
     return cg.builder.CreateLoad(i64PtrTy, tensorField(cg, tensor, 1, "tensor.dims.ptr"), "tensor.dims");
 }
 
@@ -77,7 +77,7 @@ inline llvm::Value* loadCount(CodeGenerator& cg, llvm::Value* tensor) {
 }
 
 inline llvm::Value* loadData(CodeGenerator& cg, llvm::Value* tensor) {
-    auto* f64PtrTy = llvm::PointerType::getUnqual(llvm::Type::getDoubleTy(cg.context));
+    auto* f64PtrTy = llvm::PointerType::getUnqual(cg.context);
     return cg.builder.CreateLoad(f64PtrTy, tensorField(cg, tensor, 3, "tensor.data.ptr"), "tensor.data");
 }
 
@@ -109,7 +109,7 @@ inline void emitCountedLoop(CodeGenerator& cg, llvm::Value* count, const std::st
 
     cg.builder.SetInsertPoint(bodyBB);
     body(index);
-    if (!cg.builder.GetInsertBlock()->getTerminator()) {
+    if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
         llvm::Value* current = cg.builder.CreateLoad(i64Ty, indexPtr, name + ".current");
         llvm::Value* next = cg.builder.CreateAdd(current, i64(cg, 1), name + ".next");
         cg.builder.CreateStore(next, indexPtr);
@@ -128,12 +128,12 @@ inline llvm::Value* allocateTensor(CodeGenerator& cg, llvm::Value* rank, llvm::V
     llvm::Value* dims = mallocBytes(
         cg,
         cg.builder.CreateMul(rank, i64(cg, 8), "tensor.dims.bytes"),
-        llvm::PointerType::getUnqual(i64Ty),
+        llvm::PointerType::getUnqual(i64Ty->getContext()),
         "tensor.dims.alloc");
     llvm::Value* data = mallocBytes(
         cg,
         cg.builder.CreateMul(count, i64(cg, 8), "tensor.data.bytes"),
-        llvm::PointerType::getUnqual(f64Ty),
+        llvm::PointerType::getUnqual(f64Ty->getContext()),
         "tensor.data.alloc");
 
     cg.builder.CreateStore(rank, tensorField(cg, tensor, 0, "tensor.rank.slot"));

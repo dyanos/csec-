@@ -77,7 +77,7 @@ llvm::Value* codegenStringMethod(CodeGenerator& cg, llvm::Value* objectValue, co
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
 
     auto boolCall = [&](const std::string& runtimeName, llvm::Value* rhs) -> llvm::Value* {
         auto* raw = cg.builder.CreateCall(
@@ -367,7 +367,7 @@ llvm::Value* MethodCallNode::codegen() {
             auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
             llvm::StructType* blockType = llvm::StructType::get(cg.context, { i64Ty, i64Ty, payloadType });
             llvm::Value* block = cg.builder.CreateBitCast(
-                objectValue, llvm::PointerType::getUnqual(blockType), "shared.block");
+                objectValue, llvm::PointerType::getUnqual(blockType->getContext()), "shared.block");
             if (!isWeak && methodName == "clone") {
                 llvm::Value* strongPtr = cg.builder.CreateStructGEP(blockType, block, 0, "shared.strong.ptr");
                 llvm::Value* strong = cg.builder.CreateLoad(i64Ty, strongPtr, "shared.strong");

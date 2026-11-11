@@ -112,7 +112,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
     // A Nat variable lives in a slot holding its handle (a ptr), so a `var` can be reassigned
     // (`fact = fact * i`). Reads load the handle (IdentifierNode); assignments store a new one.
     if (type && type->getName() == "Nat") {
-        auto* handleTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+        auto* handleTy = llvm::PointerType::getUnqual(cg.context);
         if (!initValue || !initValue->getType()->isPointerTy()) {
             initValue = llvm::ConstantPointerNull::get(handleTy);
         }
@@ -141,7 +141,7 @@ llvm::Value* VariableDeclarationNode::codegen() {
         uint64_t typeSize = dl.getTypeAllocSize(baseType);
         llvm::Value* allocSize = llvm::ConstantInt::get(llvm::Type::getInt64Ty(cg.context), typeSize);
         llvm::Value* rawPtr = cg.builder.CreateCall(cg.mallocFunction, allocSize, "box.malloc");
-        llvm::Value* boxPtr = cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(baseType), "box.ptr");
+        llvm::Value* boxPtr = cg.builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(baseType->getContext()), "box.ptr");
         cg.builder.CreateStore(initValue, boxPtr);
         initValue = boxPtr;
     }

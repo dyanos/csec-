@@ -2,7 +2,9 @@ param(
     [string]$Filter = "*",
     [int]$TimeoutSeconds = 30,
     [ValidateSet("microthread", "stdlib")]
-    [string]$Suite = "microthread"
+    [string]$Suite = "microthread",
+    # Compiler to test (default: the Debug build). E.g. x64\Release\csec++.exe for another LLVM build.
+    [string]$Compiler = ""
 )
 
 # Microthreads/async (tests/microthread) and the standard library (tests/stdlib, -Suite stdlib).
@@ -12,6 +14,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $exe = Join-Path $repoRoot "x64\Debug\csec++.exe"
+if ($Compiler) { $exe = (Resolve-Path $Compiler).Path }
 $root = Join-Path $PSScriptRoot $Suite
 
 if (-not (Test-Path $exe)) {

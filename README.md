@@ -74,7 +74,9 @@ Common requirements:
 
 - CMake 3.16 or newer.
 - A C++17 compiler.
-- LLVM development files and CMake package files.
+- LLVM development files and CMake package files. LLVM 18 through 23 are
+  supported. `src/llvm_compat.h` picks the right API for each release, and the
+  code builds without deprecation warnings against LLVM 23.
 - LLVM command line tools, especially `llc`, for `--emit-obj` and `--emit-exe`.
 - A native C++ linker driver, usually `c++`, `clang++`, or `g++`.
 
@@ -146,6 +148,18 @@ Common macOS/Homebrew command:
 cmake -S . -B build -G Ninja -DLLVM_DIR="$(brew --prefix llvm)/lib/cmake/llvm"
 cmake --build build
 ```
+
+On Windows, a prebuilt LLVM that uses the DLL C runtime (`/MD`, e.g. conda-forge
+`llvmdev`) needs a Release build with `-DCSEC_RELEASE_DLL_CRT=ON`:
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCSEC_RELEASE_DLL_CRT=ON ^
+      -DLLVM_DIR=%CONDA_PREFIX%\Library\lib\cmake\llvm
+```
+
+Microthreads (`std.microthread`, `go`/`async`) work on Windows (fibers), Linux,
+and macOS. On x86-64 and arm64 (including Apple Silicon) they use a small
+assembly context switch rather than the deprecated `ucontext` API.
 
 The build produces:
 

@@ -28,7 +28,7 @@ llvm::Value* ArrayCreationNode::codegen() {
     );
 
     llvm::Value* rawPtr = CodeGenerator::getInstance().builder.CreateCall(CodeGenerator::getInstance().mallocFunction, { totalSize }, "malloccall");
-    llvm::Value* arrayPtr = CodeGenerator::getInstance().builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(elementType));
+    llvm::Value* arrayPtr = CodeGenerator::getInstance().builder.CreateBitCast(rawPtr, llvm::PointerType::getUnqual(elementType->getContext()));
 
     // 배열 요소 초기화
     for (size_t i = 0; i < elements.size(); ++i) {

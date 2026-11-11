@@ -37,7 +37,7 @@ std::unique_ptr<Type> pmapElementSourceType(const std::unique_ptr<Type>& type) {
     return std::make_unique<UnknownType>();
 }
 
-void attachParallelLoopMetadata(llvm::LLVMContext& context, llvm::BranchInst* latch, const std::string& backend) {
+void attachParallelLoopMetadata(llvm::LLVMContext& context, llvm::Instruction* latch, const std::string& backend) {
     if (!latch || backend == "cpu") return;
 
     auto temp = llvm::MDNode::getTemporary(context, {});
@@ -63,9 +63,9 @@ llvm::Function* getOrCreateParallelForI32(CodeGenerator& cg) {
 
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* voidTy = llvm::Type::getVoidTy(cg.context);
-    auto* ptrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* ptrTy = llvm::PointerType::getUnqual(cg.context);
     auto* callbackTy = llvm::FunctionType::get(voidTy, { ptrTy, i32Ty }, false);
-    auto* callbackPtrTy = llvm::PointerType::getUnqual(callbackTy);
+    auto* callbackPtrTy = llvm::PointerType::getUnqual(callbackTy->getContext());
     auto* functionTy = llvm::FunctionType::get(voidTy, { i32Ty, i32Ty, ptrTy, callbackPtrTy }, false);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "csec_parallel_for_i32", cg.module.get());
 }
@@ -268,7 +268,7 @@ llvm::Value* codegenOutlinedParallelPMap(
     auto& cg = CodeGenerator::getInstance();
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* voidTy = llvm::Type::getVoidTy(cg.context);
-    auto* ptrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* ptrTy = llvm::PointerType::getUnqual(cg.context);
 
     llvm::Value* resultPtr = cg.builder.CreateAlloca(resultElementType, cg.builder.getInt32(arraySize), "pmapresult");
 

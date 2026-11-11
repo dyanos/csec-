@@ -18,7 +18,7 @@ llvm::Value* BlockNode::codegen() {
     }
 
     auto* currentBlock = cg.builder.GetInsertBlock();
-    if (currentBlock && !currentBlock->getTerminator()) {
+    if (currentBlock && !csec_llvm::terminatorOrNull(currentBlock)) {
         cg.emitCurrentScopeCleanups();
     }
     cg.exitCleanupScope();

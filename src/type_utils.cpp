@@ -31,7 +31,7 @@ llvm::Function* natRuntimeFn(CodeGenerator& cg, const char* name, llvm::Type* re
 llvm::Value* coerceToNat(llvm::Value* value, const Type* declaredType, ASTNode* sourceExpr) {
     if (!declaredType || declaredType->getName() != "Nat") return value;
     auto& cg = CodeGenerator::getInstance();
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
 
     // Already a Nat handle (a ptr): nothing to do.
@@ -41,7 +41,7 @@ llvm::Value* coerceToNat(llvm::Value* value, const Type* declaredType, ASTNode* 
     // the i64 codegen of the literal, which would overflow for a value beyond 2^63. Numeric literals
     // are ValueNode; a few contexts also surface a literal as an all-digit IdentifierNode.
     auto emitFromDecimal = [&](const std::string& digits) {
-        llvm::Value* text = cg.builder.CreateGlobalStringPtr(digits, "nat.lit");
+        llvm::Value* text = cg.builder.CreateGlobalString(digits, "nat.lit");
         return cg.builder.CreateCall(
             natRuntimeFn(cg, "csec_bigint_from_decimal", i8PtrTy, {i8PtrTy}), {text}, "nat.from.dec");
     };
@@ -116,7 +116,7 @@ llvm::Type* getABIStorageType(const Type* type) {
     }
 
     if (type->getKind() == Type::Kind::CLASS && !isStructClassType(type)) {
-        return llvm::PointerType::getUnqual(llvmType);
+        return llvm::PointerType::getUnqual(llvmType->getContext());
     }
 
     return llvmType;

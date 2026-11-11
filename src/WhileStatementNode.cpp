@@ -53,7 +53,7 @@ llvm::Value* WhileStatementNode::codegen() {
 	this->body->codegen();
 
 	// Branch back to condition if no terminator
-	if (!cg.builder.GetInsertBlock()->getTerminator()) {
+	if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
 		cg.builder.CreateBr(condBB);
 	}
 

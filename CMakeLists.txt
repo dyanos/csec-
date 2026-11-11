@@ -224,6 +224,7 @@ set(_
     "utils.h"
     "intrinsics.h"
     "builtin_structs.h"
+    "llvm_compat.h"
 )
 source_group("?ㅻ뜑 ?뚯씪" FILES ${_})
 
@@ -364,13 +365,21 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 ################################################################################
 # MSVC runtime library
 ################################################################################
+# Release links the static CRT by default. Prebuilt LLVM packages built against the DLL CRT (/MD:
+# e.g. conda-forge llvmdev) need -DCSEC_RELEASE_DLL_CRT=ON so the CRTs match.
+option(CSEC_RELEASE_DLL_CRT "Use the DLL CRT (/MD) for Release builds of csec++" OFF)
+if(CSEC_RELEASE_DLL_CRT)
+    set(CSEC_RELEASE_CRT MultiThreadedDLL)
+else()
+    set(CSEC_RELEASE_CRT MultiThreaded)
+endif()
 get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
 string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
     $<$<CONFIG:Debug>:
         MultiThreadedDebugDLL
     >
     $<$<CONFIG:Release>:
-        MultiThreaded
+        ${CSEC_RELEASE_CRT}
     >
     $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
 )
@@ -490,17 +499,11 @@ llvm_map_components_to_libnames(LLVM_COMPONENT_LIBS
     X86
 )
 
-find_library(LLVM_C_LIBRARY
-    NAMES LLVM-C
-    PATHS ${LLVM_LIBRARY_DIRS}
-    NO_DEFAULT_PATH
-)
-if(NOT LLVM_C_LIBRARY)
-    set(LLVM_C_LIBRARY "")
-endif()
-
+# Link the LLVM component libraries only. The C entry points csec++ uses (LLVMLinkInMCJIT,
+# LLVMLinkInInterpreter) live in those static libraries; also linking the LLVM-C shared library
+# (shipped e.g. by conda-forge) would give the process two copies of LLVM, so the JIT registered in
+# the DLL's copy would be invisible to the static ExecutionEngine ("JIT has not been linked in").
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${LLVM_C_LIBRARY}
     ${LLVM_COMPONENT_LIBS}
 )
 if(WIN32)

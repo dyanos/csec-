@@ -29,7 +29,7 @@ llvm::Function* getOrCreateStringMatchRuntime(
 }
 
 llvm::Value* asCStringPointer(CodeGenerator& cg, llvm::Value* value) {
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     if (!value) {
         return llvm::ConstantPointerNull::get(i8PtrTy);
     }
@@ -84,7 +84,7 @@ llvm::Value* MatchExpressionNode::codegen() {
             : mergeBB;
 
         cg.builder.SetInsertPoint(nextTestBB);
-        if (!cg.builder.GetInsertBlock()->getTerminator()) {
+        if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
             if (isWildcard) {
                 cg.builder.CreateBr(caseBB);
             }
@@ -101,7 +101,7 @@ llvm::Value* MatchExpressionNode::codegen() {
                      patternValue->valueType == TokenType::REGEX_LITERAL);
                 if (isStringPattern) {
                     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
-                    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+                    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
                     const char* runtimeName = patternValue->valueType == TokenType::REGEX_LITERAL
                         ? "csec_string_regex_match"
                         : "csec_string_equals";
@@ -125,7 +125,7 @@ llvm::Value* MatchExpressionNode::codegen() {
         }
 
         auto* finishedCaseBB = cg.builder.GetInsertBlock();
-        if (!finishedCaseBB->getTerminator()) {
+        if (!csec_llvm::terminatorOrNull(finishedCaseBB)) {
             if (phi) {
                 phi->addIncoming(caseResult, finishedCaseBB);
             }

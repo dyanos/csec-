@@ -18,7 +18,8 @@ each compiler-runtime area a focused file.
 | `runtime_services.inc` | Function definition lowering, operating-system/runtime service exports, and the import / standard-library resolver shared by both compilers. |
 | `bigint_runtime.inc` | Arbitrary-precision `Nat` arithmetic (`csec_bigint_*`), including division, powers, gcd, isqrt, and primality. |
 | `tensor_runtime.inc` | Tensor storage and operations (`csec_tensor_*`). |
-| `process_runtime.inc` | Microthread scheduler (Win32 fibers / ucontext), Int and text mailboxes, futures for `async`/`await`. |
+| `process_runtime.inc` | Microthread scheduler (Win32 fibers; `context_switch.inc` on POSIX), Int and text mailboxes, futures for `async`/`await`. |
+| `context_switch.inc` | POSIX microthread stacks (mmap + guard page) and the x86-64 / AArch64 assembly context switch (Linux, macOS incl. Apple Silicon), with a ucontext fallback. |
 | `thread_runtime.inc` | OS threads, mutexes, atomics, channels, and OS processes (`std.thread`, `std.process`). |
 | `ipc_runtime.inc` | Pipes, shared memory, and mail (`std.pipe`, `std.shared`, `std.mail`), all with cooperative waiting. |
 | `io_runtime.inc` | Chunked binary file reads and memory-mapped files (`std.io`). |

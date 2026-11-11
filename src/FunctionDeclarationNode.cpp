@@ -214,7 +214,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
     }
 
     llvm::BasicBlock* currentBlock = cg.builder.GetInsertBlock();
-    if (currentBlock && !currentBlock->getTerminator()) {
+    if (currentBlock && !csec_llvm::terminatorOrNull(currentBlock)) {
         if (returnType->isVoidTy()) {
             cg.builder.CreateRetVoid();
         }

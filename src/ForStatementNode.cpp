@@ -112,7 +112,7 @@ llvm::Value* ForStatementNode::codegen() {
     llvm::BasicBlock* incrementBB = tokenStream ? llvm::BasicBlock::Create(cg.context, "token.next", function) : loopBB;
     llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(cg.context, "afterloop", function);
 
-    if (beforeLoopBB && !beforeLoopBB->getTerminator()) {
+    if (beforeLoopBB && !csec_llvm::terminatorOrNull(beforeLoopBB)) {
         cg.builder.CreateBr(condBB);
     }
 
@@ -131,7 +131,7 @@ llvm::Value* ForStatementNode::codegen() {
     cg.builder.SetInsertPoint(loopBB);
     if (tokenStream) {
         auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
-        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
         auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
         llvm::Value* stream = tokenStream->codegen();
         if (!stream || !stream->getType()->isPointerTy()) {
@@ -159,7 +159,7 @@ llvm::Value* ForStatementNode::codegen() {
     this->body->codegen();
 
     // Increment and branch back to condition
-    if (!cg.builder.GetInsertBlock()->getTerminator()) {
+    if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
         if (tokenStream) {
             cg.builder.CreateBr(incrementBB);
         }

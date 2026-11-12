@@ -1,11 +1,11 @@
 // std.dataframe -- columnar data frames with Parquet and CSV input/output.
 //
-//     import std.dataframe
+//     import std.dataframe = df;                           // or plain `import std.dataframe`
 //
-//     val sales = readParquet("sales.parquet");          // 0 on failure; see dfLastError()
-//     val big = dfFilter(sales, "amount", ">=", 100.0e0);
-//     val byRegion = dfGroupBy(big, "region", "amount:sum,amount:mean,count");
-//     println(dfToString(dfSort(byRegion, "-amount_sum"), 20));
+//     val sales = df.readParquet("sales.parquet");        // 0 on failure; see df.dfLastError()
+//     val big = df.dfFilter(sales, "amount", ">=", 100.0e0);
+//     val byRegion = df.dfGroupBy(big, "region", "amount:sum,amount:mean,count");
+//     println(df.dfToString(df.dfSort(byRegion, "-amount_sum"), 20));
 //
 // A frame is a handle (Long) to an immutable table of named, typed columns. Column types are "long",
 // "double", and "string"; any cell may be null. Every operation returns a new frame and leaves its

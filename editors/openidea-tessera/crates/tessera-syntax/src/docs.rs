@@ -40,7 +40,7 @@ pub fn keyword_doc(word: &str) -> Option<&'static str> {
         "extends" => "Base class of a `class`.",
         "override" => "Marks a method that overrides a base-class method.",
         "operator" => "Operator overload: `def operator +(o: T): T { ... }`",
-        "import" => "Includes another source file: `import \"path/file\";` (resolved next to this file, then the working directory; `a.b` also tries `a/b.csec`).",
+        "import" => "Includes another source file: `import \"path/file\";` (resolved next to this file, then the working directory; `a.b` also tries `a/b.csec`). `import a.b = name;` also lets this file call the module's top-level functions as `name.f(...)`.",
         "if" => "`if (cond) { ... } else { ... }` — also an expression.",
         "else" => "Alternative branch of `if`.",
         "while" => "`while (cond) { ... }`",

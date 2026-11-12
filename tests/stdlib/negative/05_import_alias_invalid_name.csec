@@ -1,0 +1,5 @@
+import std.thread = 2threads;
+// The alias must be an identifier.
+def main(): Int {
+    return 0;
+}

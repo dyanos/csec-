@@ -1,0 +1,5 @@
+import std.thread = th;
+// th.noSuchFunction is not a function of std.thread, so it stays an access on an undefined th.
+def main(): Int {
+    return th.noSuchFunction(1);
+}

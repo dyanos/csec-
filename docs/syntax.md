@@ -412,8 +412,14 @@ named function and may not take borrows.
 ## Standard Library
 
 `import a.b.c` also searches the standard-library roots (`lib/` next to the
-compiler runtime, `--lib-path <dir>`, and `CSEC_LIB_PATH`). The shipped modules
-live in `lib/std`:
+compiler runtime, `--lib-path <dir>`, and `CSEC_LIB_PATH`).
+
+An import can name its module: `import std.dataframe = df;` lets that file write
+`df.readParquet(...)` for any top-level function of the module. The unqualified
+names still work. A variable that shares the alias name keeps its own members, and
+string literals and comments are left as they are (LANGUAGE_SPEC.md 1.1).
+
+The shipped modules live in `lib/std`:
 
 | Module | Highlights |
 | --- | --- |

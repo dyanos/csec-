@@ -41,6 +41,7 @@ grammar see [docs/grammar.md](docs/grammar.md).
   no-borrow-across-await rule.
 - **Standard library** in `lib/std`, found by `import` (`std.microthread`,
   `std.thread`, `std.process`, `std.pipe`, `std.shared`, `std.mail`, `std.io`,
+  `std.dataframe` (Parquet/CSV data frames),
   `std.math.natural`/`real`/`complex`, `std.symbolic`). A library module enables
   compiler intrinsics with `[@Intrinsic] external def ...`.
 - **Math**: arbitrary-precision `Nat` with division/powers/gcd/primality,

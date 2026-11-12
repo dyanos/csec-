@@ -1,0 +1,62 @@
+import std.dataframe
+// writeParquet round trips: the people table, an empty frame, and a 300 000-row frame (large enough
+// that its columns are decoded in parallel on several threads).
+
+def main(): Int {
+    val df = readParquet("tests/stdlib/data/people_snappy_dict.parquet");
+    if (df == 0) { return 1; }
+    val path = "tests/stdlib/data/people.tmp.parquet";
+    if (!writeParquet(df, path)) {
+        println(dfLastError());
+        return 2;
+    }
+    val back = readParquet(path);
+    if (back == 0) {
+        println(dfLastError());
+        return 3;
+    }
+    // Same columns, types, values, and nulls.
+    if (frameToCsv(back) != frameToCsv(df)) { return 4; }
+    if (dfColumnType(back, "name") != "string" or dfColumnType(back, "score") != "double") { return 5; }
+
+    // An empty frame keeps its schema.
+    val none = dfFilter(df, "id", ">", 100.0e0);
+    if (dfRows(none) != 0) { return 6; }
+    if (!writeParquet(none, "tests/stdlib/data/empty.tmp.parquet")) { return 7; }
+    val emptyBack = readParquet("tests/stdlib/data/empty.tmp.parquet");
+    if (emptyBack == 0 or dfRows(emptyBack) != 0 or dfColumns(emptyBack) != 6) { return 8; }
+    if (dfColumnType(emptyBack, "region") != "string") { return 9; }
+
+    // A large frame.
+    val big = dfNew();
+    dfAddColumn(big, "id", "long");
+    dfAddColumn(big, "value", "double");
+    dfAddColumn(big, "category", "string");
+    var i: Int = 0;
+    while (i < 300000) {
+        dfAppendLong(big, "id", i);
+        if (i % 1000 == 0) {
+            dfAppendNull(big, "value");
+        } else {
+            dfAppendDouble(big, "value", 0.5e0 * i);
+        }
+        dfAppendString(big, "category", "c" + (i % 7));
+        i = i + 1;
+    }
+    if (!writeParquet(big, "tests/stdlib/data/big.tmp.parquet")) { return 10; }
+    val bigBack = readParquet("tests/stdlib/data/big.tmp.parquet");
+    if (bigBack == 0) {
+        println(dfLastError());
+        return 11;
+    }
+    if (dfRows(bigBack) != 300000) { return 12; }
+    if (dfSum(bigBack, "id") != dfSum(big, "id")) { return 13; }
+    if (dfSum(bigBack, "value") != dfSum(big, "value")) { return 14; }
+    if (dfNullCount(bigBack, "value") != 300) { return 15; }
+    if (dfGetString(bigBack, "category", 299999) != "c" + (299999 % 7)) { return 16; }
+    val perCategory = dfGroupBy(bigBack, "category", "count");
+    if (dfRows(perCategory) != 7) { return 17; }
+    dfFree(big);
+    dfFree(bigBack);
+    return 0;
+}

@@ -18,7 +18,7 @@ Layout:
 - `positive/12_native`, `positive/13_simulation`: native runtime calls and simulation DSL blocks
 - `negative`: malformed programs that must fail in `--syntax-only` mode
 - `microthread/{positive,negative}`: microthreads, `go`/`async`/`await`, share-nothing rules
-- `stdlib/{positive,negative}`: the `lib/std` modules (threads, processes, pipes, shared memory, mail, I/O, math, symbolic)
+- `stdlib/{positive,negative}`: the `lib/std` modules (threads, processes, pipes, shared memory, mail, I/O, data frames, math, symbolic); `stdlib/data` holds the Parquet fixtures and `make_parquet_fixtures.py`, which regenerates them with pyarrow
 - `selfhost_concurrency`: programs that must exit with 42 through both the native and the self-hosted compiler
 - `async`, `strict_ownership`, `semantic_positive`, `semantic_negative`: async/borrow rules and ownership checks
 

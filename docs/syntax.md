@@ -419,6 +419,7 @@ live in `lib/std`:
 | --- | --- |
 | `std.microthread` | `spawn`, `send`, `receive`, `receiveTimeout`, `self`, `yield`, `monitor`, `joinProcesses` |
 | `std.thread` | `threadStart(lambda)`, `threadJoin`, `mutexNew/Lock/TryLock/Unlock`, `atomicNew/Add/Get/CompareExchange`, `channelNew/Send/Receive/ReceiveTimeout/Closed/Close/Free` |
+| `std.dataframe` | `readParquet`, `readParquetColumns`, `writeParquet`, `readCsv`, `writeCsv`, `dfFilter`, `dfSort`, `dfGroupBy`, `dfJoin`, `dfCompute`, `dfConcat`, `dfSum/Mean/Min/Max/Std`, `dfToString` |
 | `std.process` | `runCommand`, `commandOutput`, `startProcess`, `waitProcess`, `killProcess`, `currentProcessId` |
 | `std.math.natural` | `natDiv`, `natMod`, `natPow`, `natGcd`, `natLcm`, `natSqrt`, `isPrime`, `factorial`, `binomial`, `fibonacci` |
 | `std.math.real` | `pi()`, `euler()`, `approxEqual`, `hypot`, `cbrt`, `nthRoot`, `logBase`, ... |

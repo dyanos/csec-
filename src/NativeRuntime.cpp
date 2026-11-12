@@ -36,6 +36,8 @@
 #include <dlfcn.h>
 #endif
 
+#include "import_alias.h"
+
 // Implementation remains one translation unit so internal helpers retain private linkage.
 #include "native_runtime/runtime_support.inc"
 #include "native_runtime/llvm_helper_calls.inc"

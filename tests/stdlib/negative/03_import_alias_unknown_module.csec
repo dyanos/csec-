@@ -1,0 +1,5 @@
+import std.no_such_module = missing;
+// An alias for a module that cannot be found is an error.
+def main(): Int {
+    return 0;
+}

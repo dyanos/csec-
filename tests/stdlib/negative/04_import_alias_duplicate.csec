@@ -1,0 +1,6 @@
+import std.thread = lib;
+import std.dataframe = lib;
+// One alias cannot name two modules.
+def main(): Int {
+    return 0;
+}

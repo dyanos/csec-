@@ -97,7 +97,8 @@ program      = { top-decl } ;
 top-decl     = import | attribute* ( function | class | struct | object
              | external-fn | template-decl ) ;
 
-import       = 'import' ( string-lit | dotted-name ) [ ';' ] ;   (* import std.io ; see LANGUAGE_SPEC.md 1.1 *)
+import       = 'import' ( string-lit | dotted-name ) [ '=' ident ] [ ';' ] ;
+               (* import std.io ;  import std.dataframe = df ;  see LANGUAGE_SPEC.md 1.1 *)
 dotted-name  = identifier { '.' identifier } ;
 attribute    = '[@' ident [ '(' [ arg-list ] ')' ] ']' ;     (* [@DllImport("m","cos")], [@Intrinsic] *)
 

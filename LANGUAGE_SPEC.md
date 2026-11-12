@@ -27,6 +27,28 @@ target is resolved in this order; the first existing file wins:
 
 An import that resolves to no file is left in place and ignored, as before.
 
+**Aliases.** `import a.b.c = name;` (also `import "path.csec" = name;`) imports the module as
+usual and also gives it a local name:
+
+```
+import std.dataframe = df;
+
+def main(): Int {
+    val t = df.readParquet("sales.parquet");   // same as readParquet(...)
+    return 0;
+}
+```
+
+- In the importing file, `name.f` refers to `f` when `f` is a top-level function (`def` or
+  `external def`, intrinsics included) of the aliased module. The module's names also stay
+  available unqualified, since imports are textual.
+- `name.x`, where `x` is not a function of the module, is left alone. So a variable that shares
+  the alias name keeps its members (`val df = "abc"; df.length`).
+- Aliases are per file. They are not applied inside comments or string literals, and they do
+  not reach the files that the module itself imports.
+- It is an error to alias a module that cannot be found, to use one alias for two modules, or
+  to use an alias that is not an identifier.
+
 Both compilers share one implementation of this lookup (`csecFindLibraryModule` in
 `src/native_runtime/runtime_services.inc`).
 
@@ -209,17 +231,19 @@ A data frame is a handle (`Long`) to an immutable table of named columns. Each c
 failure; `dfLastError()` says why) and leaves its input unchanged. Release frames with `dfFree`.
 
 ```csec
-import std.dataframe
+import std.dataframe = df;
 
 def main(): Int {
-    val sales = readParquet("sales.parquet");
-    if (sales == 0) { println(dfLastError()); return 1; }
-    val big = dfFilter(sales, "amount", ">=", 100.0e0);
-    val byRegion = dfSort(dfGroupBy(big, "region", "amount:sum,amount:mean,count"), "-amount_sum");
-    println(dfToString(byRegion, 20));
+    val sales = df.readParquet("sales.parquet");
+    if (sales == 0) { println(df.dfLastError()); return 1; }
+    val big = df.dfFilter(sales, "amount", ">=", 100.0e0);
+    val byRegion = df.dfSort(df.dfGroupBy(big, "region", "amount:sum,amount:mean,count"), "-amount_sum");
+    println(df.dfToString(byRegion, 20));
     return 0;
 }
 ```
+
+The alias is optional (§1.1); `import std.dataframe` and the unqualified names work the same.
 
 - **Input/output.** `readParquet(path)`, `readParquetColumns(path, "a,b")` (projection), and
   `writeParquet(frame, path)`; `readCsv`/`writeCsv`, `csvToFrame(text)`/`frameToCsv(frame)`.

@@ -31,7 +31,7 @@ AttributeExpression
   / IntegerLiteral
 
 ImportDeclaration
-  = "import" __ QualifiedName StatementEnd?
+  = "import" __ QualifiedName (_ "=" _ Identifier)? StatementEnd?
 
 TemplateDeclaration
   = "template" _ "<" _ TemplateParameter (_ "," _ TemplateParameter)* _ ">" _

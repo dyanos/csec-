@@ -1,0 +1,39 @@
+import std.dataframe = df;
+import std.thread = th;
+import "../data/alias_helper.csec" = helper;
+// `import module = alias;` gives qualified access to a module's top-level functions; the
+// unqualified names stay available, and names that are not functions of the module are untouched.
+
+def main(): Int {
+    // Qualified calls through an alias.
+    val t = df.readParquet("tests/stdlib/data/people_lz4.parquet");
+    if (t == 0) { return 1; }
+    if (df.dfRows(t) != 10) { return 2; }
+    val g = df.dfGroupBy(t, "region", "count");
+    if (df.dfRows(g) != 3) { return 3; }
+    // ... and unqualified ones, as before.
+    if (dfRows(t) != 10) { return 4; }
+
+    // String contents are never rewritten; interpolate a variable instead.
+    val rows: Long = df.dfRows(t);
+    val shown: String = "rows=${rows}";
+    if (shown != "rows=10") { return 5; }
+    val literal: String = "df.dfRows /* th.atomicNew */";
+    if (literal.length != 28) { return 6; }
+    // Comments are not rewritten either: df.dfRows(t)
+
+    // A second alias; the module's functions, including externals.
+    val counter = th.atomicNew(40);
+    th.atomicAdd(counter, 2);
+    if (th.atomicGet(counter) != 42) { return 7; }
+    if (th.csec_atomic_get(counter) != 42) { return 8; }
+
+    // A variable named like an alias keeps its own members.
+    val th: String = "abc";
+    if (th.length != 3) { return 9; }
+
+    // An alias of a module imported by path.
+    if (helper.twice(21) != 42) { return 10; }
+    if (helper.greet("x") != "hi x") { return 11; }
+    return 0;
+}

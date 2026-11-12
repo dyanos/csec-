@@ -1,0 +1,7 @@
+// Helper module for tests/stdlib/positive/21_import_alias.csec (imported by path with an alias).
+def twice(x: Int): Int = x * 2
+
+def greet(name: String): String {
+    val text: String = "hi " + name;
+    return text;
+}

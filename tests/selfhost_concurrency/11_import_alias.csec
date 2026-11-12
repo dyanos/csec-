@@ -1,0 +1,20 @@
+import std.thread = th;
+import std.microthread = mt;
+// Self-host: import aliases (`import module = alias;`) for library functions and intrinsics. Exit code 42.
+def worker(): Int {
+    val n: Int = mt.receive();
+    mt.send(1, n * 2);
+    return 0;
+}
+
+def main(): Int {
+    val counter: Long = th.atomicNew(40);
+    th.atomicAdd(counter, 2);
+    if (th.atomicGet(counter) != 42) {
+        return 1;
+    }
+    val pid: Int = mt.spawn(worker);
+    mt.send(pid, 21);
+    val reply: Int = mt.receive();
+    return reply;
+}

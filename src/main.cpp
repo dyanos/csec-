@@ -16,6 +16,7 @@
 #include "type_checker.h"
 #include "utils.h"
 #include "NativeRuntime.h"
+#include "import_alias.h"
 
 #include <iostream>
 #include <llvm/Support/TargetSelect.h>
@@ -394,23 +395,14 @@ std::string parseImportTarget(const std::string& trimmedLine) {
         return "";
     }
 
-    std::string rest = trimAscii(trimmedLine.substr(6));
-    if (!rest.empty() && rest.back() == ';') {
-        rest.pop_back();
-        rest = trimAscii(rest);
-    }
-    if (rest.empty()) {
-        return "";
-    }
+    // `import a.b.c`, `import "path.csec"`, optionally with an alias: `import a.b.c = name;`
+    return csec_imports::splitImport(trimmedLine.substr(6)).target;
+}
 
-    if ((rest.front() == '"' && rest.back() == '"') ||
-        (rest.front() == '\'' && rest.back() == '\'')) {
-        if (rest.size() <= 2) {
-            return "";
-        }
-        return rest.substr(1, rest.size() - 2);
-    }
-    return rest;
+// Errors found while expanding imports (bad aliases); compilation stops after expansion if any.
+std::vector<std::string>& importErrors() {
+    static std::vector<std::string> errors;
+    return errors;
 }
 
 // Build a path from a UTF-8 string. Constructing std::filesystem::path directly from a narrow
@@ -503,6 +495,23 @@ std::string expandImports(
         return "";
     }
 
+    // `import a.b = name;` makes `name.f` refer to the module's top-level function f in this file.
+    {
+        std::vector<std::string> errors;
+        source = csec_imports::applyImportAliases(
+            source,
+            [&](const std::string& target) {
+                const auto path = resolveImportPath(canonicalPath, target);
+                std::error_code existsEc;
+                return std::filesystem::is_regular_file(path, existsEc) ? path.string() : std::string();
+            },
+            [](const std::string& path) { return read_utf8_file(path); },
+            errors);
+        for (const auto& error : errors) {
+            importErrors().push_back(canonicalPath.string() + ": " + error);
+        }
+    }
+
     includeStack.push_back(canonicalPath);
     includedFiles.push_back(canonicalPath);
 
@@ -525,7 +534,8 @@ std::string expandImports(
                 output += "\n";
             }
             else {
-                output += line;
+                // Unresolved imports stay in place (and are ignored); drop an alias the parser does not need.
+                output += csec_imports::splitImport(trimAscii(line).substr(6)).alias.empty() ? line : "import " + target;
                 if (hasNewline) {
                     output += "\n";
                 }
@@ -1448,6 +1458,12 @@ int main(int argc, char** argv) {
     }
 
     std::string code = expandImports(inputFile);
+    if (!importErrors().empty()) {
+        for (const auto& error : importErrors()) {
+            std::cerr << "Error: " << error << std::endl;
+        }
+        return 1;
+    }
     if (code.empty()) {
         std::error_code ec;
         if (!std::filesystem::exists(inputFile, ec) || !std::filesystem::is_regular_file(inputFile, ec)) {

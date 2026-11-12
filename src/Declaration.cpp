@@ -32,6 +32,15 @@ std::unique_ptr<ASTNode> Parser::parseImportStatement() {
 		}
 	} while (match(TokenType::OPERATOR, "."));
 
+	// `import a.b = name;` -- the alias is applied during import expansion (src/import_alias.h);
+	// an import that reaches the parser was not resolved, so only its syntax is checked here.
+	if (match(TokenType::OPERATOR, "=")) {
+		if (!matchIdentifierName()) {
+			error("Expected an alias name after '=' in import statement");
+			return nullptr;
+		}
+	}
+
 	auto importNode = std::make_unique<ImportNode>();
 	importNode->path = pathComponents;
 	return importNode;

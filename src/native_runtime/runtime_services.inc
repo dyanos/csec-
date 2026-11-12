@@ -442,16 +442,8 @@ char* csec_import_target_from_line(const char* line) {
     value.erase(last + 1);
     if (value.rfind("//", 0) == 0 || value.rfind("import", 0) != 0) return csec_owned_string("");
     if (value.size() > 6 && value[6] != ' ' && value[6] != '\t' && value[6] != '\"' && value[6] != '\'') return csec_owned_string("");
-    value.erase(0, 6);
-    const auto targetFirst = value.find_first_not_of(" \t\r\n");
-    value = targetFirst == std::string::npos ? "" : value.substr(targetFirst);
-    if (!value.empty() && value.back() == ';') value.pop_back();
-    const auto targetLast = value.find_last_not_of(" \t\r\n");
-    value = targetLast == std::string::npos ? "" : value.substr(0, targetLast + 1);
-    if (value.size() >= 2 && ((value.front() == '\"' && value.back() == '\"') || (value.front() == '\'' && value.back() == '\''))) {
-        value = value.substr(1, value.size() - 2);
-    }
-    return csec_owned_string(value);
+    // The target without an optional alias (`import a.b = name;`).
+    return csec_owned_string(csec_imports::splitImport(value.substr(6)).target);
 }
 
 char* csec_import_candidate(const char* target) {
@@ -570,17 +562,8 @@ std::string csecImportTarget(const std::string& line) {
     if (trimmed.rfind("//", 0) == 0 || !csecImportLineStarts(trimmed)) {
         return "";
     }
-    std::string rest = csecTrimAscii(trimmed.substr(6));
-    if (!rest.empty() && rest.back() == ';') {
-        rest.pop_back();
-        rest = csecTrimAscii(rest);
-    }
-    if (rest.size() >= 2 &&
-        ((rest.front() == '"' && rest.back() == '"') ||
-         (rest.front() == '\'' && rest.back() == '\''))) {
-        return rest.substr(1, rest.size() - 2);
-    }
-    return rest;
+    // `import a.b.c`, `import "path.csec"`, optionally with an alias: `import a.b.c = name;`
+    return csec_imports::splitImport(trimmed.substr(6)).target;
 }
 
 // Standard-library roots searched for `import a.b.c` after the importing file's directory and the
@@ -732,6 +715,23 @@ std::string csecExpandImports(
         return source;
     }
 
+    // `import a.b = name;` makes `name.f` refer to the module's top-level function f in this file.
+    {
+        std::vector<std::string> errors;
+        source = csec_imports::applyImportAliases(
+            source,
+            [&](const std::string& target) {
+                const auto path = csecResolveImportPath(canonical, target);
+                std::error_code existsEc;
+                return std::filesystem::is_regular_file(path, existsEc) ? path.string() : std::string();
+            },
+            [](const std::string& path) { return csecReadFileString(std::filesystem::path(path)); },
+            errors);
+        for (const auto& error : errors) {
+            std::fprintf(stderr, "Error: %s: %s\n", canonical.string().c_str(), error.c_str());
+        }
+    }
+
     includeStack.push_back(canonical);
     includedFiles.push_back(canonical);
 
@@ -751,7 +751,8 @@ std::string csecExpandImports(
                 output += "\n";
             }
             else {
-                output += line;
+                // Unresolved imports stay in place (and are ignored); drop an alias the parser does not need.
+                output += csec_imports::splitImport(csecTrimAscii(line).substr(6)).alias.empty() ? line : "import " + target;
                 if (hasNewline) output += "\n";
             }
         }

@@ -8,7 +8,8 @@
 // process never runs concurrently with another process of the same scheduler, mailbox operations
 // need no locks.
 //
-// Context switching uses Win32 fibers on Windows and ucontext on POSIX. The thread that first
+// Context switching uses Win32 fibers on Windows and, on POSIX (Linux, macOS), a small assembly
+// stack switch for x86-64/AArch64 with a ucontext fallback elsewhere (context_switch.inc). The thread that first
 // touches the process API becomes the root process (pid 1, normally `main`).
 
 #include <chrono>
@@ -16,9 +17,7 @@
 #include <memory>
 #include <utility>
 
-#ifndef _WIN32
-#include <ucontext.h>
-#endif
+#include "context_switch.inc"
 
 namespace csec_microthread {
 
@@ -42,8 +41,13 @@ struct Process {
 #ifdef _WIN32
     void* fiber = nullptr;
 #else
+#if CSEC_FAST_CONTEXT
+    void* stackPointer = nullptr;   // saved by csec_ctx_switch while the process is not running
+#else
     ucontext_t context;
-    void* stack = nullptr;
+#endif
+    void* stack = nullptr;          // mapped stack (with guard page); null for the root process
+    size_t stackBytes = 0;
 #endif
 };
 
@@ -99,7 +103,7 @@ void reapZombies() {
 #ifdef _WIN32
         if (zombie->fiber) DeleteFiber(zombie->fiber);
 #else
-        std::free(zombie->stack);
+        csecFreeStack(zombie->stack, zombie->stackBytes);
 #endif
     }
     s.zombies.clear();
@@ -178,6 +182,8 @@ void switchTo(Process* next) {
     s.current = next;
 #ifdef _WIN32
     SwitchToFiber(next->fiber);
+#elif CSEC_FAST_CONTEXT
+    csec_ctx_switch(&prev->stackPointer, next->stackPointer);
 #else
     swapcontext(&prev->context, &next->context);
 #endif
@@ -226,13 +232,19 @@ void runCurrent() {
 VOID CALLBACK fiberEntry(LPVOID) {
     runCurrent();
 }
-#else
+#elif !CSEC_FAST_CONTEXT
 void contextEntry() {
     runCurrent();
 }
 #endif
 
 } // namespace csec_microthread
+
+#if !defined(_WIN32) && CSEC_FAST_CONTEXT
+extern "C" void csec_ctx_entry(void) {
+    csec_microthread::runCurrent();
+}
+#endif
 
 extern "C" {
 
@@ -259,16 +271,24 @@ int csec_process_spawn(void* code, void* env, long long envSize) {
         return 0;
     }
 #else
-    p->stack = std::malloc(kProcessStackSize);
-    if (!p->stack || getcontext(&p->context) != 0) {
-        std::free(p->stack);
+    p->stack = csecAllocateStack(kProcessStackSize, p->stackBytes);
+    if (!p->stack) {
+        if (p->ownsEnv) std::free(p->env);
+        return 0;
+    }
+#if CSEC_FAST_CONTEXT
+    p->stackPointer = csecInitialStackPointer(p->stack, p->stackBytes);
+#else
+    if (getcontext(&p->context) != 0) {
+        csecFreeStack(p->stack, p->stackBytes);
         if (p->ownsEnv) std::free(p->env);
         return 0;
     }
     p->context.uc_stack.ss_sp = p->stack;
-    p->context.uc_stack.ss_size = kProcessStackSize;
+    p->context.uc_stack.ss_size = p->stackBytes;
     p->context.uc_link = nullptr;
     makecontext(&p->context, contextEntry, 0);
+#endif
 #endif
     Process* raw = p.get();
     const int pid = raw->pid;

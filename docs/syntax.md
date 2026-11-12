@@ -326,10 +326,11 @@ def main(): Int {
 
 The ownership rule extends across suspension points: a borrow (`&`/`&mut`) may
 not be held live across an `await`, because after suspension another task could
-mutate or drop the borrowed value. End the borrow before awaiting. `await`
-currently lowers to sequential evaluation (async functions run as ordinary
-synchronous calls) until a coroutine runtime is added; the surface syntax and
-the borrow rule are enforced today.
+mutate or drop the borrowed value. End the borrow before awaiting. Calling an
+`async def` directly still runs it synchronously, and awaiting its (non-future)
+result yields the value. For real concurrency use `async f(x)`, which runs the
+call in a microthread and yields a `Future<T>` to `await` (see *Processes*
+below).
 
 ## Processes (Erlang-Style Microthreads)
 
@@ -377,7 +378,8 @@ Semantics:
   spawned them, switching only at `receive`/`receiveTimeout` (with an empty
   mailbox), `yield`, `joinProcesses`, and process exit. A process that loops
   without doing any of these keeps the others from running. Processes are run in
-  FIFO order. (Fibers on Windows, `ucontext` on POSIX; 512 KiB reserved stack
+  FIFO order. (Fibers on Windows; an assembly stack switch on x86-64/arm64 Linux and
+  macOS, `ucontext` on other POSIX targets; 512 KiB reserved stack
   per process.)
 - **Lifetime.** When `main` returns the program exits, even if other processes
   are still alive; call `joinProcesses()` first to let them finish. If every
@@ -425,6 +427,7 @@ live in `lib/std`:
 | `std.pipe` | `pipeNew`, `pipeWriteLine`, `pipeReadLine`, `pipeClose`, `pipeAtEnd`; `pipeOpenProcess(cmd)` with `processWriteLine`/`processReadLine`/`processFinish` |
 | `std.shared` | `sharedNew(bytes)`, `sharedOpen(name, bytes)`, `sharedGet/SetLong`, `sharedAddLong`, `sharedRead/WriteString`, `sharedLock/Unlock` |
 | `std.mail` | `mailSender(box, name)`, `mailReceiver(box)`, `mailSend`, `mailReceive`, `mailReceiveTimeout`, `mailLastSender`, `mailLastTag` |
+| `std.io` | `openRead`, `readChunk`, `lastReadCount`, `releaseChunk`, `mapFile`, `mappedBytes`, `mappedSize`, `fileSize`, `parseInt` |
 
 Pipes, shared memory, and mail work between OS threads and microthreads, and named
 shared memory and mailboxes also work between OS processes. Their blocking
@@ -467,6 +470,32 @@ def main(): Int {
     return 0;
 }
 ```
+
+### String bytes
+
+`text[i]` reads byte `i` of a String as a `Char` with a single load, which is what byte-scanning
+loops need (it is vectorised at `-O3`). It is valid for `0 <= i <= text.length` and is not
+bounds-checked. The bounds-safe but O(i) alternative is `text.charAt(i)`.
+
+```tessera
+import std.io
+
+def countLines(path: String): Long {
+    val mapping = mapFile(path);
+    val view = mappedBytes(mapping);
+    var lines: Long = 0;
+    var i: Long = 0;
+    while (i < mappedSize(mapping)) {
+        if (view[i] == '\n') { lines = lines + 1; }
+        i = i + 1;
+    }
+    unmapFile(mapping);
+    return lines;
+}
+```
+
+`examples/parallel_wc.csec` splits this loop across OS threads (`std.thread`). Build it with
+`csec++ -O3 -march=native --emit-exe examples/parallel_wc.csec -o parallel_wc.exe`.
 
 ## Templates
 

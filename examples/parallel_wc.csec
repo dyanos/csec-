@@ -1,0 +1,162 @@
+// parallel_wc -- a parallel line counter (like `wc -l`), written in Tessera.
+//
+//     csec++ -O3 -march=native --emit-exe examples/parallel_wc.csec -o parallel_wc.exe
+//     parallel_wc <file> [threads] [chunkBytes]
+//
+// The file is split into one contiguous byte range per OS thread, and each thread counts the '\n'
+// bytes of its range with a plain byte loop (`bytes[i]` compiles to a single load, so -O3 vectorises
+// the loop). By default the file is memory-mapped once and every thread scans its part of the mapping
+// directly (no copying). With a chunkBytes argument, each thread instead opens the file, seeks to its
+// range and reads it in chunks of that size. Per-thread totals are added to an atomic counter. Like
+// `wc -l`, the result is the number of newline bytes.
+//
+// Measured 2026-11-10 on a Ryzen AI Z2 Extreme (16 threads), 1 GiB text file, warm page cache, process
+// wall time (examples/parallel_wc_bench/bench.py):
+//   C++ reference (mmap, -march=native, 16 threads)   0.168 s   100%
+//   parallel_wc -O3 -march=native, 16 threads          0.182 s    92%
+//   parallel_wc -O3 (portable SSE2), 16 threads        0.190 s    89%
+//   parallel_wc -O3 -march=native, 1 thread            0.394 s    43%  (C++ reference 1 thread: 0.374 s)
+//   GNU wc -l 8.32                                     0.442 s    38%
+
+import std.io
+import std.thread
+
+// Newlines in bytes [start, end) of the file at `path`; -1 if it cannot be opened.
+def countRange(path: String, start: Long, end: Long, chunkBytes: Int): Long {
+    val file = openRead(path);
+    if (file == 0) {
+        return -1;
+    }
+    seekTo(file, start);
+    var remaining: Long = end - start;
+    var lines: Long = 0;
+    val chunkSize: Long = chunkBytes;
+    while (remaining > 0) {
+        var want: Long = chunkSize;
+        if (remaining < chunkSize) {
+            want = remaining;
+        }
+        val wantBytes: Int = want;
+        val chunk = readChunk(file, wantBytes);
+        val got: Long = lastReadCount(file);
+        if (got <= 0) {
+            remaining = 0;
+        } else {
+            val count: Int = got;
+            var newlines: Int = 0;
+            var i: Int = 0;
+            while (i < count) {
+                if (chunk[i] == '\n') {
+                    newlines = newlines + 1;
+                }
+                i = i + 1;
+            }
+            lines = lines + newlines;
+            remaining = remaining - got;
+        }
+        releaseChunk(chunk);
+    }
+    closeFile(file);
+    return lines;
+}
+
+// Newlines in bytes [start, end) of a memory-mapped view. The view is scanned in blocks of 64 KiB
+// counted in an Int (narrow counters let the vectorised loop process more bytes per instruction);
+// each block's count is then added to the Long total.
+def countMapped(view: String, start: Long, end: Long): Long {
+    var lines: Long = 0;
+    var i: Long = start;
+    while (i < end) {
+        var blockEnd: Long = i + 65536;
+        if (blockEnd > end) {
+            blockEnd = end;
+        }
+        var block: Int = 0;
+        while (i < blockEnd) {
+            if (view[i] == '\n') {
+                block = block + 1;
+            }
+            i = i + 1;
+        }
+        lines = lines + block;
+    }
+    return lines;
+}
+
+def main(): Int {
+    if (commandLineArgCount() < 2) {
+        println("usage: parallel_wc <file> [threads] [chunkBytes]");
+        return 2;
+    }
+    val path = commandLineArg(1);
+    var threads: Int = hardwareThreads();
+    if (commandLineArgCount() >= 3) {
+        threads = parseInt(commandLineArg(2), threads);
+    }
+    // 0 = memory-map the file; > 0 = read it in chunks of this many bytes.
+    var chunkBytes: Int = 0;
+    if (commandLineArgCount() >= 4) {
+        chunkBytes = parseInt(commandLineArg(3), chunkBytes);
+    }
+    val size: Long = fileSize(path);
+    if (size < 0) {
+        println("parallel_wc: cannot read " + path);
+        return 1;
+    }
+    if (threads < 1) {
+        threads = 1;
+    }
+    val total = atomicNew(0);
+    val failed = atomicNew(0);
+    var mapping: Long = 0;
+    if (chunkBytes <= 0) {
+        mapping = mapFile(path);
+        if (mapping == 0) {
+            println("parallel_wc: cannot map " + path);
+            return 1;
+        }
+    }
+    val view = mappedBytes(mapping);
+    val workers = new Long[threads];
+    var index: Int = 0;
+    val lastIndex: Int = threads - 1;
+    val threadCount: Long = threads;
+    while (index < threads) {
+        val k: Long = index;
+        val start: Long = size * k / threadCount;
+        var end: Long = size * (k + 1) / threadCount;
+        if (index == lastIndex) {
+            end = size;
+        }
+        val worker = threadStart([=]() -> {
+            var lines: Long = 0;
+            if (chunkBytes <= 0) {
+                lines = countMapped(view, start, end);
+            } else {
+                lines = countRange(path, start, end, chunkBytes);
+            }
+            if (lines < 0) {
+                atomicAdd(failed, 1);
+            } else {
+                atomicAdd(total, lines);
+            }
+            return 0;
+        });
+        workers[index] = worker;
+        index = index + 1;
+    }
+    var joined: Int = 0;
+    while (joined < threads) {
+        threadJoin(workers[joined]);
+        joined = joined + 1;
+    }
+    if (mapping != 0) {
+        unmapFile(mapping);
+    }
+    if (atomicGet(failed) > 0) {
+        println("parallel_wc: read error on " + path);
+        return 1;
+    }
+    println("" + atomicGet(total) + " " + path);
+    return 0;
+}

@@ -33,8 +33,23 @@ grammar see [docs/grammar.md](docs/grammar.md).
   ownership-aware drop glue lands. `--no-strict-ownership` opts out.
 - **Multiple return values** with tuple return types and destructuring
   (`a, b = f()`, `_` to ignore), and value `struct`s.
-- **async / await** with the no-borrow-across-await rule (`await` currently
-  lowers to sequential evaluation).
+- **Concurrency**: Erlang-style microthreads (`spawn`/`send`/`receive`, mailboxes,
+  monitors, share-nothing captures), `go f(x)` and `async f(x)` / `await` with
+  `Future<T>`, OS threads with mutexes/atomics/channels, and inter-task
+  communication through pipes, shared memory (also across OS processes), and
+  named mailboxes (mail senders/receivers). `async def` keeps the
+  no-borrow-across-await rule.
+- **Standard library** in `lib/std`, found by `import` (`std.microthread`,
+  `std.thread`, `std.process`, `std.pipe`, `std.shared`, `std.mail`, `std.io`,
+  `std.math.natural`/`real`/`complex`, `std.symbolic`). A library module enables
+  compiler intrinsics with `[@Intrinsic] external def ...`.
+- **Math**: arbitrary-precision `Nat` with division/powers/gcd/primality,
+  built-in `Complex`/`Rational`/`Quaternion` value types, and a symbolic algebra
+  engine (simplify, expand, differentiate, integrate, solve, LaTeX output).
+- `text[i]` byte indexing of strings (a single load, vectorisable) and
+  memory-mapped / chunked binary file input (`std.io`). See
+  [examples/parallel_wc.csec](examples/parallel_wc.csec), a parallel `wc -l`
+  that runs at about 92% of a C++ mmap+SIMD reference.
 - Native runtime support for printing, input, math functions, sockets, POSIX-like
   file/process helpers, parallel helpers, and dynamic library interop.
 - `[@DllImport("library", "symbol")] external def ...` for native symbol imports.
@@ -59,7 +74,9 @@ Common requirements:
 
 - CMake 3.16 or newer.
 - A C++17 compiler.
-- LLVM development files and CMake package files.
+- LLVM development files and CMake package files. LLVM 18 through 23 are
+  supported. `src/llvm_compat.h` picks the right API for each release, and the
+  code builds without deprecation warnings against LLVM 23.
 - LLVM command line tools, especially `llc`, for `--emit-obj` and `--emit-exe`.
 - A native C++ linker driver, usually `c++`, `clang++`, or `g++`.
 
@@ -132,6 +149,18 @@ cmake -S . -B build -G Ninja -DLLVM_DIR="$(brew --prefix llvm)/lib/cmake/llvm"
 cmake --build build
 ```
 
+On Windows, a prebuilt LLVM that uses the DLL C runtime (`/MD`, e.g. conda-forge
+`llvmdev`) needs a Release build with `-DCSEC_RELEASE_DLL_CRT=ON`:
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCSEC_RELEASE_DLL_CRT=ON ^
+      -DLLVM_DIR=%CONDA_PREFIX%\Library\lib\cmake\llvm
+```
+
+Microthreads (`std.microthread`, `go`/`async`) work on Windows (fibers), Linux,
+and macOS. On x86-64 and arm64 (including Apple Silicon) they use a small
+assembly context switch rather than the deprecated `ucontext` API.
+
 The build produces:
 
 - `csec++`: compiler executable.
@@ -162,7 +191,21 @@ output, e.g. `--run-ir`); `--run` always uses the interpreter-safe mem2reg pipel
 ```sh
 ./csec++ --emit-exe program.csec -O2 -o program   # optimized native executable
 ./csec++ --emit-ir  program.csec -O3 -o program.ll # inspect optimized IR
+./csec++ --emit-exe program.csec -O3 -march=native -o program  # use this CPU's vector ISA
 ```
+
+Modules are generated for the host target triple and data layout. The default CPU
+is the portable baseline (SSE2 on x86-64); `-march=native` targets the build
+machine's CPU (e.g. AVX2/AVX-512).
+
+### Standard Library Path
+
+`import std.io` resolves to `lib/std/io.csec`. The compiler looks in the
+importing file's directory and the working directory, then in the
+standard-library roots: directories given with `--lib-path <dir>`, entries of
+`CSEC_LIB_PATH`, and `lib/` next to the runtime library (or up to two parent
+directories, so a build in `x64/Debug` finds the repository `lib/`). See
+`LANGUAGE_SPEC.md`.
 
 `--emit-obj` and `--emit-exe` call `llc`. The compiler searches for `llc` in:
 

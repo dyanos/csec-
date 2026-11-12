@@ -142,7 +142,7 @@ bool isNativeScalarMathFunction(const std::string& name) {
 }
 
 llvm::Value* cString(CodeGenerator& cg, const std::string& value, const std::string& name = "cstr") {
-    return cg.builder.CreateGlobalStringPtr(value, name);
+    return cg.builder.CreateGlobalString(value, name);
 }
 
 llvm::Function* getOrCreateRuntimeFunction(
@@ -246,7 +246,7 @@ llvm::Function* getOrCreatePrintf(CodeGenerator& cg) {
     if (auto* function = cg.module->getFunction("printf")) {
         return function;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(cg.context), {i8PtrTy}, true);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "printf", cg.module.get());
 }
@@ -255,7 +255,7 @@ llvm::Function* getOrCreateScanf(CodeGenerator& cg) {
     if (auto* function = cg.module->getFunction("scanf")) {
         return function;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(cg.context), {i8PtrTy}, true);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "scanf", cg.module.get());
 }
@@ -272,7 +272,7 @@ llvm::Function* getOrCreateStrlen(CodeGenerator& cg) {
     if (auto* function = cg.module->getFunction("strlen")) {
         return function;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt64Ty(cg.context), {i8PtrTy}, false);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "strlen", cg.module.get());
 }
@@ -281,7 +281,7 @@ llvm::Function* getOrCreateWSAStartup(CodeGenerator& cg) {
     if (auto* function = cg.module->getFunction("WSAStartup")) {
         return function;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* functionTy = llvm::FunctionType::get(
         llvm::Type::getInt32Ty(cg.context),
         {llvm::Type::getInt16Ty(cg.context), i8PtrTy},
@@ -302,7 +302,7 @@ llvm::Function* getOrCreateInetAddr(CodeGenerator& cg) {
     if (auto* function = cg.module->getFunction("inet_addr")) {
         return function;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* functionTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(cg.context), {i8PtrTy}, false);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "inet_addr", cg.module.get());
 }
@@ -320,7 +320,7 @@ llvm::Function* getOrCreateConnect(CodeGenerator& cg) {
     if (auto* function = cg.module->getFunction("connect")) {
         return function;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* functionTy = llvm::FunctionType::get(
         llvm::Type::getInt32Ty(cg.context),
         {llvm::Type::getInt64Ty(cg.context), i8PtrTy, llvm::Type::getInt32Ty(cg.context)},
@@ -332,7 +332,7 @@ llvm::Function* getOrCreateSend(CodeGenerator& cg) {
     if (auto* function = cg.module->getFunction("send")) {
         return function;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* functionTy = llvm::FunctionType::get(i32Ty, {llvm::Type::getInt64Ty(cg.context), i8PtrTy, i32Ty, i32Ty}, false);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "send", cg.module.get());
@@ -342,7 +342,7 @@ llvm::Function* getOrCreateRecv(CodeGenerator& cg) {
     if (auto* function = cg.module->getFunction("recv")) {
         return function;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* functionTy = llvm::FunctionType::get(i32Ty, {llvm::Type::getInt64Ty(cg.context), i8PtrTy, i32Ty, i32Ty}, false);
     return llvm::Function::Create(functionTy, llvm::Function::ExternalLinkage, "recv", cg.module.get());
@@ -358,7 +358,7 @@ llvm::Function* getOrCreateCloseSocket(CodeGenerator& cg) {
 
 llvm::Value* asCStringPointer(CodeGenerator& cg, llvm::Value* value) {
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
     if (!value) {
         return llvm::ConstantPointerNull::get(i8PtrTy);
     }
@@ -415,7 +415,7 @@ llvm::Value* codegenNativeIOCall(
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
     auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
     auto* voidTy = llvm::Type::getVoidTy(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
 
     if (functionName == "print" || functionName == "println") {
         for (size_t i = 0; i < argValues.size(); ++i) {
@@ -500,7 +500,7 @@ llvm::Value* codegenNativeNetworkCall(
     auto* i16Ty = llvm::Type::getInt16Ty(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
 
     if (functionName == "tcpConnect") {
         if (argValues.size() != 2) {
@@ -677,7 +677,7 @@ llvm::Value* codegenNativePosixCall(
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
 
     auto asI32 = [&](llvm::Value* value, const char* name = "posix.i32") -> llvm::Value* {
         llvm::Value* i64Value = coerceMathValueToI64(cg, value);
@@ -959,7 +959,7 @@ llvm::Value* codegenNativeParallelCall(
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* voidTy = llvm::Type::getVoidTy(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
 
     if (functionName == "parallelThreads") {
         if (!argValues.empty()) {
@@ -1014,7 +1014,7 @@ llvm::Value* codegenNativeSystemFileCall(
     auto& cg = CodeGenerator::getInstance();
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
 
     auto requireArgCount = [&](size_t expected) -> bool {
         if (argValues.size() == expected) return true;
@@ -1075,7 +1075,7 @@ llvm::Value* codegenNativeDynamicLibraryCall(
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
     auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
     std::vector<llvm::Value*> argValues = rawArgValues;
     for (size_t i = 0; i < argValues.size() && i < argTypes.size(); ++i) {
         if (!argValues[i] || !argValues[i]->getType()->isPointerTy()) continue;
@@ -1863,7 +1863,7 @@ static llvm::Value* coerceArgumentToParameterType(llvm::Value* value, llvm::Type
     if (value && value->getType()->isIntegerTy() && targetType && targetType->isPointerTy()) {
         auto& cg = CodeGenerator::getInstance();
         auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
-        auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+        auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
         llvm::Value* wide = value->getType()->isIntegerTy(64)
             ? value
             : cg.builder.CreateSExt(value, i64Ty, "nat.arg.sext");
@@ -1883,7 +1883,7 @@ llvm::Value* codegenNativeProcessCall(
     auto& cg = CodeGenerator::getInstance();
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
 
     if (functionName == "commandLineArgCount") {
         if (!argValues.empty()) {
@@ -2006,7 +2006,7 @@ llvm::Value* FunctionCallNode::codegen() {
         }
         auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
         auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
-        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
         llvm::Value* ordinal = argValues[1];
         if (!ordinal->getType()->isIntegerTy(32)) ordinal = cg.builder.CreateIntCast(ordinal, i32Ty, true, "token.pattern.ordinal");
         llvm::Value* kind = argValues[2];
@@ -2025,14 +2025,14 @@ llvm::Value* FunctionCallNode::codegen() {
             // Prevent the lexical owner cleanup from freeing the same allocation a second time.
             cg.forgetCleanup(argValues[0]);
             if (!argTypes.empty() && argTypes[0] && TensorRuntime::isTensorTypeName(argTypes[0]->getName())) {
-                auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+                auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
                 llvm::Value* dims = TensorRuntime::loadDims(cg, argValues[0]);
                 llvm::Value* data = TensorRuntime::loadData(cg, argValues[0]);
                 cg.builder.CreateCall(cg.freeFunction, {cg.builder.CreateBitCast(data, i8PtrTy, "tensor.data.free")});
                 cg.builder.CreateCall(cg.freeFunction, {cg.builder.CreateBitCast(dims, i8PtrTy, "tensor.dims.free")});
             }
             llvm::Value* raw = cg.builder.CreateBitCast(
-                argValues[0], llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context)), "free.ptr");
+                argValues[0], llvm::PointerType::getUnqual(cg.context), "free.ptr");
             cg.builder.CreateCall(cg.freeFunction, { raw });
         }
         else {
@@ -2059,7 +2059,7 @@ llvm::Value* FunctionCallNode::codegen() {
             llvm::Type::getInt64Ty(cg.context), dl.getTypeAllocSize(payloadType));
         llvm::Value* rawPtr = cg.builder.CreateCall(cg.mallocFunction, allocSize, "clone.malloc");
         llvm::Value* newBox = cg.builder.CreateBitCast(
-            rawPtr, llvm::PointerType::getUnqual(payloadType), "clone.box");
+            rawPtr, llvm::PointerType::getUnqual(payloadType->getContext()), "clone.box");
         // Copy the payload; the destination binding registers the cleanup, exactly as `new` does.
         cg.builder.CreateMemCpy(newBox, llvm::MaybeAlign(), argValues[0], llvm::MaybeAlign(), allocSize);
         return newBox;
@@ -2081,7 +2081,7 @@ llvm::Value* FunctionCallNode::codegen() {
         const llvm::DataLayout& dl = cg.module->getDataLayout();
         llvm::Value* size = llvm::ConstantInt::get(i64Ty, dl.getTypeAllocSize(blockType));
         llvm::Value* raw = cg.builder.CreateCall(cg.mallocFunction, size, "shared.malloc");
-        llvm::Value* block = cg.builder.CreateBitCast(raw, llvm::PointerType::getUnqual(blockType), "shared.block");
+        llvm::Value* block = cg.builder.CreateBitCast(raw, llvm::PointerType::getUnqual(blockType->getContext()), "shared.block");
         cg.builder.CreateStore(llvm::ConstantInt::get(i64Ty, 1),
             cg.builder.CreateStructGEP(blockType, block, 0, "shared.strong.ptr"));
         cg.builder.CreateStore(llvm::ConstantInt::get(i64Ty, 0),

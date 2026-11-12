@@ -33,7 +33,7 @@ llvm::Value* IfStatementNode::codegen() {
             }
             // If the block added a terminator (e.g. return), create unreachable block for subsequent code
             llvm::BasicBlock* currentBB = cg.builder.GetInsertBlock();
-            if (currentBB && currentBB->getTerminator()) {
+            if (currentBB && csec_llvm::terminatorOrNull(currentBB)) {
                 auto* parentFunc = currentBB->getParent();
                 auto* deadBB = llvm::BasicBlock::Create(cg.context, "constexpr.dead", parentFunc);
                 cg.builder.SetInsertPoint(deadBB);
@@ -73,7 +73,7 @@ llvm::Value* IfStatementNode::codegen() {
         if (!thenValue) {
             thenValue = llvm::UndefValue::get(llvm::Type::getInt32Ty(cg.context));
         }
-        const bool thenTerminated = cg.builder.GetInsertBlock()->getTerminator() != nullptr;
+        const bool thenTerminated = csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock()) != nullptr;
         if (!thenTerminated) {
             cg.builder.CreateBr(mergeBB);
         }
@@ -83,7 +83,7 @@ llvm::Value* IfStatementNode::codegen() {
         if (!elseValue) {
             elseValue = llvm::UndefValue::get(llvm::Type::getInt32Ty(cg.context));
         }
-        const bool elseTerminated = cg.builder.GetInsertBlock()->getTerminator() != nullptr;
+        const bool elseTerminated = csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock()) != nullptr;
         if (!elseTerminated) {
             cg.builder.CreateBr(mergeBB);
         }
@@ -111,7 +111,7 @@ llvm::Value* IfStatementNode::codegen() {
         if (!thenValue) {
             thenValue = llvm::UndefValue::get(llvm::Type::getInt32Ty(cg.context));
         }
-        if (!cg.builder.GetInsertBlock()->getTerminator()) {
+        if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
             cg.builder.CreateBr(mergeBB);
         }
 

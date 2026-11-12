@@ -1,0 +1,65 @@
+// std.io -- chunked binary file input.
+//
+//     import std.io
+//     val file = openRead("data.txt");
+//     var chunk = readChunk(file, 4194304);
+//     val count = lastReadCount(file);          // bytes in this chunk (0 at end of file)
+//     ... chunk[i] for 0 <= i < count ...
+//     releaseChunk(chunk);
+//     closeFile(file);
+//
+// Chunks are byte strings: index them with `chunk[i]` (a Char). The count is reported separately so
+// data containing NUL bytes is handled exactly. Each chunk is a new allocation; release it when done.
+
+external def csec_io_file_size(path: String): Long;
+external def csec_io_open_read(path: String): Long;
+external def csec_io_seek(handle: Long, offset: Long): Int;
+external def csec_io_read(handle: Long, maxBytes: Int): String;
+external def csec_io_last_count(handle: Long): Long;
+external def csec_io_close(handle: Long): Void;
+external def csec_string_release(text: String): Void;
+external def csec_io_parse_long(text: String, fallback: Long): Long;
+external def csec_io_map_open(path: String): Long;
+external def csec_io_map_data(handle: Long): String;
+external def csec_io_map_size(handle: Long): Long;
+external def csec_io_map_close(handle: Long): Void;
+
+// Size in bytes, or -1 if the file cannot be read.
+def fileSize(path: String): Long = csec_io_file_size(path)
+// Open for binary reading (0 on failure).
+def openRead(path: String): Long = csec_io_open_read(path)
+// Move to a byte offset from the start of the file.
+def seekTo(file: Long, offset: Long): Boolean = csec_io_seek(file, offset) != 0
+// Read up to maxBytes; see lastReadCount for how many were read.
+def readChunk(file: Long, maxBytes: Int): String = csec_io_read(file, maxBytes)
+def lastReadCount(file: Long): Long = csec_io_last_count(file)
+def closeFile(file: Long): Int {
+    csec_io_close(file);
+    return 0;
+}
+// Free a chunk returned by readChunk (never a string literal).
+def releaseChunk(chunk: String): Int {
+    csec_string_release(chunk);
+    return 0;
+}
+
+// Decimal text to a number; `fallback` if the text is not a number.
+def parseLong(text: String, fallback: Long): Long = csec_io_parse_long(text, fallback)
+def parseInt(text: String, fallback: Int): Int {
+    val value: Long = csec_io_parse_long(text, fallback);
+    val result: Int = value;
+    return result;
+}
+
+// ---- Memory-mapped files ----
+// mapFile maps a whole file read-only (0 on failure). mappedBytes gives a view of its bytes: index it
+// with view[i] for 0 <= i < mappedSize(m) (a Long index works for files beyond 2 GiB). The view is not
+// NUL-terminated and is valid until unmapFile. Reading through a mapping avoids copying the data, and
+// one mapping can be scanned by several threads at once.
+def mapFile(path: String): Long = csec_io_map_open(path)
+def mappedBytes(mapping: Long): String = csec_io_map_data(mapping)
+def mappedSize(mapping: Long): Long = csec_io_map_size(mapping)
+def unmapFile(mapping: Long): Int {
+    csec_io_map_close(mapping);
+    return 0;
+}

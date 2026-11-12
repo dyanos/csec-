@@ -38,7 +38,7 @@ operator override return struct super this true val var while
 to until and or xor
 map pmap reduce preduce filter
 external inline constexpr template typename mut box unsafe unatomic
-        async await
+        async await go
         build
 molecule cfd ode protein
 ```
@@ -97,8 +97,9 @@ program      = { top-decl } ;
 top-decl     = import | attribute* ( function | class | struct | object
              | external-fn | template-decl ) ;
 
-import       = 'import' string-lit ';' ;
-attribute    = '[@' ident '(' [ arg-list ] ')' ']' ;         (* e.g. [@DllImport("m","cos")] *)
+import       = 'import' ( string-lit | dotted-name ) [ ';' ] ;   (* import std.io ; see LANGUAGE_SPEC.md 1.1 *)
+dotted-name  = identifier { '.' identifier } ;
+attribute    = '[@' ident [ '(' [ arg-list ] ')' ] ']' ;     (* [@DllImport("m","cos")], [@Intrinsic] *)
 
 function     = [ 'async' ] [ 'unsafe' ] [ 'inline' ] [ 'constexpr' ]
                'def' fn-name '(' [ params ] ')' [ ':' type ] fn-body ;
@@ -208,6 +209,7 @@ mul-expr     = tensor-expr { ( '*' | '/' | '%' ) tensor-expr } ;
 tensor-expr  = pow-expr { ( 'inner' | 'outer' | 'tensor' | '@' ) pow-expr } ;
 pow-expr     = unary-expr { '**' unary-expr } ;             (* right-assoc *)
 unary-expr   = ( '-' | '!' | '~' | '<-' | '&' [ 'mut' ] | 'await' ) unary-expr
+             | ( 'async' | 'go' ) postfix-expr                  (* operand must be a call f(...) *)
              | postfix-expr ;
 postfix-expr = primary { '.' identifier | call-args | '[' index-list ']' | '++' | '--' } ;
 call-args    = '(' [ expr { ',' expr } ] ')' ;

@@ -1,0 +1,17 @@
+import std.thread
+// Regression: a variable used only inside a `val x: T = ...` initializer (or a method call / prefix
+// expression) of a lambda body must still be captured. It was not, and the lambda referenced the
+// enclosing function's stack slot directly (invalid IR: "instruction does not dominate all uses").
+def work(path: String, start: Long): Long = start + path.length
+
+def main(): Int {
+    val path: String = "abc";
+    val start: Long = 39;
+    val t = threadStart([=]() -> {
+        val lines: Long = work(path, start);
+        if (lines == 42) { return 1; }
+        return 0;
+    });
+    if (threadJoin(t) != 1) { return 1; }
+    return 0;
+}

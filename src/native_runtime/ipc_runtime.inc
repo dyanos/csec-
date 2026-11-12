@@ -187,6 +187,23 @@ std::string sanitizedName(const char* name) {
     return result;
 }
 
+#ifndef _WIN32
+// POSIX shared-memory object name for a region name. macOS limits these names to 31 bytes
+// (PSHMNAMLEN), so a longer name is replaced by a fixed-length hash of it.
+std::string posixSharedName(const std::string& name) {
+    std::string object = "/" + name;
+    if (object.size() <= 31) return object;
+    unsigned long long hash = 1469598103934665603ULL;   // FNV-1a
+    for (unsigned char c : name) {
+        hash ^= c;
+        hash *= 1099511628211ULL;
+    }
+    char digest[24];
+    std::snprintf(digest, sizeof(digest), "/csec_%016llx", hash);
+    return digest;
+}
+#endif
+
 size_t roundUp8(long long bytes) {
     if (bytes < 8) bytes = 8;
     return static_cast<size_t>((bytes + 7) / 8 * 8);
@@ -209,7 +226,7 @@ std::shared_ptr<SharedRegion> openNamedRegion(const std::string& name, size_t da
     VirtualQuery(region->base, &info, sizeof(info));
     region->mapped = info.RegionSize;
 #else
-    const std::string objectName = "/" + name;
+    const std::string objectName = posixSharedName(name);
     int fd = shm_open(objectName.c_str(), O_CREAT | O_EXCL | O_RDWR, 0600);
     if (fd >= 0) {
         created = true;
@@ -665,8 +682,8 @@ void csec_shm_close(long long handle) {
 // POSIX keeps named shared memory until it is removed; on Windows it disappears with its last user.
 void csec_shm_remove(const char* name) {
 #ifndef _WIN32
-    shm_unlink(("/" + csec_ipc::sanitizedName(name) + "_shm").c_str());
-    shm_unlink(("/" + csec_ipc::sanitizedName(name) + "_mail").c_str());
+    shm_unlink(csec_ipc::posixSharedName(csec_ipc::sanitizedName(name) + "_shm").c_str());
+    shm_unlink(csec_ipc::posixSharedName(csec_ipc::sanitizedName(name) + "_mail").c_str());
 #else
     (void)name;
 #endif

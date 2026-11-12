@@ -271,7 +271,9 @@ static std::string csec_emit_external_call(const char* tokens, int start, int en
     const std::string returnType = csec_llvm_type_for_name(csec_function_return_type_at(tokens, declaration));
     const bool integerReturn = returnType == "i32" || returnType == "i64" || returnType == "i1" || returnType == "i8" || returnType == "i16";
     const bool integerContext = contextType == "i32" || contextType == "i64" || contextType == "i1";
-    if (returnType != contextType && !(integerReturn && integerContext)) return "";
+    // A Void/Unit external maps to `ptr`; as a statement it is lowered in i32 context (result discarded).
+    const bool pointerAsInt = returnType == "ptr" && contextType == "i32";
+    if (returnType != contextType && !(integerReturn && integerContext) && !pointerAsInt) return "";
     std::string output;
     std::string argumentList;
     for (size_t index = 0; index < arguments.size(); ++index) {
@@ -284,11 +286,29 @@ static std::string csec_emit_external_call(const char* tokens, int start, int en
     const std::string raw = returnType == contextType ? resultName : resultName + ".raw";
     output += "  " + raw + " = call " + returnType + " @" + csec_task_callee_symbol(name) + "(" + argumentList + ")\n";
     if (raw == resultName) return output;
+    if (pointerAsInt) {
+        return output + "  " + resultName + ".address = ptrtoint ptr " + raw + " to i64\n" +
+            "  " + resultName + " = trunc i64 " + resultName + ".address to i32\n";
+    }
     if (contextType == "i1") return output + "  " + resultName + " = icmp ne " + returnType + " " + raw + ", 0\n";
     if (returnType == "i1") return output + "  " + resultName + " = zext i1 " + raw + " to " + contextType + "\n";
     const int fromBits = returnType == "i64" ? 64 : (returnType == "i16" ? 16 : (returnType == "i8" ? 8 : 32));
     const int toBits = contextType == "i64" ? 64 : 32;
     return output + "  " + resultName + " = " + std::string(fromBits < toBits ? "sext " : "trunc ") + returnType + " " + raw + " to " + contextType + "\n";
+}
+
+// `text[i]` on a String local or parameter: byte i, read with one load (as in the native compiler).
+static std::string csec_emit_string_index(const char* tokens, int start, int end, const std::string& resultName) {
+    if (csec_token_kind_at(tokens, start) != 'I' || !csec_native_token_is(tokens, start + 1, 'O', "[")) return "";
+    const int close = csec_find_closing_token(tokens, start + 1, end, "[", "]");
+    if (close != end - 1 || close <= start + 2) return "";
+    const char* name = csec_token_text_at(tokens, start);
+    if (!csec_is_string_local(tokens, start, name) && !csec_is_string_parameter(tokens, start, name)) return "";
+    const char* storage = csec_lookup_visible_storage_name(tokens, start, name);
+    return "  " + resultName + ".base = load ptr, ptr %" + std::string(storage) + "\n" +
+        csec_emit_i64_expression(tokens, start + 2, close, resultName + ".index") +
+        "  " + resultName + ".ptr = getelementptr inbounds i8, ptr " + resultName + ".base, i64 " + resultName + ".index\n" +
+        "  " + resultName + " = load i8, ptr " + resultName + ".ptr\n";
 }
 } // extern "C++"
 
@@ -467,6 +487,10 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
     {
         const std::string intrinsic = csec_emit_i32_intrinsic(tokens, start, end, resultName);
         if (!intrinsic.empty()) return intrinsic;
+    }
+    {
+        const std::string stringByte = csec_emit_string_index(tokens, start, end, resultName + ".byte");
+        if (!stringByte.empty()) return stringByte + "  " + resultName + " = zext i8 " + resultName + ".byte to i32\n";
     }
     {
         const std::string external = csec_emit_external_call(tokens, start, end, resultName, "i32");
@@ -1371,12 +1395,21 @@ static std::string csec_emit_i8_expression(const char* tokens, int start, int en
         const std::string literal = csec_token_text_at(tokens, start);
         int value = 0;
         if (literal.size() == 1) value = static_cast<unsigned char>(literal[0]);
+        else if (literal.size() == 2 && literal[0] == '\\') {
+            // The lexer keeps the text between the quotes, so '\n' arrives as backslash + 'n'.
+            const char escaped = literal[1];
+            value = escaped == 'n' ? '\n' : escaped == 'r' ? '\r' : escaped == 't' ? '\t' : escaped == '0' ? 0 : static_cast<unsigned char>(escaped);
+        }
         else if (literal.size() >= 3 && literal[0] == '\'' && literal[1] != '\\') value = static_cast<unsigned char>(literal[1]);
         else if (literal.size() >= 4 && literal[0] == '\'' && literal[1] == '\\') {
             const char escaped = literal[2];
             value = escaped == 'n' ? '\n' : escaped == 'r' ? '\r' : escaped == 't' ? '\t' : escaped == '0' ? 0 : static_cast<unsigned char>(escaped);
         }
         return "  " + resultName + " = add i8 0, " + std::to_string(value) + "\n";
+    }
+    {
+        const std::string stringByte = csec_emit_string_index(tokens, start, end, resultName);
+        if (!stringByte.empty()) return stringByte;
     }
     const std::string indexedArray = csec_emit_i8_array_index(tokens, start, end, resultName);
     if (!indexedArray.empty()) return indexedArray;

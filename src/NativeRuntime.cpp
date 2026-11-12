@@ -52,4 +52,5 @@
 #include "native_runtime/process_runtime.inc"
 #include "native_runtime/thread_runtime.inc"
 #include "native_runtime/ipc_runtime.inc"
+#include "native_runtime/io_runtime.inc"
 #include "native_runtime/symbolic_runtime.inc"

@@ -1,0 +1,51 @@
+import std.io
+import std.thread
+// String byte indexing and std.io: count this file's newlines through a memory mapping split across
+// OS threads, and through chunked reads with a tiny chunk size (many chunk boundaries); both must agree.
+def countView(view: String, start: Long, end: Long): Long {
+    var lines: Long = 0;
+    var i: Long = start;
+    while (i < end) {
+        if (view[i] == '\n') { lines = lines + 1; }
+        i = i + 1;
+    }
+    return lines;
+}
+
+def main(): Int {
+    val path = "tests/stdlib/positive/12_io_string_bytes.csec";
+    val text: String = "x\ty\n";
+    if (text[1] != '\t' or text[3] != '\n' or text[4] != '\0') { return 1; }
+    if (parseInt(" 42 ", 0) != 42 or parseInt("4x", -1) != -1) { return 2; }
+
+    val mapping = mapFile(path);
+    if (mapping == 0) { return 3; }
+    val size = mappedSize(mapping);
+    if (size != fileSize(path)) { return 4; }
+    val view = mappedBytes(mapping);
+    val total = atomicNew(0);
+    val half: Long = size / 2;
+    val a = threadStart([=]() -> { atomicAdd(total, countView(view, 0, half)); return 0; });
+    val b = threadStart([=]() -> { atomicAdd(total, countView(view, half, size)); return 0; });
+    threadJoin(a);
+    threadJoin(b);
+    unmapFile(mapping);
+
+    val file = openRead(path);
+    var chunked: Long = 0;
+    var reading: Boolean = true;
+    while (reading) {
+        val chunk = readChunk(file, 7);
+        val got = lastReadCount(file);
+        if (got == 0) {
+            reading = false;
+        } else {
+            chunked = chunked + countView(chunk, 0, got);
+        }
+        releaseChunk(chunk);
+    }
+    closeFile(file);
+    if (atomicGet(total) != chunked) { return 5; }
+    if (chunked < 20) { return 6; }
+    return 0;
+}

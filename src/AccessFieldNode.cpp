@@ -86,7 +86,7 @@ llvm::Value* AccessFieldNode::codegen() {
         }
         if (targetName == "length" || targetName == "size" || targetName == "count") {
             auto& cg = CodeGenerator::getInstance();
-            auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+            auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
             auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
             return cg.builder.CreateCall(
                 getOrCreateRuntimeFunction("csec_string_length", i64Ty, {i8PtrTy}),
@@ -95,7 +95,7 @@ llvm::Value* AccessFieldNode::codegen() {
         }
         if (targetName == "isEmpty") {
             auto& cg = CodeGenerator::getInstance();
-            auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+            auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
             auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
             auto* result = cg.builder.CreateCall(
                 getOrCreateRuntimeFunction("csec_string_is_empty", i32Ty, {i8PtrTy}),
@@ -179,7 +179,7 @@ llvm::Value* AccessFieldNode::codegenFieldPointer() {
             std::cerr << "Error: Field '" << targetName << "' not found in '" << baseTy->getName() << "'" << std::endl;
             return nullptr;
         }
-        auto* targetPtrType = llvm::PointerType::getUnqual(structType);
+        auto* targetPtrType = llvm::PointerType::getUnqual(structType->getContext());
         if (basePtr->getType() != targetPtrType) {
             basePtr = cg.builder.CreateBitCast(basePtr, targetPtrType, "obj.cast");
         }
@@ -234,7 +234,7 @@ llvm::Value* AccessFieldNode::codegenFieldPointer() {
         return nullptr;
     }
 
-    auto* targetPtrType = llvm::PointerType::getUnqual(structType);
+    auto* targetPtrType = llvm::PointerType::getUnqual(structType->getContext());
     if (basePtr->getType() != targetPtrType) {
         basePtr = CodeGenerator::getInstance().builder.CreateBitCast(basePtr, targetPtrType, "obj.cast");
     }

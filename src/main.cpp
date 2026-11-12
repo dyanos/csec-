@@ -41,6 +41,11 @@
 
 #include <llvm/IR/PassManager.h>
 #include <llvm/Passes/PassBuilder.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetOptions.h>
+#include <llvm/TargetParser/Host.h>
+#include "llvm_compat.h"
 #include <llvm/Transforms/Utils/Mem2Reg.h>
 
 #include "ProgramNode.h"
@@ -75,6 +80,7 @@ void printUsage(const char* programName) {
         << "  --static                     Link the runtime into the .exe (no System.Native.dll needed)\n"
         << "  -o <path>                    Output path for --emit-ir/--emit-obj/--emit-exe\n"
         << "  -O0 / -O1 / -O2 / -O3 / -O   Optimization level (-O = -O2; default: mem2reg only)\n"
+        << "  -march=native                Generate code for this machine's CPU (e.g. AVX2/AVX-512)\n"
         << "  --link-lib <name-or-path>    Link an additional native library/import library\n"
         << "  --lib-path <dir>             Add a standard-library root searched by import\n"
         << "  --link-path <path>           Add a native library search path\n"
@@ -202,8 +208,8 @@ llvm::Function* rebuildRuntimeMain(CodeGenerator& codeGen) {
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(codeGen.context, "entry", codeGen.mainFunction);
     llvm::IRBuilder<> builder(entry);
 
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(codeGen.context));
-    auto* argvTy = llvm::PointerType::getUnqual(i8PtrTy);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(codeGen.context);
+    auto* argvTy = llvm::PointerType::getUnqual(i8PtrTy->getContext());
     auto* setArgs = codeGen.module->getFunction("csec_set_command_line_args");
     if (!setArgs) {
         setArgs = llvm::Function::Create(
@@ -1229,6 +1235,38 @@ bool writeExecutableToFile(
 }
 }
 
+// The host target machine. The module gets its triple and data layout before code generation, so every
+// size computed while generating code (allocation sizes, environment copies) matches the layout the
+// object code uses, and the optimiser gets the target's cost model (needed, e.g., to vectorise loops).
+// The CPU is the portable baseline ("generic": SSE2 on x86-64) unless -march=native asks for the host
+// CPU and all of its features.
+struct HostTarget {
+    std::unique_ptr<llvm::TargetMachine> machine;
+    std::string cpu;
+    std::string features;
+};
+
+HostTarget createHostTarget(bool nativeCpu) {
+    HostTarget host;
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    const llvm::Triple triple(llvm::sys::getDefaultTargetTriple());
+    std::string error;
+    const llvm::Target* target = csec_llvm::lookupTarget(triple, error);
+    if (!target) return host;
+    host.cpu = "generic";
+    if (nativeCpu) {
+        host.cpu = llvm::sys::getHostCPUName().str();
+        for (const auto& feature : csec_llvm::hostCPUFeatures()) {
+            if (!host.features.empty()) host.features += ",";
+            host.features += (feature.getValue() ? "+" : "-") + feature.getKey().str();
+        }
+    }
+    llvm::TargetOptions options;
+    host.machine.reset(csec_llvm::createTargetMachine(*target, triple, host.cpu, host.features, options, llvm::Reloc::PIC_));
+    return host;
+}
+
 int main(int argc, char** argv) {
 #ifdef _WIN32
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -1281,6 +1319,7 @@ int main(int argc, char** argv) {
     // Optimization level: -1 = unspecified (legacy default: mem2reg only), 0 = -O0 (no passes),
     // 1/2/3 = -O1/-O2/-O3 (LLVM per-module default pipeline).
     int optLevel = -1;
+    bool marchNative = false;
     // --static: link the native runtime directly into the emitted executable (no System.Native.dll
     // dependency at run time). Only affects --emit-exe.
     bool staticRuntime = false;
@@ -1346,6 +1385,7 @@ int main(int argc, char** argv) {
         if (arg == "-O1") { optLevel = 1; continue; }
         if (arg == "-O2" || arg == "-O") { optLevel = 2; continue; }
         if (arg == "-O3") { optLevel = 3; continue; }
+        if (arg == "-march=native") { marchNative = true; continue; }
         if (arg == "-o") {
             if (i + 1 >= argc) {
                 std::cerr << "Missing output path after -o" << std::endl;
@@ -1446,6 +1486,13 @@ int main(int argc, char** argv) {
     //ASTPrinter printer;
     //ast->accept(printer);
 
+    HostTarget hostTarget = createHostTarget(marchNative);
+    if (hostTarget.machine) {
+        auto& targetModule = *CodeGenerator::getInstance().module;
+        csec_llvm::setTargetTriple(targetModule, hostTarget.machine->getTargetTriple());
+        targetModule.setDataLayout(hostTarget.machine->createDataLayout());
+    }
+
     TypeChecker typeChecker;
     ast->accept(typeChecker);
     if (typeChecker.hasErrors()) {
@@ -1468,7 +1515,7 @@ int main(int argc, char** argv) {
     llvm::Function* runtimeEntry = rebuildRuntimeMain(codeGen);
     if (codeGen.mainFunction && !codeGen.mainFunction->empty()) {
         llvm::BasicBlock& rootEntry = codeGen.mainFunction->getEntryBlock();
-        if (!rootEntry.getTerminator()) {
+        if (!csec_llvm::terminatorOrNull(&rootEntry)) {
             llvm::IRBuilder<> rootBuilder(&rootEntry);
             rootBuilder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(codeGen.context), 0));
         }
@@ -1476,10 +1523,26 @@ int main(int argc, char** argv) {
 
     if (llvm::verifyModule(*codeGen.module, &llvm::errs())) {
         std::cerr << "Generated LLVM IR is invalid. Aborting execution." << std::endl;
+        // Debug aid: CSEC_DUMP_INVALID_IR=<path> writes the rejected module for inspection.
+        const std::string dumpPath = getEnvironmentVariable("CSEC_DUMP_INVALID_IR");
+        if (!dumpPath.empty()) {
+            std::error_code dumpError;
+            llvm::raw_fd_ostream dump(dumpPath, dumpError, llvm::sys::fs::OF_Text);
+            if (!dumpError) codeGen.module->print(dump, nullptr);
+        }
         return 1;
     }
 
-    llvm::PassBuilder PB;
+    // With -march=native every function carries the host CPU so llc/clang generate code for it.
+    if (marchNative && hostTarget.machine) {
+        for (auto& function : *codeGen.module) {
+            if (function.isDeclaration()) continue;
+            function.addFnAttr("target-cpu", hostTarget.cpu);
+            if (!hostTarget.features.empty()) function.addFnAttr("target-features", hostTarget.features);
+        }
+    }
+
+    llvm::PassBuilder PB(hostTarget.machine.get());
     llvm::LoopAnalysisManager LAM;
     llvm::FunctionAnalysisManager FAM;
     llvm::CGSCCAnalysisManager CGAM;

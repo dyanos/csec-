@@ -22,7 +22,7 @@ std::unique_ptr<Type> reduceElementSourceType(const std::unique_ptr<Type>& type)
     return std::make_unique<UnknownType>();
 }
 
-void attachReduceLoopMetadata(llvm::LLVMContext& context, llvm::BranchInst* latch, const std::string& backend) {
+void attachReduceLoopMetadata(llvm::LLVMContext& context, llvm::Instruction* latch, const std::string& backend) {
     if (!latch || backend == "cpu") return;
 
     auto temp = llvm::MDNode::getTemporary(context, {});

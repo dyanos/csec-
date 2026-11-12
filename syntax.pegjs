@@ -168,6 +168,8 @@ MultiplicativeExpression
 
 PrefixExpression
   = ("++" / "--" / "<-" / "&mut" / "&" / "+" / "-" / "!" / "~" / "*") _ PrefixExpression
+  / "await" ![A-Za-z0-9_] _ PrefixExpression
+  / ("async" / "go") ![A-Za-z0-9_] _ PostfixExpression   // operand must be a call f(...)
   / PostfixExpression
 
 PostfixExpression
@@ -262,7 +264,8 @@ ReservedWord
      "extends" / "external" / "false" / "final" / "finally" / "for" /
      "if" / "import" / "match" / "mut" / "new" / "null" / "object" /
      "return" / "super" / "template" / "this" / "true" / "typename" /
-     "unsafe" / "unatomic" / "val" / "var" / "while" / "preduce") ![A-Za-z0-9_]
+     "unsafe" / "unatomic" / "val" / "var" / "while" / "preduce" /
+     "async" / "await" / "go") ![A-Za-z0-9_]
 
 IntegralType
   = "Int" / "Long" / "Short" / "Byte" / "Boolean" / "Bool"

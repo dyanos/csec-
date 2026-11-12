@@ -14,6 +14,20 @@
 #include "AssignmentExpressionNode.h"
 #include "AccessFieldNode.h"
 #include "ArrayAccessNode.h"
+#include "VariableDeclarationNode.h"
+#include "PrefixExpressionNode.h"
+#include "PostfixExpressionNode.h"
+#include "MethodCallNode.h"
+#include "AssignmentNode.h"
+#include "ForStatementNode.h"
+#include "ClassInstanceCreationNode.h"
+#include "ArrayLiteralNode.h"
+#include "ArrayCreationExpressionNode.h"
+#include "CastingExpressionNode.h"
+#include "TupleExpressionNode.h"
+#include "MatchExpressionNode.h"
+#include "RangeExpressionNode.h"
+#include "DestructuringAssignmentNode.h"
 #include "type_utils.h"
 
 #include <iostream>
@@ -65,6 +79,54 @@ void collectReferencedIdentifiers(ASTNode* node, std::set<std::string>& names) {
     } else if (auto* arr = dynamic_cast<ArrayAccessNode*>(node)) {
         collectReferencedIdentifiers(arr->array.get(), names);
         collectReferencedIdentifiers(arr->index.get(), names);
+        for (auto& spec : arr->indices) {
+            if (!spec) continue;
+            collectReferencedIdentifiers(spec->index.get(), names);
+            collectReferencedIdentifiers(spec->start.get(), names);
+            collectReferencedIdentifiers(spec->end.get(), names);
+            collectReferencedIdentifiers(spec->step.get(), names);
+        }
+    // Every other node with sub-expressions must be walked too: a variable used only inside, e.g., a
+    // `val x: T = <expr>` initializer or a method-call argument was otherwise never captured, and the
+    // lambda body then referenced the enclosing function's stack slot directly (invalid IR).
+    } else if (auto* decl = dynamic_cast<VariableDeclarationNode*>(node)) {
+        collectReferencedIdentifiers(decl->initializer.get(), names);
+    } else if (auto* prefix = dynamic_cast<PrefixExpressionNode*>(node)) {
+        collectReferencedIdentifiers(prefix->expression.get(), names);
+    } else if (auto* postfix = dynamic_cast<PostfixExpressionNode*>(node)) {
+        collectReferencedIdentifiers(postfix->expression.get(), names);
+    } else if (auto* method = dynamic_cast<MethodCallNode*>(node)) {
+        collectReferencedIdentifiers(method->object.get(), names);
+        for (auto& arg : method->arguments) collectReferencedIdentifiers(arg.get(), names);
+    } else if (auto* assignment = dynamic_cast<AssignmentNode*>(node)) {
+        names.insert(assignment->name);
+        collectReferencedIdentifiers(assignment->expression.get(), names);
+    } else if (auto* forStmt = dynamic_cast<ForStatementNode*>(node)) {
+        collectReferencedIdentifiers(forStmt->iterableExpr.get(), names);
+        collectReferencedIdentifiers(forStmt->body.get(), names);
+    } else if (auto* creation = dynamic_cast<ClassInstanceCreationNode*>(node)) {
+        for (auto& arg : creation->arguments) collectReferencedIdentifiers(arg.get(), names);
+    } else if (auto* literal = dynamic_cast<ArrayLiteralNode*>(node)) {
+        for (auto& element : literal->elements) collectReferencedIdentifiers(element.get(), names);
+    } else if (auto* arrayCreation = dynamic_cast<ArrayCreationExpressionNode*>(node)) {
+        for (auto& size : arrayCreation->sizes) collectReferencedIdentifiers(size.get(), names);
+    } else if (auto* cast = dynamic_cast<CastingExpressionNode*>(node)) {
+        collectReferencedIdentifiers(cast->expression.get(), names);
+    } else if (auto* tuple = dynamic_cast<TupleExpressionNode*>(node)) {
+        for (auto& element : tuple->elements) collectReferencedIdentifiers(element.get(), names);
+    } else if (auto* match = dynamic_cast<MatchExpressionNode*>(node)) {
+        collectReferencedIdentifiers(match->expression.get(), names);
+        for (auto& matchCase : match->cases) {
+            collectReferencedIdentifiers(matchCase.first.get(), names);
+            collectReferencedIdentifiers(matchCase.second.get(), names);
+        }
+    } else if (auto* range = dynamic_cast<RangeExpressionNode*>(node)) {
+        collectReferencedIdentifiers(range->startExpr.get(), names);
+        collectReferencedIdentifiers(range->endExpr.get(), names);
+    } else if (auto* destructuring = dynamic_cast<DestructuringAssignmentNode*>(node)) {
+        collectReferencedIdentifiers(destructuring->value.get(), names);
+    } else if (auto* nested = dynamic_cast<LambdaExpressionNode*>(node)) {
+        collectReferencedIdentifiers(nested->body.get(), names);
     }
 }
 
@@ -207,7 +269,7 @@ llvm::Value* LambdaExpressionNode::codegen() {
     }
 
     llvm::Value* bodyValue = body ? body->codegen() : nullptr;
-    if (!cg.builder.GetInsertBlock()->getTerminator()) {
+    if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
         if (bodyValue && !returnType->isVoidTy()) cg.builder.CreateRet(bodyValue);
         else if (!returnType->isVoidTy()) cg.builder.CreateRet(defaultReturnValue(returnType));
         else cg.builder.CreateRetVoid();

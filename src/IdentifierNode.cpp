@@ -111,7 +111,7 @@ llvm::Value* IdentifierNode::codegen() {
 	if (symbol->type && symbol->type->getName() == "Nat" && symbol->value &&
 		llvm::isa<llvm::AllocaInst>(symbol->value)) {
 		auto& cg = CodeGenerator::getInstance();
-		auto* handleTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+		auto* handleTy = llvm::PointerType::getUnqual(cg.context);
 		return cg.builder.CreateLoad(handleTy, symbol->value, value + ".nat");
 	}
 

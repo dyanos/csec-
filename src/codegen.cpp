@@ -26,8 +26,8 @@ void addUnique(std::vector<std::string>& values, const std::string& value) {
 CodeGenerator::CodeGenerator() : builder(context) {
     this->module = std::make_unique<llvm::Module>("main", context);
 
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
-    auto* argvTy = llvm::PointerType::getUnqual(i8PtrTy);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(context);
+    auto* argvTy = llvm::PointerType::getUnqual(i8PtrTy->getContext());
     llvm::FunctionType* funcType = llvm::FunctionType::get(this->builder.getInt32Ty(), {this->builder.getInt32Ty(), argvTy}, false);
     this->mainFunction = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module.get());
 
@@ -38,7 +38,7 @@ CodeGenerator::CodeGenerator() : builder(context) {
     this->mallocFunction = module->getFunction("malloc");
     if (!mallocFunction) {
         mallocFunction = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::Type::getInt64Ty(context) }, false),
+            llvm::FunctionType::get(llvm::PointerType::getUnqual(context), { llvm::Type::getInt64Ty(context) }, false),
             llvm::Function::ExternalLinkage,
             "malloc",
             module.get()
@@ -48,7 +48,7 @@ CodeGenerator::CodeGenerator() : builder(context) {
     this->freeFunction = module->getFunction("free");
     if (!freeFunction) {
         freeFunction = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
+            llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(context) }, false),
             llvm::Function::ExternalLinkage,
             "free",
             module.get()
@@ -64,14 +64,14 @@ CodeGenerator::CodeGenerator() : builder(context) {
 	}
     auto* initClassSymbol = initClassSymbolOpt;
 	llvm::Function::Create(
-		llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::PointerType::getUnqual(initClassSymbol->classType) }, false),
+		llvm::FunctionType::get(llvm::PointerType::getUnqual(context), { llvm::PointerType::getUnqual((initClassSymbol->classType)->getContext()) }, false),
 		llvm::Function::ExternalLinkage,
 		"toString",
 		module.get()
 	);
 
     llvm::Function::Create(
-		llvm::FunctionType::get(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
+		llvm::FunctionType::get(llvm::PointerType::getUnqual(context), { llvm::PointerType::getUnqual(context), llvm::PointerType::getUnqual(context) }, false),
 		llvm::Function::ExternalLinkage,
 		"operator+",
 		module.get()
@@ -79,14 +79,14 @@ CodeGenerator::CodeGenerator() : builder(context) {
 
     // print ?⑥닔 ?앹꽦
     llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
+        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(context) }, false),
         llvm::Function::ExternalLinkage,
         "print",
         module.get()
     );
 
     llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)) }, false),
+        llvm::FunctionType::get(llvm::Type::getVoidTy(context), { llvm::PointerType::getUnqual(context) }, false),
         llvm::Function::ExternalLinkage,
         "println",
         module.get()
@@ -150,7 +150,7 @@ void CodeGenerator::emitCleanupEntry(llvm::Value* pointer, CleanupKind kind, llv
     if (!pointer || pointer == retainedPointer) {
         return;
     }
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(context);
     llvm::Value* raw = pointer->getType() == i8PtrTy
         ? pointer
         : builder.CreateBitCast(pointer, i8PtrTy, "cleanup.ptr");
@@ -274,7 +274,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
             return llvm::Type::getInt8Ty(context);
         }
         else if (type->isStringTy()) {
-			return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+			return llvm::PointerType::getUnqual(context);
         }
         else if (type->isVoidTy()) {
             return llvm::Type::getVoidTy(context);
@@ -313,7 +313,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
                 std::cerr << "Error: Invalid element type in Array" << std::endl;
                 return nullptr;
             }
-            return llvm::PointerType::getUnqual(elementType);
+            return llvm::PointerType::getUnqual(elementType->getContext());
         }
         if (genericType->baseType->getName() == "Tensor") {
             return TensorRuntime::getTensorPointerType(*this);
@@ -342,7 +342,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
         // Library-defined generic shapes such as Vector[Int] or Matrix[Double]
         // may be declared before their concrete runtime representation exists.
         // Treat them as opaque references so they can appear in signatures.
-        return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+        return llvm::PointerType::getUnqual(context);
     }
     else if (type->getKind() == Type::Kind::STRUCT) {
         auto* structSymbol = symbolTable.lookupStruct(type->getName());
@@ -371,7 +371,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
             return nullptr;
         }
 		auto tp = llvm::FunctionType::get(returnLLVMType, paramLLVMTypes, false);
-        return llvm::PointerType::getUnqual(tp);
+        return llvm::PointerType::getUnqual(tp->getContext());
     }
     else if (type->getKind() == Type::Kind::ARRAY) {
         auto* arrayType = static_cast<const ArrayType*>(type);
@@ -402,7 +402,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
             std::cerr << "Error: Invalid base type for pointer" << std::endl;
             return nullptr;
         }
-        return llvm::PointerType::getUnqual(baseLLVMType);
+        return llvm::PointerType::getUnqual(baseLLVMType->getContext());
 	}
     else if (type->getKind() == Type::Kind::BOX) {
         auto* boxType = static_cast<const BoxType*>(type);
@@ -411,7 +411,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
             std::cerr << "Error: Invalid base type for box" << std::endl;
             return nullptr;
         }
-        return llvm::PointerType::getUnqual(baseLLVMType);
+        return llvm::PointerType::getUnqual(baseLLVMType->getContext());
     }
     else if (type->getKind() == Type::Kind::BORROW || type->getKind() == Type::Kind::MUTABLE_BORROW) {
         auto* borrowType = static_cast<const BorrowType*>(type);
@@ -420,7 +420,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
             std::cerr << "Error: Invalid base type for borrow" << std::endl;
             return nullptr;
         }
-        return llvm::PointerType::getUnqual(baseLLVMType);
+        return llvm::PointerType::getUnqual(baseLLVMType->getContext());
     }
     else if (type->getKind() == Type::Kind::UNSAFE_POINTER) {
         auto* pointerType = static_cast<const UnsafePointerType*>(type);
@@ -429,7 +429,7 @@ llvm::Type* CodeGenerator::getLLVMType(const Type* type) {
             std::cerr << "Error: Invalid base type for unsafe pointer" << std::endl;
             return nullptr;
         }
-        return llvm::PointerType::getUnqual(baseLLVMType);
+        return llvm::PointerType::getUnqual(baseLLVMType->getContext());
     }
     else if (type->getKind() == Type::Kind::UNKNOWN) {
         std::cerr << "Error: Unknown type '" << type->getName() << "'" << std::endl;

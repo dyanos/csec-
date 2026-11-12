@@ -266,6 +266,9 @@
     <ClInclude Include="src/type.h" />
     <ClInclude Include="src/type_checker.h" />
     <ClInclude Include="src/type_utils.h" />
+    <ClInclude Include="src/intrinsics.h" />
+    <ClInclude Include="src/builtin_structs.h" />
+    <ClInclude Include="src/llvm_compat.h" />
     <ClInclude Include="src/UnaryExpressionNode.h" />
     <ClInclude Include="src/UnitNode.h" />
     <ClInclude Include="src/utils.h" />

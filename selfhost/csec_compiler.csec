@@ -84,7 +84,8 @@ def isKeyword(text: String): Boolean {
         strEq(text, "to") or strEq(text, "until") or strEq(text, "and") or strEq(text, "or") or
         strEq(text, "xor") or strEq(text, "ode") or strEq(text, "molecule") or strEq(text, "cfd") or
         strEq(text, "protein") or strEq(text, "cpu") or strEq(text, "openmp") or
-        strEq(text, "gpu") or strEq(text, "simd") or strEq(text, "build");
+        strEq(text, "gpu") or strEq(text, "simd") or strEq(text, "build") or
+        strEq(text, "async") or strEq(text, "await") or strEq(text, "go");
 }
 
 def appendToken(tokens: String, kind: Char, text: String): String {

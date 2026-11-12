@@ -2,6 +2,20 @@
 
 ## Verified
 
+- Concurrency and the standard library (both compilers; see `LANGUAGE_SPEC.md`):
+  microthreads, `go`/`async`/`await` futures, OS threads, OS processes, pipes, shared memory
+  (including across processes), mail, `std.io` (chunked and memory-mapped input), `Nat` tools,
+  `Complex`, and `std.symbolic`. `tests/run_microthread.ps1` (21 cases), `-Suite stdlib` (14), and
+  `tests/run_selfhost_concurrency.ps1` (9, native and self-host must both exit 42). In the self-host,
+  `spawn`/`threadStart`/`go`/`async` take named functions, and `Complex`/`std.math.complex` are
+  native-only. The self-host now emits `external def` declarations with their real signatures, passes
+  arguments of the declared types (Long, String), stores 64-bit values into `Long` locals, decodes
+  escaped `Char` literals, and supports `text[i]`. Each of these changed `csec_compiler.csec`'s own
+  output, and the regenerated output is a stable bootstrap fixed point.
+- `text[i]` String byte indexing and target-aware optimisation: modules get the host triple and data
+  layout before codegen, so `-O3` vectorises byte loops. `-march=native` uses the host CPU.
+  `examples/parallel_wc.csec` reaches about 92% of a C++ mmap+SIMD reference on 16 threads.
+
 - Heap allocations can be released explicitly with a `free(x)` builtin. In the direct compiler
   `new T[n]`, `new Class(...)`, and boxes are `malloc`-backed, so `free(x)` bit-casts the argument
   pointer and calls the runtime `free`; the type checker types the call as `Unit`. The self-host
@@ -446,6 +460,16 @@ state (the operator dispatch, like the method-call dispatch, only forwards a poi
 none).
 
 ## Still Incomplete
+
+- Operator overloading on user `struct`s whose operators take a struct parameter asserts in LLVM
+  ("Calling a function with a bad signature"); the built-in `Complex` type is used for complex
+  numbers instead.
+- A plain decimal literal (`3.14`) is a 32-bit `Float`; precision-sensitive code writes `3.14e0`
+  (`Double`).
+- Self-host: an expression-bodied function that concatenates a String parameter
+  (`= f(text + "\n")`) treats the parameter as an Int. Block bodies work.
+- `selfhost/llvm_subset.csec` (bootstrap smoke test) and `10_integration/203` crash or hang with
+  the pre-change runtime as well; both are pre-existing.
 
 - Lambda closures: non-`Int` signatures beyond the verified `Boolean` return ABI, broader
   higher-order ABI coverage, and closure environment ownership.

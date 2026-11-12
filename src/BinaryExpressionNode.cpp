@@ -110,7 +110,7 @@ llvm::Value* coerceValueForString(CodeGenerator& cg, llvm::Value* value, const T
     auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
     auto* f64Ty = llvm::Type::getDoubleTy(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
 
     if (!value || !type) {
         return llvm::ConstantPointerNull::get(i8PtrTy);
@@ -182,7 +182,7 @@ llvm::Value* coerceValueForString(CodeGenerator& cg, llvm::Value* value, const T
 
 llvm::Value* codegenStringConcat(CodeGenerator& cg, llvm::Value* leftValue, const Type* leftType, llvm::Value* rightValue, const Type* rightType) {
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
     llvm::Value* leftString = coerceValueForString(cg, leftValue, leftType);
     llvm::Value* rightString = coerceValueForString(cg, rightValue, rightType);
     return cg.builder.CreateCall(
@@ -208,7 +208,7 @@ llvm::Value* codegenStringConcatChain(CodeGenerator& cg, ASTNode* root) {
     if (operands.size() < 3) return nullptr;
 
     auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
-    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+    auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
     auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
     std::vector<llvm::Value*> strings;
     strings.reserve(operands.size());
@@ -227,7 +227,7 @@ llvm::Value* codegenStringConcatChain(CodeGenerator& cg, ASTNode* root) {
     llvm::Value* first = cg.builder.CreateInBoundsGEP(arrayTy, storage,
         {llvm::ConstantInt::get(i64Ty, 0), llvm::ConstantInt::get(i64Ty, 0)}, "str.parts.first");
     return cg.builder.CreateCall(
-        getOrCreateRuntimeFunction("csec_string_concat_many", i8PtrTy, {i8PtrTy->getPointerTo(), i64Ty}),
+        getOrCreateRuntimeFunction("csec_string_concat_many", i8PtrTy, {llvm::PointerType::getUnqual(i8PtrTy->getContext()), i64Ty}),
         {first, llvm::ConstantInt::get(i64Ty, strings.size())}, "str.concat.chain");
 }
 
@@ -326,7 +326,7 @@ static llvm::Value* codegenComplexOp(const std::string& op, llvm::Value* leftVal
 // Get/declare a csec_bigint_* runtime function taking N pointer handles and returning a pointer handle.
 // (The runtime helpers keep the bigint name; the language type they back is Nat.)
 static llvm::Function* getNatFn(CodeGenerator& cg, const std::string& name, unsigned arity) {
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     std::vector<llvm::Type*> params(arity, i8PtrTy);
     return getOrCreateRuntimeFunction(name, i8PtrTy, params);
 }
@@ -339,7 +339,7 @@ static llvm::Value* natBinary(CodeGenerator& cg, const char* fn, llvm::Value* a,
 // Coerce a Nat operand for arithmetic/comparison. A Nat is already a ptr handle; an integer literal or
 // value (e.g. the 1 in `n + 1`, or 1000 in `n < 1000`) is promoted to a handle via the runtime.
 static llvm::Value* asNatHandle(CodeGenerator& cg, llvm::Value* v, const Type* t) {
-    auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+    auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
     if (!v) return nullptr;
     // An actual Nat: the value is already a handle.
     if (t && t->getName() == "Nat" && v->getType()->isPointerTy()) return v;
@@ -373,7 +373,7 @@ static llvm::Value* codegenNatScalarOp(const std::string& op, llvm::Value* leftV
 
     if (op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || op == ">=") {
         auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
-        auto* i8PtrTy = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(cg.context));
+        auto* i8PtrTy = llvm::PointerType::getUnqual(cg.context);
         llvm::Value* cmp = cg.builder.CreateCall(
             getOrCreateRuntimeFunction("csec_bigint_cmp", i32Ty, {i8PtrTy, i8PtrTy}), {a, b}, "big.cmp");
         llvm::Value* zero = llvm::ConstantInt::get(i32Ty, 0);
@@ -637,7 +637,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
         cg.builder.CreateStore(rightBool, resultPtr);
-        if (!cg.builder.GetInsertBlock()->getTerminator()) {
+        if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
             cg.builder.CreateBr(mergeBB);
         }
 
@@ -692,7 +692,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
             }
         }
         cg.builder.CreateStore(rightBool, resultPtr);
-        if (!cg.builder.GetInsertBlock()->getTerminator()) {
+        if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
             cg.builder.CreateBr(mergeBB);
         }
 
@@ -773,7 +773,7 @@ llvm::Value* BinaryExpressionNode::codegen() {
         // distinct globals must compare equal. csec_string_equals returns a non-zero i32 when
         // the contents match.
         auto* i8Ty = llvm::Type::getInt8Ty(cg.context);
-        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty);
+        auto* i8PtrTy = llvm::PointerType::getUnqual(i8Ty->getContext());
         auto* i32Ty = llvm::Type::getInt32Ty(cg.context);
         auto leftStaticType = left->getType();
         auto rightStaticType = right->getType();

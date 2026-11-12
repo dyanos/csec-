@@ -1,0 +1,40 @@
+import std.thread
+import std.microthread
+// Self-host: mutex and channel waits are cooperative with microthreads; unlocking an unlocked mutex
+// and receiving with a timeout return their documented values. Exit code 42.
+def producer(): Int {
+    // The channel handle arrives as an Int message (handles are small).
+    val ch: Int = receive();
+    channelSend(ch, 40);
+    channelClose(ch);
+    return 0;
+}
+
+def main(): Int {
+    val m: Long = mutexNew();
+    if (mutexUnlock(m)) {
+        return 1;
+    }
+    mutexLock(m);
+    if (mutexTryLock(m)) {
+        return 2;
+    }
+    mutexUnlock(m);
+    mutexFree(m);
+
+    val ch: Long = channelNew();
+    val pid: Int = spawn(producer);
+    send(pid, ch);
+    // main waits on the channel; the producer microthread must get to run.
+    val first: Long = channelReceive(ch, 0);
+    val second: Long = channelReceive(ch, 2);
+    if (!channelClosed(ch)) {
+        return 3;
+    }
+    channelFree(ch);
+
+    val empty: Long = channelNew();
+    val timedOut: Long = channelReceiveTimeout(empty, 10, 0);
+    channelFree(empty);
+    return first + second + timedOut;
+}

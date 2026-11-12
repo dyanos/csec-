@@ -1,0 +1,30 @@
+import std.thread
+import std.microthread
+// Microthreads of one OS thread contend for a mutex: the holder yields while holding it, and the
+// waiter must let it run instead of deadlocking the thread.
+def main(): Int {
+    val m = mutexNew();
+    val counter = atomicNew(0);
+    spawn([=]() -> {
+        mutexLock(m);
+        yield();
+        atomicAdd(counter, 1);
+        mutexUnlock(m);
+        return 0;
+    });
+    spawn([=]() -> {
+        mutexLock(m);
+        atomicAdd(counter, 10);
+        mutexUnlock(m);
+        return 0;
+    });
+    joinProcesses();
+    if (atomicGet(counter) != 11) { return 1; }
+    // Unlocking a mutex that is not locked is reported, not undefined behaviour.
+    if (mutexUnlock(m)) { return 2; }
+    if (!mutexTryLock(m)) { return 3; }
+    if (mutexTryLock(m)) { return 4; }
+    mutexUnlock(m);
+    mutexFree(m);
+    return 0;
+}

@@ -1,0 +1,47 @@
+import std.thread
+// Several OS threads increment a plain counter guarded by a mutex; a shared atomic counts the
+// critical sections, and a second atomic detects two threads inside at once.
+def main(): Int {
+    val m = mutexNew();
+    val inside = atomicNew(0);
+    val done = atomicNew(0);
+    val overlap = atomicNew(0);
+    val a = threadStart([=]() -> {
+        var i: Int = 0;
+        while (i < 2000) {
+            mutexLock(m);
+            if (atomicAdd(inside, 1) != 1) { atomicAdd(overlap, 1); }
+            atomicAdd(done, 1);
+            atomicAdd(inside, -1);
+            mutexUnlock(m);
+            i = i + 1;
+        }
+        return 0;
+    });
+    val b = threadStart([=]() -> {
+        var i: Int = 0;
+        while (i < 2000) {
+            mutexLock(m);
+            if (atomicAdd(inside, 1) != 1) { atomicAdd(overlap, 1); }
+            atomicAdd(done, 1);
+            atomicAdd(inside, -1);
+            mutexUnlock(m);
+            i = i + 1;
+        }
+        return 0;
+    });
+    var i: Int = 0;
+    while (i < 2000) {
+        mutexLock(m);
+        if (atomicAdd(inside, 1) != 1) { atomicAdd(overlap, 1); }
+        atomicAdd(done, 1);
+        atomicAdd(inside, -1);
+        mutexUnlock(m);
+        i = i + 1;
+    }
+    threadJoin(a);
+    threadJoin(b);
+    if (atomicGet(done) != 6000) { return 1; }
+    if (atomicGet(overlap) != 0) { return 2; }
+    return 0;
+}

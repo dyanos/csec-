@@ -1,0 +1,42 @@
+import std.thread
+import std.microthread
+// A microthread waiting on a channel lets the sender (another microthread of the same OS thread) run.
+def main(): Int {
+    val ch = channelNew();
+    val total = atomicNew(0);
+    spawn([=]() -> {
+        var running: Boolean = true;
+        while (running) {
+            val v = channelReceive(ch, -1);
+            if (v < 0) {
+                running = false;
+            } else {
+                atomicAdd(total, v);
+            }
+        }
+        return 0;
+    });
+    spawn([=]() -> {
+        var i: Int = 1;
+        while (i <= 10) {
+            channelSend(ch, i);
+            yield();
+            i = i + 1;
+        }
+        channelClose(ch);
+        return 0;
+    });
+    joinProcesses();
+    if (atomicGet(total) != 55) { return 1; }
+    if (!channelClosed(ch)) { return 2; }
+    if (channelSend(ch, 1)) { return 3; }
+    channelFree(ch);
+
+    // Timed receive: nothing arrives, so the fallback comes back after the timeout.
+    val empty = channelNew();
+    if (channelReceiveTimeout(empty, 20, -5) != -5) { return 4; }
+    channelSend(empty, 9);
+    if (channelReceiveTimeout(empty, 1000, -5) != 9) { return 5; }
+    channelFree(empty);
+    return 0;
+}

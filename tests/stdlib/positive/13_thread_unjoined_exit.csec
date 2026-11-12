@@ -1,0 +1,9 @@
+import std.thread
+// A thread that is never joined is abandoned when main returns; the program must still exit cleanly.
+def main(): Int {
+    val t = threadStart([=]() -> {
+        threadSleep(200);
+        return 7;
+    });
+    return 0;
+}

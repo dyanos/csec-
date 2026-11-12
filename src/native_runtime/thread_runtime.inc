@@ -48,6 +48,46 @@ struct ThreadRecord {
     std::atomic<int> result{0};
     std::atomic<bool> finished{false};
     void* env = nullptr;
+    // A thread that is never joined is abandoned (as in C, Go, or Rust): the program may exit while it
+    // runs. The last reference can also be dropped on the thread itself, so ~thread() must not
+    // terminate the process.
+    ~ThreadRecord() {
+        if (thread.joinable()) thread.detach();
+    }
+};
+
+// Wait on `cv` until `ready()` holds (`lock` is held on entry and on return); `timeoutMs < 0` waits
+// forever. Returns whether `ready()` became true. A microthread must not block its OS thread while
+// another microthread of that thread could run (the one it waits for may share the scheduler), so
+// while others are runnable it releases the lock and yields; otherwise it sleeps on `cv` in short
+// slices so that microthreads woken by timers are noticed.
+template <typename Ready>
+bool waitCooperatively(std::unique_lock<std::mutex>& lock, std::condition_variable& cv, Ready ready, long long timeoutMs) {
+    const bool bounded = timeoutMs >= 0;
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(bounded ? timeoutMs : 0);
+    while (!ready()) {
+        const auto now = std::chrono::steady_clock::now();
+        if (bounded && now >= deadline) return false;
+        if (csec_microthread::hasRunnableOthers()) {
+            lock.unlock();
+            csec_process_yield();
+            lock.lock();
+            continue;
+        }
+        auto slice = now + std::chrono::milliseconds(csec_microthread::scheduler.initialized ? 1 : 50);
+        if (bounded && deadline < slice) slice = deadline;
+        cv.wait_until(lock, slice);
+    }
+    return true;
+}
+
+// A non-recursive lock that microthreads can contend for: waiting yields to the other microthreads of
+// the OS thread instead of deadlocking it, and unlocking a mutex that is not locked is a reported
+// no-op rather than undefined behaviour.
+struct Mutex {
+    std::mutex guard;
+    std::condition_variable released;
+    bool locked = false;
 };
 
 struct Channel {
@@ -57,10 +97,18 @@ struct Channel {
     bool closed = false;
 };
 
-HandleTable<ThreadRecord>& threads() { static HandleTable<ThreadRecord> table; return table; }
-HandleTable<std::mutex>& mutexes() { static HandleTable<std::mutex> table; return table; }
-HandleTable<std::atomic<long long>>& atomics() { static HandleTable<std::atomic<long long>> table; return table; }
-HandleTable<Channel>& channels() { static HandleTable<Channel> table; return table; }
+// The tables are intentionally never destroyed: abandoned threads may still use them while the
+// program's static destructors run at exit.
+template <typename T>
+HandleTable<T>& leakedTable() {
+    static auto* table = new HandleTable<T>();
+    return *table;
+}
+
+HandleTable<ThreadRecord>& threads() { return leakedTable<ThreadRecord>(); }
+HandleTable<Mutex>& mutexes() { return leakedTable<Mutex>(); }
+HandleTable<std::atomic<long long>>& atomics() { return leakedTable<std::atomic<long long>>(); }
+HandleTable<Channel>& channels() { return leakedTable<Channel>(); }
 
 #ifdef _WIN32
 struct OsProcess {
@@ -73,7 +121,7 @@ struct OsProcess {
     bool reaped = false;
 };
 #endif
-HandleTable<OsProcess>& osProcesses() { static HandleTable<OsProcess> table; return table; }
+HandleTable<OsProcess>& osProcesses() { return leakedTable<OsProcess>(); }
 
 } // namespace csec_threads
 
@@ -102,12 +150,13 @@ long long csec_thread_start(void* code, void* env, long long envSize) {
     ThreadRecord* raw = record.get();
     const long long handle = threads().add(record);
     try {
-        raw->thread = std::thread([raw, code, ownsEnv]() {
+        // The thread keeps its own reference, so the record outlives a handle that is never joined.
+        raw->thread = std::thread([record, code, ownsEnv]() {
             using Entry = int (*)(void*);
-            raw->result = reinterpret_cast<Entry>(code)(raw->env);
-            if (ownsEnv) std::free(raw->env);
-            raw->env = nullptr;
-            raw->finished = true;
+            record->result = reinterpret_cast<Entry>(code)(record->env);
+            if (ownsEnv) std::free(record->env);
+            record->env = nullptr;
+            record->finished = true;
         });
     } catch (...) {
         threads().take(handle);
@@ -121,6 +170,8 @@ long long csec_thread_start(void* code, void* env, long long envSize) {
 int csec_thread_join(long long handle) {
     auto record = csec_threads::threads().take(handle);
     if (!record) return -1;
+    // Let the other microthreads of this OS thread run while the joined thread finishes.
+    while (!record->finished && csec_microthread::hasRunnableOthers()) csec_process_yield();
     if (record->thread.joinable()) record->thread.join();
     return record->result;
 }
@@ -150,25 +201,37 @@ int csec_thread_hardware_concurrency(void) {
 // ---- mutex --------------------------------------------------------------------------------------
 
 long long csec_mutex_new(void) {
-    return csec_threads::mutexes().add(std::make_shared<std::mutex>());
+    return csec_threads::mutexes().add(std::make_shared<csec_threads::Mutex>());
 }
 
 int csec_mutex_lock(long long handle) {
     auto m = csec_threads::mutexes().get(handle);
     if (!m) return 0;
-    m->lock();
+    std::unique_lock<std::mutex> lock(m->guard);
+    csec_threads::waitCooperatively(lock, m->released, [&] { return !m->locked; }, -1);
+    m->locked = true;
     return 1;
 }
 
 int csec_mutex_try_lock(long long handle) {
     auto m = csec_threads::mutexes().get(handle);
-    return m && m->try_lock() ? 1 : 0;
+    if (!m) return 0;
+    std::lock_guard<std::mutex> lock(m->guard);
+    if (m->locked) return 0;
+    m->locked = true;
+    return 1;
 }
 
+// Returns 0 (and does nothing) for an unknown handle or a mutex that is not locked.
 int csec_mutex_unlock(long long handle) {
     auto m = csec_threads::mutexes().get(handle);
     if (!m) return 0;
-    m->unlock();
+    {
+        std::lock_guard<std::mutex> lock(m->guard);
+        if (!m->locked) return 0;
+        m->locked = false;
+    }
+    m->released.notify_one();
     return 1;
 }
 
@@ -223,17 +286,29 @@ int csec_channel_send(long long handle, long long value) {
     return 1;
 }
 
-// Blocks the calling OS thread until a value arrives; returns `fallback` once the channel is closed
-// and drained (or for an unknown handle).
-long long csec_channel_receive(long long handle, long long fallback) {
+// Waits until a value arrives, at most `milliseconds` (< 0 waits forever); returns `fallback` on
+// timeout, once the channel is closed and drained, or for an unknown handle. A microthread waiting
+// here lets the other microthreads of its OS thread run.
+long long csec_channel_receive_timeout(long long handle, long long milliseconds, long long fallback) {
     auto c = csec_threads::channels().get(handle);
     if (!c) return fallback;
     std::unique_lock<std::mutex> lock(c->mutex);
-    c->ready.wait(lock, [&] { return !c->items.empty() || c->closed; });
+    csec_threads::waitCooperatively(lock, c->ready, [&] { return !c->items.empty() || c->closed; }, milliseconds);
     if (c->items.empty()) return fallback;
     long long value = c->items.front();
     c->items.pop_front();
     return value;
+}
+
+long long csec_channel_receive(long long handle, long long fallback) {
+    return csec_channel_receive_timeout(handle, -1, fallback);
+}
+
+int csec_channel_is_closed(long long handle) {
+    auto c = csec_threads::channels().get(handle);
+    if (!c) return 1;
+    std::lock_guard<std::mutex> lock(c->mutex);
+    return c->closed ? 1 : 0;
 }
 
 long long csec_channel_try_receive(long long handle, long long fallback) {
@@ -261,6 +336,12 @@ void csec_channel_close(long long handle) {
         c->closed = true;
     }
     c->ready.notify_all();
+}
+
+// Close the channel (waking its receivers) and release the handle.
+void csec_channel_free(long long handle) {
+    csec_channel_close(handle);
+    csec_threads::channels().take(handle);
 }
 
 // ---- OS processes -------------------------------------------------------------------------------

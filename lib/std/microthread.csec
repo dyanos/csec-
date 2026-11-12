@@ -30,5 +30,10 @@ external def csec_process_text_count(): Int;
 def sendText(pid: Int, text: String): Int = csec_process_send_text(pid, text)
 // Wait for the next text message.
 def receiveText(): String = csec_process_receive_text()
-def receiveTextTimeout(milliseconds: Int, fallback: String): String = csec_process_receive_text_timeout(milliseconds, fallback)
+def receiveTextTimeout(milliseconds: Int, fallback: String): String {
+    // Widen through a typed local: passing the Int parameter straight to the Long external is
+    // mis-lowered by the self-hosted compiler.
+    val wait: Long = milliseconds;
+    return csec_process_receive_text_timeout(wait, fallback);
+}
 def textMailboxSize(): Int = csec_process_text_count()

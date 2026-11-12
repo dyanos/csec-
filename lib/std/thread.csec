@@ -33,11 +33,15 @@ external def csec_atomic_free(handle: Long): Void;
 external def csec_channel_new(): Long;
 external def csec_channel_send(handle: Long, value: Long): Int;
 external def csec_channel_receive(handle: Long, fallback: Long): Long;
+external def csec_channel_receive_timeout(handle: Long, milliseconds: Long, fallback: Long): Long;
 external def csec_channel_try_receive(handle: Long, fallback: Long): Long;
 external def csec_channel_size(handle: Long): Int;
+external def csec_channel_is_closed(handle: Long): Int;
 external def csec_channel_close(handle: Long): Void;
+external def csec_channel_free(handle: Long): Void;
 
-// Wait for a thread to finish; returns the Int its body returned.
+// Wait for a thread to finish; returns the Int its body returned. A thread that is never joined is
+// abandoned when main returns.
 def threadJoin(handle: Long): Int = csec_thread_join(handle)
 def threadFinished(handle: Long): Boolean = csec_thread_is_finished(handle) != 0
 def threadId(): Long = csec_thread_current_id()
@@ -51,6 +55,8 @@ def threadYield(): Int {
 }
 def hardwareThreads(): Int = csec_thread_hardware_concurrency()
 
+// Mutexes are not recursive. Microthreads may contend for one: a waiting microthread lets the others
+// of its OS thread run. mutexUnlock returns false if the mutex was not locked.
 def mutexNew(): Long = csec_mutex_new()
 def mutexLock(handle: Long): Boolean = csec_mutex_lock(handle) != 0
 def mutexTryLock(handle: Long): Boolean = csec_mutex_try_lock(handle) != 0
@@ -74,14 +80,29 @@ def atomicFree(handle: Long): Int {
     return 0;
 }
 
-// Channels carry Long values between OS threads (blocking, FIFO).
+// Channels carry Long values between OS threads and microthreads (blocking, FIFO, unbounded).
 def channelNew(): Long = csec_channel_new()
+// Returns false once the channel is closed.
 def channelSend(handle: Long, value: Long): Boolean = csec_channel_send(handle, value) != 0
-// Blocks the calling OS thread; returns `fallback` once the channel is closed and empty.
+// Waits for a value; returns `fallback` once the channel is closed and empty. A microthread waiting
+// here lets the other microthreads of its OS thread run.
 def channelReceive(handle: Long, fallback: Long): Long = csec_channel_receive(handle, fallback)
+// Like channelReceive, but returns `fallback` after `milliseconds` without a value.
+def channelReceiveTimeout(handle: Long, milliseconds: Int, fallback: Long): Long {
+    // Widen through a typed local: passing the Int parameter straight to the Long external is
+    // mis-lowered by the self-hosted compiler.
+    val wait: Long = milliseconds;
+    return csec_channel_receive_timeout(handle, wait, fallback);
+}
 def channelTryReceive(handle: Long, fallback: Long): Long = csec_channel_try_receive(handle, fallback)
 def channelSize(handle: Long): Int = csec_channel_size(handle)
+def channelClosed(handle: Long): Boolean = csec_channel_is_closed(handle) != 0
 def channelClose(handle: Long): Int {
     csec_channel_close(handle);
+    return 0;
+}
+// Close the channel and release its handle.
+def channelFree(handle: Long): Int {
+    csec_channel_free(handle);
     return 0;
 }

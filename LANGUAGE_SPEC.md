@@ -133,14 +133,15 @@ and `Quaternion { w, x, y, z: Double }` are built-in **value** types (copied lik
 | Mechanism | Module | Threads | Microthreads | OS processes |
 | --- | --- | --- | --- | --- |
 | Int / text messages | `std.microthread` | — (one scheduler per thread) | yes | — |
-| Channels (Long) | `std.thread` | yes | blocks the OS thread | — |
+| Channels (Long) | `std.thread` | yes | yes | — |
 | Pipes | `std.pipe` | yes | yes | child stdin/stdout (`pipeOpenProcess`) |
 | Shared memory | `std.shared` | yes | yes | named regions (`sharedOpen`) |
 | Mail | `std.mail` | yes | yes | yes (named mailboxes) |
 
 **Cooperative blocking.** Every blocking operation of `std.pipe`, `std.shared`
-(`sharedLock`), and `std.mail` yields to the other runnable microthreads of its OS
-thread while it waits, and sleeps briefly when there are none. So a microthread waiting
+(`sharedLock`), `std.mail`, and `std.thread` (`mutexLock`, `channelReceive`,
+`channelReceiveTimeout`, `threadJoin`) yields to the other runnable microthreads of its
+OS thread while it waits, and sleeps when there are none. So a microthread waiting
 on a pipe or for mail never stalls the rest of its thread, and microthread stages can be
 chained into a pipeline with pipes.
 
@@ -165,6 +166,16 @@ accesses read 0 and are ignored. `sharedAddLong` and `sharedCompareExchange` are
 `mailLastTag` describe the message last received through that endpoint. Messages are
 copied and delivered FIFO. A mailbox holds about 1 MiB of queued mail, and a send to a
 full mailbox returns `false`.
+
+**Threads, mutexes, and channels.** `threadStart(body)` runs `body` on a new OS thread and
+`threadJoin` returns its result. A thread that is never joined is abandoned when `main`
+returns, and the program still exits normally. Mutexes are not recursive. Microthreads may
+contend for one, and `mutexUnlock` on a mutex that is not locked returns `false`.
+Channels are unbounded FIFO queues of `Long`. `channelSend` returns `false` once the channel is
+closed. `channelReceive(ch, fallback)` returns `fallback` when the channel is closed and empty,
+and `channelReceiveTimeout(ch, ms, fallback)` also returns it after `ms` milliseconds with no
+value. `channelClosed` reports whether the channel is closed, and `channelFree` closes it and
+releases the handle.
 
 ## 7. String bytes and file input
 

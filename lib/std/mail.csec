@@ -37,7 +37,10 @@ def mailReceive(receiver: Long): String {
 }
 // Like mailReceive, but returns `fallback` if nothing arrives within `milliseconds`.
 def mailReceiveTimeout(receiver: Long, milliseconds: Int, fallback: String): String {
-    if (csec_mail_receive(receiver, milliseconds) == 0) {
+    // Widen through a typed local: the self-hosted compiler mis-lowers an Int parameter passed
+    // straight to a Long external.
+    val wait: Long = milliseconds;
+    if (csec_mail_receive(receiver, wait) == 0) {
         return fallback;
     }
     return csec_mail_last_body(receiver);

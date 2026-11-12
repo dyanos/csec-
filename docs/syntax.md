@@ -418,7 +418,7 @@ live in `lib/std`:
 | Module | Highlights |
 | --- | --- |
 | `std.microthread` | `spawn`, `send`, `receive`, `receiveTimeout`, `self`, `yield`, `monitor`, `joinProcesses` |
-| `std.thread` | `threadStart(lambda)`, `threadJoin`, `mutexNew/Lock/Unlock`, `atomicNew/Add/Get`, `channelNew/Send/Receive/Close` |
+| `std.thread` | `threadStart(lambda)`, `threadJoin`, `mutexNew/Lock/TryLock/Unlock`, `atomicNew/Add/Get/CompareExchange`, `channelNew/Send/Receive/ReceiveTimeout/Closed/Close/Free` |
 | `std.process` | `runCommand`, `commandOutput`, `startProcess`, `waitProcess`, `killProcess`, `currentProcessId` |
 | `std.math.natural` | `natDiv`, `natMod`, `natPow`, `natGcd`, `natLcm`, `natSqrt`, `isPrime`, `factorial`, `binomial`, `fibonacci` |
 | `std.math.real` | `pi()`, `euler()`, `approxEqual`, `hypot`, `cbrt`, `nthRoot`, `logBase`, ... |

@@ -4,7 +4,10 @@ if(WIN32)
     set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
 endif()
 
-project(csec++ CXX)
+# C is enabled because LLVM's exported CMake package (e.g. Homebrew/conda LLVM on macOS) runs
+# check_c_source_compiles() in FindFFI/FindTerminfo/zlib/zstd; with CXX only, try_compile fails
+# with 'Unknown extension ".c"'.
+project(csec++ C CXX)
 
 ################################################################################
 # Set target arch type if empty. Visual studio solution generator provides it.

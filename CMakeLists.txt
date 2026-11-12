@@ -468,6 +468,16 @@ endif()
 ################################################################################
 # Dependencies
 ################################################################################
+# csec++ targets the host (InitializeNativeTarget/AsmPrinter/AsmParser), so link the host target's
+# libraries: X86 on x86-64, AArch64 on Apple Silicon and arm64 Linux. A target component expands to
+# its CodeGen, AsmParser, Desc, Info, ... libraries.
+if(NOT LLVM_NATIVE_ARCH)
+    message(FATAL_ERROR "The LLVM package does not report LLVM_NATIVE_ARCH; cannot pick the host target.")
+endif()
+if(NOT LLVM_NATIVE_ARCH IN_LIST LLVM_TARGETS_TO_BUILD)
+    message(FATAL_ERROR "LLVM was built without the host target ${LLVM_NATIVE_ARCH} (has: ${LLVM_TARGETS_TO_BUILD}).")
+endif()
+message(STATUS "LLVM ${LLVM_PACKAGE_VERSION}, host target ${LLVM_NATIVE_ARCH}")
 llvm_map_components_to_libnames(LLVM_COMPONENT_LIBS
     AggressiveInstCombine
     Analysis
@@ -499,7 +509,7 @@ llvm_map_components_to_libnames(LLVM_COMPONENT_LIBS
     TargetParser
     TransformUtils
     Vectorize
-    X86
+    ${LLVM_NATIVE_ARCH}
 )
 
 # Link the LLVM component libraries only. The C entry points csec++ uses (LLVMLinkInMCJIT,

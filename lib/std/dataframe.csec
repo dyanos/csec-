@@ -1,0 +1,163 @@
+// std.dataframe -- columnar data frames with Parquet and CSV input/output.
+//
+//     import std.dataframe
+//
+//     val sales = readParquet("sales.parquet");          // 0 on failure; see dfLastError()
+//     val big = dfFilter(sales, "amount", ">=", 100.0e0);
+//     val byRegion = dfGroupBy(big, "region", "amount:sum,amount:mean,count");
+//     println(dfToString(dfSort(byRegion, "-amount_sum"), 20));
+//
+// A frame is a handle (Long) to an immutable table of named, typed columns. Column types are "long",
+// "double", and "string"; any cell may be null. Every operation returns a new frame and leaves its
+// input unchanged; free frames you no longer need with dfFree. Column lists are comma-separated names
+// ("a,b"); sort keys take a '-' prefix for descending order ("region,-amount").
+//
+// Parquet support: flat schemas, data pages v1 and v2, PLAIN / dictionary / RLE / DELTA_* /
+// BYTE_STREAM_SPLIT encodings, UNCOMPRESSED / SNAPPY / GZIP / LZ4_RAW pages, and ZSTD when the runtime
+// is built with libzstd (dfZstdSupported). Columns are decoded in parallel on several OS threads.
+// Integers, booleans, dates, and timestamps become long; floats and decimals become double; byte
+// arrays become string. writeParquet writes uncompressed PLAIN files that other tools can read.
+//
+// Strings returned by the functions below (dfToString, dfGetString, ...) are new allocations; release
+// them with dfReleaseString when they are large or produced in a loop.
+
+external def csec_df_last_error(): String;
+external def csec_df_zstd_supported(): Int;
+external def csec_df_read_parquet(path: String, columns: String): Long;
+external def csec_df_write_parquet(frame: Long, path: String): Int;
+external def csec_df_read_csv(path: String): Long;
+external def csec_df_from_csv_text(text: String): Long;
+external def csec_df_write_csv(frame: Long, path: String): Int;
+external def csec_df_to_csv_text(frame: Long): String;
+external def csec_df_free(frame: Long): Void;
+external def csec_df_rows(frame: Long): Long;
+external def csec_df_columns(frame: Long): Int;
+external def csec_df_column_name(frame: Long, index: Int): String;
+external def csec_df_column_index(frame: Long, name: String): Int;
+external def csec_df_column_type(frame: Long, name: String): String;
+external def csec_df_is_null(frame: Long, name: String, row: Long): Int;
+external def csec_df_get_long(frame: Long, name: String, row: Long): Long;
+external def csec_df_get_double(frame: Long, name: String, row: Long): Double;
+external def csec_df_get_string(frame: Long, name: String, row: Long): String;
+external def csec_df_new(): Long;
+external def csec_df_add_column(frame: Long, name: String, columnType: String): Int;
+external def csec_df_append_long(frame: Long, name: String, value: Long): Int;
+external def csec_df_append_double(frame: Long, name: String, value: Double): Int;
+external def csec_df_append_string(frame: Long, name: String, value: String): Int;
+external def csec_df_append_null(frame: Long, name: String): Int;
+external def csec_df_select(frame: Long, columns: String): Long;
+external def csec_df_drop(frame: Long, columns: String): Long;
+external def csec_df_rename(frame: Long, oldName: String, newName: String): Long;
+external def csec_df_slice(frame: Long, start: Long, count: Long): Long;
+external def csec_df_filter(frame: Long, name: String, op: String, value: Double): Long;
+external def csec_df_filter_string(frame: Long, name: String, op: String, value: String): Long;
+external def csec_df_drop_nulls(frame: Long, columns: String): Long;
+external def csec_df_sort(frame: Long, keys: String): Long;
+external def csec_df_group_by(frame: Long, keys: String, aggregations: String): Long;
+external def csec_df_join(left: Long, right: Long, on: String, how: String): Long;
+external def csec_df_compute(frame: Long, name: String, a: String, op: String, b: String): Long;
+external def csec_df_compute_scalar(frame: Long, name: String, a: String, op: String, value: Double): Long;
+external def csec_df_concat(first: Long, second: Long): Long;
+external def csec_df_value_counts(frame: Long, name: String): Long;
+external def csec_df_aggregate(frame: Long, name: String, aggregation: String): Double;
+external def csec_df_count(frame: Long, name: String): Long;
+external def csec_df_null_count(frame: Long, name: String): Long;
+external def csec_df_to_string(frame: Long, maxRows: Int): String;
+external def csec_string_release(text: String): Void;
+
+// ---- Input and output ----
+
+// Read a whole Parquet file (0 on failure).
+def readParquet(path: String): Long = csec_df_read_parquet(path, "")
+// Read only the listed columns ("a,b"), in that order. Also the way to skip nested columns.
+def readParquetColumns(path: String, columns: String): Long = csec_df_read_parquet(path, columns)
+def writeParquet(frame: Long, path: String): Boolean = csec_df_write_parquet(frame, path) != 0
+// CSV with a header row. Column types are inferred (long, then double, then string); empty cells are null.
+def readCsv(path: String): Long = csec_df_read_csv(path)
+def csvToFrame(text: String): Long = csec_df_from_csv_text(text)
+def writeCsv(frame: Long, path: String): Boolean = csec_df_write_csv(frame, path) != 0
+def frameToCsv(frame: Long): String = csec_df_to_csv_text(frame)
+// Why the last failing call on this thread failed.
+def dfLastError(): String = csec_df_last_error()
+def dfZstdSupported(): Boolean = csec_df_zstd_supported() != 0
+def dfFree(frame: Long): Int {
+    csec_df_free(frame);
+    return 0;
+}
+def dfReleaseString(text: String): Int {
+    csec_string_release(text);
+    return 0;
+}
+
+// ---- Shape and cells ----
+
+def dfRows(frame: Long): Long = csec_df_rows(frame)
+def dfColumns(frame: Long): Int = csec_df_columns(frame)
+def dfColumnName(frame: Long, index: Int): String = csec_df_column_name(frame, index)
+// Position of a column, or -1.
+def dfColumnIndex(frame: Long, name: String): Int = csec_df_column_index(frame, name)
+def dfHasColumn(frame: Long, name: String): Boolean = csec_df_column_index(frame, name) >= 0
+// "long", "double", "string", or "" for a missing column.
+def dfColumnType(frame: Long, name: String): String = csec_df_column_type(frame, name)
+def dfIsNull(frame: Long, name: String, row: Long): Boolean = csec_df_is_null(frame, name, row) != 0
+// A null cell reads as 0, NaN, or "".
+def dfGetLong(frame: Long, name: String, row: Long): Long = csec_df_get_long(frame, name, row)
+def dfGetDouble(frame: Long, name: String, row: Long): Double = csec_df_get_double(frame, name, row)
+def dfGetString(frame: Long, name: String, row: Long): String = csec_df_get_string(frame, name, row)
+// A printable table of at most maxRows rows.
+def dfToString(frame: Long, maxRows: Int): String = csec_df_to_string(frame, maxRows)
+
+// ---- Building a frame ----
+
+def dfNew(): Long = csec_df_new()
+// columnType is "long", "double", or "string". Existing rows get nulls in the new column.
+def dfAddColumn(frame: Long, name: String, columnType: String): Boolean = csec_df_add_column(frame, name, columnType) != 0
+def dfAppendLong(frame: Long, name: String, value: Long): Boolean = csec_df_append_long(frame, name, value) != 0
+def dfAppendDouble(frame: Long, name: String, value: Double): Boolean = csec_df_append_double(frame, name, value) != 0
+def dfAppendString(frame: Long, name: String, value: String): Boolean = csec_df_append_string(frame, name, value) != 0
+def dfAppendNull(frame: Long, name: String): Boolean = csec_df_append_null(frame, name) != 0
+
+// ---- Operations (each returns a new frame, 0 on failure) ----
+
+def dfSelect(frame: Long, columns: String): Long = csec_df_select(frame, columns)
+def dfDrop(frame: Long, columns: String): Long = csec_df_drop(frame, columns)
+def dfRename(frame: Long, oldName: String, newName: String): Long = csec_df_rename(frame, oldName, newName)
+def dfHead(frame: Long, count: Long): Long = csec_df_slice(frame, 0, count)
+def dfTail(frame: Long, count: Long): Long {
+    val start: Long = 0 - count;
+    return csec_df_slice(frame, start, count);
+}
+// Rows [start, start + count); a negative start counts from the end.
+def dfSlice(frame: Long, start: Long, count: Long): Long = csec_df_slice(frame, start, count)
+// Numeric filter: op is ==, !=, <, <=, >, >=. Null cells never match.
+def dfFilter(frame: Long, name: String, op: String, value: Double): Long = csec_df_filter(frame, name, op, value)
+// Text filter: the numeric ops (lexicographic) plus contains, startswith, endswith.
+def dfFilterString(frame: Long, name: String, op: String, value: String): Long = csec_df_filter_string(frame, name, op, value)
+// Drop rows with a null in any listed column ("" checks every column).
+def dfDropNulls(frame: Long, columns: String): Long = csec_df_drop_nulls(frame, columns)
+// Stable sort; "a,-b" sorts by a ascending, then b descending. Nulls sort last.
+def dfSort(frame: Long, keys: String): Long = csec_df_sort(frame, keys)
+// Group by the key columns ("" for one group of all rows) and aggregate. Aggregations are
+// "column:fn" with fn = count, sum, mean, min, max, std, first, last, nunique; a bare "count" counts
+// rows. Result columns are the keys, then column_fn (or count), in order of first appearance.
+def dfGroupBy(frame: Long, keys: String, aggregations: String): Long = csec_df_group_by(frame, keys, aggregations)
+// Hash join on "key" or "leftKey=rightKey"; how is "inner" or "left".
+def dfJoin(left: Long, right: Long, on: String, how: String): Long = csec_df_join(left, right, on, how)
+// Add (or replace) column name = a op b, with op one of + - * /. Long op Long stays long except /.
+def dfCompute(frame: Long, name: String, a: String, op: String, b: String): Long = csec_df_compute(frame, name, a, op, b)
+def dfComputeScalar(frame: Long, name: String, a: String, op: String, value: Double): Long = csec_df_compute_scalar(frame, name, a, op, value)
+// Rows of first, then rows of second (columns matched by name).
+def dfConcat(first: Long, second: Long): Long = csec_df_concat(first, second)
+// Distinct values of a column with a "count" column, most frequent first.
+def dfValueCounts(frame: Long, name: String): Long = csec_df_value_counts(frame, name)
+
+// ---- Column statistics (NaN when there is no value) ----
+
+def dfSum(frame: Long, name: String): Double = csec_df_aggregate(frame, name, "sum")
+def dfMean(frame: Long, name: String): Double = csec_df_aggregate(frame, name, "mean")
+def dfMin(frame: Long, name: String): Double = csec_df_aggregate(frame, name, "min")
+def dfMax(frame: Long, name: String): Double = csec_df_aggregate(frame, name, "max")
+def dfStd(frame: Long, name: String): Double = csec_df_aggregate(frame, name, "std")
+// Non-null cells in the column.
+def dfCount(frame: Long, name: String): Long = csec_df_count(frame, name)
+def dfNullCount(frame: Long, name: String): Long = csec_df_null_count(frame, name)

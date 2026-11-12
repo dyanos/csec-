@@ -1,0 +1,63 @@
+import std.dataframe
+// The same 10-row table written by pyarrow with different page versions, encodings, and codecs
+// (tests/stdlib/data/make_parquet_fixtures.py) must read back identically.
+
+def checkPeople(path: String): Int {
+    val df = readParquet(path);
+    if (df == 0) {
+        println(path + ": " + dfLastError());
+        return 1;
+    }
+    if (dfRows(df) != 10) { return 2; }
+    if (dfColumns(df) != 6) { return 3; }
+    if (dfColumnName(df, 3) != "score") { return 4; }
+    if (dfColumnType(df, "id") != "long") { return 5; }
+    if (dfColumnType(df, "score") != "double") { return 6; }
+    if (dfColumnType(df, "name") != "string") { return 7; }
+    if (dfColumnType(df, "flag") != "long") { return 8; }
+    if (dfSum(df, "id") != 55.0e0) { return 9; }
+    if (dfSum(df, "score") != 52.5e0) { return 10; }
+    if (dfSum(df, "flag") != 6.0e0) { return 11; }
+    if (dfSum(df, "small") != 15.0e0) { return 12; }
+    if (dfNullCount(df, "name") != 2) { return 13; }
+    if (dfNullCount(df, "score") != 1) { return 14; }
+    if (dfGetString(df, "name", 8) != "grace") { return 15; }
+    if (!dfIsNull(df, "name", 3)) { return 16; }
+    if (!dfIsNull(df, "score", 4)) { return 17; }
+    if (dfGetLong(df, "small", 0) != -3) { return 18; }
+    if (dfGetDouble(df, "score", 9) != 10.75e0) { return 19; }
+    if (dfGetString(df, "region", 3) != "north") { return 20; }
+    dfFree(df);
+    return 0;
+}
+
+def main(): Int {
+    var r: Int = checkPeople("tests/stdlib/data/people_snappy_dict.parquet");
+    if (r != 0) { return 100 + r; }
+    r = checkPeople("tests/stdlib/data/people_plain_v2.parquet");
+    if (r != 0) { return 130 + r; }
+    r = checkPeople("tests/stdlib/data/people_gzip.parquet");
+    if (r != 0) { return 160 + r; }
+    r = checkPeople("tests/stdlib/data/people_lz4.parquet");
+    if (r != 0) { return 190 + r; }
+    r = checkPeople("tests/stdlib/data/people_delta.parquet");
+    if (r != 0) { return 220 + r; }
+    if (dfZstdSupported()) {
+        r = checkPeople("tests/stdlib/data/people_zstd.parquet");
+        if (r != 0) { return 250 + r; }
+    } else {
+        // Without libzstd the reader must fail cleanly and say why.
+        if (readParquet("tests/stdlib/data/people_zstd.parquet") != 0) { return 3; }
+    }
+
+    // Projection picks columns in the requested order.
+    val two = readParquetColumns("tests/stdlib/data/people_snappy_dict.parquet", "score, id");
+    if (two == 0) { return 4; }
+    if (dfColumns(two) != 2 or dfColumnName(two, 0) != "score") { return 5; }
+    if (readParquetColumns("tests/stdlib/data/people_snappy_dict.parquet", "missing") != 0) { return 6; }
+
+    // Not a Parquet file.
+    if (readParquet("tests/stdlib/data/make_parquet_fixtures.py") != 0) { return 7; }
+    if (readParquet("tests/stdlib/data/does_not_exist.parquet") != 0) { return 8; }
+    return 0;
+}

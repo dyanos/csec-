@@ -47,3 +47,6 @@
 
 # CMake build tree (out-of-source)
 build_cmake/
+
+# std.dataframe round-trip test output
+tests/stdlib/data/*.tmp.*

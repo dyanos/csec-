@@ -23,6 +23,8 @@ each compiler-runtime area a focused file.
 | `thread_runtime.inc` | OS threads, mutexes, atomics, channels, and OS processes (`std.thread`, `std.process`). |
 | `ipc_runtime.inc` | Pipes, shared memory, and mail (`std.pipe`, `std.shared`, `std.mail`), all with cooperative waiting. |
 | `io_runtime.inc` | Chunked binary file reads and memory-mapped files (`std.io`). |
+| `parquet_codec.inc` | Parquet building blocks: Thrift compact protocol, Snappy/GZIP/LZ4_RAW (and optional ZSTD) decompression, and the Parquet value encodings. |
+| `dataframe_runtime.inc` | Data frames, Parquet reading (parallel column decoding) and writing, CSV, and frame operations (`csec_df_*`, `std.dataframe`). |
 | `symbolic_runtime.inc` | Symbolic algebra engine (`csec_sym_*`, `std.symbolic`). |
 
 Keep cross-module helpers private unless they are needed by a separately compiled target.

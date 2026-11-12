@@ -397,6 +397,50 @@ CSEC_NATIVE_API int csec_posix_access_read(void);
 CSEC_NATIVE_API int csec_posix_access_write(void);
 CSEC_NATIVE_API int csec_posix_access_execute(void);
 
+// std.dataframe (dataframe_runtime.inc)
+CSEC_NATIVE_API char* csec_df_last_error(void);
+CSEC_NATIVE_API int csec_df_zstd_supported(void);
+CSEC_NATIVE_API long long csec_df_read_parquet(const char* path, const char* columns);
+CSEC_NATIVE_API int csec_df_write_parquet(long long handle, const char* path);
+CSEC_NATIVE_API long long csec_df_read_csv(const char* path);
+CSEC_NATIVE_API long long csec_df_from_csv_text(const char* text);
+CSEC_NATIVE_API int csec_df_write_csv(long long handle, const char* path);
+CSEC_NATIVE_API char* csec_df_to_csv_text(long long handle);
+CSEC_NATIVE_API void csec_df_free(long long handle);
+CSEC_NATIVE_API long long csec_df_rows(long long handle);
+CSEC_NATIVE_API int csec_df_columns(long long handle);
+CSEC_NATIVE_API char* csec_df_column_name(long long handle, int index);
+CSEC_NATIVE_API int csec_df_column_index(long long handle, const char* name);
+CSEC_NATIVE_API char* csec_df_column_type(long long handle, const char* name);
+CSEC_NATIVE_API int csec_df_is_null(long long handle, const char* name, long long row);
+CSEC_NATIVE_API long long csec_df_get_long(long long handle, const char* name, long long row);
+CSEC_NATIVE_API double csec_df_get_double(long long handle, const char* name, long long row);
+CSEC_NATIVE_API char* csec_df_get_string(long long handle, const char* name, long long row);
+CSEC_NATIVE_API long long csec_df_new(void);
+CSEC_NATIVE_API int csec_df_add_column(long long handle, const char* name, const char* type);
+CSEC_NATIVE_API int csec_df_append_long(long long handle, const char* name, long long value);
+CSEC_NATIVE_API int csec_df_append_double(long long handle, const char* name, double value);
+CSEC_NATIVE_API int csec_df_append_string(long long handle, const char* name, const char* value);
+CSEC_NATIVE_API int csec_df_append_null(long long handle, const char* name);
+CSEC_NATIVE_API long long csec_df_select(long long handle, const char* spec);
+CSEC_NATIVE_API long long csec_df_drop(long long handle, const char* spec);
+CSEC_NATIVE_API long long csec_df_rename(long long handle, const char* from, const char* to);
+CSEC_NATIVE_API long long csec_df_slice(long long handle, long long start, long long count);
+CSEC_NATIVE_API long long csec_df_filter(long long handle, const char* name, const char* op, double value);
+CSEC_NATIVE_API long long csec_df_filter_string(long long handle, const char* name, const char* op, const char* value);
+CSEC_NATIVE_API long long csec_df_drop_nulls(long long handle, const char* spec);
+CSEC_NATIVE_API long long csec_df_sort(long long handle, const char* spec);
+CSEC_NATIVE_API long long csec_df_group_by(long long handle, const char* keys, const char* aggregations);
+CSEC_NATIVE_API long long csec_df_join(long long leftHandle, long long rightHandle, const char* on, const char* how);
+CSEC_NATIVE_API long long csec_df_compute(long long handle, const char* name, const char* a, const char* op, const char* b);
+CSEC_NATIVE_API long long csec_df_compute_scalar(long long handle, const char* name, const char* a, const char* op, double value);
+CSEC_NATIVE_API long long csec_df_concat(long long firstHandle, long long secondHandle);
+CSEC_NATIVE_API long long csec_df_value_counts(long long handle, const char* name);
+CSEC_NATIVE_API double csec_df_aggregate(long long handle, const char* name, const char* aggregation);
+CSEC_NATIVE_API long long csec_df_count(long long handle, const char* name);
+CSEC_NATIVE_API long long csec_df_null_count(long long handle, const char* name);
+CSEC_NATIVE_API char* csec_df_to_string(long long handle, int maxRows);
+
 #ifdef __cplusplus
 }
 #endif

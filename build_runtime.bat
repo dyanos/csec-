@@ -1,6 +1,6 @@
 @echo off
 call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat" >nul
-cd /d C:\Users\dyano\Projects\csec-
+cd /d C:\Users\dyano\Projects\tessera
 if not exist build_runtime mkdir build_runtime
 cl /nologo /c /EHsc /MDd /std:c++17 /Zi /permissive- /utf-8 /openmp ^
    /DCSEC_NATIVE_RUNTIME_BUILD /D_CRT_SECURE_NO_WARNINGS /D_WINSOCK_DEPRECATED_NO_WARNINGS /D_DEBUG ^

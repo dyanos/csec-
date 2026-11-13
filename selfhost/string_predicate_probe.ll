@@ -51,8 +51,8 @@ declare ptr @csec_top_level_decl_name(ptr, i32)
 declare i32 @csec_validate_balanced(ptr)
 declare i32 @csec_validate_top_level(ptr)
 
-@.str.12 = private unnamed_addr constant [13 x i8] c"csec-runtime\00"
-@.str.20 = private unnamed_addr constant [5 x i8] c"csec\00"
+@.str.12 = private unnamed_addr constant [16 x i8] c"tessera-runtime\00"
+@.str.20 = private unnamed_addr constant [8 x i8] c"tessera\00"
 @.str.27 = private unnamed_addr constant [5 x i8] c"time\00"
 @.str.34 = private unnamed_addr constant [4 x i8] c"run\00"
 @.str.50 = private unnamed_addr constant [8 x i8] c"runtime\00"
@@ -85,7 +85,7 @@ if.then.14:
   %if.then.ret.14.left.needle = getelementptr inbounds [8 x i8], ptr @.str.50, i32 0, i32 0
   %if.then.ret.14.left.index64 = call i64 @csec_string_index_of(ptr %if.then.ret.14.left.string, ptr %if.then.ret.14.left.needle)
   %if.then.ret.14.left = trunc i64 %if.then.ret.14.left.index64 to i32
-  %if.then.ret.14.right = add i32 0, 35
+  %if.then.ret.14.right = add i32 0, 32
   %if.then.ret.14 = add i32 %if.then.ret.14.left, %if.then.ret.14.right
   ret i32 %if.then.ret.14
 if.else.14:

@@ -42,7 +42,9 @@ grammar see [docs/grammar.md](docs/grammar.md).
 - **Standard library** in `lib/std`, found by `import` (`std.microthread`,
   `std.thread`, `std.process`, `std.pipe`, `std.shared`, `std.mail`, `std.io`,
   `std.dataframe` (Polars-style DataFrame/LazyFrame/expressions over Parquet and CSV),
-  `std.math.natural`/`real`/`complex`, `std.symbolic`). A library module enables
+  `std.math.natural`/`real`/`complex`, `std.symbolic`, `std.json`, `std.net`,
+  `std.http` (HTTP(S) client, streaming, Server-Sent Events, HTML/URL helpers for
+  crawlers), `std.openai` (OpenAI-compatible chat/streaming/tool calls/embeddings)). A library module enables
   compiler intrinsics with `[@Intrinsic] external def ...`.
 - **Math**: arbitrary-precision `Nat` with division/powers/gcd/primality,
   built-in `Complex`/`Rational`/`Quaternion` value types, and a symbolic algebra
@@ -51,6 +53,11 @@ grammar see [docs/grammar.md](docs/grammar.md).
   memory-mapped / chunked binary file input (`std.io`). See
   [examples/parallel_wc.csec](examples/parallel_wc.csec), a parallel `wc -l`
   that runs at about 92% of a C++ mmap+SIMD reference.
+- Web access: see [examples/web_fetch.csec](examples/web_fetch.csec),
+  [examples/web_crawler.csec](examples/web_crawler.csec) (concurrent same-site crawler),
+  [examples/openai_chat.csec](examples/openai_chat.csec), and
+  [examples/openai_web_agent.csec](examples/openai_web_agent.csec) (an LLM that browses
+  through tool calls; works with OpenAI, Ollama, LM Studio, vLLM, ...).
 - Native runtime support for printing, input, math functions, sockets, POSIX-like
   file/process helpers, parallel helpers, and dynamic library interop.
 - `[@DllImport("library", "symbol")] external def ...` for native symbol imports.

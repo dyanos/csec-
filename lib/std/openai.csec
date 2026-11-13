@@ -1,0 +1,446 @@
+// std.openai -- client for OpenAI-compatible HTTP APIs (chat completions, streaming, tool calls,
+// embeddings, models).
+//
+//     import std.openai
+//
+//     val ai = openaiFromEnv();                       // OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+//     println(ai.ask("Say hello in Korean."));
+//
+//     val chat = newChat()
+//         .system("You are a terse assistant.")
+//         .user("What is the capital of France?")
+//         .temperature(0.2e0);
+//     val result = ai.complete(chat);
+//     if (result.ok()) {
+//         println(result.text());
+//     } else {
+//         println("error: " + result.error());
+//     }
+//
+//     val stream = ai.stream(newChat().user("Count to five."));
+//     while (stream.next()) {
+//         print(stream.delta());                     // tokens as they arrive
+//     }
+//     stream.close();
+//
+// Any server that implements the OpenAI REST API works: point the base URL at it, e.g.
+//     openai("http://localhost:11434/v1", "", "llama3.2")      // Ollama
+//     openai("http://localhost:1234/v1", "", "local-model")    // LM Studio
+//     openai("http://localhost:8000/v1", "", "my-model")       // vLLM, llama.cpp server
+//     openai("https://openrouter.ai/api/v1", key, "vendor/model")
+// The API key is sent as "Authorization: Bearer <key>" when it is not empty; other headers (e.g.
+// "api-key" for Azure, or "OpenAI-Organization") can be added with header(name, value).
+//
+// Tool calls: describe functions with Chat.tool(name, description, parametersJsonSchema). When a
+// result has toolCallCount() > 0, add result's message with chat.assistant(result), run each tool,
+// add its output with chat.toolResult(result.toolCallId(i), output), and complete again (see
+// examples/openai_web_agent.csec).
+
+import std.http
+import std.json
+
+external def csec_posix_getenv(name: String): String;
+
+// The value of an environment variable, or `fallback` if it is unset or empty.
+def envOr(name: String, fallback: String): String {
+    val value: String = csec_posix_getenv(name);
+    if (value == "") {
+        return fallback;
+    }
+    return value;
+}
+
+def openaiTrimSlash(url: String): String {
+    if (url.endsWith("/")) {
+        return url.substring(0, url.length - 1);
+    }
+    return url;
+}
+
+// ---- Conversations ----
+
+// A chat-completions request body: messages plus options, built up by chaining.
+struct Chat(doc: Long) {
+    def message(role: String, content: String): Chat {
+        csec_json_set_string(doc, "messages[].role", role);
+        csec_json_set_string(doc, "messages[-1].content", content);
+        return new Chat(doc);
+    }
+    def system(content: String): Chat = this.message("system", content)
+    def user(content: String): Chat = this.message("user", content)
+    def assistant(content: String): Chat = this.message("assistant", content)
+    // Add the assistant message of a result (its text and any tool calls) to the conversation.
+    def assistant(result: ChatResult): Chat {
+        csec_json_set_json(doc, "messages[]", csec_json_stringify(result.doc, "choices[0].message", 0));
+        // Some servers reject a null content next to tool_calls; send an empty string instead.
+        if (csec_json_type(doc, "messages[-1].content") == "null") {
+            csec_json_set_string(doc, "messages[-1].content", "");
+        }
+        return new Chat(doc);
+    }
+    // The output of a tool call, answering the call with id `callId`.
+    def toolResult(callId: String, content: String): Chat {
+        csec_json_set_string(doc, "messages[].role", "tool");
+        csec_json_set_string(doc, "messages[-1].tool_call_id", callId);
+        csec_json_set_string(doc, "messages[-1].content", content);
+        return new Chat(doc);
+    }
+    // Declare a function the model may call; `parameters` is a JSON Schema object (as JSON text).
+    def tool(name: String, description: String, parameters: String): Chat {
+        csec_json_set_string(doc, "tools[].type", "function");
+        csec_json_set_string(doc, "tools[-1].function.name", name);
+        csec_json_set_string(doc, "tools[-1].function.description", description);
+        csec_json_set_json(doc, "tools[-1].function.parameters", parameters);
+        return new Chat(doc);
+    }
+
+    // Options (see the API reference of your server for the supported ones).
+    def model(name: String): Chat {
+        csec_json_set_string(doc, "model", name);
+        return new Chat(doc);
+    }
+    def temperature(value: Double): Chat {
+        csec_json_set_double(doc, "temperature", value);
+        return new Chat(doc);
+    }
+    def topP(value: Double): Chat {
+        csec_json_set_double(doc, "top_p", value);
+        return new Chat(doc);
+    }
+    def maxTokens(count: Long): Chat {
+        csec_json_set_long(doc, "max_tokens", count);
+        return new Chat(doc);
+    }
+    def seed(value: Long): Chat {
+        csec_json_set_long(doc, "seed", value);
+        return new Chat(doc);
+    }
+    def stop(text: String): Chat {
+        csec_json_set_string(doc, "stop[]", text);
+        return new Chat(doc);
+    }
+    // Ask for a JSON object as the reply ({"type": "json_object"}).
+    def jsonMode(): Chat {
+        csec_json_set_string(doc, "response_format.type", "json_object");
+        return new Chat(doc);
+    }
+    // Any other request field, given as JSON text: option("reasoning_effort", "\"low\"").
+    def option(path: String, json: String): Chat {
+        csec_json_set_json(doc, path, json);
+        return new Chat(doc);
+    }
+
+    def messageCount(): Long = csec_json_length(doc, "messages")
+    def json(): Json = new Json(doc)
+    def toString(): String = csec_json_stringify(doc, "", 0)
+    def free(): Int {
+        csec_json_free(doc);
+        return 0;
+    }
+}
+
+def newChat(): Chat = new Chat(csec_json_new_object())
+
+// ---- Results ----
+
+// A chat-completions response (or an error, see ok() and error()).
+struct ChatResult(doc: Long) {
+    def ok(): Boolean = csec_json_has(doc, "choices[0]") != 0
+    // HTTP status of the response (0 if the request did not reach the server).
+    def status(): Long = csec_json_get_long(doc, "_status", 0)
+    def error(): String {
+        if (csec_json_has(doc, "error.message") != 0) {
+            return csec_json_get_string(doc, "error.message");
+        }
+        if (csec_json_has(doc, "error") != 0) {
+            return csec_json_get_string(doc, "error");
+        }
+        return "";
+    }
+    // The reply text of the first choice.
+    def text(): String = csec_json_get_string(doc, "choices[0].message.content")
+    def text(choice: Long): String {
+        val path: String = "choices[" + choice + "].message.content";
+        return csec_json_get_string(doc, path);
+    }
+    // Reasoning text, for servers that return it (reasoning_content), else "".
+    def reasoning(): String = csec_json_get_string(doc, "choices[0].message.reasoning_content")
+    def finishReason(): String = csec_json_get_string(doc, "choices[0].finish_reason")
+    def choiceCount(): Long = csec_json_length(doc, "choices")
+    def model(): String = csec_json_get_string(doc, "model")
+    def id(): String = csec_json_get_string(doc, "id")
+    def promptTokens(): Long = csec_json_get_long(doc, "usage.prompt_tokens", 0)
+    def completionTokens(): Long = csec_json_get_long(doc, "usage.completion_tokens", 0)
+    def totalTokens(): Long = csec_json_get_long(doc, "usage.total_tokens", 0)
+
+    // Tool calls requested by the model.
+    def toolCallCount(): Long = csec_json_length(doc, "choices[0].message.tool_calls")
+    def toolCallId(index: Long): String {
+        val path: String = "choices[0].message.tool_calls[" + index + "].id";
+        return csec_json_get_string(doc, path);
+    }
+    def toolCallName(index: Long): String {
+        val path: String = "choices[0].message.tool_calls[" + index + "].function.name";
+        return csec_json_get_string(doc, path);
+    }
+    // The arguments as JSON text, and parsed.
+    def toolCallArguments(index: Long): String {
+        val path: String = "choices[0].message.tool_calls[" + index + "].function.arguments";
+        return csec_json_get_string(doc, path);
+    }
+    def toolCallArgs(index: Long): Json {
+        val path: String = "choices[0].message.tool_calls[" + index + "].function.arguments";
+        return new Json(csec_json_parse(csec_json_get_string(doc, path)));
+    }
+
+    def json(): Json = new Json(doc)
+    def toString(): String = csec_json_stringify(doc, "", 2)
+    def free(): Int {
+        csec_json_free(doc);
+        return 0;
+    }
+}
+
+// A streamed chat completion: next() waits for the next piece of the reply.
+struct ChatStream(response: Long, state: Long) {
+    // False when the stream has ended ([DONE], end of body, or an error).
+    def next(): Boolean {
+        while (csec_http_next_event(response) != 0) {
+            val data: String = csec_http_event_data(response);
+            if (data == "[DONE]") {
+                return false;
+            }
+            val chunk: Long = csec_json_parse(data);
+            if (chunk != 0) {
+                if (csec_json_has(chunk, "error") != 0) {
+                    csec_json_set_string(state, "error", openaiErrorText(chunk));
+                    csec_json_free(chunk);
+                    return false;
+                }
+                if (csec_json_has(chunk, "choices[0].finish_reason") != 0) {
+                    if (csec_json_type(chunk, "choices[0].finish_reason") == "string") {
+                        csec_json_set_string(state, "finish_reason", csec_json_get_string(chunk, "choices[0].finish_reason"));
+                    }
+                }
+                if (csec_json_has(chunk, "usage.total_tokens") != 0) {
+                    csec_json_set_json(state, "usage", csec_json_stringify(chunk, "usage", 0));
+                }
+                val piece: String = csec_json_get_string(chunk, "choices[0].delta.content");
+                csec_json_free(chunk);
+                if (piece != "") {
+                    csec_json_set_string(state, "delta", piece);
+                    val sofar: String = csec_json_get_string(state, "text") + piece;
+                    csec_json_set_string(state, "text", sofar);
+                    return true;
+                }
+            }
+        }
+        if (csec_http_status(response) == 0) {
+            csec_json_set_string(state, "error", csec_http_error(response));
+        }
+        return false;
+    }
+    // The piece returned by the last next(), and everything received so far.
+    def delta(): String = csec_json_get_string(state, "delta")
+    def text(): String = csec_json_get_string(state, "text")
+    def finishReason(): String = csec_json_get_string(state, "finish_reason")
+    def totalTokens(): Long = csec_json_get_long(state, "usage.total_tokens", 0)
+    def status(): Int = csec_http_status(response)
+    def ok(): Boolean = httpStatusOk(csec_http_status(response))
+    def error(): String = csec_json_get_string(state, "error")
+    def close(): Int {
+        csec_http_close(response);
+        csec_json_free(state);
+        return 0;
+    }
+}
+
+def openaiErrorText(doc: Long): String {
+    if (csec_json_has(doc, "error.message") != 0) {
+        return csec_json_get_string(doc, "error.message");
+    }
+    return csec_json_get_string(doc, "error");
+}
+
+// ---- Client ----
+
+// Connection settings (base URL, key, default model, extra headers, timeout) in a JSON document.
+struct OpenAI(cfg: Long) {
+    def baseUrl(): String = csec_json_get_string(cfg, "base_url")
+    def defaultModel(): String = csec_json_get_string(cfg, "model")
+    // Change the default model / timeout, or add a header to every request.
+    def withModel(name: String): OpenAI {
+        csec_json_set_string(cfg, "model", name);
+        return new OpenAI(cfg);
+    }
+    def withTimeout(milliseconds: Long): OpenAI {
+        csec_json_set_long(cfg, "timeout_ms", milliseconds);
+        return new OpenAI(cfg);
+    }
+    def header(name: String, value: String): OpenAI {
+        val path: String = "headers[\"" + name + "\"]";
+        csec_json_set_string(cfg, path, value);
+        return new OpenAI(cfg);
+    }
+
+    // A request to <base URL><path> with the client's authentication and headers.
+    def request(method: String, path: String): HttpRequest {
+        val url: String = csec_json_get_string(cfg, "base_url") + path;
+        val req = httpRequest(method, url)
+            .bearer(csec_json_get_string(cfg, "api_key"))
+            .timeout(csec_json_get_long(cfg, "timeout_ms", 120000));
+        val count: Long = csec_json_length(cfg, "headers");
+        var i: Long = 0;
+        while (i < count) {
+            val name: String = csec_json_key(cfg, "headers", i);
+            val valuePath: String = "headers[\"" + name + "\"]";
+            req.header(name, csec_json_get_string(cfg, valuePath));
+            i = i + 1;
+        }
+        return req;
+    }
+
+    // POST a JSON body to <base URL><path>; the response body as JSON, with "_status" added
+    // and an "error" member when the request failed.
+    def postJson(path: String, body: String): Json {
+        val request = this.request("POST", path).json(body);
+        val response = request.send();
+        request.free();
+        val result = openaiResult(response);
+        response.close();
+        return result;
+    }
+    def getJson(path: String): Json {
+        val request = this.request("GET", path);
+        val response = request.send();
+        request.free();
+        val result = openaiResult(response);
+        response.close();
+        return result;
+    }
+
+    // POST /chat/completions with the conversation (the client's model unless the chat sets one).
+    def complete(chat: Chat): ChatResult {
+        val body: Long = csec_json_copy(chat.doc, "");
+        if (csec_json_has(body, "model") == 0) {
+            csec_json_set_string(body, "model", csec_json_get_string(cfg, "model"));
+        }
+        val result = this.postJson("/chat/completions", csec_json_stringify(body, "", 0));
+        csec_json_free(body);
+        return new ChatResult(result.handle());
+    }
+    // The same, streamed (stream: true); read it with next() / delta().
+    def stream(chat: Chat): ChatStream {
+        val body: Long = csec_json_copy(chat.doc, "");
+        if (csec_json_has(body, "model") == 0) {
+            csec_json_set_string(body, "model", csec_json_get_string(cfg, "model"));
+        }
+        csec_json_set_bool(body, "stream", 1);
+        val request = this.request("POST", "/chat/completions")
+            .header("Accept", "text/event-stream")
+            .json(csec_json_stringify(body, "", 0));
+        val response = request.open();
+        request.free();
+        csec_json_free(body);
+        val state: Long = csec_json_new_object();
+        if (!response.ok()) {
+            if (response.status() == 0) {
+                csec_json_set_string(state, "error", response.error());
+            } else {
+                val failure: Long = csec_json_parse(response.text());
+                if (failure != 0) {
+                    csec_json_set_string(state, "error", openaiErrorText(failure));
+                    csec_json_free(failure);
+                } else {
+                    val message: String = "HTTP " + response.status();
+                    csec_json_set_string(state, "error", message);
+                }
+            }
+        }
+        return new ChatStream(response.h, state);
+    }
+
+    // One question, one answer ("" on failure; use complete() to see errors).
+    def ask(prompt: String): String {
+        val chat = newChat().user(prompt);
+        val result = this.complete(chat);
+        val answer: String = result.text();
+        result.free();
+        chat.free();
+        return answer;
+    }
+    def ask(system: String, prompt: String): String {
+        val chat = newChat().system(system).user(prompt);
+        val result = this.complete(chat);
+        val answer: String = result.text();
+        result.free();
+        chat.free();
+        return answer;
+    }
+
+    // POST /embeddings; the response JSON (vectors at "data[i].embedding").
+    def embeddings(input: String): Json {
+        val body = jsonObject().set("model", csec_json_get_string(cfg, "model")).set("input", input);
+        val result = this.postJson("/embeddings", body.toString());
+        body.free();
+        return result;
+    }
+    def embeddings(model: String, input: String): Json {
+        val body = jsonObject().set("model", model).set("input", input);
+        val result = this.postJson("/embeddings", body.toString());
+        body.free();
+        return result;
+    }
+    // GET /models; the ids are at "data[i].id".
+    def models(): Json = this.getJson("/models")
+
+    def free(): Int {
+        csec_json_free(cfg);
+        return 0;
+    }
+}
+
+// The JSON of a response, with "_status" and, on failure, an "error" member.
+def openaiResult(response: HttpResponse): Json {
+    val status: Long = response.status();
+    if (status == 0) {
+        val failed = jsonObject().set("error.message", response.error()).set("_status", status);
+        return failed;
+    }
+    val body: String = response.text();
+    var doc = parseJson(body);
+    if (!doc.isValid()) {
+        doc = jsonObject().set("error.message", "HTTP " + status + ": " + body);
+    } else {
+        if (doc.kind() != "object") {
+            val wrapped = jsonObject().set("data", doc);
+            doc.free();
+            doc = wrapped;
+        }
+    }
+    if (!response.ok()) {
+        if (!doc.has("error")) {
+            doc.set("error.message", "HTTP " + status + ": " + body);
+        }
+    }
+    doc.set("_status", status);
+    return doc;
+}
+
+// A client for the server at `baseUrl` (e.g. "https://api.openai.com/v1"), with an API key ("" for
+// none) and a default model.
+def openai(baseUrl: String, apiKey: String, model: String): OpenAI {
+    val cfg = jsonObject()
+        .set("base_url", openaiTrimSlash(baseUrl))
+        .set("api_key", apiKey)
+        .set("model", model)
+        .set("timeout_ms", 120000);
+    return new OpenAI(cfg.handle());
+}
+
+// A client configured from OPENAI_BASE_URL (default https://api.openai.com/v1), OPENAI_API_KEY,
+// and OPENAI_MODEL (default gpt-4o-mini).
+def openaiFromEnv(): OpenAI {
+    return openai(envOr("OPENAI_BASE_URL", "https://api.openai.com/v1"), envOr("OPENAI_API_KEY", ""),
+                  envOr("OPENAI_MODEL", "gpt-4o-mini"));
+}

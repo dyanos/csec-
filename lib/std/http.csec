@@ -1,0 +1,284 @@
+// std.http -- HTTP(S) client, streaming responses (lines, Server-Sent Events), and web-page helpers.
+//
+//     import std.http
+//     val page = httpGet("https://example.com/");
+//     if (page.ok()) {
+//         println(page.header("Content-Type"));
+//         println(htmlTitle(page.text()));
+//     }
+//
+//     // Build a request: headers, body, timeout; send() waits for the whole response.
+//     val res = httpRequest("POST", "https://httpbin.org/post")
+//         .bearer(token)
+//         .header("Accept", "application/json")
+//         .json("{\"q\": 1}")
+//         .send();
+//     val data = res.json();                      // std.json document
+//
+//     // open() returns once the headers are in; the body is then read as it arrives.
+//     val events = httpRequest("GET", url).open();
+//     while (events.nextEvent()) {                 // text/event-stream
+//         println(events.eventData());
+//     }
+//     events.close();
+//
+// HTTPS uses the system TLS stack: WinHTTP on Windows (with the system proxy settings), libcurl on
+// Linux and macOS (loaded at run time; it honours the http_proxy / https_proxy variables).
+// Redirects are followed and gzip/deflate bodies are decompressed. Each request runs on a worker OS
+// thread and the caller waits cooperatively, so microthreads keep running during a request, and
+// several microthreads (or threads) can have requests in flight at once.
+//
+// A transport failure (bad host, refused connection, TLS error, timeout) gives a response whose
+// status() is 0 and whose error() says what went wrong; ok() is true only for 2xx statuses.
+// Response bodies are text: binary bodies (images, archives) are safe only through saveTo(path).
+
+import std.json
+
+external def csec_http_request_new(method: String, url: String): Long;
+external def csec_http_request_header(request: Long, name: String, value: String): Int;
+external def csec_http_request_body(request: Long, body: String): Int;
+external def csec_http_request_timeout(request: Long, milliseconds: Long): Int;
+external def csec_http_request_free(request: Long): Void;
+external def csec_http_send(request: Long): Long;
+external def csec_http_open(request: Long): Long;
+external def csec_http_last_error(): String;
+external def csec_http_status(response: Long): Int;
+external def csec_http_error(response: Long): String;
+external def csec_http_headers(response: Long): String;
+external def csec_http_header(response: Long, name: String): String;
+external def csec_http_body(response: Long): String;
+external def csec_http_body_size(response: Long): Long;
+external def csec_http_received(response: Long): Long;
+external def csec_http_done(response: Long): Int;
+external def csec_http_save(response: Long, path: String): Long;
+external def csec_http_next_line(response: Long): Int;
+external def csec_http_line(response: Long): String;
+external def csec_http_next_event(response: Long): Int;
+external def csec_http_event_data(response: Long): String;
+external def csec_http_event_name(response: Long): String;
+external def csec_http_event_id(response: Long): String;
+external def csec_http_close(response: Long): Void;
+external def csec_url_encode(text: String): String;
+external def csec_url_decode(text: String): String;
+external def csec_url_resolve(base: String, ref: String): String;
+external def csec_html_to_text(html: String): String;
+external def csec_html_title(html: String): String;
+external def csec_html_links(html: String, base: String): String;
+
+def httpStatusOk(status: Int): Boolean {
+    if (status >= 200) {
+        if (status < 300) {
+            return true;
+        }
+    }
+    return false;
+}
+
+struct HttpResponse(h: Long) {
+    // Status code (0 when the request failed before a response arrived).
+    def status(): Int = csec_http_status(h)
+    def ok(): Boolean = httpStatusOk(csec_http_status(h))
+    // Why the request failed ("" when it did not).
+    def error(): String = csec_http_error(h)
+    // A response header (case-insensitive name; "" if absent), or all of them as "Name: value" lines.
+    def header(name: String): String = csec_http_header(h, name)
+    def headers(): String = csec_http_headers(h)
+    def contentType(): String = csec_http_header(h, "Content-Type")
+
+    // The body (what is left of it, after any nextLine/nextEvent), waiting for it to complete.
+    def text(): String = csec_http_body(h)
+    // The body parsed as JSON (check isValid()).
+    def json(): Json = new Json(csec_json_parse(csec_http_body(h)))
+    def size(): Long = csec_http_body_size(h)
+    // Write the body to a file (binary-safe); the number of bytes, or -1.
+    def saveTo(path: String): Long = csec_http_save(h, path)
+    // Bytes received so far, and whether the transfer has finished.
+    def received(): Long = csec_http_received(h)
+    def isDone(): Boolean = csec_http_done(h) != 0
+
+    // Incremental reading (after open()). nextLine waits for the next line of the body; false at the
+    // end. line() is that line, without its line terminator.
+    def nextLine(): Boolean = csec_http_next_line(h) != 0
+    def line(): String = csec_http_line(h)
+    // Server-Sent Events: nextEvent waits for the next event; false at the end of the stream.
+    def nextEvent(): Boolean = csec_http_next_event(h) != 0
+    def eventData(): String = csec_http_event_data(h)
+    def eventName(): String = csec_http_event_name(h)
+    def eventId(): String = csec_http_event_id(h)
+
+    // Release the response (an unfinished transfer is abandoned).
+    def close(): Int {
+        csec_http_close(h);
+        return 0;
+    }
+}
+
+struct HttpRequest(h: Long) {
+    def header(name: String, value: String): HttpRequest {
+        csec_http_request_header(h, name, value);
+        return new HttpRequest(h);
+    }
+    // Authorization: Bearer <token> (does nothing for an empty token).
+    def bearer(token: String): HttpRequest {
+        if (token != "") {
+            val value: String = "Bearer " + token;
+            csec_http_request_header(h, "Authorization", value);
+        }
+        return new HttpRequest(h);
+    }
+    def body(text: String): HttpRequest {
+        csec_http_request_body(h, text);
+        return new HttpRequest(h);
+    }
+    def body(contentType: String, text: String): HttpRequest {
+        csec_http_request_header(h, "Content-Type", contentType);
+        csec_http_request_body(h, text);
+        return new HttpRequest(h);
+    }
+    // A JSON body (Content-Type: application/json).
+    def json(text: String): HttpRequest {
+        csec_http_request_header(h, "Content-Type", "application/json");
+        csec_http_request_body(h, text);
+        return new HttpRequest(h);
+    }
+    def json(doc: Json): HttpRequest {
+        csec_http_request_header(h, "Content-Type", "application/json");
+        csec_http_request_body(h, doc.toString());
+        return new HttpRequest(h);
+    }
+    // Connect / send / receive timeout in milliseconds (default 120000; 0 = the system default).
+    def timeout(milliseconds: Long): HttpRequest {
+        csec_http_request_timeout(h, milliseconds);
+        return new HttpRequest(h);
+    }
+    // Send and wait for the whole response. The request can be sent again.
+    def send(): HttpResponse = new HttpResponse(csec_http_send(h))
+    // Send and return as soon as the status and headers are in (for streaming bodies).
+    def open(): HttpResponse = new HttpResponse(csec_http_open(h))
+    def free(): Int {
+        csec_http_request_free(h);
+        return 0;
+    }
+}
+
+// A request to build on (method: GET, POST, PUT, PATCH, DELETE, HEAD, ...).
+def httpRequest(method: String, url: String): HttpRequest = new HttpRequest(csec_http_request_new(method, url))
+
+def httpGet(url: String): HttpResponse {
+    val request = httpRequest("GET", url);
+    val response = request.send();
+    request.free();
+    return response;
+}
+
+def httpPost(url: String, contentType: String, body: String): HttpResponse {
+    val request = httpRequest("POST", url).body(contentType, body);
+    val response = request.send();
+    request.free();
+    return response;
+}
+
+def httpPostJson(url: String, json: String): HttpResponse {
+    val request = httpRequest("POST", url).json(json);
+    val response = request.send();
+    request.free();
+    return response;
+}
+
+// The body of a GET (or "" if the request failed or the status was not 2xx).
+def fetchText(url: String): String {
+    val response = httpGet(url);
+    var text: String = "";
+    if (response.ok()) {
+        text = response.text();
+    }
+    response.close();
+    return text;
+}
+
+// A GET whose body is parsed as JSON (isValid() is false on failure).
+def fetchJson(url: String): Json {
+    val response = httpRequest("GET", url).header("Accept", "application/json").send();
+    var doc = new Json(0);
+    if (response.ok()) {
+        doc = response.json();
+    }
+    response.close();
+    return doc;
+}
+
+// Readable text of a web page: HTML is converted with htmlToText, other text is returned as is.
+def fetchPageText(url: String): String {
+    val response = httpGet(url);
+    var text: String = "";
+    if (response.ok()) {
+        val body: String = response.text();
+        if (response.contentType().toLower().contains("html")) {
+            text = csec_html_to_text(body);
+        } else {
+            text = body;
+        }
+    }
+    response.close();
+    return text;
+}
+
+// Save a URL to a file; the number of bytes written, or -1.
+def download(url: String, path: String): Long {
+    val response = httpGet(url);
+    var written: Long = 0 - 1;
+    if (response.ok()) {
+        written = response.saveTo(path);
+    }
+    response.close();
+    return written;
+}
+
+// ---- URLs and HTML ----
+
+// Percent-encode everything but A-Z a-z 0-9 - _ . ~ (for query values and path segments).
+def urlEncode(text: String): String = csec_url_encode(text)
+// Decode %XX escapes and '+' (as a space).
+def urlDecode(text: String): String = csec_url_decode(text)
+// Resolve a link (relative, root-relative, or absolute) against the URL of the page it is on.
+def urlResolve(base: String, link: String): String = csec_url_resolve(base, link)
+// Visible text of an HTML document: tags, scripts, styles, and the head removed; entities decoded;
+// one line per block element, "- " before list items, whitespace collapsed.
+def htmlToText(html: String): String = csec_html_to_text(html)
+// Contents of <title> ("" if none).
+def htmlTitle(html: String): String = csec_html_title(html)
+// The http(s) targets of <a href> links, resolved against `base`, one per line, without duplicates.
+def htmlLinks(html: String, base: String): String = csec_html_links(html, base)
+def httpLastError(): String = csec_http_last_error()
+
+// The host (with any port) of an absolute URL, lower-cased: "https://Example.com:8080/a?b" gives
+// "example.com:8080". "" when the URL has no scheme.
+def urlHost(url: String): String {
+    val scheme: Int = url.indexOf("://");
+    if (scheme < 0) {
+        return "";
+    }
+    val rest: String = url.substring(scheme + 3, url.length - scheme - 3);
+    var end: Int = rest.length;
+    val slash: Int = rest.indexOf("/");
+    if (slash >= 0 and slash < end) {
+        end = slash;
+    }
+    val query: Int = rest.indexOf("?");
+    if (query >= 0 and query < end) {
+        end = query;
+    }
+    val fragment: Int = rest.indexOf("#");
+    if (fragment >= 0 and fragment < end) {
+        end = fragment;
+    }
+    var host: String = rest.substring(0, end);
+    val at: Int = host.indexOf("@");
+    if (at >= 0) {
+        host = host.substring(at + 1, host.length - at - 1);
+    }
+    return host.toLower();
+}
+
+// True when both URLs are on the same host (and port).
+def sameHost(a: String, b: String): Boolean = urlHost(a) == urlHost(b)

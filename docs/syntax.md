@@ -441,6 +441,10 @@ The shipped modules live in `lib/std`:
 | `std.shared` | `sharedNew(bytes)`, `sharedOpen(name, bytes)`, `sharedGet/SetLong`, `sharedAddLong`, `sharedRead/WriteString`, `sharedLock/Unlock` |
 | `std.mail` | `mailSender(box, name)`, `mailReceiver(box)`, `mailSend`, `mailReceive`, `mailReceiveTimeout`, `mailLastSender`, `mailLastTag` |
 | `std.io` | `openRead`, `readChunk`, `lastReadCount`, `releaseChunk`, `mapFile`, `mappedBytes`, `mappedSize`, `fileSize`, `parseInt` |
+| `std.json` | `parseJson`, `jsonObject`, `jsonArray`; `Json.getString/getLong/getDouble/getBool/has/kind/length/key/get/copy/set/push/remove/toString/pretty`; `jsonQuote`, `jsonKey` (LANGUAGE_SPEC.md §9) |
+| `std.net` | `tcpConnect`, `tcpListen`, `tcpAccept`, `tcpSend`, `tcpReceive`, `tcpClose` |
+| `std.http` | `httpRequest(method, url).header/bearer/json/timeout.send/open`, `httpGet`, `fetchText`, `fetchJson`, `download`; `nextLine`, `nextEvent` (SSE); `htmlTitle`, `htmlToText`, `htmlLinks`, `urlResolve`, `urlEncode`, `urlHost` |
+| `std.openai` | `openai(base, key, model)`, `openaiFromEnv()`; `newChat().system/user/tool/temperature`; `complete`, `stream`, `ask`, `embeddings`, `models`; tool calls via `assistant(result)` + `toolResult(id, output)` |
 
 Pipes, shared memory, and mail work between OS threads and microthreads, and named
 shared memory and mailboxes also work between OS processes. Their blocking

@@ -1,0 +1,83 @@
+// openai_chat -- talk to an OpenAI-compatible chat API with std.openai.
+//
+//     csec++ examples/openai_chat.csec --emit-ir -o openai_chat.ll
+//     csec++ --run-ir openai_chat.ll -- "your question"
+//
+// The server comes from the environment:
+//     OPENAI_BASE_URL   default https://api.openai.com/v1
+//                       (Ollama: http://localhost:11434/v1, LM Studio: http://localhost:1234/v1,
+//                        vLLM / llama.cpp server: http://localhost:8000/v1, ...)
+//     OPENAI_API_KEY    sent as "Authorization: Bearer ..." (leave unset for local servers)
+//     OPENAI_MODEL      default gpt-4o-mini
+//
+// Shows: the models the server offers, a one-line ask(), a full completion with options and token
+// usage, a multi-turn conversation, and a streamed reply printed as it arrives.
+
+import std.openai
+import std.json
+
+def main(): Int {
+    var question: String = "In two sentences, what is a web crawler?";
+    if (commandLineArgCount() >= 2) {
+        question = commandLineArg(1);
+    }
+    val ai = openaiFromEnv().withTimeout(120000);
+    println("server: " + ai.baseUrl() + ", model: " + ai.defaultModel());
+
+    // 1. Models (not every server implements /models; that is not an error for chatting).
+    val models = ai.models();
+    if (models.has("error")) {
+        println("models: " + models.getString("error.message"));
+    } else {
+        var i: Long = 0;
+        var names: String = "";
+        while (i < models.length("data") and i < 10) {
+            if (i > 0) {
+                names = names + ", ";
+            }
+            names = names + models.getString("data[" + i + "].id");
+            i = i + 1;
+        }
+        println("models: " + names);
+    }
+    models.free();
+
+    // 2. A full completion: check ok() and read the reply, finish reason, and usage.
+    val chat = newChat()
+        .system("You are a concise assistant. Answer in plain text.")
+        .user(question)
+        .temperature(0.3e0)
+        .maxTokens(300);
+    val result = ai.complete(chat);
+    if (!result.ok()) {
+        println("error (HTTP " + result.status() + "): " + result.error());
+        return 1;
+    }
+    println("---- answer ----");
+    println(result.text());
+    println("(" + result.finishReason() + ", " + result.promptTokens() + " + " + result.completionTokens() +
+            " tokens)");
+
+    // 3. Continue the conversation: add the reply and a follow-up question.
+    chat.assistant(result.text()).user("Now say it in one short sentence, in Korean.");
+    result.free();
+    val followUp = ai.complete(chat);
+    println("---- follow-up ----");
+    println(followUp.text());
+    followUp.free();
+
+    // 4. Streaming: print the reply piece by piece.
+    println("---- streamed ----");
+    val stream = ai.stream(newChat().user("Count from 1 to 10, separated by spaces."));
+    while (stream.next()) {
+        print(stream.delta());
+    }
+    println("");
+    if (stream.error() != "") {
+        println("stream error: " + stream.error());
+    }
+    stream.close();
+    chat.free();
+    ai.free();
+    return 0;
+}

@@ -1,0 +1,27 @@
+// std.net -- plain TCP sockets (text data).
+//
+//     import std.net
+//     val server = tcpListen("127.0.0.1", 8080, 16);
+//     val client = tcpAccept(server);            // blocks this OS thread until a client connects
+//     val request = tcpReceive(client, 65536);  // "" when the peer has closed the connection
+//     tcpSend(client, "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nhi");
+//     tcpClose(client);
+//
+// Handles are -1 on failure. Calls block the calling OS thread (run servers on a std.thread).
+// Received data is text: it ends at the first NUL byte. For HTTP(S) clients use std.http.
+
+external def csec_tcp_connect(host: String, port: Int): Long;
+external def csec_tcp_listen(host: String, port: Int, backlog: Int): Long;
+external def csec_tcp_accept(socket: Long): Long;
+external def csec_tcp_send(socket: Long, data: String): Int;
+external def csec_tcp_recv(socket: Long, maxBytes: Int): String;
+external def csec_tcp_close(socket: Long): Int;
+
+def tcpConnect(host: String, port: Int): Long = csec_tcp_connect(host, port)
+def tcpListen(host: String, port: Int, backlog: Int): Long = csec_tcp_listen(host, port, backlog)
+def tcpAccept(server: Long): Long = csec_tcp_accept(server)
+// Bytes sent, or -1.
+def tcpSend(socket: Long, data: String): Int = csec_tcp_send(socket, data)
+// Up to maxBytes of what has arrived (waits for at least one byte); "" once the peer has closed.
+def tcpReceive(socket: Long, maxBytes: Int): String = csec_tcp_recv(socket, maxBytes)
+def tcpClose(socket: Long): Int = csec_tcp_close(socket)

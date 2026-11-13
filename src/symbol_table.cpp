@@ -25,30 +25,47 @@ std::string makeUniqueKey(const std::unordered_map<std::string, std::unique_ptr<
     return candidate;
 }
 
-bool matchesFunctionArguments(const Symbol* symbol, const std::string& name, const std::vector<std::unique_ptr<Type>>& argTypes) {
+// How well `argTypes` fit the function `symbol`: -1 = no match, 0 = exact, higher = needs more
+// conversion. Type::equals is loose on numeric types, so same-named types score 0, a numeric
+// widening (Int -> Long -> Double) scores its widening cost, and other loose matches score 3.
+int functionArgumentCost(const Symbol* symbol, const std::string& name, const std::vector<std::unique_ptr<Type>>& argTypes) {
     if (!symbol || symbol->symbolType != SymbolType::FUNCTION || symbol->name != name) {
-        return false;
+        return -1;
     }
 
     auto* funcType = dynamic_cast<FunctionType*>(symbol->type.get());
     if (!funcType) {
-        return false;
+        return -1;
     }
 
     if (funcType->parameterTypes.size() != argTypes.size()) {
-        return false;
+        return -1;
     }
 
+    int cost = 0;
     for (size_t i = 0; i < argTypes.size(); ++i) {
         if (!argTypes[i] || !funcType->parameterTypes[i]) {
-            return false;
+            return -1;
+        }
+        if (argTypes[i]->getName() == funcType->parameterTypes[i]->getName()) {
+            continue;
+        }
+        const int widen = numericWideningCost(*argTypes[i], *funcType->parameterTypes[i]);
+        if (widen > 0) {
+            cost += widen;
+            continue;
         }
         if (!argTypes[i]->equals(funcType->parameterTypes[i]) &&
             !argTypes[i]->isSubtypeOf(funcType->parameterTypes[i])) {
-            return false;
+            return -1;
         }
+        cost += 3;
     }
-    return true;
+    return cost;
+}
+
+bool matchesFunctionArguments(const Symbol* symbol, const std::string& name, const std::vector<std::unique_ptr<Type>>& argTypes) {
+    return functionArgumentCost(symbol, name, argTypes) >= 0;
 }
 }
 
@@ -471,18 +488,26 @@ NamespaceSymbol* SymbolTable::lookupNamespace(const std::string& name) {
 }
 
 FunctionSymbol* SymbolTable::lookupFunction(const std::string& name, const std::vector<std::unique_ptr<Type>>& argTypes) {
+    // Innermost scope first; within a scope the overload needing the least conversion wins.
     Scope* curScope = this->currentScope;
     while (curScope != nullptr) {
+        FunctionSymbol* best = nullptr;
+        int bestCost = 0;
         for (const auto& pair : curScope->symbols) {
             Symbol* candidate = pair.second.get();
-            if (!matchesFunctionArguments(candidate, name, argTypes)) {
+            const int cost = functionArgumentCost(candidate, name, argTypes);
+            if (cost < 0) {
                 continue;
             }
 
             auto* functionSymbol = dynamic_cast<FunctionSymbol*>(candidate);
-            if (functionSymbol) {
-                return functionSymbol;
+            if (functionSymbol && (!best || cost < bestCost)) {
+                best = functionSymbol;
+                bestCost = cost;
             }
+        }
+        if (best) {
+            return best;
         }
         curScope = curScope->outer;
     }
@@ -495,6 +520,52 @@ FunctionSymbol* SymbolTable::lookupFunction(const std::string& name, const std::
     return nullptr;
 }
 
+namespace {
+bool sameParameterTypes(const Symbol* symbol, const std::vector<std::unique_ptr<Type>>& parameterTypes) {
+    auto* funcType = symbol ? dynamic_cast<FunctionType*>(symbol->type.get()) : nullptr;
+    if (!funcType || funcType->parameterTypes.size() != parameterTypes.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < parameterTypes.size(); ++i) {
+        if (!parameterTypes[i] || !funcType->parameterTypes[i] ||
+            parameterTypes[i]->getName() != funcType->parameterTypes[i]->getName()) {
+            return false;
+        }
+    }
+    return true;
+}
+}
+
+FunctionSymbol* SymbolTable::lookupFunctionExact(const std::string& name, const std::vector<std::unique_ptr<Type>>& parameterTypes) {
+    for (Scope* scope = this->currentScope; scope != nullptr; scope = scope->outer) {
+        for (const auto& pair : scope->symbols) {
+            Symbol* candidate = pair.second.get();
+            if (candidate && candidate->symbolType == SymbolType::FUNCTION && candidate->name == name &&
+                sameParameterTypes(candidate, parameterTypes)) {
+                if (auto* functionSymbol = dynamic_cast<FunctionSymbol*>(candidate)) {
+                    return functionSymbol;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
+std::vector<FunctionSymbol*> SymbolTable::functionOverloads(const std::string& name) {
+    std::vector<FunctionSymbol*> result;
+    for (Scope* scope = this->currentScope; scope != nullptr; scope = scope->outer) {
+        for (const auto& pair : scope->symbols) {
+            Symbol* candidate = pair.second.get();
+            if (candidate && candidate->symbolType == SymbolType::FUNCTION && candidate->name == name) {
+                if (auto* functionSymbol = dynamic_cast<FunctionSymbol*>(candidate)) {
+                    result.push_back(functionSymbol);
+                }
+            }
+        }
+    }
+    return result;
+}
+
 FunctionSymbol* SymbolTable::lookupFunctionInNamespace(
     const std::string& namespaceName,
     const std::string& functionName,
@@ -504,18 +575,23 @@ FunctionSymbol* SymbolTable::lookupFunctionInNamespace(
         return nullptr;
     }
 
+    FunctionSymbol* best = nullptr;
+    int bestCost = 0;
     for (const auto& pair : namespaceSymbol->functions) {
         Symbol* candidate = pair.second.get();
-        if (!matchesFunctionArguments(candidate, functionName, argTypes)) {
+        const int cost = functionArgumentCost(candidate, functionName, argTypes);
+        if (cost < 0) {
             continue;
         }
 
-        if (auto* functionSymbol = dynamic_cast<FunctionSymbol*>(candidate)) {
-            return functionSymbol;
+        auto* functionSymbol = dynamic_cast<FunctionSymbol*>(candidate);
+        if (functionSymbol && (!best || cost < bestCost)) {
+            best = functionSymbol;
+            bestCost = cost;
         }
     }
 
-    return nullptr;
+    return best;
 }
 
 Symbol* SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& methodName)
@@ -526,13 +602,41 @@ Symbol* SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& 
         if (methodIt != current->methods.end()) {
             return methodIt->second.get();
         }
+        // Methods are stored under a key that includes their parameter types; fall back to the
+        // first method with this name (any overload) when the caller has no argument types.
+        for (const auto& pair : current->methods) {
+            Symbol* candidate = pair.second.get();
+            if (candidate && candidate->name == methodName && candidate->symbolType == SymbolType::METHOD) {
+                return candidate;
+            }
+        }
         current = current->superClassSymbol;
     }
     return nullptr;
 }
 
+// Cost of the implicit numeric widening allowed when choosing a method overload (0 = not allowed):
+// Int -> Long (1) or Double (2), Long -> Double (1), Float -> Double (1). "Real" is Double.
+int numericWideningCost(const Type& from, const Type& to) {
+    const std::string a = from.getName();
+    std::string b = to.getName();
+    if (b == "Real") b = "Double";
+    if (a == "Int") return b == "Long" ? 1 : b == "Double" ? 2 : 0;
+    if (a == "Long") return b == "Double" ? 1 : 0;
+    if (a == "Float") return b == "Double" ? 1 : 0;
+    return 0;
+}
+
+bool isNumericWidening(const Type& from, const Type& to) {
+    return numericWideningCost(from, to) > 0;
+}
+
 Symbol* SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& methodName, const std::vector<std::unique_ptr<Type>>& argTypes)
 {
+    // An exact (or subtype) match wins. Otherwise the overload needing the cheapest numeric widening
+    // is chosen, so `e > 5` picks operator>(Long) over operator>(Double).
+    Symbol* best = nullptr;
+    int bestCost = 0;
     const ClassSymbol* current = &symbol;
     while (current) {
         for (const auto& pair : current->methods) {
@@ -544,22 +648,41 @@ Symbol* SymbolTable::lookupMethod(const ClassSymbol& symbol, const std::string& 
             if (!funcType || funcType->parameterTypes.size() != argTypes.size() + 1) {
                 continue;
             }
+            int cost = 0;
             bool matches = true;
             for (size_t i = 0; i < argTypes.size(); ++i) {
                 const auto& argType = argTypes[i];
                 const auto& paramType = funcType->parameterTypes[i + 1];
-                if (!argType || !paramType || (!argType->equals(paramType) && !argType->isSubtypeOf(paramType))) {
+                if (!argType || !paramType) {
                     matches = false;
                     break;
                 }
+                // Type::equals is loose on numeric types, so check widening first by name.
+                const int widen = argType->getName() != paramType->getName() ? numericWideningCost(*argType, *paramType) : 0;
+                if (widen > 0) {
+                    cost += widen;
+                    continue;
+                }
+                if (argType->equals(paramType) || argType->isSubtypeOf(paramType)) {
+                    continue;
+                }
+                matches = false;
+                break;
             }
-            if (matches) {
+            if (!matches) {
+                continue;
+            }
+            if (cost == 0) {
                 return candidate;
+            }
+            if (!best || cost < bestCost) {
+                best = candidate;
+                bestCost = cost;
             }
         }
         current = current->superClassSymbol;
     }
-    return nullptr;
+    return best;
 }
 
 void SymbolTable::merge(const SymbolTable& other) {

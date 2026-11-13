@@ -73,12 +73,19 @@ bool isArrayVectorAlias(const std::unique_ptr<Type>& a, const std::unique_ptr<Ty
 
 FunctionSymbol* ensureFunctionSymbol(FunctionDeclarationNode& node) {
     auto& cg = CodeGenerator::getInstance();
-    auto* existing = cg.symbolTable.lookupFunction(node.name, {});
+    // One symbol per overload: look the function up by its exact parameter types.
+    auto nodeType = node.getType();
+    FunctionSymbol* existing = nullptr;
+    if (auto* functionType = dynamic_cast<FunctionType*>(nodeType.get())) {
+        existing = cg.symbolTable.lookupFunctionExact(node.name, functionType->parameterTypes);
+    } else {
+        existing = cg.symbolTable.lookupFunction(node.name, {});
+    }
     if (existing) {
         return existing;
     }
 
-    auto symbol = std::make_unique<FunctionSymbol>(node.name, node.getType(), nullptr, false, SymbolType::FUNCTION);
+    auto symbol = std::make_unique<FunctionSymbol>(node.name, std::move(nodeType), nullptr, false, SymbolType::FUNCTION);
     auto* raw = symbol.get();
     cg.symbolTable.addSymbol(node.name, std::move(symbol));
     return raw;

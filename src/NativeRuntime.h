@@ -397,7 +397,7 @@ CSEC_NATIVE_API int csec_posix_access_read(void);
 CSEC_NATIVE_API int csec_posix_access_write(void);
 CSEC_NATIVE_API int csec_posix_access_execute(void);
 
-// std.dataframe (dataframe_runtime.inc)
+// std.dataframe (dataframe_runtime.inc, dataframe_expr.inc)
 CSEC_NATIVE_API char* csec_df_last_error(void);
 CSEC_NATIVE_API int csec_df_zstd_supported(void);
 CSEC_NATIVE_API long long csec_df_read_parquet(const char* path, const char* columns);
@@ -440,6 +440,67 @@ CSEC_NATIVE_API double csec_df_aggregate(long long handle, const char* name, con
 CSEC_NATIVE_API long long csec_df_count(long long handle, const char* name);
 CSEC_NATIVE_API long long csec_df_null_count(long long handle, const char* name);
 CSEC_NATIVE_API char* csec_df_to_string(long long handle, int maxRows);
+CSEC_NATIVE_API long long csec_expr_col(const char* name);
+CSEC_NATIVE_API long long csec_expr_lit_long(long long v);
+CSEC_NATIVE_API long long csec_expr_lit_double(double v);
+CSEC_NATIVE_API long long csec_expr_lit_string(const char* v);
+CSEC_NATIVE_API long long csec_expr_lit_bool(int v);
+CSEC_NATIVE_API long long csec_expr_lit_null(void);
+CSEC_NATIVE_API long long csec_expr_len(void);
+CSEC_NATIVE_API long long csec_expr_binary(long long a, const char* op, long long b);
+CSEC_NATIVE_API long long csec_expr_unary(long long a, const char* op);
+CSEC_NATIVE_API long long csec_expr_agg(long long a, const char* fn);
+CSEC_NATIVE_API long long csec_expr_alias(long long a, const char* name);
+CSEC_NATIVE_API long long csec_expr_cast(long long a, const char* dtype);
+CSEC_NATIVE_API long long csec_expr_fill_null(long long a, long long value);
+CSEC_NATIVE_API long long csec_expr_round(long long a, long long decimals);
+CSEC_NATIVE_API long long csec_expr_str(long long a, const char* fn, const char* arg, const char* arg2);
+CSEC_NATIVE_API long long csec_expr_when(long long condition, long long then, long long otherwise);
+CSEC_NATIVE_API long long csec_expr_over(long long a, const char* keys);
+CSEC_NATIVE_API char* csec_expr_to_string(long long a);
+CSEC_NATIVE_API void csec_expr_free(long long a);
+CSEC_NATIVE_API long long csec_exprlist_new(void);
+CSEC_NATIVE_API long long csec_exprlist_push(long long list, long long expr);
+CSEC_NATIVE_API void csec_exprlist_free(long long list);
+CSEC_NATIVE_API long long csec_exprlist_cols(const char* names);
+CSEC_NATIVE_API long long csec_exprlist_descending_mask(const char* names);
+CSEC_NATIVE_API void csec_df_set_raise(int raise);
+CSEC_NATIVE_API long long csec_df_check(long long handle);
+CSEC_NATIVE_API long long csec_df_select_exprs(long long frame, long long list);
+CSEC_NATIVE_API long long csec_df_with_columns(long long frame, long long list);
+CSEC_NATIVE_API long long csec_df_filter_expr(long long frame, long long predicate);
+CSEC_NATIVE_API long long csec_df_group_by_agg(long long frame, long long keys, long long aggs);
+CSEC_NATIVE_API long long csec_df_sort_by(long long frame, long long keys, long long descendingMask, int nullsLast);
+CSEC_NATIVE_API long long csec_df_unique(long long frame, const char* subset);
+CSEC_NATIVE_API long long csec_df_with_row_index(long long frame, const char* name, long long offset);
+CSEC_NATIVE_API long long csec_df_rename_many(long long frame, const char* spec);
+CSEC_NATIVE_API long long csec_df_join_frames(long long left, long long right, const char* on, const char* how, const char* suffix);
+CSEC_NATIVE_API long long csec_df_describe(long long frame);
+CSEC_NATIVE_API long long csec_df_reduce(long long frame, const char* fn);
+CSEC_NATIVE_API long long csec_df_null_counts(long long frame);
+CSEC_NATIVE_API char* csec_df_format(long long frame, long long maxRows);
+CSEC_NATIVE_API char* csec_df_schema(long long frame);
+CSEC_NATIVE_API char* csec_df_dtype(long long frame, const char* name);
+CSEC_NATIVE_API void csec_df_set_table_format(const char* format);
+CSEC_NATIVE_API char* csec_df_last_scan_info(void);
+CSEC_NATIVE_API long long csec_lazy_scan_parquet(const char* path);
+CSEC_NATIVE_API long long csec_lazy_scan_csv(const char* path);
+CSEC_NATIVE_API long long csec_lazy_from_frame(long long frame);
+CSEC_NATIVE_API long long csec_lazy_select(long long lazy, long long list);
+CSEC_NATIVE_API long long csec_lazy_with_columns(long long lazy, long long list);
+CSEC_NATIVE_API long long csec_lazy_filter(long long lazy, long long predicate);
+CSEC_NATIVE_API long long csec_lazy_group_by_agg(long long lazy, long long keys, long long aggs);
+CSEC_NATIVE_API long long csec_lazy_sort_by(long long lazy, long long keys, long long descendingMask, int nullsLast);
+CSEC_NATIVE_API long long csec_lazy_join(long long lazy, long long other, const char* on, const char* how, const char* suffix);
+CSEC_NATIVE_API long long csec_lazy_slice(long long lazy, long long offset, long long length);
+CSEC_NATIVE_API long long csec_lazy_unique(long long lazy, const char* subset);
+CSEC_NATIVE_API long long csec_lazy_rename(long long lazy, const char* spec);
+CSEC_NATIVE_API long long csec_lazy_drop(long long lazy, const char* columns);
+CSEC_NATIVE_API long long csec_lazy_with_row_index(long long lazy, const char* name, long long offset);
+CSEC_NATIVE_API long long csec_lazy_collect(long long lazy);
+CSEC_NATIVE_API char* csec_lazy_explain(long long lazy, int optimized);
+CSEC_NATIVE_API char* csec_lazy_schema(long long lazy);
+CSEC_NATIVE_API void csec_lazy_free(long long lazy);
 
 #ifdef __cplusplus
 }

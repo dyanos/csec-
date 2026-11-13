@@ -104,7 +104,8 @@ attribute    = '[@' ident [ '(' [ arg-list ] ')' ] ']' ;     (* [@DllImport("m",
 
 function     = [ 'async' ] [ 'unsafe' ] [ 'inline' ] [ 'constexpr' ]
                'def' fn-name '(' [ params ] ')' [ ':' type ] fn-body ;
-fn-name      = identifier | 'operator' operator ;
+fn-name      = member-name | 'operator' operator ;        (* a keyword may name a method: def filter(...) *)
+member-name  = identifier | keyword ;                      (* after '.' or 'def' only *)
 fn-body      = block | '=' expr ;                            (* block form or expression body *)
 params       = param { ',' param } ;
 param        = identifier ':' type ;
@@ -212,7 +213,8 @@ pow-expr     = unary-expr { '**' unary-expr } ;             (* right-assoc *)
 unary-expr   = ( '-' | '!' | '~' | '<-' | '&' [ 'mut' ] | 'await' ) unary-expr
              | ( 'async' | 'go' ) postfix-expr                  (* operand must be a call f(...) *)
              | postfix-expr ;
-postfix-expr = primary { '.' identifier | call-args | '[' index-list ']' | '++' | '--' } ;
+postfix-expr = primary { '.' member-name | call-args | '[' index-list ']' | '++' | '--' } ;
+                                                            (* postfix binds tighter than prefix: !s.f() = !(s.f()) *)
 call-args    = '(' [ expr { ',' expr } ] ')' ;
 index-list   = index { ',' index } ;
 index        = expr | [ expr ] ':' [ expr ] [ ':' expr ] ;  (* Fortran section t[i:j:k], t[:] *)

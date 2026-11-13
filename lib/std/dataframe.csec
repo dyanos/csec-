@@ -1,22 +1,23 @@
-// std.dataframe -- columnar data frames with Parquet and CSV input/output.
+// std.dataframe -- Polars-style data frames with Parquet and CSV input/output.
 //
-//     import std.dataframe = df;                           // or plain `import std.dataframe`
+//     import std.dataframe = pl;
 //
-//     val sales = df.readParquet("sales.parquet");        // 0 on failure; see df.dfLastError()
-//     val big = df.dfFilter(sales, "amount", ">=", 100.0e0);
-//     val byRegion = df.dfGroupBy(big, "region", "amount:sum,amount:mean,count");
-//     println(df.dfToString(df.dfSort(byRegion, "-amount_sum"), 20));
+//     val df = pl.readParquet("sales.parquet");
+//     val out = df.filter(pl.col("amount") > 100)
+//                 .groupBy("region")
+//                 .agg(pl.col("amount").sum().alias("total"), pl.len())
+//                 .sort("total", true);
+//     println(out.toString());
 //
-// A frame is a handle (Long) to an immutable table of named, typed columns. Column types are "long",
-// "double", and "string"; any cell may be null. Every operation returns a new frame and leaves its
-// input unchanged; free frames you no longer need with dfFree. Column lists are comma-separated names
-// ("a,b"); sort keys take a '-' prefix for descending order ("region,-amount").
+// The Polars-style API (classes DataFrame, LazyFrame, Expr, ...) is described at the end of this file.
+// Below it is the original procedural API on frame handles (Long), kept for existing code: dfFilter,
+// dfGroupBy, ... and dfReadParquet / dfReadCsv / dfWriteParquet / ... for input and output.
 //
 // Parquet support: flat schemas, data pages v1 and v2, PLAIN / dictionary / RLE / DELTA_* /
 // BYTE_STREAM_SPLIT encodings, UNCOMPRESSED / SNAPPY / GZIP / LZ4_RAW pages, and ZSTD when the runtime
 // is built with libzstd (dfZstdSupported). Columns are decoded in parallel on several OS threads.
-// Integers, booleans, dates, and timestamps become long; floats and decimals become double; byte
-// arrays become string. writeParquet writes uncompressed PLAIN files that other tools can read.
+// Integers, dates, and timestamps become i64 (long); booleans bool; floats and decimals f64 (double);
+// byte arrays str (string). writeParquet writes uncompressed PLAIN files that other tools can read.
 //
 // Strings returned by the functions below (dfToString, dfGetString, ...) are new allocations; release
 // them with dfReleaseString when they are large or produced in a loop.
@@ -64,19 +65,80 @@ external def csec_df_count(frame: Long, name: String): Long;
 external def csec_df_null_count(frame: Long, name: String): Long;
 external def csec_df_to_string(frame: Long, maxRows: Int): String;
 external def csec_string_release(text: String): Void;
+external def csec_expr_col(name: String): Long;
+external def csec_expr_lit_long(v: Long): Long;
+external def csec_expr_lit_double(v: Double): Long;
+external def csec_expr_lit_string(v: String): Long;
+external def csec_expr_lit_bool(v: Int): Long;
+external def csec_expr_lit_null(): Long;
+external def csec_expr_len(): Long;
+external def csec_expr_binary(a: Long, op: String, b: Long): Long;
+external def csec_expr_unary(a: Long, op: String): Long;
+external def csec_expr_agg(a: Long, fn: String): Long;
+external def csec_expr_alias(a: Long, name: String): Long;
+external def csec_expr_cast(a: Long, dtype: String): Long;
+external def csec_expr_fill_null(a: Long, value: Long): Long;
+external def csec_expr_round(a: Long, decimals: Long): Long;
+external def csec_expr_str(a: Long, fn: String, arg: String, arg2: String): Long;
+external def csec_expr_when(condition: Long, thenValue: Long, otherwise: Long): Long;
+external def csec_expr_over(a: Long, keys: String): Long;
+external def csec_expr_to_string(a: Long): String;
+external def csec_expr_free(a: Long): Void;
+external def csec_exprlist_new(): Long;
+external def csec_exprlist_push(list: Long, expr: Long): Long;
+external def csec_exprlist_free(list: Long): Void;
+external def csec_exprlist_cols(names: String): Long;
+external def csec_exprlist_descending_mask(names: String): Long;
+external def csec_df_set_raise(raise: Int): Void;
+external def csec_df_check(handle: Long): Long;
+external def csec_df_select_exprs(frame: Long, list: Long): Long;
+external def csec_df_with_columns(frame: Long, list: Long): Long;
+external def csec_df_filter_expr(frame: Long, predicate: Long): Long;
+external def csec_df_group_by_agg(frame: Long, keys: Long, aggs: Long): Long;
+external def csec_df_sort_by(frame: Long, keys: Long, descendingMask: Long, nullsLast: Int): Long;
+external def csec_df_unique(frame: Long, subset: String): Long;
+external def csec_df_with_row_index(frame: Long, name: String, offset: Long): Long;
+external def csec_df_rename_many(frame: Long, spec: String): Long;
+external def csec_df_join_frames(left: Long, right: Long, on: String, how: String, suffix: String): Long;
+external def csec_df_describe(frame: Long): Long;
+external def csec_df_null_counts(frame: Long): Long;
+external def csec_df_reduce(frame: Long, fn: String): Long;
+external def csec_df_format(frame: Long, maxRows: Long): String;
+external def csec_df_schema(frame: Long): String;
+external def csec_df_dtype(frame: Long, name: String): String;
+external def csec_df_set_table_format(format: String): Void;
+external def csec_df_last_scan_info(): String;
+external def csec_lazy_scan_parquet(path: String): Long;
+external def csec_lazy_scan_csv(path: String): Long;
+external def csec_lazy_from_frame(frame: Long): Long;
+external def csec_lazy_select(lazy: Long, list: Long): Long;
+external def csec_lazy_with_columns(lazy: Long, list: Long): Long;
+external def csec_lazy_filter(lazy: Long, predicate: Long): Long;
+external def csec_lazy_group_by_agg(lazy: Long, keys: Long, aggs: Long): Long;
+external def csec_lazy_sort_by(lazy: Long, keys: Long, descendingMask: Long, nullsLast: Int): Long;
+external def csec_lazy_join(lazy: Long, other: Long, on: String, how: String, suffix: String): Long;
+external def csec_lazy_slice(lazy: Long, offset: Long, length: Long): Long;
+external def csec_lazy_unique(lazy: Long, subset: String): Long;
+external def csec_lazy_rename(lazy: Long, spec: String): Long;
+external def csec_lazy_drop(lazy: Long, columns: String): Long;
+external def csec_lazy_with_row_index(lazy: Long, name: String, offset: Long): Long;
+external def csec_lazy_collect(lazy: Long): Long;
+external def csec_lazy_explain(lazy: Long, optimized: Int): String;
+external def csec_lazy_schema(lazy: Long): String;
+external def csec_lazy_free(lazy: Long): Void;
 
 // ---- Input and output ----
 
 // Read a whole Parquet file (0 on failure).
-def readParquet(path: String): Long = csec_df_read_parquet(path, "")
+def dfReadParquet(path: String): Long = csec_df_read_parquet(path, "")
 // Read only the listed columns ("a,b"), in that order. Also the way to skip nested columns.
-def readParquetColumns(path: String, columns: String): Long = csec_df_read_parquet(path, columns)
-def writeParquet(frame: Long, path: String): Boolean = csec_df_write_parquet(frame, path) != 0
+def dfReadParquetColumns(path: String, columns: String): Long = csec_df_read_parquet(path, columns)
+def dfWriteParquet(frame: Long, path: String): Boolean = csec_df_write_parquet(frame, path) != 0
 // CSV with a header row. Column types are inferred (long, then double, then string); empty cells are null.
-def readCsv(path: String): Long = csec_df_read_csv(path)
-def csvToFrame(text: String): Long = csec_df_from_csv_text(text)
-def writeCsv(frame: Long, path: String): Boolean = csec_df_write_csv(frame, path) != 0
-def frameToCsv(frame: Long): String = csec_df_to_csv_text(frame)
+def dfReadCsv(path: String): Long = csec_df_read_csv(path)
+def dfFromCsv(text: String): Long = csec_df_from_csv_text(text)
+def dfWriteCsv(frame: Long, path: String): Boolean = csec_df_write_csv(frame, path) != 0
+def dfToCsv(frame: Long): String = csec_df_to_csv_text(frame)
 // Why the last failing call on this thread failed.
 def dfLastError(): String = csec_df_last_error()
 def dfZstdSupported(): Boolean = csec_df_zstd_supported() != 0
@@ -161,3 +223,408 @@ def dfStd(frame: Long, name: String): Double = csec_df_aggregate(frame, name, "s
 // Non-null cells in the column.
 def dfCount(frame: Long, name: String): Long = csec_df_count(frame, name)
 def dfNullCount(frame: Long, name: String): Long = csec_df_null_count(frame, name)
+
+// ==================================================================================================
+// Polars-style API
+// ==================================================================================================
+//
+//     import std.dataframe = pl;
+//
+//     val sales = pl.readParquet("sales.parquet");
+//     val top = sales
+//         .filter(pl.col("amount") > 100)
+//         .withColumns(pl.col("amount") * 1.1e0, (pl.col("qty") * pl.col("price")).alias("total"))
+//         .groupBy("region")
+//         .agg(pl.col("total").sum(), pl.col("amount").mean().alias("avg"), pl.len())
+//         .sort("total", true);
+//     println(top.toString());
+//
+//     // Lazy: nothing runs until collect(); the plan is optimized first (see explain()).
+//     val q = pl.scanParquet("sales.parquet")
+//         .filter(pl.col("region") == "east")
+//         .select(pl.col("amount"), pl.col("qty"))
+//         .head(10);
+//     println(q.explain());
+//     val result = q.collect();
+//
+// Expressions follow Polars: comparisons and arithmetic build new expressions; `&`, `|`, `.and()`,
+// `.or()`, `.not()` combine conditions; aggregations (`sum`, `mean`, ...) reduce a column (per group
+// inside `agg`), and `.over("k")` computes them per group while keeping one value per row. Output
+// names follow Polars (the leftmost input column, or `.alias(...)`). Column dtypes are i64, f64, str,
+// and bool; any cell may be null. Errors are raised like Polars exceptions: the message is printed and
+// the program exits (call setRaiseErrors(false) to get invalid frames and dfLastError() instead).
+// Methods take up to six expressions at a time; chain withColumns/select calls for more. All the API
+// types are small value structs around runtime handles, so they copy freely (no `<-` needed).
+
+struct Expr(h: Long) {
+    def alias(name: String): Expr = new Expr(csec_df_check(csec_expr_alias(h, name)))
+    def cast(dtype: String): Expr = new Expr(csec_df_check(csec_expr_cast(h, dtype)))
+    def toString(): String = csec_expr_to_string(h)
+
+    // Arithmetic.
+    def operator +(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "+", right.h)))
+    def operator +(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "+", csec_expr_lit_long(right))))
+    def operator +(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, "+", csec_expr_lit_double(right))))
+    def operator +(right: String): Expr = new Expr(csec_df_check(csec_expr_binary(h, "+", csec_expr_lit_string(right))))
+    def operator -(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "-", right.h)))
+    def operator -(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "-", csec_expr_lit_long(right))))
+    def operator -(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, "-", csec_expr_lit_double(right))))
+    def operator *(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "*", right.h)))
+    def operator *(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "*", csec_expr_lit_long(right))))
+    def operator *(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, "*", csec_expr_lit_double(right))))
+    def operator /(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "/", right.h)))
+    def operator /(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "/", csec_expr_lit_long(right))))
+    def operator /(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, "/", csec_expr_lit_double(right))))
+    def operator %(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "%", right.h)))
+    def operator %(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "%", csec_expr_lit_long(right))))
+    def neg(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "neg")))
+
+    // Comparisons (null compares as null, which filter() drops).
+    def operator ==(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "==", right.h)))
+    def operator ==(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "==", csec_expr_lit_long(right))))
+    def operator ==(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, "==", csec_expr_lit_double(right))))
+    def operator ==(right: String): Expr = new Expr(csec_df_check(csec_expr_binary(h, "==", csec_expr_lit_string(right))))
+    def operator ==(right: Boolean): Expr = new Expr(csec_df_check(csec_expr_binary(h, "==", csec_expr_lit_bool(boolToInt(right)))))
+    def operator !=(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "!=", right.h)))
+    def operator !=(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "!=", csec_expr_lit_long(right))))
+    def operator !=(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, "!=", csec_expr_lit_double(right))))
+    def operator !=(right: String): Expr = new Expr(csec_df_check(csec_expr_binary(h, "!=", csec_expr_lit_string(right))))
+    def operator <(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "<", right.h)))
+    def operator <(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "<", csec_expr_lit_long(right))))
+    def operator <(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, "<", csec_expr_lit_double(right))))
+    def operator <(right: String): Expr = new Expr(csec_df_check(csec_expr_binary(h, "<", csec_expr_lit_string(right))))
+    def operator <=(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "<=", right.h)))
+    def operator <=(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, "<=", csec_expr_lit_long(right))))
+    def operator <=(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, "<=", csec_expr_lit_double(right))))
+    def operator <=(right: String): Expr = new Expr(csec_df_check(csec_expr_binary(h, "<=", csec_expr_lit_string(right))))
+    def operator >(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, ">", right.h)))
+    def operator >(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, ">", csec_expr_lit_long(right))))
+    def operator >(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, ">", csec_expr_lit_double(right))))
+    def operator >(right: String): Expr = new Expr(csec_df_check(csec_expr_binary(h, ">", csec_expr_lit_string(right))))
+    def operator >=(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, ">=", right.h)))
+    def operator >=(right: Long): Expr = new Expr(csec_df_check(csec_expr_binary(h, ">=", csec_expr_lit_long(right))))
+    def operator >=(right: Double): Expr = new Expr(csec_df_check(csec_expr_binary(h, ">=", csec_expr_lit_double(right))))
+    def operator >=(right: String): Expr = new Expr(csec_df_check(csec_expr_binary(h, ">=", csec_expr_lit_string(right))))
+    def isBetween(low: Long, high: Long): Expr {
+        val lower: Expr = this >= low;
+        val upper: Expr = this <= high;
+        return lower & upper;
+    }
+    def isBetween(low: Double, high: Double): Expr {
+        val lower: Expr = this >= low;
+        val upper: Expr = this <= high;
+        return lower & upper;
+    }
+
+    // Boolean logic (Kleene: false & null = false, true | null = true).
+    def operator &(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "and", right.h)))
+    def operator |(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "or", right.h)))
+    def and(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "and", right.h)))
+    def or(right: Expr): Expr = new Expr(csec_df_check(csec_expr_binary(h, "or", right.h)))
+    def not(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "not")))
+
+    // Nulls.
+    def isNull(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "is_null")))
+    def isNotNull(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "is_not_null")))
+    def fillNull(value: Expr): Expr = new Expr(csec_df_check(csec_expr_fill_null(h, value.h)))
+    def fillNull(value: Long): Expr = new Expr(csec_df_check(csec_expr_fill_null(h, csec_expr_lit_long(value))))
+    def fillNull(value: Double): Expr = new Expr(csec_df_check(csec_expr_fill_null(h, csec_expr_lit_double(value))))
+    def fillNull(value: String): Expr = new Expr(csec_df_check(csec_expr_fill_null(h, csec_expr_lit_string(value))))
+
+    // Math.
+    def abs(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "abs")))
+    def sqrt(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "sqrt")))
+    def exp(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "exp")))
+    def log(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "log")))
+    def floor(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "floor")))
+    def ceil(): Expr = new Expr(csec_df_check(csec_expr_unary(h, "ceil")))
+    def round(decimals: Long): Expr = new Expr(csec_df_check(csec_expr_round(h, decimals)))
+
+    // Aggregations: one value (per group inside agg(), or per window with over()).
+    def sum(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "sum")))
+    def mean(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "mean")))
+    def min(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "min")))
+    def max(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "max")))
+    def count(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "count")))
+    def std(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "std")))
+    def var(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "var")))
+    def median(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "median")))
+    def first(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "first")))
+    def last(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "last")))
+    def nUnique(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "nunique")))
+    def nullCount(): Expr = new Expr(csec_df_check(csec_expr_agg(h, "null_count")))
+    // Window: evaluate the aggregation per group of `keys` ("a,b") and broadcast it back to the rows.
+    def over(keys: String): Expr = new Expr(csec_df_check(csec_expr_over(h, keys)))
+
+    // String functions: col("name").str().contains("x").
+    def str(): StrExpr = new StrExpr(h)
+}
+
+struct StrExpr(h: Long) {
+    def contains(text: String): Expr = new Expr(csec_df_check(csec_expr_str(h, "contains", text, "")))
+    def startsWith(text: String): Expr = new Expr(csec_df_check(csec_expr_str(h, "starts_with", text, "")))
+    def endsWith(text: String): Expr = new Expr(csec_df_check(csec_expr_str(h, "ends_with", text, "")))
+    def lenChars(): Expr = new Expr(csec_df_check(csec_expr_str(h, "len_chars", "", "")))
+    def lenBytes(): Expr = new Expr(csec_df_check(csec_expr_str(h, "len_bytes", "", "")))
+    def toUppercase(): Expr = new Expr(csec_df_check(csec_expr_str(h, "to_uppercase", "", "")))
+    def toLowercase(): Expr = new Expr(csec_df_check(csec_expr_str(h, "to_lowercase", "", "")))
+    def stripChars(): Expr = new Expr(csec_df_check(csec_expr_str(h, "strip_chars", "", "")))
+    def replace(old: String, replacement: String): Expr = new Expr(csec_df_check(csec_expr_str(h, "replace", old, replacement)))
+    def replaceAll(old: String, replacement: String): Expr = new Expr(csec_df_check(csec_expr_str(h, "replace_all", old, replacement)))
+}
+
+// when(condition).then(value).otherwise(other)
+struct When(condition: Long) {
+    def then(value: Expr): Then = new Then(condition, value.h)
+    def then(value: Long): Then = new Then(condition, csec_expr_lit_long(value))
+    def then(value: Double): Then = new Then(condition, csec_expr_lit_double(value))
+    def then(value: String): Then = new Then(condition, csec_expr_lit_string(value))
+}
+
+struct Then(condition: Long, value: Long) {
+    def otherwise(other: Expr): Expr = new Expr(csec_df_check(csec_expr_when(condition, value, other.h)))
+    def otherwise(other: Long): Expr = new Expr(csec_df_check(csec_expr_when(condition, value, csec_expr_lit_long(other))))
+    def otherwise(other: Double): Expr = new Expr(csec_df_check(csec_expr_when(condition, value, csec_expr_lit_double(other))))
+    def otherwise(other: String): Expr = new Expr(csec_df_check(csec_expr_when(condition, value, csec_expr_lit_string(other))))
+    // No otherwise: null where the condition does not hold.
+    def end(): Expr = new Expr(csec_df_check(csec_expr_when(condition, value, csec_expr_lit_null())))
+}
+
+def isNonZero(value: Long): Boolean {
+    if (value != 0) {
+        return true;
+    }
+    return false;
+}
+
+def boolToInt(value: Boolean): Int {
+    if (value) {
+        return 1;
+    }
+    return 0;
+}
+
+// ---- Expression constructors ----
+
+def col(name: String): Expr = new Expr(csec_df_check(csec_expr_col(name)))
+// Every column (in select, withColumns, and agg; group keys are left out inside agg).
+def all(): Expr = new Expr(csec_df_check(csec_expr_col("*")))
+def lit(value: Long): Expr = new Expr(csec_expr_lit_long(value))
+def lit(value: Double): Expr = new Expr(csec_expr_lit_double(value))
+def lit(value: String): Expr = new Expr(csec_expr_lit_string(value))
+def lit(value: Boolean): Expr = new Expr(csec_expr_lit_bool(boolToInt(value)))
+def litNull(): Expr = new Expr(csec_expr_lit_null())
+// Number of rows (per group inside agg()).
+def len(): Expr = new Expr(csec_expr_len())
+def when(condition: Expr): When = new When(condition.h)
+
+// ---- Expression lists ----
+
+def exprList(a: Expr): Long = csec_exprlist_push(csec_exprlist_new(), a.h)
+def exprList(a: Expr, b: Expr): Long = csec_exprlist_push(exprList(a), b.h)
+def exprList(a: Expr, b: Expr, c: Expr): Long = csec_exprlist_push(exprList(a, b), c.h)
+def exprList(a: Expr, b: Expr, c: Expr, d: Expr): Long = csec_exprlist_push(exprList(a, b, c), d.h)
+def exprList(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr): Long = csec_exprlist_push(exprList(a, b, c, d), e.h)
+def exprList(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr, f: Expr): Long = csec_exprlist_push(exprList(a, b, c, d, e), f.h)
+def allOnes(descending: Boolean): Long {
+    if (descending) {
+        return 0 - 1;
+    }
+    return 0;
+}
+
+// ---- Eager DataFrame ----
+
+struct DataFrame(h: Long) {
+    // Shape and schema.
+    def height(): Long = csec_df_rows(h)
+    def width(): Int = csec_df_columns(h)
+    def shape(): String = "(" + csec_df_rows(h) + ", " + csec_df_columns(h) + ")"
+    def columnName(index: Int): String = csec_df_column_name(h, index)
+    def dtype(name: String): String = csec_df_dtype(h, name)
+    def schema(): String = csec_df_schema(h)
+    def hasColumn(name: String): Boolean = csec_df_column_index(h, name) >= 0
+    def isValid(): Boolean = isNonZero(h)
+    def toString(): String = csec_df_format(h, 10)
+    def toString(maxRows: Long): String = csec_df_format(h, maxRows)
+
+    // Cells.
+    def getLong(name: String, row: Long): Long = csec_df_get_long(h, name, row)
+    def getDouble(name: String, row: Long): Double = csec_df_get_double(h, name, row)
+    def getString(name: String, row: Long): String = csec_df_get_string(h, name, row)
+    def isNull(name: String, row: Long): Boolean = csec_df_is_null(h, name, row) != 0
+    // The single value of a 1x1 frame (e.g. after select(col("x").sum())).
+    def itemLong(): Long = csec_df_get_long(h, csec_df_column_name(h, 0), 0)
+    def itemDouble(): Double = csec_df_get_double(h, csec_df_column_name(h, 0), 0)
+    def itemString(): String = csec_df_get_string(h, csec_df_column_name(h, 0), 0)
+
+    // Projection.
+    def select(columns: String): DataFrame = new DataFrame(csec_df_check(csec_df_select_exprs(h, csec_exprlist_cols(columns))))
+    def select(a: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_select_exprs(h, exprList(a))))
+    def select(a: Expr, b: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_select_exprs(h, exprList(a, b))))
+    def select(a: Expr, b: Expr, c: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_select_exprs(h, exprList(a, b, c))))
+    def select(a: Expr, b: Expr, c: Expr, d: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_select_exprs(h, exprList(a, b, c, d))))
+    def select(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_select_exprs(h, exprList(a, b, c, d, e))))
+    def select(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr, f: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_select_exprs(h, exprList(a, b, c, d, e, f))))
+    def withColumn(a: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_with_columns(h, exprList(a))))
+    def withColumns(a: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_with_columns(h, exprList(a))))
+    def withColumns(a: Expr, b: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_with_columns(h, exprList(a, b))))
+    def withColumns(a: Expr, b: Expr, c: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_with_columns(h, exprList(a, b, c))))
+    def withColumns(a: Expr, b: Expr, c: Expr, d: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_with_columns(h, exprList(a, b, c, d))))
+    def withColumns(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_with_columns(h, exprList(a, b, c, d, e))))
+    def withColumns(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr, f: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_with_columns(h, exprList(a, b, c, d, e, f))))
+    def drop(columns: String): DataFrame = new DataFrame(csec_df_check(csec_df_drop(h, columns)))
+    // "old=new" pairs, comma-separated.
+    def rename(renames: String): DataFrame = new DataFrame(csec_df_check(csec_df_rename_many(h, renames)))
+    def rename(oldName: String, newName: String): DataFrame = new DataFrame(csec_df_check(csec_df_rename(h, oldName, newName)))
+    def withRowIndex(): DataFrame = new DataFrame(csec_df_check(csec_df_with_row_index(h, "index", 0)))
+    def withRowIndex(name: String): DataFrame = new DataFrame(csec_df_check(csec_df_with_row_index(h, name, 0)))
+
+    // Rows.
+    def filter(predicate: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_filter_expr(h, predicate.h)))
+    def head(): DataFrame = new DataFrame(csec_df_check(csec_df_slice(h, 0, 5)))
+    def head(count: Long): DataFrame = new DataFrame(csec_df_check(csec_df_slice(h, 0, count)))
+    def limit(count: Long): DataFrame = new DataFrame(csec_df_check(csec_df_slice(h, 0, count)))
+    def tail(): DataFrame = new DataFrame(csec_df_check(csec_df_slice(h, 0 - 5, 5)))
+    def tail(count: Long): DataFrame {
+        val start: Long = 0 - count;
+        return new DataFrame(csec_df_check(csec_df_slice(h, start, count)));
+    }
+    def slice(offset: Long, length: Long): DataFrame = new DataFrame(csec_df_check(csec_df_slice(h, offset, length)))
+    def unique(): DataFrame = new DataFrame(csec_df_check(csec_df_unique(h, "")))
+    def unique(subset: String): DataFrame = new DataFrame(csec_df_check(csec_df_unique(h, subset)))
+    def dropNulls(): DataFrame = new DataFrame(csec_df_check(csec_df_drop_nulls(h, "")))
+    def dropNulls(subset: String): DataFrame = new DataFrame(csec_df_check(csec_df_drop_nulls(h, subset)))
+    // Sort by "a,-b" ('-' = descending for that key), or by expressions. Nulls first, like Polars.
+    def sort(by: String): DataFrame = new DataFrame(csec_df_check(csec_df_sort_by(h, csec_exprlist_cols(by), csec_exprlist_descending_mask(by), 0)))
+    def sort(by: String, descending: Boolean): DataFrame = new DataFrame(csec_df_check(csec_df_sort_by(h, csec_exprlist_cols(by), allOnes(descending), 0)))
+    def sort(by: String, descending: Boolean, nullsLast: Boolean): DataFrame = new DataFrame(csec_df_check(csec_df_sort_by(h, csec_exprlist_cols(by), allOnes(descending), boolToInt(nullsLast))))
+    def sort(by: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_sort_by(h, exprList(by), 0, 0)))
+    def sort(by: Expr, descending: Boolean): DataFrame = new DataFrame(csec_df_check(csec_df_sort_by(h, exprList(by), allOnes(descending), 0)))
+
+    // Grouping and joins.
+    def groupBy(keys: String): GroupBy = new GroupBy(h, csec_exprlist_cols(keys))
+    def groupBy(key: Expr): GroupBy = new GroupBy(h, exprList(key))
+    def groupBy(a: Expr, b: Expr): GroupBy = new GroupBy(h, exprList(a, b))
+    // how: inner (default), left, full, semi, anti, cross. on: "key", "a,b", or "leftKey=rightKey".
+    def join(other: DataFrame, on: String): DataFrame = new DataFrame(csec_df_check(csec_df_join_frames(h, other.h, on, "inner", "_right")))
+    def join(other: DataFrame, on: String, how: String): DataFrame = new DataFrame(csec_df_check(csec_df_join_frames(h, other.h, on, how, "_right")))
+    def join(other: DataFrame, on: String, how: String, suffix: String): DataFrame = new DataFrame(csec_df_check(csec_df_join_frames(h, other.h, on, how, suffix)))
+    def vstack(other: DataFrame): DataFrame = new DataFrame(csec_df_check(csec_df_concat(h, other.h)))
+
+    // Summaries.
+    def describe(): DataFrame = new DataFrame(csec_df_check(csec_df_describe(h)))
+    def nullCount(): DataFrame = new DataFrame(csec_df_check(csec_df_null_counts(h)))
+    def sum(): DataFrame = new DataFrame(csec_df_check(csec_df_reduce(h, "sum")))
+    def mean(): DataFrame = new DataFrame(csec_df_check(csec_df_reduce(h, "mean")))
+    def min(): DataFrame = new DataFrame(csec_df_check(csec_df_reduce(h, "min")))
+    def max(): DataFrame = new DataFrame(csec_df_check(csec_df_reduce(h, "max")))
+    def std(): DataFrame = new DataFrame(csec_df_check(csec_df_reduce(h, "std")))
+    def median(): DataFrame = new DataFrame(csec_df_check(csec_df_reduce(h, "median")))
+
+    // Output and lifetime.
+    def lazy(): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_from_frame(h)))
+    def writeParquet(path: String): Boolean = csec_df_write_parquet(h, path) != 0
+    def writeCsv(path: String): Boolean = csec_df_write_csv(h, path) != 0
+    def toCsv(): String = csec_df_to_csv_text(h)
+    def free(): Int {
+        csec_df_free(h);
+        return 0;
+    }
+}
+
+struct GroupBy(frame: Long, keys: Long) {
+    def agg(a: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_group_by_agg(frame, keys, exprList(a))))
+    def agg(a: Expr, b: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_group_by_agg(frame, keys, exprList(a, b))))
+    def agg(a: Expr, b: Expr, c: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_group_by_agg(frame, keys, exprList(a, b, c))))
+    def agg(a: Expr, b: Expr, c: Expr, d: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_group_by_agg(frame, keys, exprList(a, b, c, d))))
+    def agg(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_group_by_agg(frame, keys, exprList(a, b, c, d, e))))
+    def agg(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr, f: Expr): DataFrame = new DataFrame(csec_df_check(csec_df_group_by_agg(frame, keys, exprList(a, b, c, d, e, f))))
+    // Rows per group, in a "len" column.
+    def len(): DataFrame = new DataFrame(csec_df_check(csec_df_group_by_agg(frame, keys, exprList(new Expr(csec_expr_len())))))
+}
+
+// ---- LazyFrame ----
+
+struct LazyFrame(h: Long) {
+    def select(columns: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_select(h, csec_exprlist_cols(columns))))
+    def select(a: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_select(h, exprList(a))))
+    def select(a: Expr, b: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_select(h, exprList(a, b))))
+    def select(a: Expr, b: Expr, c: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_select(h, exprList(a, b, c))))
+    def select(a: Expr, b: Expr, c: Expr, d: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_select(h, exprList(a, b, c, d))))
+    def select(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_select(h, exprList(a, b, c, d, e))))
+    def select(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr, f: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_select(h, exprList(a, b, c, d, e, f))))
+    def withColumn(a: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_columns(h, exprList(a))))
+    def withColumns(a: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_columns(h, exprList(a))))
+    def withColumns(a: Expr, b: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_columns(h, exprList(a, b))))
+    def withColumns(a: Expr, b: Expr, c: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_columns(h, exprList(a, b, c))))
+    def withColumns(a: Expr, b: Expr, c: Expr, d: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_columns(h, exprList(a, b, c, d))))
+    def withColumns(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_columns(h, exprList(a, b, c, d, e))))
+    def withColumns(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr, f: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_columns(h, exprList(a, b, c, d, e, f))))
+    def filter(predicate: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_filter(h, predicate.h)))
+    def groupBy(keys: String): LazyGroupBy = new LazyGroupBy(h, csec_exprlist_cols(keys))
+    def groupBy(key: Expr): LazyGroupBy = new LazyGroupBy(h, exprList(key))
+    def groupBy(a: Expr, b: Expr): LazyGroupBy = new LazyGroupBy(h, exprList(a, b))
+    def sort(by: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_sort_by(h, csec_exprlist_cols(by), csec_exprlist_descending_mask(by), 0)))
+    def sort(by: String, descending: Boolean): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_sort_by(h, csec_exprlist_cols(by), allOnes(descending), 0)))
+    def sort(by: String, descending: Boolean, nullsLast: Boolean): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_sort_by(h, csec_exprlist_cols(by), allOnes(descending), boolToInt(nullsLast))))
+    def sort(by: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_sort_by(h, exprList(by), 0, 0)))
+    def sort(by: Expr, descending: Boolean): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_sort_by(h, exprList(by), allOnes(descending), 0)))
+    def join(other: LazyFrame, on: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_join(h, other.h, on, "inner", "_right")))
+    def join(other: LazyFrame, on: String, how: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_join(h, other.h, on, how, "_right")))
+    def join(other: LazyFrame, on: String, how: String, suffix: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_join(h, other.h, on, how, suffix)))
+    def head(): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_slice(h, 0, 5)))
+    def head(count: Long): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_slice(h, 0, count)))
+    def limit(count: Long): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_slice(h, 0, count)))
+    def slice(offset: Long, length: Long): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_slice(h, offset, length)))
+    def unique(): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_unique(h, "")))
+    def unique(subset: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_unique(h, subset)))
+    def drop(columns: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_drop(h, columns)))
+    def rename(renames: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_rename(h, renames)))
+    def withRowIndex(): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_row_index(h, "index", 0)))
+    def withRowIndex(name: String): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_with_row_index(h, name, 0)))
+    // Optimize and run the query.
+    def collect(): DataFrame = new DataFrame(csec_df_check(csec_lazy_collect(h)))
+    // The optimized plan (explain(false) shows it as written).
+    def explain(): String = csec_lazy_explain(h, 1)
+    def explain(optimized: Boolean): String = csec_lazy_explain(h, boolToInt(optimized))
+    // Output column names, comma-separated, without running the query.
+    def columns(): String = csec_lazy_schema(h)
+}
+
+struct LazyGroupBy(plan: Long, keys: Long) {
+    def agg(a: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_group_by_agg(plan, keys, exprList(a))))
+    def agg(a: Expr, b: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_group_by_agg(plan, keys, exprList(a, b))))
+    def agg(a: Expr, b: Expr, c: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_group_by_agg(plan, keys, exprList(a, b, c))))
+    def agg(a: Expr, b: Expr, c: Expr, d: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_group_by_agg(plan, keys, exprList(a, b, c, d))))
+    def agg(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_group_by_agg(plan, keys, exprList(a, b, c, d, e))))
+    def agg(a: Expr, b: Expr, c: Expr, d: Expr, e: Expr, f: Expr): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_group_by_agg(plan, keys, exprList(a, b, c, d, e, f))))
+    def len(): LazyFrame = new LazyFrame(csec_df_check(csec_lazy_group_by_agg(plan, keys, exprList(new Expr(csec_expr_len())))))
+}
+
+// ---- Input ----
+
+def readParquet(path: String): DataFrame = new DataFrame(csec_df_check(csec_df_read_parquet(path, "")))
+// Only the listed columns ("a,b"), in that order (also how to skip nested columns).
+def readParquet(path: String, columns: String): DataFrame = new DataFrame(csec_df_check(csec_df_read_parquet(path, columns)))
+def readCsv(path: String): DataFrame = new DataFrame(csec_df_check(csec_df_read_csv(path)))
+// CSV text (header row first) to a frame.
+def readCsvString(text: String): DataFrame = new DataFrame(csec_df_check(csec_df_from_csv_text(text)))
+def scanParquet(path: String): LazyFrame = new LazyFrame(csec_lazy_scan_parquet(path))
+def scanCsv(path: String): LazyFrame = new LazyFrame(csec_lazy_scan_csv(path))
+def concat(first: DataFrame, second: DataFrame): DataFrame = new DataFrame(csec_df_check(csec_df_concat(first.h, second.h)))
+
+// ---- Settings ----
+
+// Print errors and exit (true, the default) or return invalid frames (false).
+def setRaiseErrors(raise: Boolean): Int {
+    csec_df_set_raise(boolToInt(raise));
+    return 0;
+}
+// "utf8" box drawing, "ascii", or "auto" (UTF-8 unless the Windows console is not in UTF-8 mode).
+def setTableFormat(format: String): Int {
+    csec_df_set_table_format(format);
+    return 0;
+}
+// What the last Parquet scan read: "row_groups=read/total columns=read/total".
+def lastScanInfo(): String = csec_df_last_scan_info()

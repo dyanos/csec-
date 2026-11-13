@@ -264,9 +264,35 @@ llvm::Value* codegenClassOperator(const std::string& op, llvm::Value* leftValue,
         return nullptr;
     }
 
-    if (!rightType || (!rightType->equals(funcType->parameterTypes[1]) && !rightType->isSubtypeOf(funcType->parameterTypes[1]))) {
+    if (!rightType) {
         return nullptr;
     }
+    if (!rightType->equals(funcType->parameterTypes[1]) && !rightType->isSubtypeOf(funcType->parameterTypes[1]) &&
+        !isNumericWidening(*rightType, *funcType->parameterTypes[1])) {
+        return nullptr;
+    }
+    // The overload may have been chosen through numeric widening (an Int literal for a Long or Double
+    // parameter); Type::equals treats numeric types loosely, so convert by the LLVM types.
+    llvm::Type* paramType = function->getFunctionType()->getParamType(1);
+    if (rightValue->getType() != paramType && (paramType->isIntegerTy() || paramType->isFloatingPointTy())) {
+        rightValue = coerceNumericValue(rightValue, paramType);
+    }
+    // Value structs: `this` is passed by address, other struct parameters by value. A struct operand
+    // may arrive as a value (a call result) or as the address of a variable.
+    auto adapt = [&](llvm::Value* value, llvm::Type* wanted, const char* name) -> llvm::Value* {
+        if (!value || value->getType() == wanted) return value;
+        if (wanted->isPointerTy() && value->getType()->isStructTy()) {
+            llvm::Value* slot = cg.builder.CreateAlloca(value->getType(), nullptr, name);
+            cg.builder.CreateStore(value, slot);
+            return slot;
+        }
+        if (wanted->isStructTy() && value->getType()->isPointerTy()) {
+            return cg.builder.CreateLoad(wanted, value, name);
+        }
+        return value;
+    };
+    leftValue = adapt(leftValue, function->getFunctionType()->getParamType(0), "op.self");
+    rightValue = adapt(rightValue, paramType, "op.arg");
 
     return cg.builder.CreateCall(function, {leftValue, rightValue}, function->getReturnType()->isVoidTy() ? "" : "op.call");
 }
@@ -1147,7 +1173,14 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
 
     if (leftType->getKind() == Type::Kind::CLASS) {
         auto* classSymbol = CodeGenerator::getInstance().symbolTable.lookupClass(leftType->getName());
-        auto* methodSymbol = classSymbol ? CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, "operator" + op) : nullptr;
+        // Prefer the overload whose parameter matches the right operand, then any `operator<op>`.
+        Symbol* methodSymbol = nullptr;
+        if (classSymbol) {
+            std::vector<std::unique_ptr<Type>> argTypes;
+            argTypes.push_back(rightType->clone());
+            methodSymbol = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, "operator" + op, argTypes);
+            if (!methodSymbol) methodSymbol = CodeGenerator::getInstance().symbolTable.lookupMethod(*classSymbol, "operator" + op);
+        }
         if (methodSymbol) {
             auto* funcType = dynamic_cast<FunctionType*>(methodSymbol->type.get());
             if (funcType && funcType->returnType) {
@@ -1267,3 +1300,8 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
 }
 
 
+
+// Exported for MethodCallNode (overload arguments chosen through numeric widening).
+llvm::Value* csecCoerceNumericValue(llvm::Value* value, llvm::Type* targetType) {
+    return coerceNumericValue(value, targetType);
+}

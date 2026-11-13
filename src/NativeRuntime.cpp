@@ -57,4 +57,5 @@
 #include "native_runtime/io_runtime.inc"
 #include "native_runtime/parquet_codec.inc"
 #include "native_runtime/dataframe_runtime.inc"
+#include "native_runtime/dataframe_expr.inc"
 #include "native_runtime/symbolic_runtime.inc"

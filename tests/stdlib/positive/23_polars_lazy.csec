@@ -1,0 +1,79 @@
+import std.dataframe = pl;
+// LazyFrame: query plans are optimized before they run. people_snappy_dict.parquet has three row
+// groups (ids 1-4, 5-8, 9-10), so the effect of each optimization shows in lastScanInfo().
+
+def main(): Int {
+    val path = "tests/stdlib/data/people_snappy_dict.parquet";
+
+    // Predicate pushdown into the scan + row-group statistics + projection pushdown.
+    val q = pl.scanParquet(path).filter(pl.col("id") > 8).select(pl.col("id"), pl.col("name"));
+    val plan = q.explain();
+    if (!plan.contains("SELECTION: (col(\"id\") > 8)") or !plan.contains("PROJECT 2/6 COLUMNS")) {
+        println(plan);
+        return 1;
+    }
+    val r = q.collect();
+    if (r.height() != 2 or r.width() != 2 or r.getString("name", 0) != "grace") { return 2; }
+    if (pl.lastScanInfo() != "row_groups=1/3 columns=2/6") {
+        println(pl.lastScanInfo());
+        return 3;
+    }
+    // The unoptimized plan keeps the filter where it was written.
+    if (!q.explain(false).contains("FILTER")) { return 4; }
+
+    // The filter only reads its own column when the query does not output it.
+    val onlyNames = pl.scanParquet(path).filter(pl.col("score") >= 9.0e0).select(pl.col("name")).collect();
+    // Only ids 9 and 10 qualify; the score statistics of the first two row groups (max 4.0, 8.5) skip them.
+    if (onlyNames.height() != 2 or pl.lastScanInfo() != "row_groups=1/3 columns=2/6") { return 5; }
+
+    // Filters move below sort and with_columns (when they do not use the new columns).
+    val moved = pl.scanParquet(path).withColumns((pl.col("score") * 2).alias("double")).sort("id", true).filter(pl.col("region") == "west");
+    val movedPlan = moved.explain();
+    if (!movedPlan.contains("SELECTION: (col(\"region\") == \"west\")")) {
+        println(movedPlan);
+        return 6;
+    }
+    val west = moved.collect();
+    if (west.height() != 4 or west.getLong("id", 0) != 10 or west.getDouble("double", 0) != 21.5e0) { return 7; }
+    // A filter on a computed column stays above it.
+    val computed = pl.scanParquet(path).withColumns((pl.col("score") * 2).alias("double")).filter(pl.col("double") > 15).collect();
+    if (computed.height() != 3) { return 8; }
+
+    // Limit pushdown: head(3) over a scan reads only the first row group.
+    val first = pl.scanParquet(path).select(pl.col("id")).head(3).collect();
+    if (first.height() != 3 or pl.lastScanInfo() != "row_groups=1/3 columns=1/6") { return 9; }
+
+    // Unused with_columns expressions are dropped.
+    val pruned = pl.scanParquet(path).withColumns((pl.col("small") * 10).alias("unused")).select(pl.col("id"));
+    if (pruned.explain().contains("unused")) { return 10; }
+    pruned.collect();
+    if (pl.lastScanInfo() != "row_groups=3/3 columns=1/6") { return 11; }
+
+    // Group-by, join, unique, rename, drop in a lazy query give the same result as eager.
+    val people = pl.readParquet(path);
+    val eager = people.filter(pl.col("flag")).groupBy("region").agg(pl.col("score").sum().alias("total")).sort("total", true);
+    val lazy = people.lazy().filter(pl.col("flag")).groupBy("region").agg(pl.col("score").sum().alias("total")).sort("total", true).collect();
+    if (eager.toCsv() != lazy.toCsv()) { return 12; }
+    // A filter on a group key is pushed below the aggregation.
+    val keyFilter = pl.scanParquet(path).groupBy("region").agg(pl.len()).filter(pl.col("region") == "east");
+    if (!keyFilter.explain().contains("SELECTION: (col(\"region\") == \"east\")")) { return 13; }
+    if (keyFilter.collect().getLong("len", 0) != 4) { return 14; }
+
+    val managers = pl.readCsvString("region,manager\neast,Kim\nwest,Lee\n").lazy();
+    val joined = pl.scanParquet(path).join(managers, "region").filter(pl.col("id") <= 4).select(pl.col("id"), pl.col("manager")).collect();
+    if (joined.height() != 3 or joined.getString("manager", 1) != "Lee") { return 15; }
+    if (pl.lastScanInfo() != "row_groups=1/3 columns=2/6") {
+        println(pl.lastScanInfo());
+        return 16;
+    }
+    val renamed = pl.scanParquet(path).rename("score=points").drop("flag").unique("region").collect();
+    if (renamed.height() != 3 or !renamed.hasColumn("points") or renamed.hasColumn("flag")) { return 17; }
+    if (pl.scanParquet(path).select(pl.col("id"), pl.col("score")).columns() != "id,score") { return 18; }
+
+    // CSV scans work the same way.
+    val csv = people.select(pl.col("id"), pl.col("region"));
+    csv.writeCsv("tests/stdlib/data/people.tmp.csv");
+    val fromCsv = pl.scanCsv("tests/stdlib/data/people.tmp.csv").filter(pl.col("region") == "north").collect();
+    if (fromCsv.height() != 2 or fromCsv.getLong("id", 1) != 7) { return 19; }
+    return 0;
+}

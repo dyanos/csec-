@@ -1,0 +1,35 @@
+import std.dataframe = pl;
+// With setRaiseErrors(false), a failing operation returns an invalid frame and dfLastError() explains
+// it (by default the error is printed and the program exits, like an uncaught Polars exception).
+
+def main(): Int {
+    pl.setRaiseErrors(false);
+    val df = pl.readParquet("tests/stdlib/data/people_snappy_dict.parquet");
+    if (!df.isValid()) { return 1; }
+
+    val missing = df.select(pl.col("nope"));
+    if (missing.isValid() or !pl.dfLastError().contains("column 'nope' not found")) { return 2; }
+    val badCompare = df.filter(pl.col("name") > 3);
+    if (badCompare.isValid() or !pl.dfLastError().contains("cannot compare str with i64")) { return 3; }
+    val notBool = df.filter(pl.col("id") + 1);
+    if (notBool.isValid() or !pl.dfLastError().contains("boolean")) { return 4; }
+    val dup = df.select(pl.col("id"), pl.col("id"));
+    if (dup.isValid() or !pl.dfLastError().contains("duplicate output column 'id'")) { return 5; }
+    val unaggregated = df.groupBy("region").agg(pl.col("score"));
+    if (unaggregated.isValid() or !pl.dfLastError().contains("must be aggregated")) { return 6; }
+    val badSum = df.select(pl.col("name").sum());
+    if (badSum.isValid() or !pl.dfLastError().contains("sum")) { return 7; }
+    val badJoin = df.join(df, "nope");
+    if (badJoin.isValid() or !pl.dfLastError().contains("join key 'nope'")) { return 8; }
+    val badHow = df.join(df, "id", "sideways");
+    if (badHow.isValid() or !pl.dfLastError().contains("unknown join")) { return 9; }
+    val noFile = pl.readParquet("tests/stdlib/data/missing.parquet");
+    if (noFile.isValid() or !pl.dfLastError().contains("cannot read")) { return 10; }
+    val lazyMissing = pl.scanParquet("tests/stdlib/data/people_snappy_dict.parquet").select(pl.col("ghost")).collect();
+    if (lazyMissing.isValid() or !pl.dfLastError().contains("ghost")) { return 11; }
+
+    // Errors do not poison later work.
+    val ok = df.filter(pl.col("id") < 3);
+    if (!ok.isValid() or ok.height() != 2) { return 12; }
+    return 0;
+}

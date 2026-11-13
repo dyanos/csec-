@@ -11,6 +11,8 @@
 
 #include "FunctionDeclarationNode.h"
 
+llvm::Value* csecCoerceNumericValue(llvm::Value* value, llvm::Type* targetType);  // BinaryExpressionNode.cpp
+
 namespace {
 llvm::Value* defaultValueForType(llvm::Type* type) {
     auto& cg = CodeGenerator::getInstance();
@@ -481,8 +483,19 @@ llvm::Value* MethodCallNode::codegen() {
 
         auto argType = arguments[i]->getType();
         if (!argType || (!argType->equals(funcType->parameterTypes[i + 1]) && !argType->isSubtypeOf(funcType->parameterTypes[i + 1]))) {
-            std::cerr << "Type error: Argument type mismatch in method call '" << methodName << "'" << std::endl;
-            return nullptr;
+            // Overload resolution allows numeric widening (Int -> Long/Double, ...); convert the value.
+            if (!argType || !isNumericWidening(*argType, *funcType->parameterTypes[i + 1])) {
+                std::cerr << "Type error: Argument type mismatch in method call '" << methodName << "'" << std::endl;
+                return nullptr;
+            }
+        }
+        // Numeric arguments chosen through widening (Type::equals is loose on numerics): convert by LLVM type.
+        if (i + 1 < function->arg_size()) {
+            llvm::Type* paramType = function->getFunctionType()->getParamType(static_cast<unsigned>(i + 1));
+            if (argValue->getType() != paramType && (paramType->isIntegerTy() || paramType->isFloatingPointTy()) &&
+                (argValue->getType()->isIntegerTy() || argValue->getType()->isFloatingPointTy())) {
+                argValue = csecCoerceNumericValue(argValue, paramType);
+            }
         }
 
         argValues.push_back(argValue);

@@ -16,6 +16,11 @@ struct Scope {
     int count = 0;
 };
 
+// Numeric widening allowed in method overload resolution (Int -> Long/Double, Long -> Double,
+// Float -> Double).
+bool isNumericWidening(const Type& from, const Type& to);
+int numericWideningCost(const Type& from, const Type& to);  // 0 = not a widening
+
 class SymbolTable {
 public:
     SymbolTable();
@@ -34,7 +39,12 @@ public:
     StructSymbol* lookupStruct(const std::string& name);
     NamespaceSymbol* lookupNamespace(const std::string& name);
     FunctionSymbol* lookupFunction(const std::string& name, const std::vector<std::unique_ptr<Type>>& argTypes);
+    // The function whose parameter types are exactly `parameterTypes` (by type name), or null.
+    FunctionSymbol* lookupFunctionExact(const std::string& name, const std::vector<std::unique_ptr<Type>>& parameterTypes);
+    // Every function symbol named `name` visible from the current scope (all overloads).
+    std::vector<FunctionSymbol*> functionOverloads(const std::string& name);
     FunctionSymbol* lookupFunctionInNamespace(const std::string& namespaceName, const std::string& functionName, const std::vector<std::unique_ptr<Type>>& argTypes);
+    // Without argument types: any overload with this name.
     Symbol* lookupMethod(const ClassSymbol& symbol, const std::string& methodName);
     Symbol* lookupMethod(const ClassSymbol& symbol, const std::string& methodName, const std::vector<std::unique_ptr<Type>>& argTypes);
     void merge(const SymbolTable& other);

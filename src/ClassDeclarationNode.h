@@ -61,6 +61,10 @@ public:
     void accept(ASTVisitor& visitor) override;
     llvm::Value* codegen() override;
 
+    // Give the class/struct its LLVM layout before any code refers to it (so prototypes and other
+    // structs can use it regardless of declaration order). Returns false while a field's struct
+    // type is not laid out yet; ProgramNode retries until nothing changes.
+    bool predeclareLayout();
     void declareMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol);
     llvm::Function* defineMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol, ClassBodyNode* classBody);
 

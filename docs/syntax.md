@@ -186,7 +186,13 @@ class Child extends Formatter {
 }
 ```
 
-Operator overloads are declared as `def operator <op>(...)` inside a class.
+Functions, methods, and operators can be overloaded by parameter types. A call picks the exact
+match; failing that, the overload that needs the least numeric widening (`Int` -> `Long` ->
+`Double`), so `v * 2` prefers `operator *(k: Long)` over `operator *(k: Double)` and `lit(1)` picks
+`lit(v: Long)`. A keyword can name a method and be used after `.` (`frame.filter(...)`,
+`xs.map(...)`). Classes and structs may refer to each other in any order.
+
+Operator overloads are declared as `def operator <op>(...)` inside a class or struct.
 For example, `counter + 4` calls `counter.operator+(4)`:
 
 ```ts
@@ -425,7 +431,7 @@ The shipped modules live in `lib/std`:
 | --- | --- |
 | `std.microthread` | `spawn`, `send`, `receive`, `receiveTimeout`, `self`, `yield`, `monitor`, `joinProcesses` |
 | `std.thread` | `threadStart(lambda)`, `threadJoin`, `mutexNew/Lock/TryLock/Unlock`, `atomicNew/Add/Get/CompareExchange`, `channelNew/Send/Receive/ReceiveTimeout/Closed/Close/Free` |
-| `std.dataframe` | `readParquet`, `readParquetColumns`, `writeParquet`, `readCsv`, `writeCsv`, `dfFilter`, `dfSort`, `dfGroupBy`, `dfJoin`, `dfCompute`, `dfConcat`, `dfSum/Mean/Min/Max/Std`, `dfToString` |
+| `std.dataframe` | Polars-style: `readParquet`, `scanParquet`, `col`, `lit`, `when`, `len`; `DataFrame.filter/select/withColumns/groupBy().agg/sort/join/unique/describe`; `LazyFrame.collect/explain` (LANGUAGE_SPEC.md §8) |
 | `std.process` | `runCommand`, `commandOutput`, `startProcess`, `waitProcess`, `killProcess`, `currentProcessId` |
 | `std.math.natural` | `natDiv`, `natMod`, `natPow`, `natGcd`, `natLcm`, `natSqrt`, `isPrime`, `factorial`, `binomial`, `fibonacci` |
 | `std.math.real` | `pi()`, `euler()`, `approxEqual`, `hypot`, `cbrt`, `nthRoot`, `logBase`, ... |

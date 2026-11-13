@@ -21,7 +21,8 @@ FunctionSymbol* updateOrRegisterFunctionSymbolNamed(
     auto& symbolTable = CodeGenerator::getInstance().symbolTable;
     FunctionSymbol* existingFunction = nullptr;
     if (auto* concreteFunctionType = dynamic_cast<FunctionType*>(functionType.get())) {
-        existingFunction = symbolTable.lookupFunction(name, concreteFunctionType->parameterTypes);
+        // Exact signature, so an overload never overwrites another overload's symbol.
+        existingFunction = symbolTable.lookupFunctionExact(name, concreteFunctionType->parameterTypes);
     }
     auto* existingSymbol = existingFunction ? static_cast<Symbol*>(existingFunction) : nullptr;
     if (existingSymbol && existingSymbol->symbolType == SymbolType::FUNCTION) {
@@ -51,11 +52,32 @@ std::string mangledFunctionName(CodeGenerator& cg, const std::string& name) {
 // the first function and read its parameter with the wrong type (e.g. a pointer where the body
 // expects a Boolean, producing an illegal zext). findNamespacedFunctionByArgs already matches both
 // the base name and `base.*`, so a signature-qualified suffix resolves correctly at the call site.
-std::string overloadUniqueFunctionName(CodeGenerator& cg, const std::string& baseName,
+std::string overloadUniqueFunctionName(CodeGenerator& cg, const std::string& name, const std::string& baseName,
                                        llvm::FunctionType* funcType,
                                        const std::vector<std::unique_ptr<ASTNode>>& parameters) {
+    // An overload that already has its function (e.g. from the prototype pass) keeps it.
+    std::vector<std::unique_ptr<Type>> parameterTypes;
+    for (auto& param : parameters) {
+        auto type = param ? param->getType() : nullptr;
+        parameterTypes.push_back(type ? type->clone() : std::make_unique<UnknownType>());
+    }
+    if (auto* self = cg.symbolTable.lookupFunctionExact(name, parameterTypes)) {
+        if (auto* own = llvm::dyn_cast_or_null<llvm::Function>(self->value)) {
+            return own->getName().str();
+        }
+    }
     llvm::Function* existing = cg.module->getFunction(baseName);
-    if (!existing || existing->getFunctionType() == funcType) {
+    // The base name belongs to another overload when a different-signature function symbol owns it,
+    // even if the LLVM types coincide (String and a class are both `ptr`).
+    bool ownedByOtherOverload = false;
+    if (existing) {
+        for (auto* overload : cg.symbolTable.functionOverloads(name)) {
+            if (overload->value == existing) {
+                ownedByOtherOverload = true;
+            }
+        }
+    }
+    if (!existing || (existing->getFunctionType() == funcType && !ownedByOtherOverload)) {
         return baseName;
     }
     std::string suffix;
@@ -88,7 +110,7 @@ llvm::Function* FunctionDeclarationNode::declarePrototype() {
     if (!returnType) return nullptr;
 
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-    const std::string funcName = overloadUniqueFunctionName(cg, mangledFunctionName(cg, this->name), funcType, this->parameters);
+    const std::string funcName = overloadUniqueFunctionName(cg, this->name, mangledFunctionName(cg, this->name), funcType, this->parameters);
     llvm::Function* function = cg.module->getFunction(funcName);
     if (!function) {
         function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, cg.module.get());
@@ -162,7 +184,7 @@ llvm::Value* FunctionDeclarationNode::codegen() {
         return nullptr;
     }
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-    std::string funcName = overloadUniqueFunctionName(cg, mangledFunctionName(cg, this->name), funcType, this->parameters);
+    std::string funcName = overloadUniqueFunctionName(cg, this->name, mangledFunctionName(cg, this->name), funcType, this->parameters);
 
     // Reuse the prototype if one was already declared (for example by the pre-declaration pass
     // that enables forward references), so the body attaches to the function the callers resolved

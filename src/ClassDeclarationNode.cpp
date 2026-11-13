@@ -186,6 +186,67 @@ llvm::Value* ClassDeclarationNode::codegen() {
     return nullptr;
 }
 
+bool ClassDeclarationNode::predeclareLayout() {
+    auto& cg = CodeGenerator::getInstance();
+    // Subclasses inherit their parent's layout in codegen(); external classes have none.
+    if (!superClassName.empty() || (this->isExternal && !body)) {
+        return true;
+    }
+    auto* classBody = dynamic_cast<ClassBodyNode*>(body.get());
+    if (!classBody) {
+        return true;
+    }
+    ClassSymbol* classSymbol = cg.symbolTable.lookupClass(name);
+    if (!classSymbol) {
+        auto symbol = std::make_unique<ClassSymbol>(name, nullptr, superClassName);
+        symbol->isStruct = isStruct;
+        classSymbol = symbol.get();
+        cg.symbolTable.addSymbol(name, std::move(symbol));
+    }
+    classSymbol->isStruct = isStruct;
+    auto* existing = llvm::dyn_cast_or_null<llvm::StructType>(classSymbol->classType);
+    if (existing && !existing->isOpaque()) {
+        return true;
+    }
+    if (!existing) {
+        existing = llvm::StructType::create(cg.context, name);
+        classSymbol->classType = existing;
+    }
+
+    std::vector<llvm::Type*> fieldTypes;
+    auto addField = [&](Type* type) {
+        llvm::Type* fieldType = type ? getABIStorageType(type) : nullptr;
+        if (!fieldType || !fieldType->isSized()) {
+            return false;
+        }
+        fieldTypes.push_back(fieldType);
+        return true;
+    };
+    for (auto& field : constructorParams) {
+        auto* f = dynamic_cast<ParameterNode*>(field.get());
+        if (!f || !addField(f->type.get())) {
+            return false;
+        }
+    }
+    for (auto& field : classBody->fields) {
+        auto* f = dynamic_cast<VariableDeclarationNode*>(field.get());
+        if (!f || !addField(f->type.get())) {
+            return false;
+        }
+    }
+    existing->setBody(fieldTypes, false);
+    // Constructor parameters too, so `new Later(...)` works in classes declared before `Later`.
+    // codegen() refills these when it reaches this class.
+    if (classSymbol->constructorParamOrder.empty()) {
+        for (auto& field : constructorParams) {
+            auto* f = dynamic_cast<ParameterNode*>(field.get());
+            classSymbol->constructorParams[f->name] = std::make_unique<Symbol>(f->name, f->type->clone(), nullptr, false, SymbolType::FIELD);
+            classSymbol->constructorParamOrder.push_back(f->name);
+        }
+    }
+    return true;
+}
+
 void ClassDeclarationNode::declareMethod(FunctionDeclarationNode* method, ClassSymbol* classSymbol) {
     auto& cg = CodeGenerator::getInstance();
 

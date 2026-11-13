@@ -76,6 +76,19 @@ bool Parser::matchIdentifierName() {
 	return false;
 }
 
+bool Parser::matchMemberName() {
+	if (matchIdentifierName()) {
+		return true;
+	}
+	// Keywords are fine as member names: a member is always reached through '.', so it cannot be
+	// confused with the keyword's own syntax (`frame.filter(...)`, `xs.map(...)`).
+	if (check(TokenType::KEYWORD)) {
+		advance();
+		return true;
+	}
+	return false;
+}
+
 bool Parser::saveTokenPosition() {
 	positionStack.push_back(position);
 	return true;

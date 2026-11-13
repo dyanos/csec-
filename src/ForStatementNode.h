@@ -58,6 +58,7 @@ public:
     std::unique_ptr<BlockNode> body;
 
     void accept(ASTVisitor& visitor) override;
+    llvm::Value* codegenDictLoop();
     llvm::Value* codegen() override;
 
     std::unique_ptr<Type> getType() override {

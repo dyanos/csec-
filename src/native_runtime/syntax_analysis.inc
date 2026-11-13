@@ -1029,7 +1029,18 @@ char* csec_llvm_body_fallback(int kind) {
     }
 }
 
+// Defined in llvm_dicts.inc: the type of a dictionary-valued initializer, or "" (see there).
+extern "C++" {
+static std::string csec_dict_initializer_type(const char* tokens, int start, int end);
+}
+
 static std::string csec_c_local_type(const char* tokens, int start, int end, int initializer) {
+    // `val d = {k: v}` is a Dict; `val x = d[k]` / `d.get(..)` / `d.size()` take the dictionary's
+    // types. Checked first because the literal's own ':' would otherwise be read as an annotation.
+    if (initializer >= start && !csec_native_token_is(tokens, start + 2, 'O', ":")) {
+        const std::string dictType = csec_dict_initializer_type(tokens, initializer + 1, end);
+        if (!dictType.empty()) return dictType;
+    }
     for (int cursor = start; cursor < end; ++cursor) {
         if (csec_native_token_is(tokens, cursor, 'O', ":")) {
             std::string type;
@@ -1176,7 +1187,13 @@ static std::vector<std::pair<std::string, std::string>> csec_function_params(con
             }
             params.emplace_back(std::move(name), std::move(typeName));
         }
-        while (cursor < paramEnd && !csec_native_token_is(tokens, cursor, 'O', ",")) ++cursor;
+        int angleDepth = 0;
+        while (cursor < paramEnd && (angleDepth > 0 || !csec_native_token_is(tokens, cursor, 'O', ","))) {
+            if (csec_native_token_is(tokens, cursor, 'O', "<")) ++angleDepth;
+            else if (csec_native_token_is(tokens, cursor, 'O', ">") && angleDepth > 0) --angleDepth;
+            else if (csec_native_token_is(tokens, cursor, 'O', ">>")) angleDepth = angleDepth > 1 ? angleDepth - 2 : 0;
+            ++cursor;
+        }
         ++cursor;
     }
     return params;

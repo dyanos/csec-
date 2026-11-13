@@ -8,6 +8,7 @@
 #include <llvm/IR/DerivedTypes.h>
 
 #include "RangeExpressionNode.h"
+#include "dict_support.h"
 #include "symbol.h"
 
 #include <iostream>
@@ -43,6 +44,85 @@ llvm::Value* coerceRangeBound(llvm::Value* value, llvm::Type* targetType) {
 
     return value;
 }
+
+// Bind a loop variable of `type` to `value`: arrays and closures are bound to their pointer, every
+// other value to a fresh slot (so identifier reads load it like any local).
+void bindLoopVariable(const std::string& name, const Type* type, llvm::Value* value) {
+    auto& cg = CodeGenerator::getInstance();
+    llvm::Value* bound = value;
+    const bool direct = type->getKind() == Type::Kind::ARRAY || type->getKind() == Type::Kind::FUNCTION ||
+        (type->getKind() == Type::Kind::GENERIC && (type->getName() == "Array" || type->getName() == "Vector"));
+    if (!direct) {
+        auto* slot = cg.builder.CreateAlloca(value->getType(), nullptr, name + "_ptr");
+        cg.builder.CreateStore(value, slot);
+        bound = slot;
+    }
+    auto boundType = cloneType(type);
+    cg.symbolTable.addSymbol(name, std::make_unique<Symbol>(name, std::move(boundType), bound, false, SymbolType::VARIABLE));
+}
+}
+
+// `for (k <- d) { ... }` visits the keys of a dictionary in insertion order; `for (k, v <- d)` also
+// binds each value. The size is re-read every iteration, so removing the current entry ends early
+// rather than reading past the end.
+llvm::Value* ForStatementNode::codegenDictLoop() {
+    auto& cg = CodeGenerator::getInstance();
+    auto dictType = iterableExpr->getType();
+    const Type* keyType = dictKeyType(dictType.get());
+    const Type* valueType = dictValueType(dictType.get());
+    llvm::Value* handle = codegenDictHandle(iterableExpr.get());
+    if (!handle || !keyType || !valueType) return nullptr;
+
+    auto* i64Ty = llvm::Type::getInt64Ty(cg.context);
+    auto* ptrTy = llvm::PointerType::getUnqual(cg.context);
+    auto runtime = [&](const char* name, llvm::Type* ret, std::vector<llvm::Type*> params) {
+        if (auto* fn = cg.module->getFunction(name)) return fn;
+        return llvm::Function::Create(llvm::FunctionType::get(ret, params, false),
+                                      llvm::Function::ExternalLinkage, name, cg.module.get());
+    };
+
+    llvm::Function* function = cg.builder.GetInsertBlock()->getParent();
+    auto* indexSlot = cg.builder.CreateAlloca(i64Ty, nullptr, "dict.iter.index");
+    cg.builder.CreateStore(llvm::ConstantInt::get(i64Ty, 0), indexSlot);
+
+    llvm::BasicBlock* condBB = llvm::BasicBlock::Create(cg.context, "dict.iter.cond", function);
+    llvm::BasicBlock* bodyBB = llvm::BasicBlock::Create(cg.context, "dict.iter.body", function);
+    llvm::BasicBlock* afterBB = llvm::BasicBlock::Create(cg.context, "dict.iter.end", function);
+    cg.builder.CreateBr(condBB);
+
+    cg.builder.SetInsertPoint(condBB);
+    llvm::Value* index = cg.builder.CreateLoad(i64Ty, indexSlot, "dict.iter.i");
+    llvm::Value* size = cg.builder.CreateCall(runtime("csec_dict_size", i64Ty, {ptrTy}), {handle}, "dict.iter.size");
+    cg.builder.CreateCondBr(cg.builder.CreateICmpSLT(index, size, "dict.iter.more"), bodyBB, afterBB);
+
+    cg.builder.SetInsertPoint(bodyBB);
+    cg.symbolTable.enterScope();
+    const std::string keyName = tokenValue.empty() ? variable : tokenValue;
+    llvm::Value* keyPayload = cg.builder.CreateCall(runtime("csec_dict_key_at", i64Ty, {ptrTy, i64Ty}), {handle, index}, "dict.iter.key");
+    llvm::Value* key = dictValueFromPayload(keyPayload, keyType);
+    if (!key) {
+        cg.symbolTable.exitScope();
+        return nullptr;
+    }
+    bindLoopVariable(keyName, keyType, key);
+    if (!tokenValue.empty()) {
+        llvm::Value* valuePayload = cg.builder.CreateCall(runtime("csec_dict_value_at", i64Ty, {ptrTy, i64Ty}), {handle, index}, "dict.iter.value");
+        llvm::Value* value = dictValueFromPayload(valuePayload, valueType);
+        if (!value) {
+            cg.symbolTable.exitScope();
+            return nullptr;
+        }
+        bindLoopVariable(variable, valueType, value);
+    }
+    body->codegen();
+    if (!csec_llvm::terminatorOrNull(cg.builder.GetInsertBlock())) {
+        llvm::Value* current = cg.builder.CreateLoad(i64Ty, indexSlot, "dict.iter.i");
+        cg.builder.CreateStore(cg.builder.CreateAdd(current, llvm::ConstantInt::get(i64Ty, 1), "dict.iter.next"), indexSlot);
+        cg.builder.CreateBr(condBB);
+    }
+    cg.symbolTable.exitScope();
+    cg.builder.SetInsertPoint(afterBB);
+    return nullptr;
 }
 
 
@@ -53,6 +133,13 @@ void ForStatementNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* ForStatementNode::codegen() {
     auto& cg = CodeGenerator::getInstance();
+
+    if (!isRange && !tokenStream && iterableExpr) {
+        auto iterableType = iterableExpr->getType();
+        if (isDictType(iterableType.get())) {
+            return codegenDictLoop();
+        }
+    }
 
     llvm::Function* function = cg.builder.GetInsertBlock()->getParent();
     llvm::BasicBlock* beforeLoopBB = cg.builder.GetInsertBlock();

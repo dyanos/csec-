@@ -1,4 +1,5 @@
 #include "codegen.h"
+#include "dict_support.h"
 #include "BinaryExpressionNode.h"
 #include "builtin_structs.h"
 #include "ASTVisitor.h"
@@ -168,6 +169,13 @@ llvm::Value* coerceValueForString(CodeGenerator& cg, llvm::Value* value, const T
             getOrCreateRuntimeFunction("csec_to_string_i64", i8PtrTy, {i64Ty}),
             {intValue},
             "str.int.call");
+    }
+    // A dictionary renders as Python's dict repr: {'a': 1, 'b': [2, 3]}.
+    if (isDictType(type) && value->getType()->isPointerTy()) {
+        if (auto* slot = llvm::dyn_cast<llvm::AllocaInst>(value)) {
+            if (slot->getAllocatedType()->isPointerTy()) value = cg.builder.CreateLoad(i8PtrTy, slot, "dict.load");
+        }
+        return codegenDictToString(value);
     }
     // A Nat is a heap handle; render it as its exact decimal expansion.
     if (type->getName() == "Nat" && value->getType()->isPointerTy()) {
@@ -586,6 +594,14 @@ static llvm::Value* codegenQuaternionOp(const std::string& op, llvm::Value* left
 }
 
 llvm::Value* BinaryExpressionNode::codegen() {
+    if (op == "in" || op == "notin") {
+        auto containerType = right->getType();
+        if (isDictType(containerType.get())) {
+            llvm::Value* found = codegenDictContains(right.get(), left.get());
+            if (!found || op == "in") return found;
+            return CodeGenerator::getInstance().builder.CreateNot(found, "dict.notin");
+        }
+    }
     if (op == "+") {
         auto resultType = getType();
         if (resultType && resultType->isStringTy()) {
@@ -1041,6 +1057,19 @@ llvm::Value* BinaryExpressionNode::codegen() {
             return nullptr;
         }
     }
+    else if ((op == "&" || op == "|" || op == "^" || op == "xor") && leftTypeName != rightTypeName &&
+             left->getType()->isIntegerTy() && right->getType()->isIntegerTy() &&
+             leftValue->getType()->isIntegerTy() && rightValue->getType()->isIntegerTy()) {
+        // Mixed integer widths (`longValue & 255`): sign-extend the narrower operand, matching the
+        // wider result type BinaryExpressionNode::getType() reports.
+        const unsigned leftBits = leftValue->getType()->getIntegerBitWidth();
+        const unsigned rightBits = rightValue->getType()->getIntegerBitWidth();
+        if (leftBits < rightBits) leftValue = cg.builder.CreateSExt(leftValue, rightValue->getType(), "bit.sext");
+        else if (rightBits < leftBits) rightValue = cg.builder.CreateSExt(rightValue, leftValue->getType(), "bit.sext");
+        if (op == "&") return cg.builder.CreateAnd(leftValue, rightValue, "andtmp");
+        if (op == "|") return cg.builder.CreateOr(leftValue, rightValue, "ortmp");
+        return cg.builder.CreateXor(leftValue, rightValue, "xortmp");
+    }
     else if (op == "&") {
         if (leftTypeName != rightTypeName || !left->getType()->isIntegerTy()) {
             std::cerr << "Type error: Operator '" << op << "' requires same integer operand types" << std::endl;
@@ -1155,6 +1184,10 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
         return std::make_unique<UnknownType>();
     }
 
+    if ((op == "in" || op == "notin") && isDictType(rightType.get())) {
+        return std::make_unique<BasicType>("Boolean");
+    }
+
     if (op == "+" && (leftType->getName() == "String" || rightType->getName() == "String")) {
         return std::make_unique<BasicType>("String");
     }
@@ -1211,6 +1244,23 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
                 return std::make_unique<BasicType>("Real");
             }
             return leftType ? leftType->clone() : std::make_unique<UnknownType>();
+        }
+        if (op == ">" || op == "<" || op == "==" || op == "!=" || op == ">=" || op == "<=" ||
+            op == "and" || op == "or") {
+            return std::make_unique<BasicType>("Boolean");
+        }
+        if ((op == "&" || op == "|" || op == "^" || op == "xor" || op == "<<" || op == ">>") &&
+            leftType->isIntegerTy() && rightType->isIntegerTy()) {
+            if (op == "<<" || op == ">>") {
+                return leftType->clone();
+            }
+            auto rank = [](const std::string& name) {
+                if (name == "Byte") return 1;
+                if (name == "Short") return 2;
+                if (name == "Int") return 3;
+                return 4;
+            };
+            return rank(leftType->getName()) >= rank(rightType->getName()) ? leftType->clone() : rightType->clone();
         }
         if (isArithmeticOperator(op) && isNumericTypeName(leftType->getName()) && isNumericTypeName(rightType->getName())) {
             if (op == "**") {

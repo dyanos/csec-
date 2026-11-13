@@ -141,7 +141,7 @@ generic-args = '<' type-arg { ',' type-arg } '>'            (* Tensor<Double,3,3
 type-arg     = type | int-lit ;                             (* non-type args: dimensions *)
 type-name    = 'Int' | 'Long' | 'Double' | 'Float' | 'Real' | 'Bool' | 'Boolean'
              | 'Char' | 'String' | 'Nat' | 'Unit' | 'Void'
-             | 'Tensor' | 'Vector' | 'Matrix' | 'Shared' | 'Weak' | identifier ;
+             | 'Tensor' | 'Vector' | 'Matrix' | 'Shared' | 'Weak' | 'Dict' | identifier ;
 ```
 
 `Nat` is an arbitrary-precision integer (reference type). `struct`/value types are
@@ -157,6 +157,7 @@ statement    = decl-stmt | assign-stmt | if-stmt | while-stmt | for-stmt
 terminator   = [ ';' ] ;                                    (* see §7 *)
 
 decl-stmt    = ( 'val' | 'var' ) l-names [ ':' type ] [ '=' expr ] terminator ;
+                                                            (* no ':' type -> the type of expr *)
 l-names      = identifier { ',' ( identifier | '_' ) } ;    (* destructuring bind *)
 
 assign-stmt  = l-value assignment expr terminator ;
@@ -169,6 +170,7 @@ if-stmt      = 'if' '(' expr ')' block [ 'else' ( block | if-stmt ) ] ;
 while-stmt   = 'while' '(' expr ')' block ;
 for-stmt     = 'for' '(' identifier '<-' iterable ')' block ;
              | 'for' '(' identifier ',' identifier '<-' token-range ')' block ;
+             | 'for' '(' identifier ',' identifier '<-' expr ')' block ;   (* key, value of a Dict *)
 iterable     = expr | range ;
 token-range  = identifier '.between(' expr ',' expr ')' [ '.withoutTrivia()' ] ;
 range        = expr ( 'to' | 'until' ) expr [ 'step' expr ] ;   (* 'to' inclusive, 'until' exclusive *)
@@ -222,14 +224,23 @@ index        = expr | [ expr ] ':' [ expr ] [ ':' expr ] ;  (* Fortran section t
 primary      = literal | identifier | '(' expr ')'
              | 'build' '{' { expr [ ';' ] } '}'
              | 'new' applied-type call-args
-             | lambda | if-expr | match-expr | array-lit | latex-math
+             | lambda | if-expr | match-expr | array-lit | dict-lit | latex-math
              | 'this' | 'super' | dsl-entry ;
 lambda       = '[' [ capture-list ] ']' '(' [ params ] ')' '->' block ;
 array-lit    = '[' [ expr { ',' expr } ] ']' ;
+dict-lit     = '{' [ expr ':' expr { ',' expr ':' expr } [ ',' ] ] '}' ;
+                                                            (* Dict<K, V>; see below *)
 if-expr      = 'if' '(' expr ')' block [ 'else' block ] ;
 latex-math   = '$' … '$' | '$$' … '$$' ;                     (* inline LaTeX-math evaluated to a value *)
 dsl-entry    = ( 'molecule' | 'cfd' | 'ode' | 'protein' ) … ;
 ```
+
+A `{` in expression position starts a `dict-lit` when its first top-level item is `key: value`
+(a `:` before any `;`, `=`, `->`, or the closing `}`), or when it is an empty `{}` used as a
+value (after `=`, `(`, `,`, `:`, `[`, `<-`, or `return`); otherwise it is a block. The literal's
+type is `Dict<K, V>`, with `K` and `V` the common types of its keys and values, or the declared
+type when it initializes an annotated declaration. In nested type arguments the closing `>>` is
+read as two `>`: `Dict<String, Dict<String, Int>>`.
 
 Token-processing sugar is intended for the self-hosted compiler:
 

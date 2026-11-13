@@ -34,6 +34,7 @@ private:
     bool checkWord(const std::string& value) const;
     bool matchWord(const std::string& value);
     void expectWord(const std::string& value);
+    void expectClosingAngle();
     bool matchIdentifierName();
     // A member or method name: an identifier, or a keyword after '.' / 'def' (`frame.filter(...)`).
     bool matchMemberName();
@@ -76,6 +77,8 @@ private:
     std::unique_ptr<ASTNode> parseOdeSimulationExpression();
     std::unique_ptr<ASTNode> parseLambdaExpression();
     std::unique_ptr<ASTNode> parseSimpleExpression();
+    bool looksLikeDictLiteral() const;
+    std::unique_ptr<ASTNode> parseDictLiteral();
     std::unique_ptr<ASTNode> parseInlineMathLatex();
     std::unique_ptr<ASTNode> parseBlockMathLatex();
     std::unique_ptr<ASTNode> parseLatexCommand();

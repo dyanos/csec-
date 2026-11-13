@@ -46,6 +46,7 @@
 #include "native_runtime/syntax_analysis.inc"
 #include "native_runtime/llvm_classes.inc"
 #include "native_runtime/llvm_arrays.inc"
+#include "native_runtime/llvm_dicts.inc"
 #include "native_runtime/llvm_expressions.inc"
 #include "native_runtime/llvm_module.inc"
 #include "native_runtime/runtime_services.inc"
@@ -61,3 +62,4 @@
 #include "native_runtime/symbolic_runtime.inc"
 #include "native_runtime/json_runtime.inc"
 #include "native_runtime/http_runtime.inc"
+#include "native_runtime/dict_runtime.inc"

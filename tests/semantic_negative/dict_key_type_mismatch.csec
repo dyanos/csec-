@@ -1,0 +1,5 @@
+// Keys must match the dictionary's key type.
+def main(): Int {
+    val d = {"a": 1};
+    return d[2];
+}

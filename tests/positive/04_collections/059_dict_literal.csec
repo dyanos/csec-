@@ -1,0 +1,42 @@
+// Dictionary literals: Python-style `{key: value, ...}`, typed Dict<K, V> inferred from the entries.
+def countWords(words: Vector[String], n: Int): Dict<String, Int> {
+    var counts: Dict<String, Int> = {};
+    var i = 0;
+    while (i < n) {
+        counts[words[i]] = counts.get(words[i], 0) + 1;
+        i = i + 1;
+    }
+    return counts;
+}
+
+def main(): Int {
+    val ages = {"alice": 30, "bob": 25};           // Dict<String, Int>
+    ages["carol"] = 41;
+    ages["alice"] += 1;
+    if (ages.size() != 3 or ages["alice"] != 31) { return 1; }
+    if (!("bob" in ages) or ("zed" in ages)) { return 2; }
+    if (ages.get("zed", -1) != -1) { return 3; }
+
+    val ratios = {1: 0.5, 2: 1};                   // Int and Float values unify to Float
+    if (ratios[2] != 1.0) { return 4; }
+
+    val big: Dict<Char, Long> = {'a': 3000000000}; // the annotation converts Int entries
+    if (big['a'] != 3000000000) { return 5; }
+
+    var total = 0;
+    for (name, age <- ages) {
+        total = total + age;
+    }
+    if (total != 97) { return 6; }
+
+    var keys = "";
+    for (k <- ages) { keys = keys + k; }
+    if (keys != "alicebobcarol") { return 7; }
+
+    ages.remove("bob");
+    if (ages.toString() != "{'alice': 31, 'carol': 41}") { return 8; }
+
+    val counts = countWords(["a", "b", "a"], 3);
+    if (counts["a"] != 2 or counts.keyAt(1) != "b") { return 9; }
+    return 0;
+}

@@ -116,6 +116,19 @@ void Parser::expect(TokenType type, const std::string& value) {
 	advance();
 }
 
+// Close a type-argument list. In nested generics (`Dict<String, Dict<String, Int>>`) the lexer reads
+// the final `>>` as one shift operator; split it so each list consumes one '>'.
+void Parser::expectClosingAngle() {
+	if (check(TokenType::OPERATOR, ">>")) {
+		Token second = tokens[position];
+		second.value = ">";
+		second.column += 1;
+		tokens[position].value = ">";
+		tokens.insert(tokens.begin() + static_cast<std::ptrdiff_t>(position) + 1, second);
+	}
+	expect(TokenType::OPERATOR, ">");
+}
+
 void Parser::expectWord(const std::string& value) {
 	if (!checkWord(value)) {
 		std::string found = isAtEnd() ? "end of input" : "'" + peek().value + "'";

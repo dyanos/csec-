@@ -4,6 +4,7 @@
 #include "ASTVisitor.h"
 #include "IdentifierNode.h"
 #include "type_utils.h"
+#include "dict_support.h"
 
 #include <iostream>
 #include <sstream>
@@ -245,6 +246,15 @@ void MethodCallNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* MethodCallNode::codegen() {
     auto& cg = CodeGenerator::getInstance();
+
+    if (object) {
+        auto receiverType = object->getType();
+        if (isDictType(receiverType.get())) {
+            bool handled = false;
+            llvm::Value* result = codegenDictMethod(object.get(), methodName, arguments, handled);
+            if (handled) return result;
+        }
+    }
 
     // `this.method(args)` and `super.method(args)` call a method of the enclosing class (or its
     // parent) on the current receiver. Resolve the defining class by walking the parent chain and
@@ -507,6 +517,14 @@ llvm::Value* MethodCallNode::codegen() {
 
 std::unique_ptr<Type> MethodCallNode::getType() {
     if (type) return type->clone();
+
+    if (object) {
+        auto receiverType = object->getType();
+        if (isDictType(receiverType.get())) {
+            auto result = dictMethodType(receiverType.get(), methodName, arguments.size());
+            return result ? std::move(result) : std::make_unique<UnknownType>();
+        }
+    }
 
     if (auto* objectId = dynamic_cast<IdentifierNode*>(object.get())) {
         std::vector<std::unique_ptr<Type>> argTypes;

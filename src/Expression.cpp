@@ -343,6 +343,9 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 		return std::make_unique<UnitNode>();
 	}
 	else if (match(TokenType::OPERATOR, "{")) {
+		if (looksLikeDictLiteral()) {
+			return parseDictLiteral();
+		}
 		return parseBlock();
 	}
 	else if (check(TokenType::OPERATOR, "[")) {
@@ -384,7 +387,7 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 				do {
 					tmplArgs.push_back(parseTemplateArgumentAsType());
 				} while (match(TokenType::OPERATOR, ","));
-				expect(TokenType::OPERATOR, ">");
+				expectClosingAngle();
 			}
 
 			if (match(TokenType::OPERATOR, "[")) {
@@ -975,3 +978,74 @@ std::unique_ptr<ASTNode> Parser::parseLambdaExpression() {
 	return lambdaNode;
 }
 
+
+// Called just after a '{' in expression position. A '{' opens a dictionary literal rather than a
+// block when the first top-level item is `key: value` (a ':' before any ';', '=', '->' or the closing
+// '}'), or when it is an empty `{}` used as a value (after '=', '(', ',', ':', '[', '<-' or `return`).
+bool Parser::looksLikeDictLiteral() const {
+	if (check(TokenType::OPERATOR, "}")) {
+		if (position < 2) {
+			return false;
+		}
+		const Token& before = tokens[position - 2];
+		if (before.type == TokenType::KEYWORD) {
+			return before.value == "return";
+		}
+		if (before.type != TokenType::OPERATOR) {
+			return false;
+		}
+		return before.value == "=" || before.value == "(" || before.value == "," || before.value == ":" ||
+			before.value == "[" || before.value == "<-";
+	}
+	if (peek().type == TokenType::KEYWORD && peek().value != "new") {
+		return false;
+	}
+	int depth = 0;
+	for (size_t i = position; i < tokens.size(); ++i) {
+		const Token& token = tokens[i];
+		if (token.type == TokenType::END_OF_FILE) {
+			return false;
+		}
+		if (token.type != TokenType::OPERATOR) {
+			continue;
+		}
+		const std::string& v = token.value;
+		if (v == "(" || v == "[" || v == "{") {
+			++depth;
+		}
+		else if (v == ")" || v == "]") {
+			if (depth == 0) return false;
+			--depth;
+		}
+		else if (v == "}") {
+			if (depth == 0) return false;
+			--depth;
+		}
+		else if (depth == 0) {
+			if (v == ":") return true;
+			if (v == ";" || v == "=" || v == "->" || v == "=>" || v == "<-") return false;
+		}
+	}
+	return false;
+}
+
+// `{k1: v1, k2: v2, ...}` (a trailing comma is allowed) or `{}`; the '{' is already consumed.
+std::unique_ptr<ASTNode> Parser::parseDictLiteral() {
+	auto node = std::make_unique<DictLiteralNode>();
+	while (!check(TokenType::OPERATOR, "}")) {
+		if (isAtEnd()) {
+			error("Unterminated dictionary literal");
+			return nullptr;
+		}
+		auto key = parseExpression();
+		expect(TokenType::OPERATOR, ":");
+		auto value = parseExpression();
+		node->keys.push_back(std::move(key));
+		node->values.push_back(std::move(value));
+		if (!match(TokenType::OPERATOR, ",")) {
+			break;
+		}
+	}
+	expect(TokenType::OPERATOR, "}");
+	return node;
+}

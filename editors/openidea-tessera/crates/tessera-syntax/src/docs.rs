@@ -103,6 +103,7 @@ pub fn type_doc(word: &str) -> Option<&'static str> {
         "Vector" => "Growable vector: `Vector[Int]`.",
         "Matrix" => "Matrix: `Matrix[Double]`.",
         "Array" => "Fixed-size array.",
+        "Dict" => "Dictionary `Dict<K, V>`, written as a Python-style literal `{\"a\": 1, \"b\": [2, 3]}`. `d[k]`, `d[k] = v`, `k in d`, `d.get(k, default)`, `d.size()`, `for (k, v <- d)`.",
         "Shared" => "Reference-counted shared ownership: `Shared<T>`.",
         "Weak" => "Non-owning weak reference to a `Shared<T>`.",
         "Regex" => "Regular expression (`r\"...\"` literal).",

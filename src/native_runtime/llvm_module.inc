@@ -161,7 +161,10 @@ static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bo
             const std::string name = csec_token_text_at(tokens, cursor + 1);
             const std::string storage = name + ".addr." + std::to_string(cursor);
             const int initializer = csec_find_top_level_operator(tokens, cursor, next, 1);
-            if (csec_lambda_declaration(tokens, cursor, next)) {
+            CsecDictTypes dictTypes;
+            if (csec_dict_declaration(tokens, cursor, next, initializer, dictTypes)) {
+                output += csec_dict_emit_declaration(tokens, cursor, next, initializer, dictTypes, storage);
+            } else if (csec_lambda_declaration(tokens, cursor, next)) {
                 const std::string closure = "%" + name + ".closure." + std::to_string(cursor);
                 const std::string closureType = csec_lambda_closure_type_name(cursor);
                 const auto captures = csec_lambda_capture_names(tokens, cursor, next);
@@ -313,6 +316,10 @@ static std::string csec_generate_llvm_flat_body_typed(const char* tokens, int bo
             const std::string value = "%ret." + std::to_string(cursor);
             output += csec_emit_typed_return(tokens, cursor + 1, next, resultType, value);
             return output;
+        } else if (csec_token_kind_at(tokens, cursor) == 'I' &&
+                   csec_native_token_is(tokens, cursor + 1, 'O', "[") &&
+                   !csec_emit_dict_store(tokens, cursor, next).empty()) {
+            output += csec_emit_dict_store(tokens, cursor, next);
         } else if (csec_token_kind_at(tokens, cursor) == 'I' &&
                    csec_native_token_is(tokens, cursor + 1, 'O', "[")) {
             const int close = csec_find_closing_token(tokens, cursor + 1, next, "[", "]");
@@ -580,6 +587,8 @@ int csec_generate_llvm_module_into(const char* tokens, long long builder) {
     if (!lambdaDefinitions.empty() && csec_string_builder_append(builder, lambdaDefinitions.c_str()) != 0) return -1;
     const std::string concurrencyDefinitions = csec_concurrency_definitions(tokens);
     if (!concurrencyDefinitions.empty() && csec_string_builder_append(builder, concurrencyDefinitions.c_str()) != 0) return -1;
+    const std::string dictDefinitions = csec_dict_definitions(tokens);
+    if (!dictDefinitions.empty() && csec_string_builder_append(builder, dictDefinitions.c_str()) != 0) return -1;
 
     bool compilerDriver = false;
     for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E';) {

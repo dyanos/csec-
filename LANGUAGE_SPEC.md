@@ -373,6 +373,61 @@ complete again. Also `ask`, `embeddings`, `models`, and raw `postJson`/`getJson`
 Examples: `examples/web_fetch.csec`, `examples/web_crawler.csec`,
 `examples/openai_chat.csec`, `examples/openai_web_agent.csec`.
 
+## 10. Dictionaries and declaration type inference
+
+### 10.1 Declaration type inference
+
+In `val name = expr` and `var name = expr` (also `constexpr val`), the annotation may be
+omitted when the type of `expr` is known; the variable or constant then has that type. This
+applies to locals, module-level globals, and class fields (`var total = 0`). Literals give
+`Int` (or `Long` when the value does not fit 32 bits), `Float` for a plain decimal literal,
+`String`, `Char`, and `Bool`; calls give the callee's declared return type; operators give
+their result type (a comparison or `and`/`or` is always `Bool`, also when the operands are a
+mix of `Int` and `Long`; a bitwise operator on mixed integer widths gives the wider type); a
+dictionary literal gives its `Dict<K, V>` (§10.2), and `d[k]` gives `V`. An explicit annotation
+always wins and the initializer is converted to it (`val wide: Long = 1`). An annotation is
+required when the initializer has no type to infer, for example an empty `{}`.
+
+### 10.2 Dictionary literals and `Dict<K, V>`
+
+```
+dict-lit = '{' [ expr ':' expr { ',' expr ':' expr } [ ',' ] ] '}' ;
+type     = ... | 'Dict' '<' type ',' type '>' ;
+```
+
+```csec
+val ages = {"alice": 30, "bob": 25};                  // Dict<String, Int>
+val scores = {"math": [90, 85, 77], "art": [60, 70]}; // Dict<String, Vector[Int]>
+val points = {"p": {"x": 1.5, "y": 2.0}};             // Dict<String, Dict<String, Float>>
+var counts: Dict<String, Long> = {};
+```
+
+- **Parsing.** A `{` in expression position is a dictionary literal when its first top-level item
+  is `key: value`, or when it is an empty `{}` used as a value (after `=`, `(`, `,`, `:`, `[`,
+  `<-`, `return`); otherwise it is a block. `>>` closing nested type arguments is split into two
+  `>`.
+- **Typing.** `K` is the common type of the keys and `V` the common type of the values. Integer
+  types widen to the wider one, integers mixed with `Float`/`Double` give the floating-point type,
+  list literals give `Vector[T]` (whatever their lengths), and nested dictionaries unify
+  entry-wise. Other types, class types included, must match exactly (there is no implicit upcast),
+  so `{"a": 1, "b": "x"}` is a type error. When the literal initializes a declaration annotated `Dict<K, V>` (or is assigned to a
+  `Dict` variable or dictionary element), that type is used and each entry must convert to it.
+  `K` must be `Int`, `Long`, `Short`, `Byte`, `Char`, `Bool`, or `String`; `V` may be any type
+  that is a scalar or a reference (not a value struct or tuple).
+- **Semantics.** A dictionary is a reference value backed by the runtime (`dict_runtime.inc`):
+  assignment and argument passing share it, `copy()` makes an independent shallow copy. Entries
+  keep insertion order. String keys are compared by content (the dictionary keeps its own copy of
+  the key text). List literal values are copied to the heap, so they outlive the function that
+  built the dictionary.
+- **Operations.** `d[k]` reads (a missing key prints `KeyError: <key>` and exits with status 1);
+  `d[k] = v` inserts or replaces; `d[k] op= v` is `d[k] = d[k] op v`; `k in d` / `k notin d`.
+  Methods: `size()`/`length()`/`count()` (`Long`), `isEmpty()`, `contains(k)`/`has(k)`/
+  `containsKey(k)`, `get(k)`, `get(k, default)`, `remove(k)` (`Bool`: whether it was present),
+  `keyAt(i)`, `valueAt(i)`, `copy()`, `clear()`, `toString()`. `print`/`println` and string
+  concatenation render a dictionary like Python: `{'a': 1, 'b': [2, 3]}`.
+- **Iteration.** `for (k <- d) { ... }` visits the keys in insertion order; `for (k, v <- d)` also
+  binds each value.
+
 ## 5. Self-hosted compiler support
 
 The self-hosted compiler (`selfhost/`, whose emitter lives in `src/native_runtime/*.inc`) implements:
@@ -384,6 +439,10 @@ The self-hosted compiler (`selfhost/`, whose emitter lives in `src/native_runtim
 - `go`, `async`, and `await` (§3), including `async def` as a declaration modifier, with
   futures of `Int`, `Long`, `Boolean`, `Double`, and pointer-represented results;
 - `text[i]` on String locals and parameters, and escaped `Char` literals (`'\n'`, `'\t'`, ...);
+- dictionaries (§10.2) with scalar keys and values (`Int`, `Long`, `Short`, `Byte`, `Double`,
+  `Float`, `Boolean`, `Char`, `String`): literals, `val d: Dict<K, V> = {}`, `d[k]`,
+  `d[k] = v`, `d[k] op= v`, `get`, `size`, `isEmpty`, `contains`, `remove`, `clear`, `Dict`
+  parameters and return types, and local type inference from `d[k]`/`d.get(..)`/`d.size()`;
 - calls through `std.io`, `std.thread`, `std.process`, `std.pipe`, `std.shared`, `std.mail`,
   `std.math.natural`, `std.math.real`, and `std.symbolic`, which are ordinary functions
   over `external def` runtime entry points. `external def` declarations are emitted with
@@ -398,6 +457,10 @@ Narrower than the native compiler:
   types.
 - The self-host does not type-check: the share-nothing and borrow rules of §2–§3 are
   enforced by the native compiler only.
+- Dictionary values that are lists or nested dictionaries, `for` over a dictionary, `k in d`,
+  `keyAt`/`valueAt`/`copy`/`toString`, printing a dictionary, and calling a method on a
+  dictionary read in one expression (`d[k].length()`; bind `d[k]` to a local first) are
+  native-only.
 
 `tests/run_selfhost_concurrency.ps1` runs every fixture in `tests/selfhost_concurrency`
 through both compilers and requires the same exit code (42) from each.

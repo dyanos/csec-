@@ -1,5 +1,6 @@
 #pragma once
 #include "ast.h"
+#include "dict_support.h"
 
 #include <memory>
 #include <vector>
@@ -86,6 +87,10 @@ public:
             }
         }
         if (!resolvedArrayType) return std::make_unique<UnknownType>();
+        // `d[key]` on a Dict<K, V> is a V.
+        if (isDictType(resolvedArrayType.get())) {
+            return cloneType(dictValueType(resolvedArrayType.get()));
+        }
         // `text[i]` reads byte i of a String as a Char.
         if (resolvedArrayType->isStringTy() && indices.size() <= 1 &&
             (indices.empty() || (indices[0] && !indices[0]->isSlice))) {

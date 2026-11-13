@@ -271,6 +271,13 @@ public:
             element->accept(*this);
         }
 	}
+    void visit(DictLiteralNode& node) override {
+        std::cout << "DictLiteral:" << std::endl;
+        for (size_t i = 0; i < node.keys.size(); ++i) {
+            if (node.keys[i]) node.keys[i]->accept(*this);
+            if (node.values[i]) node.values[i]->accept(*this);
+        }
+    }
     void visit(TupleExpressionNode& node) override {
         std::cout << "Tuple:" << std::endl;
         for (auto& element : node.elements) {

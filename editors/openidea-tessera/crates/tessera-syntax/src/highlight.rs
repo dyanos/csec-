@@ -47,8 +47,8 @@ pub enum Class {
 /// Built-in type names (`docs/grammar.md` §3 plus runtime types).
 pub const BUILTIN_TYPES: &[&str] = &[
     "Int", "Long", "Short", "Byte", "Float", "Double", "Real", "Bool", "Boolean", "Char", "String",
-    "Nat", "Integer", "Natural", "Unit", "Void", "Tensor", "Vector", "Matrix", "Array", "Shared",
-    "Weak", "Regex",
+    "Nat", "Integer", "Natural", "Unit", "Void", "Tensor", "Vector", "Matrix", "Array", "Dict",
+    "Shared", "Weak", "Regex",
 ];
 
 /// Namespaces / objects provided by the runtime.

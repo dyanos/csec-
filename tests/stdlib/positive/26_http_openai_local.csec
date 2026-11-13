@@ -1,0 +1,331 @@
+import std.http
+import std.json
+import std.net
+import std.openai
+import std.thread
+import std.io
+import std.microthread
+// std.http and std.openai against a small HTTP server on a local port (std.net, on an OS thread).
+// The server also mocks an OpenAI-compatible API: /v1/chat/completions (plain, streamed with
+// Server-Sent Events, and with a tool call) and /v1/models.
+
+def readRequest(client: Long): String {
+    var request: String = "";
+    var headerEnd: Int = 0 - 1;
+    while (headerEnd < 0) {
+        val part: String = tcpReceive(client, 65536);
+        if (part == "") {
+            return request;
+        }
+        request = request + part;
+        headerEnd = request.indexOf("\r\n\r\n");
+    }
+    val lower: String = request.toLower();
+    val at: Int = lower.indexOf("content-length:");
+    if (at >= 0) {
+        val rest: String = request.substring(at + 15, request.length - at - 15);
+        val lineEnd: Int = rest.indexOf("\r\n");
+        val length: Int = parseInt(rest.substring(0, lineEnd).trim(), 0);
+        while (request.length < headerEnd + 4 + length) {
+            val more: String = tcpReceive(client, 65536);
+            if (more == "") {
+                return request;
+            }
+            request = request + more;
+        }
+    }
+    return request;
+}
+
+def requestPath(request: String): String {
+    val first: Int = request.indexOf(" ");
+    val rest: String = request.substring(first + 1, request.length - first - 1);
+    return rest.substring(0, rest.indexOf(" "));
+}
+
+def requestBody(request: String): String {
+    val end: Int = request.indexOf("\r\n\r\n");
+    return request.substring(end + 4, request.length - end - 4);
+}
+
+def respond(client: Long, status: String, contentType: String, body: String): Int {
+    val head: String = "HTTP/1.1 " + status + "\r\nContent-Type: " + contentType + "\r\nContent-Length: " + body.length + "\r\nX-Test: yes\r\nConnection: close\r\n\r\n";
+    tcpSend(client, head + body);
+    return 0;
+}
+
+def sseEvent(client: Long, data: String): Int {
+    val event: String = "data: " + data + "\n\n";
+    tcpSend(client, event);
+    csec_thread_sleep(5);
+    return 0;
+}
+
+def chatCompletion(client: Long, request: String): Int {
+    if (!request.contains("Authorization: Bearer test-key")) {
+        return respond(client, "401 Unauthorized", "application/json", "{\"error\": {\"message\": \"bad key\", \"type\": \"auth\"}}");
+    }
+    val body = parseJson(requestBody(request));
+    if (body.getString("model") != "mock-1") {
+        return respond(client, "400 Bad Request", "application/json", "{\"error\": {\"message\": \"unknown model\"}}");
+    }
+    if (body.getBool("stream")) {
+        tcpSend(client, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n");
+        sseEvent(client, "{\"choices\": [{\"index\": 0, \"delta\": {\"role\": \"assistant\", \"content\": \"\"}}]}");
+        tcpSend(client, ": keep-alive\n\n");
+        sseEvent(client, "{\"choices\": [{\"index\": 0, \"delta\": {\"content\": \"Hel\"}}]}");
+        sseEvent(client, "{\"choices\": [{\"index\": 0, \"delta\": {\"content\": \"lo \\uc548\\ub155\"}}]}");
+        sseEvent(client, "{\"choices\": [{\"index\": 0, \"delta\": {}, \"finish_reason\": \"stop\"}], \"usage\": {\"total_tokens\": 9}}");
+        sseEvent(client, "[DONE]");
+        return 0;
+    }
+    val last: String = body.getString("messages[-1].role");
+    if (body.has("tools") and last == "user") {
+        return respond(client, "200 OK", "application/json", "{\"id\": \"c2\", \"choices\": [{\"index\": 0, \"finish_reason\": \"tool_calls\", \"message\": {\"role\": \"assistant\", \"content\": null, \"tool_calls\": [{\"id\": \"call_1\", \"type\": \"function\", \"function\": {\"name\": \"fetch_url\", \"arguments\": \"{\\\"url\\\": \\\"/page\\\"}\"}}]}}]}");
+    }
+    if (last == "tool") {
+        val answer = jsonObject()
+            .set("choices[0].message.role", "assistant")
+            .set("choices[0].message.content", "tool said: " + body.getString("messages[-1].content"))
+            .set("choices[0].finish_reason", "stop")
+            .set("echo_assistant_content", body.getString("messages[-2].content"))
+            .set("echo_call_id", body.getString("messages[-1].tool_call_id"));
+        return respond(client, "200 OK", "application/json", answer.toString());
+    }
+    val reply = jsonObject()
+        .set("id", "c1")
+        .set("model", "mock-1")
+        .set("choices[0].index", 0)
+        .set("choices[0].message.role", "assistant")
+        .set("choices[0].message.content", "echo: " + body.getString("messages[-1].content"))
+        .set("choices[0].finish_reason", "stop")
+        .set("usage.prompt_tokens", 5)
+        .set("usage.completion_tokens", 2)
+        .set("usage.total_tokens", 7)
+        .set("temperature_seen", body.getDouble("temperature"))
+        .set("system_seen", body.getString("messages[0].content"));
+    return respond(client, "200 OK", "application/json", reply.toString());
+}
+
+def serve(server: Long): Int {
+    var running: Boolean = true;
+    while (running) {
+        val client: Long = tcpAccept(server);
+        if (client < 0) {
+            return 1;
+        }
+        val request: String = readRequest(client);
+        val path: String = requestPath(request);
+        if (path == "/quit") {
+            respond(client, "200 OK", "text/plain", "bye");
+            running = false;
+        } else if (path == "/hello") {
+            respond(client, "200 OK", "text/plain; charset=utf-8", "hello world");
+        } else if (path == "/echo") {
+            respond(client, "200 OK", "application/json", requestBody(request));
+        } else if (path == "/lines") {
+            respond(client, "200 OK", "text/plain", "one\r\ntwo\n\nlast");
+        } else if (path == "/page") {
+            respond(client, "200 OK", "text/html", "<html><head><title>Mock &amp; Page</title><style>p{}</style></head><body><h1>Header</h1><p>First <b>bold</b> line.</p><script>var x = 1;</script><ul><li>one</li><li>two</li></ul><a href=\"/next?a=1\">next</a> <a href='https://example.com/x#frag'>ext</a> <a href=\"#top\">top</a></body></html>");
+        } else if (path == "/v1/models") {
+            respond(client, "200 OK", "application/json", "{\"object\": \"list\", \"data\": [{\"id\": \"mock-1\"}, {\"id\": \"mock-2\"}]}");
+        } else if (path == "/v1/chat/completions") {
+            chatCompletion(client, request);
+        } else {
+            respond(client, "404 Not Found", "text/plain", "no such page");
+        }
+        tcpClose(client);
+    }
+    return 0;
+}
+
+def main(): Int {
+    val port: Int = 18000 + (currentProcessIdMod() % 1000);
+    val server: Long = tcpListen("127.0.0.1", port, 16);
+    if (server < 0) { return 1; }
+    val serverThread = threadStart([=]() -> {
+        return serve(server);
+    });
+    val base: String = "http://127.0.0.1:" + port;
+
+    // Plain GET, headers, status.
+    val hello = httpGet(base + "/hello");
+    if (hello.status() != 200) { return 2; }
+    if (!hello.ok()) { return 3; }
+    if (hello.text() != "hello world") { return 4; }
+    if (hello.header("x-test") != "yes") { return 5; }
+    if (!hello.contentType().startsWith("text/plain")) { return 6; }
+    hello.close();
+    if (fetchText(base + "/hello") != "hello world") { return 7; }
+
+    // 404 is a response, not a failure.
+    val missing = httpGet(base + "/nope");
+    if (missing.status() != 404) { return 8; }
+    if (missing.ok()) { return 9; }
+    if (missing.error() != "") { return 10; }
+    missing.close();
+
+    // POST with a JSON body, read back as JSON.
+    val echoed = httpRequest("POST", base + "/echo").json("{\"q\": [1, 2, 3], \"s\": \"\\uc548\"}").send();
+    val echo = echoed.json();
+    if (echo.length("q") != 3) { return 11; }
+    if (echo.length("s") != 3) { return 12; }   // one Hangul syllable, 3 UTF-8 bytes
+    echoed.close();
+
+    // Streaming lines (\r\n and \n, blank line, no final newline).
+    val lines = httpRequest("GET", base + "/lines").open();
+    var seen: String = "";
+    var count: Int = 0;
+    while (lines.nextLine()) {
+        seen = seen + "[" + lines.line() + "]";
+        count = count + 1;
+    }
+    if (seen != "[one][two][][last]") {
+        println(seen);
+        return 13;
+    }
+    lines.close();
+
+    // Web page helpers.
+    val html: String = fetchText(base + "/page");
+    if (htmlTitle(html) != "Mock & Page") { return 14; }
+    val text: String = htmlToText(html);
+    if (text != "Header\n\nFirst bold line.\n\n- one\n- two\n\nnext ext top") {
+        println(text);
+        return 15;
+    }
+    val pageUrl: String = base + "/dir/page";
+    if (htmlLinks(html, pageUrl) != base + "/next?a=1\nhttps://example.com/x\n") {
+        println(htmlLinks(html, pageUrl));
+        return 16;
+    }
+    if (fetchPageText(base + "/page") != text) { return 17; }
+    if (urlEncode("a b&c=d/~") != "a%20b%26c%3Dd%2F~") { return 18; }
+    if (urlDecode("a%20b+c") != "a b c") { return 19; }
+    if (urlResolve("https://h.com/a/b/c.html?x", "../d") != "https://h.com/a/d") { return 20; }
+    if (urlResolve("https://h.com/a/b", "//cdn.com/z") != "https://cdn.com/z") { return 21; }
+    if (urlResolve("https://h.com/a/b", "?q=1") != "https://h.com/a/b?q=1") { return 22; }
+    if (urlHost("https://User@Example.COM:8080/a?b#c") != "example.com:8080") { return 27; }
+    if (urlHost("http://h.com?x=1") != "h.com") { return 28; }
+    if (urlHost("no-scheme/x") != "") { return 29; }
+    if (!sameHost(base + "/a", base + "/b?c")) { return 48; }
+    if (sameHost(base + "/a", "https://example.com/a")) { return 49; }
+
+    // A failed connection gives status 0 and an error message.
+    val refused = httpRequest("GET", "http://127.0.0.1:1/").timeout(3000).send();
+    if (refused.status() != 0) { return 23; }
+    if (refused.error() == "") { return 24; }
+    refused.close();
+
+    // Requests from microthreads run concurrently with the main one.
+    val results = csec_json_new_object();
+    spawn([=]() -> {
+        val r: String = fetchText(base + "/hello");
+        csec_json_set_string(results, "a", r);
+        return 0;
+    });
+    val mine: String = fetchText(base + "/hello");
+    var waited: Int = 0;
+    while (csec_json_has(results, "a") == 0) {
+        yield();
+        waited = waited + 1;
+    }
+    if (mine != "hello world") { return 25; }
+    if (csec_json_get_string(results, "a") != "hello world") { return 26; }
+
+    // ---- OpenAI-compatible client ----
+    val ai = openai(base + "/v1/", "test-key", "mock-1");
+    if (ai.baseUrl() != base + "/v1") { return 30; }
+    if (ai.ask("ping") != "echo: ping") { return 31; }
+    val chat = newChat().system("be brief").user("hello").temperature(0.5e0).maxTokens(20);
+    val result = ai.complete(chat);
+    if (!result.ok()) {
+        println(result.error());
+        return 32;
+    }
+    if (result.text() != "echo: hello") { return 33; }
+    if (result.finishReason() != "stop") { return 34; }
+    if (result.totalTokens() != 7) { return 35; }
+    if (result.status() != 200) { return 36; }
+    if (result.json().getDouble("temperature_seen") != 0.5e0) { return 37; }
+    if (result.json().getString("system_seen") != "be brief") { return 38; }
+    if (chat.messageCount() != 2) { return 39; }
+    if (chat.json().has("model")) { return 40; }   // complete() does not change the chat
+
+    // Errors from the server.
+    val wrongKey = openai(base + "/v1", "nope", "mock-1");
+    val denied = wrongKey.complete(newChat().user("x"));
+    if (denied.ok()) { return 41; }
+    if (denied.error() != "bad key") { return 42; }
+    if (denied.status() != 401) { return 43; }
+    val wrongModel = ai.complete(newChat().model("other").user("x"));
+    if (wrongModel.error() != "unknown model") { return 44; }
+    val offline = openai("http://127.0.0.1:1/v1", "k", "m").withTimeout(3000);
+    val unreachable = offline.complete(newChat().user("x"));
+    if (unreachable.ok()) { return 45; }
+    if (unreachable.error() == "") { return 46; }
+    if (unreachable.status() != 0) { return 47; }
+
+    // Streaming.
+    val stream = ai.stream(newChat().user("stream please"));
+    if (!stream.ok()) { return 50; }
+    var pieces: Int = 0;
+    var joined: String = "";
+    while (stream.next()) {
+        joined = joined + stream.delta();
+        pieces = pieces + 1;
+    }
+    if (pieces != 2) { return 51; }
+    if (joined != stream.text()) { return 52; }
+    if (!joined.startsWith("Hello ")) { return 53; }
+    if (stream.finishReason() != "stop") { return 54; }
+    if (stream.totalTokens() != 9) { return 55; }
+    if (stream.error() != "") { return 56; }
+    stream.close();
+    val deniedStream = wrongKey.stream(newChat().user("x"));
+    if (deniedStream.next()) { return 57; }
+    if (deniedStream.error() != "bad key") { return 58; }
+    deniedStream.close();
+
+    // Tool calls: the model asks for fetch_url, we answer, and it replies with the tool output.
+    val agent = newChat()
+        .user("summarise /page")
+        .tool("fetch_url", "Fetch a web page", "{\"type\": \"object\", \"properties\": {\"url\": {\"type\": \"string\"}}, \"required\": [\"url\"]}");
+    val step = ai.complete(agent);
+    if (step.toolCallCount() != 1) { return 60; }
+    if (step.toolCallName(0) != "fetch_url") { return 61; }
+    if (step.finishReason() != "tool_calls") { return 62; }
+    val args = step.toolCallArgs(0);
+    if (args.getString("url") != "/page") { return 63; }
+    agent.assistant(step);
+    agent.toolResult(step.toolCallId(0), htmlTitle(fetchText(base + args.getString("url"))));
+    val final = ai.complete(agent);
+    if (final.text() != "tool said: Mock & Page") { return 64; }
+    if (final.json().getString("echo_call_id") != "call_1") { return 65; }
+    if (agent.json().getString("messages[1].tool_calls[0].id") != "call_1") { return 66; }
+
+    // Models.
+    val models = ai.models();
+    if (models.length("data") != 2) { return 70; }
+    if (models.getString("data[1].id") != "mock-2") { return 71; }
+
+    // Custom headers reach the server.
+    val extra = openai(base + "/v1", "", "mock-1").header("Authorization", "Bearer test-key");
+    if (extra.ask("hdr") != "echo: hdr") { return 72; }
+
+    fetchText(base + "/quit");
+    if (threadJoin(serverThread) != 0) { return 80; }
+    tcpClose(server);
+    return 0;
+}
+
+def currentProcessIdMod(): Int {
+    val id: Int = csec_os_process_id_for_test();
+    if (id < 0) {
+        return 0 - id;
+    }
+    return id;
+}
+
+external def csec_os_process_id(): Int;
+def csec_os_process_id_for_test(): Int = csec_os_process_id()

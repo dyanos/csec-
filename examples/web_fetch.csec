@@ -1,0 +1,94 @@
+// web_fetch -- fetch information from the web with std.http.
+//
+//     csec++ --emit-exe examples/web_fetch.csec -o web_fetch.exe
+//     web_fetch [url]                       (default https://example.com/)
+//
+// Shows: a GET with status and headers, the page title, its readable text and links, a JSON API
+// (GitHub's public REST API) read with std.json, a URL with an encoded query, a download to a file,
+// and several requests running at once in microthreads.
+
+import std.http
+import std.json
+import std.microthread
+
+def firstChars(text: String, limit: Int): String {
+    if (text.length <= limit) {
+        return text;
+    }
+    return text.substring(0, limit) + " ...";
+}
+
+def main(): Int {
+    var url: String = "https://example.com/";
+    if (commandLineArgCount() >= 2) {
+        url = commandLineArg(1);
+    }
+
+    // 1. A page: status, headers, title, text, and links.
+    val page = httpRequest("GET", url).header("Accept", "text/html").timeout(20000).send();
+    if (page.status() == 0) {
+        println("request failed: " + page.error());
+        return 1;
+    }
+    println("GET " + url + " -> " + page.status());
+    println("Content-Type: " + page.contentType());
+    val html: String = page.text();
+    println("bytes: " + page.size());
+    println("title: " + htmlTitle(html));
+    println("---- text ----");
+    println(firstChars(htmlToText(html), 600));
+    println("---- links ----");
+    println(htmlLinks(html, url));
+    page.close();
+
+    // 2. A JSON API. GitHub requires a User-Agent; std.http sends "tessera-http/1.0".
+    val repo = fetchJson("https://api.github.com/repos/llvm/llvm-project");
+    if (repo.isValid()) {
+        println("llvm/llvm-project: " + repo.getLong("stargazers_count") + " stars, " +
+                repo.getLong("forks_count") + " forks, default branch " + repo.getString("default_branch"));
+        println("license: " + repo.getString("license.name"));
+    } else {
+        println("GitHub API not reachable");
+    }
+
+    // 3. Query parameters are percent-encoded with urlEncode.
+    val query: String = "https://httpbin.org/get?q=" + urlEncode("tessera & web") + "&lang=" + urlEncode("ko");
+    val echoed = httpRequest("GET", query).header("Accept", "application/json").timeout(20000).send();
+    if (echoed.ok()) {
+        val info = echoed.json();
+        println("httpbin saw q = " + info.getString("args.q") + ", user agent = " + info.getString("headers.User-Agent"));
+    } else {
+        println("httpbin: " + echoed.status() + " " + echoed.error());
+    }
+    echoed.close();
+
+    // 4. Download to a file (binary-safe).
+    val bytes: Long = download("https://www.google.com/favicon.ico", "favicon.ico");
+    println("favicon.ico: " + bytes + " bytes");
+
+    // 5. Several requests at once: each microthread waits cooperatively for its own response.
+    val results = jsonObject();
+    val sites = jsonArray().push("", "https://example.com/").push("", "https://www.iana.org/").push("", "https://httpbin.org/html");
+    var i: Long = 0;
+    while (i < sites.length()) {
+        val index: Long = i;
+        val site: String = sites.getString("[" + index + "]");
+        spawn([=]() -> {
+            val response = httpRequest("GET", site).timeout(20000).send();
+            val line: String = site + " -> " + response.status() + " \"" + htmlTitle(response.text()) + "\"";
+            results.set("[\"" + index + "\"]", line);
+            response.close();
+            return 0;
+        });
+        i = i + 1;
+    }
+    while (results.length() < sites.length()) {
+        yield();
+    }
+    var j: Long = 0;
+    while (j < sites.length()) {
+        println(results.getString("[\"" + j + "\"]"));
+        j = j + 1;
+    }
+    return 0;
+}

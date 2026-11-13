@@ -1,0 +1,130 @@
+// openai_web_agent -- an LLM that browses the web through tool calls (std.openai + std.http).
+//
+//     csec++ examples/openai_web_agent.csec --emit-ir -o agent.ll
+//     csec++ --run-ir agent.ll -- "What does https://example.com/ say, and where does its link go?"
+//
+// Configure the server with OPENAI_BASE_URL / OPENAI_API_KEY / OPENAI_MODEL (see openai_chat.csec);
+// the model must support tool (function) calling.
+//
+// The model gets two tools:
+//     fetch_page(url)   the title and readable text of a web page (truncated)
+//     list_links(url)   the links on a web page
+// Each round, the program sends the conversation; if the model asks for tools, it runs them, adds
+// their output to the conversation, and asks again, until the model answers in text (or after
+// MAX_ROUNDS rounds).
+
+import std.openai
+import std.http
+import std.json
+
+def maxRounds(): Int = 8
+def maxPageChars(): Int = 6000
+
+def truncate(text: String, limit: Int): String {
+    if (text.length <= limit) {
+        return text;
+    }
+    return text.substring(0, limit) + "\n[... truncated]";
+}
+
+def toolFetchPage(url: String): String {
+    val response = httpRequest("GET", url).timeout(20000).send();
+    var out: String = "";
+    if (response.status() == 0) {
+        out = "error: " + response.error();
+    } else if (!response.ok()) {
+        out = "error: HTTP " + response.status();
+    } else {
+        val body: String = response.text();
+        if (response.contentType().toLower().contains("html")) {
+            out = "title: " + htmlTitle(body) + "\n\n" + truncate(htmlToText(body), maxPageChars());
+        } else {
+            out = truncate(body, maxPageChars());
+        }
+    }
+    response.close();
+    return out;
+}
+
+def toolListLinks(url: String): String {
+    val response = httpRequest("GET", url).timeout(20000).send();
+    var out: String = "";
+    if (response.ok()) {
+        out = truncate(htmlLinks(response.text(), url), maxPageChars());
+        if (out == "") {
+            out = "(no links)";
+        }
+    } else {
+        out = "error: could not fetch " + url + " (" + response.status() + " " + response.error() + ")";
+    }
+    response.close();
+    return out;
+}
+
+// Run the tool call `index` of `step` and return its output.
+def runTool(step: ChatResult, index: Long): String {
+    val name: String = step.toolCallName(index);
+    val args = step.toolCallArgs(index);
+    if (!args.isValid()) {
+        return "error: the arguments are not valid JSON: " + step.toolCallArguments(index);
+    }
+    val url: String = args.getString("url");
+    args.free();
+    println("  [tool] " + name + "(" + url + ")");
+    if (name == "fetch_page") {
+        return toolFetchPage(url);
+    }
+    if (name == "list_links") {
+        return toolListLinks(url);
+    }
+    return "error: unknown tool " + name;
+}
+
+def main(): Int {
+    var question: String = "Visit https://example.com/ and tell me in two sentences what the page is for.";
+    if (commandLineArgCount() >= 2) {
+        question = commandLineArg(1);
+    }
+    val ai = openaiFromEnv();
+    println("model: " + ai.defaultModel() + " at " + ai.baseUrl());
+    println("question: " + question);
+
+    val urlParam: String = "{\"type\": \"object\", \"properties\": {\"url\": {\"type\": \"string\", \"description\": \"An absolute http(s) URL\"}}, \"required\": [\"url\"]}";
+    val chat = newChat()
+        .system("You answer questions about the web. Use the tools to read pages; do not guess page contents. Cite the URLs you used.")
+        .user(question)
+        .tool("fetch_page", "Fetch a web page and return its title and readable text.", urlParam)
+        .tool("list_links", "Return the absolute URLs of the links on a web page, one per line.", urlParam)
+        .temperature(0.2e0);
+
+    var round: Int = 0;
+    while (round < maxRounds()) {
+        val step = ai.complete(chat);
+        if (!step.ok()) {
+            println("error (HTTP " + step.status() + "): " + step.error());
+            return 1;
+        }
+        val calls: Long = step.toolCallCount();
+        if (calls == 0) {
+            println("---- answer ----");
+            println(step.text());
+            println("(" + (round + 1) + " rounds, " + step.totalTokens() + " tokens in the last one)");
+            step.free();
+            chat.free();
+            return 0;
+        }
+        // The assistant message with its tool calls goes into the conversation, then one tool
+        // message per call.
+        chat.assistant(step);
+        var i: Long = 0;
+        while (i < calls) {
+            chat.toolResult(step.toolCallId(i), runTool(step, i));
+            i = i + 1;
+        }
+        step.free();
+        round = round + 1;
+    }
+    println("no answer after " + maxRounds() + " rounds");
+    chat.free();
+    return 1;
+}

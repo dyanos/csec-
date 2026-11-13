@@ -26,5 +26,7 @@ each compiler-runtime area a focused file.
 | `parquet_codec.inc` | Parquet building blocks: Thrift compact protocol, Snappy/GZIP/LZ4_RAW (and optional ZSTD) decompression, and the Parquet value encodings. |
 | `dataframe_runtime.inc` | Data frames, Parquet reading (parallel column decoding) and writing, CSV, and frame operations (`csec_df_*`, `std.dataframe`). |
 | `symbolic_runtime.inc` | Symbolic algebra engine (`csec_sym_*`, `std.symbolic`). |
+| `json_runtime.inc` | JSON parser, path-addressed documents, and printer (`csec_json_*`, `std.json`). |
+| `http_runtime.inc` | HTTP(S) client on WinHTTP (Windows) or run-time-loaded libcurl (POSIX), streamed bodies and Server-Sent Events, URL and HTML helpers (`csec_http_*`, `csec_url_*`, `csec_html_*`; `std.http`, `std.openai`). |
 
 Keep cross-module helpers private unless they are needed by a separately compiled target.

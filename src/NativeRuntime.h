@@ -502,6 +502,67 @@ CSEC_NATIVE_API char* csec_lazy_explain(long long lazy, int optimized);
 CSEC_NATIVE_API char* csec_lazy_schema(long long lazy);
 CSEC_NATIVE_API void csec_lazy_free(long long lazy);
 
+// std.json (json_runtime.inc)
+CSEC_NATIVE_API long long csec_json_parse(const char* text);
+CSEC_NATIVE_API char* csec_json_last_error(void);
+CSEC_NATIVE_API long long csec_json_new_object(void);
+CSEC_NATIVE_API long long csec_json_new_array(void);
+CSEC_NATIVE_API long long csec_json_get(long long handle, const char* path);
+CSEC_NATIVE_API long long csec_json_copy(long long handle, const char* path);
+CSEC_NATIVE_API void csec_json_free(long long handle);
+CSEC_NATIVE_API int csec_json_has(long long handle, const char* path);
+CSEC_NATIVE_API char* csec_json_type(long long handle, const char* path);
+CSEC_NATIVE_API char* csec_json_get_string(long long handle, const char* path);
+CSEC_NATIVE_API long long csec_json_get_long(long long handle, const char* path, long long fallback);
+CSEC_NATIVE_API double csec_json_get_double(long long handle, const char* path, double fallback);
+CSEC_NATIVE_API int csec_json_get_bool(long long handle, const char* path, int fallback);
+CSEC_NATIVE_API long long csec_json_length(long long handle, const char* path);
+CSEC_NATIVE_API char* csec_json_key(long long handle, const char* path, long long index);
+CSEC_NATIVE_API int csec_json_set_string(long long handle, const char* path, const char* value);
+CSEC_NATIVE_API int csec_json_set_long(long long handle, const char* path, long long value);
+CSEC_NATIVE_API int csec_json_set_double(long long handle, const char* path, double value);
+CSEC_NATIVE_API int csec_json_set_bool(long long handle, const char* path, int value);
+CSEC_NATIVE_API int csec_json_set_null(long long handle, const char* path);
+CSEC_NATIVE_API int csec_json_set_empty_object(long long handle, const char* path);
+CSEC_NATIVE_API int csec_json_set_empty_array(long long handle, const char* path);
+CSEC_NATIVE_API int csec_json_set_json(long long handle, const char* path, const char* json);
+CSEC_NATIVE_API int csec_json_set_value(long long handle, const char* path, long long other);
+CSEC_NATIVE_API int csec_json_remove(long long handle, const char* path);
+CSEC_NATIVE_API char* csec_json_stringify(long long handle, const char* path, int indent);
+CSEC_NATIVE_API char* csec_json_quote(const char* text);
+
+// std.http (http_runtime.inc)
+CSEC_NATIVE_API long long csec_http_request_new(const char* method, const char* url);
+CSEC_NATIVE_API int csec_http_request_header(long long handle, const char* name, const char* value);
+CSEC_NATIVE_API int csec_http_request_body(long long handle, const char* body);
+CSEC_NATIVE_API int csec_http_request_timeout(long long handle, long long milliseconds);
+CSEC_NATIVE_API void csec_http_request_free(long long handle);
+CSEC_NATIVE_API long long csec_http_send(long long handle);
+CSEC_NATIVE_API long long csec_http_open(long long handle);
+CSEC_NATIVE_API char* csec_http_last_error(void);
+CSEC_NATIVE_API int csec_http_status(long long handle);
+CSEC_NATIVE_API char* csec_http_error(long long handle);
+CSEC_NATIVE_API char* csec_http_headers(long long handle);
+CSEC_NATIVE_API char* csec_http_header(long long handle, const char* name);
+CSEC_NATIVE_API char* csec_http_body(long long handle);
+CSEC_NATIVE_API long long csec_http_body_size(long long handle);
+CSEC_NATIVE_API long long csec_http_received(long long handle);
+CSEC_NATIVE_API int csec_http_done(long long handle);
+CSEC_NATIVE_API long long csec_http_save(long long handle, const char* path);
+CSEC_NATIVE_API int csec_http_next_line(long long handle);
+CSEC_NATIVE_API char* csec_http_line(long long handle);
+CSEC_NATIVE_API int csec_http_next_event(long long handle);
+CSEC_NATIVE_API char* csec_http_event_data(long long handle);
+CSEC_NATIVE_API char* csec_http_event_name(long long handle);
+CSEC_NATIVE_API char* csec_http_event_id(long long handle);
+CSEC_NATIVE_API void csec_http_close(long long handle);
+CSEC_NATIVE_API char* csec_url_encode(const char* text);
+CSEC_NATIVE_API char* csec_url_decode(const char* text);
+CSEC_NATIVE_API char* csec_url_resolve(const char* base, const char* ref);
+CSEC_NATIVE_API char* csec_html_to_text(const char* html);
+CSEC_NATIVE_API char* csec_html_title(const char* html);
+CSEC_NATIVE_API char* csec_html_links(const char* html, const char* base);
+
 #ifdef __cplusplus
 }
 #endif

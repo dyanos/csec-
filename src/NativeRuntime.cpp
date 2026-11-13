@@ -59,3 +59,5 @@
 #include "native_runtime/dataframe_runtime.inc"
 #include "native_runtime/dataframe_expr.inc"
 #include "native_runtime/symbolic_runtime.inc"
+#include "native_runtime/json_runtime.inc"
+#include "native_runtime/http_runtime.inc"

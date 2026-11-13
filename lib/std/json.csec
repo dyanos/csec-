@@ -1,0 +1,190 @@
+// std.json -- JSON documents: parse, query by path, build, and print.
+//
+//     import std.json
+//     val doc = parseJson("{\"user\": {\"name\": \"Ada\", \"langs\": [\"en\", \"fr\"]}}");
+//     val name = doc.getString("user.name");          // "Ada"
+//     val second = doc.getString("user.langs[1]");    // "fr"
+//     val count = doc.length("user.langs");           // 2
+//
+//     val body = jsonObject()
+//         .set("model", "some-model")
+//         .set("messages[].role", "user")              // "[]" appends an element
+//         .set("messages[-1].content", "Hello")        // negative indices count from the end
+//         .set("temperature", 0.2e0);
+//     println(body.toString());                        // compact JSON (pretty() for indented)
+//
+// Paths: "" is the root; "a.b" members; "a[0]" elements; "a[-1]" the last element; "a[\"x.y\"]" a
+// member whose name contains dots; "a[]" (setters only) appends to an array. Setters create the
+// objects and arrays a path needs. get(path) returns a Json that shares the subtree with its
+// document (changes through either are seen by both); copy(path) returns an independent copy.
+// Numbers keep their source text, so 64-bit integers round-trip exactly. A Json whose handle is 0
+// (failed parse) answers every query with the fallback; see jsonLastError() for the reason.
+
+external def csec_json_parse(text: String): Long;
+external def csec_json_last_error(): String;
+external def csec_json_new_object(): Long;
+external def csec_json_new_array(): Long;
+external def csec_json_get(doc: Long, path: String): Long;
+external def csec_json_copy(doc: Long, path: String): Long;
+external def csec_json_free(doc: Long): Void;
+external def csec_json_has(doc: Long, path: String): Int;
+external def csec_json_type(doc: Long, path: String): String;
+external def csec_json_get_string(doc: Long, path: String): String;
+external def csec_json_get_long(doc: Long, path: String, fallback: Long): Long;
+external def csec_json_get_double(doc: Long, path: String, fallback: Double): Double;
+external def csec_json_get_bool(doc: Long, path: String, fallback: Int): Int;
+external def csec_json_length(doc: Long, path: String): Long;
+external def csec_json_key(doc: Long, path: String, index: Long): String;
+external def csec_json_set_string(doc: Long, path: String, value: String): Int;
+external def csec_json_set_long(doc: Long, path: String, value: Long): Int;
+external def csec_json_set_double(doc: Long, path: String, value: Double): Int;
+external def csec_json_set_bool(doc: Long, path: String, value: Int): Int;
+external def csec_json_set_null(doc: Long, path: String): Int;
+external def csec_json_set_empty_object(doc: Long, path: String): Int;
+external def csec_json_set_empty_array(doc: Long, path: String): Int;
+external def csec_json_set_json(doc: Long, path: String, json: String): Int;
+external def csec_json_set_value(doc: Long, path: String, other: Long): Int;
+external def csec_json_remove(doc: Long, path: String): Int;
+external def csec_json_stringify(doc: Long, path: String, indent: Int): String;
+external def csec_json_quote(text: String): String;
+
+def jsonFlag(value: Boolean): Int {
+    if (value) {
+        return 1;
+    }
+    return 0;
+}
+
+def jsonHandleValid(handle: Long): Boolean {
+    if (handle != 0) {
+        return true;
+    }
+    return false;
+}
+
+struct Json(h: Long) {
+    // False when parsing failed (or the value was missing for get/copy).
+    def isValid(): Boolean = jsonHandleValid(h)
+    def handle(): Long = h
+
+    // Queries. kind is "null", "bool", "number", "string", "array", "object", or "missing".
+    def has(path: String): Boolean = csec_json_has(h, path) != 0
+    def kind(path: String): String = csec_json_type(h, path)
+    def kind(): String = csec_json_type(h, "")
+    // Strings as they are; numbers and booleans as text; arrays and objects as compact JSON; "" if
+    // missing or null.
+    def getString(path: String): String = csec_json_get_string(h, path)
+    def getString(): String = csec_json_get_string(h, "")
+    def getLong(path: String): Long = csec_json_get_long(h, path, 0)
+    def getLong(path: String, fallback: Long): Long = csec_json_get_long(h, path, fallback)
+    def getDouble(path: String): Double = csec_json_get_double(h, path, 0.0e0)
+    def getDouble(path: String, fallback: Double): Double = csec_json_get_double(h, path, fallback)
+    def getBool(path: String): Boolean = csec_json_get_bool(h, path, 0) != 0
+    def getBool(path: String, fallback: Boolean): Boolean = csec_json_get_bool(h, path, jsonFlag(fallback)) != 0
+    // Elements of an array, members of an object, or bytes of a string (0 otherwise).
+    def length(): Long = csec_json_length(h, "")
+    def length(path: String): Long = csec_json_length(h, path)
+    // Name of the index-th member of the object at `path`.
+    def key(path: String, index: Long): String = csec_json_key(h, path, index)
+    def key(index: Long): String = csec_json_key(h, "", index)
+    // A view of the subtree at `path` (shares it with this document).
+    def get(path: String): Json = new Json(csec_json_get(h, path))
+    // An independent copy of the subtree at `path`.
+    def copy(path: String): Json = new Json(csec_json_copy(h, path))
+    def copy(): Json = new Json(csec_json_copy(h, ""))
+
+    // Setters (they return this Json, so calls chain).
+    def set(path: String, value: String): Json {
+        csec_json_set_string(h, path, value);
+        return new Json(h);
+    }
+    def set(path: String, value: Long): Json {
+        csec_json_set_long(h, path, value);
+        return new Json(h);
+    }
+    def set(path: String, value: Double): Json {
+        csec_json_set_double(h, path, value);
+        return new Json(h);
+    }
+    def set(path: String, value: Boolean): Json {
+        csec_json_set_bool(h, path, jsonFlag(value));
+        return new Json(h);
+    }
+    def set(path: String, value: Json): Json {
+        csec_json_set_value(h, path, value.h);
+        return new Json(h);
+    }
+    def setNull(path: String): Json {
+        csec_json_set_null(h, path);
+        return new Json(h);
+    }
+    def setObject(path: String): Json {
+        csec_json_set_empty_object(h, path);
+        return new Json(h);
+    }
+    def setArray(path: String): Json {
+        csec_json_set_empty_array(h, path);
+        return new Json(h);
+    }
+    // Parse `json` and store the value at `path`.
+    def setJson(path: String, json: String): Json {
+        csec_json_set_json(h, path, json);
+        return new Json(h);
+    }
+    // Append to the array at `path` (created if missing).
+    def push(path: String, value: String): Json {
+        val at: String = path + "[]";
+        csec_json_set_string(h, at, value);
+        return new Json(h);
+    }
+    def push(path: String, value: Long): Json {
+        val at: String = path + "[]";
+        csec_json_set_long(h, at, value);
+        return new Json(h);
+    }
+    def push(path: String, value: Double): Json {
+        val at: String = path + "[]";
+        csec_json_set_double(h, at, value);
+        return new Json(h);
+    }
+    def push(path: String, value: Boolean): Json {
+        val at: String = path + "[]";
+        csec_json_set_bool(h, at, jsonFlag(value));
+        return new Json(h);
+    }
+    def push(path: String, value: Json): Json {
+        val at: String = path + "[]";
+        csec_json_set_value(h, at, value.h);
+        return new Json(h);
+    }
+    def pushJson(path: String, json: String): Json {
+        val at: String = path + "[]";
+        csec_json_set_json(h, at, json);
+        return new Json(h);
+    }
+    def remove(path: String): Boolean = csec_json_remove(h, path) != 0
+
+    // Output and lifetime.
+    def toString(): String = csec_json_stringify(h, "", 0)
+    def toString(path: String): String = csec_json_stringify(h, path, 0)
+    def pretty(): String = csec_json_stringify(h, "", 2)
+    def pretty(path: String): String = csec_json_stringify(h, path, 2)
+    def free(): Int {
+        csec_json_free(h);
+        return 0;
+    }
+}
+
+// Parse JSON text (check isValid(); jsonLastError() says what was wrong).
+def parseJson(text: String): Json = new Json(csec_json_parse(text))
+def jsonObject(): Json = new Json(csec_json_new_object())
+def jsonArray(): Json = new Json(csec_json_new_array())
+def jsonLastError(): String = csec_json_last_error()
+// `text` as a JSON string literal, with quotes: jsonQuote("a\"b") is "\"a\\\"b\"".
+def jsonQuote(text: String): String = csec_json_quote(text)
+// A path step naming the member `name`, whatever characters it contains:
+// doc.set("seen" + jsonKey("https://a.b/c?d=1"), true) sets a member whose name is the URL.
+def jsonKey(name: String): String {
+    val quoted: String = csec_json_quote(name);
+    return "[" + quoted + "]";
+}

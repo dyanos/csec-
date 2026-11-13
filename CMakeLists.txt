@@ -347,7 +347,7 @@ set_target_properties(csec_native_runtime PROPERTIES
     VISIBILITY_INLINES_HIDDEN YES
 )
 if(WIN32)
-    target_link_libraries(csec_native_runtime PRIVATE ws2_32)
+    target_link_libraries(csec_native_runtime PRIVATE ws2_32 winhttp)
 else()
     target_link_libraries(csec_native_runtime PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
 endif()

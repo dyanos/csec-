@@ -1,0 +1,77 @@
+import std.json
+// std.json: parsing, path queries, shared views, building, printing, and errors.
+def main(): Int {
+    val doc = parseJson("{\"user\": {\"name\": \"Ada\", \"id\": 9007199254740993, \"langs\": [\"en\", \"fr\"], \"ok\": true, \"pi\": 3.5, \"none\": null}, \"k.e\": \"\\u00e9\\ud83d\\ude00\"}");
+    if (!doc.isValid()) { return 1; }
+    if (doc.getString("user.name") != "Ada") { return 2; }
+    if (doc.getString("user.langs[1]") != "fr") { return 3; }
+    if (doc.getString("user.langs[-1]") != "fr") { return 4; }
+    if (doc.length("user.langs") != 2) { return 5; }
+    if (doc.getLong("user.id") != 9007199254740993) { return 6; }
+    if (!doc.getBool("user.ok")) { return 7; }
+    if (doc.getDouble("user.pi") != 3.5e0) { return 8; }
+    if (doc.kind("user.langs") != "array") { return 9; }
+    if (doc.kind("user.none") != "null") { return 10; }
+    if (doc.kind("nope") != "missing") { return 11; }
+    if (doc.getLong("nope", 42) != 42) { return 12; }
+    // Quoted member names and \u escapes (UTF-8 output: e-acute is 2 bytes, the emoji 4).
+    if (doc.length("[\"k.e\"]") != 6) { return 13; }
+    if (doc.key("user", 1) != "id") { return 14; }
+
+    // get() shares the subtree; copy() does not.
+    val user = doc.get("user");
+    user.set("name", "Grace");
+    if (doc.getString("user.name") != "Grace") { return 15; }
+    val snapshot = doc.copy("user");
+    snapshot.set("name", "Linus");
+    if (doc.getString("user.name") != "Grace") { return 16; }
+
+    // Building, with appends and negative indices.
+    val body = jsonObject()
+        .set("model", "m")
+        .set("messages[].role", "user")
+        .set("messages[-1].content", "Hi \"there\"\n")
+        .set("temperature", 0.25e0)
+        .set("n", 3)
+        .set("stream", false)
+        .setNull("stop");
+    body.push("tags", "a").push("tags", 2).pushJson("tags", "{\"x\": [1, 2]}");
+    val expected = "{\"model\":\"m\",\"messages\":[{\"role\":\"user\",\"content\":\"Hi \\\"there\\\"\\n\"}],\"temperature\":0.25,\"n\":3,\"stream\":false,\"stop\":null,\"tags\":[\"a\",2,{\"x\":[1,2]}]}";
+    if (body.toString() != expected) {
+        println(body.toString());
+        return 17;
+    }
+    // Printing and re-parsing round-trips.
+    val again = parseJson(body.pretty());
+    if (again.toString() != expected) { return 18; }
+    if (!body.pretty().contains("\n  \"model\": \"m\"")) { return 19; }
+
+    // Removing members and elements.
+    if (!doc.remove("user.langs[0]")) { return 20; }
+    if (doc.getString("user.langs") != "[\"fr\"]") { return 21; }
+    if (!doc.remove("user.none")) { return 22; }
+    if (doc.has("user.none")) { return 23; }
+
+    // Errors: bad JSON, and setting a member inside a scalar.
+    val bad = parseJson("{\"a\": }");
+    if (bad.isValid()) { return 24; }
+    if (!jsonLastError().contains("offset")) { return 25; }
+    if (bad.getLong("a", 7) != 7) { return 26; }
+    if (csec_json_set_string(doc.handle(), "user.name.first", "x") != 0) { return 27; }
+
+    if (jsonQuote("a\"b\n") != "\"a\\\"b\\n\"") { return 28; }
+    // jsonKey: any string as a member name (URLs contain dots; quotes are escaped).
+    val url: String = "https://a.b/c?d=\"1\"";
+    val seen = jsonObject().set("urls" + jsonKey(url), true);
+    if (!seen.getBool("urls" + jsonKey(url))) { return 30; }
+    if (seen.key("urls", 0) != url) { return 31; }
+    // Number formatting keeps the shortest round-trip form.
+    val nums = jsonArray().push("", 0.1e0).push("", 1.0e0).push("", 0 - 5);
+    if (nums.toString() != "[0.1,1,-5]") {
+        println(nums.toString());
+        return 29;
+    }
+    doc.free();
+    body.free();
+    return 0;
+}

@@ -88,6 +88,10 @@ name that no imported module declared is an ordinary unresolved call (an error).
 | `std.shared` | shared memory: private (threads/microthreads) or named (across OS processes) (§6) |
 | `std.mail` | named mailboxes with mail senders and receivers, across threads, microthreads, and processes (§6) |
 | `std.io` | chunked binary file reads, memory-mapped files, `parseInt`/`parseLong` (§7) |
+| `std.json` | JSON documents: parse, path queries, build, print (§9) |
+| `std.net` | plain TCP sockets (§9) |
+| `std.http` | HTTP(S) client, streamed bodies and Server-Sent Events, URL and HTML helpers (§9) |
+| `std.openai` | client for OpenAI-compatible APIs: chat, streaming, tool calls, embeddings, models (§9) |
 
 ## 2. Microthreads (`import std.microthread`)
 
@@ -330,6 +334,44 @@ call; chain `withColumns`/`select` calls for more.
 input and output functions are `dfReadParquet`, `dfReadParquetColumns`, `dfWriteParquet`,
 `dfReadCsv`, `dfFromCsv`, `dfWriteCsv`, and `dfToCsv`. Before the Polars-style API these were named
 `readParquet`, `readCsv`, ...; those names now return `DataFrame`s.
+
+## 9. JSON, HTTP, and OpenAI-compatible clients
+
+**`std.json`.** `parseJson(text)`, `jsonObject()`, `jsonArray()` return a `Json` handle.
+Values are addressed by path: `""` is the root, `a.b` a member, `a[0]` an element, `a[-1]`
+the last element, `a["x.y"]` a member with dots in its name (`jsonKey(name)` builds that
+step for any string), and `a[]` (setters only) appends. Setters (`set`, `setNull`,
+`setObject`, `setArray`, `setJson`, `push`) create missing containers and return the
+document, so they chain. `get(path)` is a view that shares the subtree, `copy(path)` an
+independent copy. Numbers keep their source text, so 64-bit integers round-trip exactly.
+A failed parse gives a `Json` with `isValid()` false; `jsonLastError()` explains it.
+
+**`std.net`.** Blocking TCP sockets for text data: `tcpListen`, `tcpAccept`, `tcpConnect`,
+`tcpSend`, `tcpReceive`, `tcpClose` (handles are -1 on failure; run servers on a `std.thread`).
+
+**`std.http`.** `httpRequest(method, url)` builds a request (`header`, `bearer`, `body`,
+`json`, `timeout`); `send()` waits for the whole response, `open()` returns once the headers
+are in so the body can be read with `nextLine()/line()` or as Server-Sent Events with
+`nextEvent()/eventData()`. Shortcuts: `httpGet`, `httpPost`, `httpPostJson`, `fetchText`,
+`fetchJson`, `fetchPageText`, `download`. A transport failure gives `status() == 0` and an
+`error()` message; `ok()` means a 2xx status. HTTPS uses WinHTTP on Windows and libcurl
+(loaded at run time) elsewhere; redirects and gzip/deflate are handled. Requests run on a
+worker OS thread and the caller waits cooperatively, so microthreads can have many requests
+in flight at once. Crawler helpers: `htmlTitle`, `htmlToText`, `htmlLinks(html, base)`,
+`urlResolve`, `urlEncode`, `urlDecode`, `urlHost`, `sameHost`.
+
+**`std.openai`.** `openai(baseUrl, apiKey, model)` or `openaiFromEnv()` (`OPENAI_BASE_URL`,
+`OPENAI_API_KEY`, `OPENAI_MODEL`) give a client for any server implementing the OpenAI REST
+API (OpenAI, Azure via `header`, Ollama, LM Studio, vLLM, llama.cpp, OpenRouter, ...).
+`newChat().system(..).user(..).temperature(..)` builds a conversation; `ai.complete(chat)`
+returns a `ChatResult` (`ok`, `error`, `status`, `text`, `finishReason`, token usage, tool
+calls), `ai.stream(chat)` a `ChatStream` read with `next()/delta()`. Tool calling:
+`chat.tool(name, description, jsonSchema)`; when `result.toolCallCount() > 0`, add
+`chat.assistant(result)`, then `chat.toolResult(result.toolCallId(i), output)` per call, and
+complete again. Also `ask`, `embeddings`, `models`, and raw `postJson`/`getJson`.
+
+Examples: `examples/web_fetch.csec`, `examples/web_crawler.csec`,
+`examples/openai_chat.csec`, `examples/openai_web_agent.csec`.
 
 ## 5. Self-hosted compiler support
 

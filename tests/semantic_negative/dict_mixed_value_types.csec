@@ -1,0 +1,5 @@
+// A Dict holds one value type: Int and String values do not unify.
+def main(): Int {
+    val d = {"a": 1, "b": "two"};
+    return 0;
+}

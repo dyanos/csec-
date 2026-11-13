@@ -1,0 +1,22 @@
+// `val`/`var` without an annotation take the type of their initializer.
+def wide(): Long { return 3000000000; }
+def half(v: Long): Double { return v / 2.0; }
+def isBig(v: Long): Bool { return v > 10; }      // Long > Int is a Bool (was inferred as Real)
+
+def main(): Int {
+    val a = 1;                  // Int
+    val big = wide();           // Long
+    val h = half(big);          // Double
+    val flag = isBig(big);      // Bool
+    val mixed = big > a;        // Bool from a Long/Int comparison
+    val masked = big & 65535;   // Long
+    val text = "n=" + a;        // String
+    val c = 'x';                // Char
+    val d = {"k": big};         // Dict<String, Long>
+    var acc = d["k"] - big;     // Long
+    acc = acc + 1;
+    if (flag and mixed and masked == 24064 and h == 1500000000.0 and acc == 1 and text == "n=1" and c == 'x') {
+        return 0;
+    }
+    return 1;
+}

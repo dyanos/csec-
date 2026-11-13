@@ -1,4 +1,5 @@
 #include "codegen.h"
+#include "dict_support.h"
 
 #include "FunctionCallNode.h"
 #include "FunctionDeclarationNode.h"
@@ -445,6 +446,16 @@ llvm::Value* codegenNativeIOCall(
                 cg.builder.CreateCall(
                     getOrCreateRuntimeFunction(cg, "csec_print_double", voidTy, {f64Ty}),
                     {coerceMathValueToDouble(cg, argValues[i])});
+            }
+            else if (argType && isDictType(argType) && argValues[i]->getType()->isPointerTy()) {
+                // Print a dictionary as Python's dict repr: {'a': 1, 'b': [2, 3]}.
+                llvm::Value* handle = argValues[i];
+                if (auto* slot = llvm::dyn_cast<llvm::AllocaInst>(handle)) {
+                    if (slot->getAllocatedType()->isPointerTy()) handle = cg.builder.CreateLoad(i8PtrTy, slot, "dict.load");
+                }
+                cg.builder.CreateCall(
+                    getOrCreateRuntimeFunction(cg, "csec_print_string", voidTy, {i8PtrTy}),
+                    {codegenDictToString(handle)});
             }
             else if (argType && argType->getName() == "Nat" && argValues[i]->getType()->isPointerTy()) {
                 // Print a Nat by its exact decimal expansion.

@@ -1,0 +1,5 @@
+// An empty `{}` has no entries to infer from; it needs `val d: Dict<K, V> = {}`.
+def main(): Int {
+    val d = {};
+    return 0;
+}

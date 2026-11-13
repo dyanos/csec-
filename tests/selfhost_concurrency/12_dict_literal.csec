@@ -1,0 +1,27 @@
+// Self-host: dictionary literals. Exit code 42.
+def bump(d: Dict<String, Int>, key: String): Int {
+    d[key] += 1;
+    return d[key];
+}
+def main(): Int {
+    val ages = {"alice": 30, "bob": 25};
+    ages["carol"] = 41;
+    if (ages.size() != 3) { return 1; }
+    if (!ages.contains("bob")) { return 2; }
+    if (ages.get("zed", 7) != 7) { return 3; }
+    val scores: Dict<Int, Double> = {1: 1.5, 2: 2.5};
+    scores[3] = 4.0;
+    val sum = scores[1] + scores[2] + scores[3];
+    if (sum != 8.0) { return 4; }
+    val counts: Dict<String, Long> = {};
+    counts["x"] = 3000000000;
+    if (counts["x"] != 3000000000) { return 5; }
+    ages.remove("bob");
+    if (ages.contains("bob")) { return 6; }
+    val n = bump(ages, "alice");
+    if (n != 31) { return 7; }
+    val names = {1: "one", 2: "two"};
+    val two = names[2];
+    if (two.length() != 3) { return 8; }
+    return ages["alice"] + 11;
+}

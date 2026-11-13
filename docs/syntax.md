@@ -33,6 +33,24 @@ val label: String = "run";
 scale = scale + 1.0;
 ```
 
+The type annotation is optional when the declaration has an initializer whose type is known: the
+variable (or constant) then takes the initializer's type.
+
+```ts
+val n = 3;                    // Int
+val big = 3000000000;         // Long (does not fit an Int)
+val ratio = 0.5;              // Float (a plain decimal literal is a Float)
+val name = "run";             // String
+val done = n > 2;             // Bool, also for mixed Int/Long comparisons
+val total = sumAll(xs);       // the function's declared return type
+val ages = {"alice": 30};     // Dict<String, Int>
+var hits = ages["alice"] + 1; // Int, the dictionary's value type
+```
+
+An annotation is still required when there is nothing to infer from, e.g. an empty
+dictionary `val d: Dict<String, Int> = {}`, and it wins over the initializer's type
+(`val wide: Long = 1`).
+
 Functions use `def` with typed parameters and return type:
 
 ```ts
@@ -620,6 +638,37 @@ val sum = preduce(simd, acc, x <- xs, 0) {
 
 Current policy names include `cpu`, `simd`, `openmp`, and `gpu`. Some policies
 are parsed before full backend lowering is implemented.
+
+## Dictionaries
+
+A dictionary literal is written as in Python, `{key: value, ...}`, and has the type
+`Dict<K, V>`. `K` and `V` are inferred from the entries: every key must have one type and
+every value must have one type (`Int` and `Long` values widen to `Long`, integers and
+floating-point values to the floating-point type, lists of one element type to `Vector[T]`).
+
+```ts
+val ages = {"alice": 30, "bob": 25};                  // Dict<String, Int>
+val scores = {"math": [90, 85, 77], "art": [60, 70]}; // Dict<String, Vector[Int]>
+val points = {"p": {"x": 1.5, "y": 2.0}};             // Dict<String, Dict<String, Float>>
+var counts: Dict<String, Long> = {};                  // an empty dictionary needs a type
+
+ages["carol"] = 41;         // insert or replace
+ages["alice"] += 1;         // read-modify-write
+val bob = ages["bob"];      // a missing key stops the program with "KeyError: 'key'"
+val zed = ages.get("zed", 0);
+if ("bob" in ages) { ages.remove("bob"); }
+println(ages);              // {'alice': 31, 'carol': 41}
+
+for (name <- ages) { print(name); }              // keys, in insertion order
+for (name, age <- ages) { println(name + age); } // keys and values
+```
+
+Keys are `Int`, `Long`, `Char`, `Bool`, or `String` (compared by content). Values may be
+any scalar, `String`, list, nested dictionary, or class instance. Methods: `size()`
+(also `length()`/`count()`), `isEmpty()`, `contains(key)` (also `key in d`, `key notin d`),
+`get(key)`, `get(key, default)`, `remove(key)`, `keyAt(i)`, `valueAt(i)`, `copy()`,
+`clear()`, and `toString()`. Dictionaries are reference values: `val e = d` and passing `d`
+to a function share the same dictionary (use `copy()` for an independent one).
 
 ## Tensors
 

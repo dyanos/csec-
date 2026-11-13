@@ -314,6 +314,10 @@ static std::string csec_emit_string_index(const char* tokens, int start, int end
 
 static std::string csec_emit_ptr_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
+    {
+        const std::string dictValue = csec_emit_dict_expression(tokens, start, end, "ptr", resultName);
+        if (!dictValue.empty()) return dictValue;
+    }
     if (csec_is_task_expression(tokens, start, end, "async")) return csec_emit_task_start(tokens, start, end, resultName, true);
     if (csec_is_await_identity(tokens, start, end)) return csec_emit_ptr_expression(tokens, start + 1, end, resultName);
     if (csec_is_await_expression(tokens, start, end)) {
@@ -478,6 +482,10 @@ static std::string csec_emit_ptr_expression(const char* tokens, int start, int e
 static std::string csec_emit_i32_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = add i32 0, 0\n";
+    {
+        const std::string dictValue = csec_emit_dict_expression(tokens, start, end, "i32", resultName);
+        if (!dictValue.empty()) return dictValue;
+    }
     if (csec_is_task_expression(tokens, start, end, "go")) return csec_emit_task_start(tokens, start, end, resultName, false);
     if (csec_is_await_identity(tokens, start, end)) return csec_emit_i32_expression(tokens, start + 1, end, resultName);
     if (csec_is_await_expression(tokens, start, end)) {
@@ -982,7 +990,11 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                         const bool pointerArgument = argumentIndex < static_cast<int>(parameters.size()) &&
                             std::strcmp(csec_llvm_type_for_name(parameters[argumentIndex].second), "ptr") == 0;
                         if (!arguments.empty()) arguments += ", ";
-                        if (pointerArgument && csec_token_kind_at(tokens, argumentStart) == 'I' && argumentStart + 1 == cursor &&
+                        if (pointerArgument && parameters[argumentIndex].second == "Dict") {
+                            // A `Dict<K, V>` parameter takes the dictionary handle.
+                            output += csec_emit_ptr_expression(tokens, argumentStart, cursor, argumentName);
+                            arguments += "ptr " + argumentName;
+                        } else if (pointerArgument && csec_token_kind_at(tokens, argumentStart) == 'I' && argumentStart + 1 == cursor &&
                             csec_visible_i32_array(tokens, argumentStart, csec_token_text_at(tokens, argumentStart))) {
                             const char* storage = csec_lookup_visible_storage_name(tokens, argumentStart, csec_token_text_at(tokens, argumentStart));
                             output += "  " + argumentName + " = load ptr, ptr %" + std::string(storage) + "\n";
@@ -1035,6 +1047,10 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
 static std::string csec_emit_f32_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = fadd float 0.000000e+00, 0.000000e+00\n";
+    {
+        const std::string dictValue = csec_emit_dict_expression(tokens, start, end, "float", resultName);
+        if (!dictValue.empty()) return dictValue;
+    }
     if (csec_native_token_is(tokens, start, 'O', "(") &&
         csec_find_closing_token(tokens, start, end, "(", ")") == end - 1) {
         return csec_emit_f32_expression(tokens, start + 1, end - 1, resultName);
@@ -1144,6 +1160,10 @@ static std::string csec_emit_f32_expression(const char* tokens, int start, int e
 static std::string csec_emit_f64_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = fadd double 0.000000e+00, 0.000000e+00\n";
+    {
+        const std::string dictValue = csec_emit_dict_expression(tokens, start, end, "double", resultName);
+        if (!dictValue.empty()) return dictValue;
+    }
     if (csec_is_await_identity(tokens, start, end)) return csec_emit_f64_expression(tokens, start + 1, end, resultName);
     if (csec_is_await_expression(tokens, start, end)) {
         return csec_emit_await_payload(tokens, start, end, resultName + ".raw") +
@@ -1257,6 +1277,10 @@ static std::string csec_emit_f64_expression(const char* tokens, int start, int e
 static std::string csec_emit_i64_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = add i64 0, 0\n";
+    {
+        const std::string dictValue = csec_emit_dict_expression(tokens, start, end, "i64", resultName);
+        if (!dictValue.empty()) return dictValue;
+    }
     if (csec_is_await_identity(tokens, start, end)) return csec_emit_i64_expression(tokens, start + 1, end, resultName);
     if (csec_is_await_expression(tokens, start, end)) {
         return csec_emit_await_payload(tokens, start, end, resultName + ".raw") +
@@ -1384,6 +1408,10 @@ static std::string csec_emit_i64_expression(const char* tokens, int start, int e
 static std::string csec_emit_i8_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = add i8 0, 0\n";
+    {
+        const std::string dictValue = csec_emit_dict_expression(tokens, start, end, "i8", resultName);
+        if (!dictValue.empty()) return dictValue;
+    }
     if (csec_native_token_is(tokens, start, 'O', "(") &&
         csec_find_closing_token(tokens, start, end, "(", ")") == end - 1) {
         return csec_emit_i8_expression(tokens, start + 1, end - 1, resultName);
@@ -1518,6 +1546,10 @@ static std::string csec_emit_i16_expression(const char* tokens, int start, int e
 static std::string csec_emit_i1_expression(const char* tokens, int start, int end, const std::string& resultName) {
     end = csec_i32_expression_end(tokens, start, end);
     if (end <= start) return "  " + resultName + " = icmp eq i32 0, 1\n";
+    {
+        const std::string dictValue = csec_emit_dict_expression(tokens, start, end, "i1", resultName);
+        if (!dictValue.empty()) return dictValue;
+    }
     if (csec_is_await_identity(tokens, start, end)) return csec_emit_i1_expression(tokens, start + 1, end, resultName);
     if (csec_is_await_expression(tokens, start, end)) {
         return csec_emit_await_payload(tokens, start, end, resultName + ".raw") +

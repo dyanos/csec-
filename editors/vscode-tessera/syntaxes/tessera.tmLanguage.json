@@ -126,7 +126,7 @@
       "patterns": [
         {
           "name": "storage.type.tessera",
-          "match": "\\b(?:Int|Long|Float|Double|Real|Bool|Boolean|Char|String|Nat|Unit|Void|Tensor|Vector|Matrix|Array|Shared|Weak|Regex)\\b"
+          "match": "\\b(?:Int|Long|Float|Double|Real|Bool|Boolean|Char|String|Nat|Unit|Void|Tensor|Vector|Matrix|Array|Dict|Shared|Weak|Regex)\\b"
         }
       ]
     },

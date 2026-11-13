@@ -581,6 +581,8 @@ const SNIPPETS: &[(&str, &str, &str)] = &[
     ("pmap", "pmap (${1|cpu,simd,openmp,gpu|}, ${2:x} <- ${3:xs}) { $0 }", "parallel map"),
     ("import", "import \"${1:path}\";", "import"),
     ("tensor", "new Tensor<${1:Double}, ${2:2}, ${3:2}>(${4:0.0})", "new tensor"),
+    ("dict", "{${1:\"key\"}: ${2:value}}", "dictionary literal"),
+    ("fordict", "for (${1:key}, ${2:value} <- ${3:dict}) {\n\t$0\n}", "dictionary loop"),
 ];
 
 pub fn completion(cur: &Source, imports: &[Arc<Source>], pos: Position, snippets: bool) -> Vec<CompletionItem> {

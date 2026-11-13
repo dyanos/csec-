@@ -41,6 +41,15 @@ void ArrayAccessNode::accept(ASTVisitor& visitor) {
 
 llvm::Value* ArrayAccessNode::codegen() {
     auto& cg = CodeGenerator::getInstance();
+    {
+        auto containerType = array ? array->getType() : nullptr;
+        if (isDictType(containerType.get())) {
+            ASTNode* key = index ? index.get()
+                : (!indices.empty() && indices[0] ? indices[0]->index.get() : nullptr);
+            if (!key) return nullptr;
+            return codegenDictGet(array.get(), key);
+        }
+    }
     llvm::Value* arrayValue = array->codegen();
     if (!arrayValue) {
         return nullptr;

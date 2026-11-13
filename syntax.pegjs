@@ -188,6 +188,7 @@ PrimaryExpression
   / LambdaExpression
   / NewExpression
   / ArrayLiteral
+  / DictLiteral
   / Block
   / "(" _ Expression (_ "," _ Expression)+ _ ")"
   / "(" _ Expression _ ")"
@@ -211,6 +212,13 @@ NewExpression
 
 ArrayLiteral
   = "[" _ (Expression (_ "," _ Expression)*)? _ "]"
+
+DictLiteral
+  = "{" _ DictEntry (_ "," _ DictEntry)* (_ ",")? _ "}"
+  / "{" _ "}"
+
+DictEntry
+  = Expression _ ":" _ Expression
 
 CallArguments
   = "(" _ (Expression (_ "," _ Expression)*)? _ ")"

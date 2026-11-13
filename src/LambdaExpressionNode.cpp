@@ -22,6 +22,7 @@
 #include "ForStatementNode.h"
 #include "ClassInstanceCreationNode.h"
 #include "ArrayLiteralNode.h"
+#include "DictLiteralNode.h"
 #include "ArrayCreationExpressionNode.h"
 #include "CastingExpressionNode.h"
 #include "TupleExpressionNode.h"
@@ -108,6 +109,9 @@ void collectReferencedIdentifiers(ASTNode* node, std::set<std::string>& names) {
         for (auto& arg : creation->arguments) collectReferencedIdentifiers(arg.get(), names);
     } else if (auto* literal = dynamic_cast<ArrayLiteralNode*>(node)) {
         for (auto& element : literal->elements) collectReferencedIdentifiers(element.get(), names);
+    } else if (auto* dict = dynamic_cast<DictLiteralNode*>(node)) {
+        for (auto& key : dict->keys) collectReferencedIdentifiers(key.get(), names);
+        for (auto& value : dict->values) collectReferencedIdentifiers(value.get(), names);
     } else if (auto* arrayCreation = dynamic_cast<ArrayCreationExpressionNode*>(node)) {
         for (auto& size : arrayCreation->sizes) collectReferencedIdentifiers(size.get(), names);
     } else if (auto* cast = dynamic_cast<CastingExpressionNode*>(node)) {

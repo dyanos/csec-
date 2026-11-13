@@ -5,6 +5,7 @@
 #include "ArrayAccessNode.h"
 #include "AccessFieldNode.h"
 #include "type_utils.h"
+#include "dict_support.h"
 
 #include <iostream>
 #include <llvm/IR/DataLayout.h>
@@ -14,6 +15,17 @@ void AssignmentExpressionNode::accept(ASTVisitor& visitor) {
 }
 
 llvm::Value* AssignmentExpressionNode::codegen() {
+    // `d[key] = value` (and `d[key] op= value`) stores into a dictionary; the left side is not an
+    // address, so it must not be evaluated as a read (which would raise KeyError for a new key).
+    if (auto* access = dynamic_cast<ArrayAccessNode*>(left.get())) {
+        auto containerType = access->array ? access->array->getType() : nullptr;
+        if (isDictType(containerType.get())) {
+            ASTNode* key = access->index ? access->index.get()
+                : (!access->indices.empty() && access->indices[0] ? access->indices[0]->index.get() : nullptr);
+            if (!key) return nullptr;
+            return codegenDictSet(access->array.get(), key, right.get(), op);
+        }
+    }
     llvm::Value* leftValue = left->codegen();
     llvm::Value* rightValue = right->codegen();
     if (!leftValue || !rightValue) {

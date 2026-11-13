@@ -13,6 +13,9 @@
 #include "PMapStatementNode.h"
 #include "PrefixExpressionNode.h"
 #include "type_utils.h"
+#include "dict_support.h"
+#include "ArrayAccessNode.h"
+#include "MethodCallNode.h"
 
 #include <iostream>
 #include <llvm/IR/Value.h>
@@ -79,6 +82,18 @@ llvm::Value* VariableDeclarationNode::codegen() {
         else if (initValue->getType()->isIntegerTy(32)) {
             this->type = std::make_unique<BasicType>("Int");
         }
+        else if (initValue->getType()->isIntegerTy(64)) {
+            this->type = std::make_unique<BasicType>("Long");
+        }
+        else if (initValue->getType()->isIntegerTy(1)) {
+            this->type = std::make_unique<BasicType>("Boolean");
+        }
+        else if (initValue->getType()->isIntegerTy(8)) {
+            this->type = std::make_unique<BasicType>("Char");
+        }
+        else if (initValue->getType()->isIntegerTy(16)) {
+            this->type = std::make_unique<BasicType>("Short");
+        }
         else if (initValue->getType()->isFloatTy()) {
             this->type = std::make_unique<BasicType>("Float");
         }
@@ -94,6 +109,13 @@ llvm::Value* VariableDeclarationNode::codegen() {
         }
         else if (auto* arrayCreation = dynamic_cast<ArrayCreationExpressionNode*>(initializer.get())) {
             this->type = arrayCreation->getType();
+        }
+        else if (auto initializerType = initializer->getType();
+                 initializerType && initializerType->getKind() != Type::Kind::UNKNOWN &&
+                 initValue->getType()->isPointerTy()) {
+            // A pointer-valued initializer with a known type (a Dict, a list, ...): keep that type
+            // rather than assuming a String.
+            this->type = std::move(initializerType);
         }
         // string type (opaque pointer)
         else if (initValue->getType()->isPointerTy()) {
@@ -158,12 +180,26 @@ llvm::Value* VariableDeclarationNode::codegen() {
     // without an intervening load, the same representation a `new T[n]` initializer produces.
     // This is restricted to call initializers so that array literals, which the parallel
     // collection lowering re-evaluates through their own node, keep their existing representation.
+    // A list read out of a dictionary (`d[k]`, `d.get(k, ...)`, `d.valueAt(i)`) is likewise a
+    // bare buffer pointer.
+    auto readsFromDict = [&]() {
+        if (auto* access = dynamic_cast<ArrayAccessNode*>(initializer.get())) {
+            auto container = access->array ? access->array->getType() : nullptr;
+            return isDictType(container.get());
+        }
+        if (auto* call = dynamic_cast<MethodCallNode*>(initializer.get())) {
+            auto receiver = call->object ? call->object->getType() : nullptr;
+            return isDictType(receiver.get());
+        }
+        return false;
+    };
     const bool arrayVectorFromCall = type &&
         (type->getKind() == Type::Kind::ARRAY ||
          (type->getKind() == Type::Kind::GENERIC &&
           (type->getName() == "Array" || type->getName() == "Vector"))) &&
         (dynamic_cast<CallExpressionNode*>(initializer.get()) != nullptr ||
-         dynamic_cast<FunctionCallNode*>(initializer.get()) != nullptr);
+         dynamic_cast<FunctionCallNode*>(initializer.get()) != nullptr ||
+         readsFromDict());
 
     // Keep a moved tensor as the original pointer value. Storing it in a new pointer slot would
     // make a later return use a different LLVM Value and defeat cleanup ownership transfer.

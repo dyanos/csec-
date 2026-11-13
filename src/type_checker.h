@@ -119,6 +119,10 @@ public:
 	void visit(ReduceStatementNode& node) override;
 	void visit(FilterStatementNode& node) override;
 	void visit(ArrayLiteralNode& node) override;
+	void visit(DictLiteralNode& node) override;
+	void checkDictKey(const Type* dictType, ASTNode* keyExpr);
+	void checkDictValue(const Type* valueType, ASTNode* valueExpr, const std::string& context);
+	static std::string typeDisplayName(const Type* type);
 	void visit(TupleExpressionNode& node) override;
 	void visit(DestructuringAssignmentNode& node) override;
 	void visit(WhileStatementNode& node) override;

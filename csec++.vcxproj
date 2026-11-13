@@ -155,6 +155,7 @@
     <ClCompile Include="src/ArrayCreationExpressionNode.cpp" />
     <ClCompile Include="src/ArrayCreationNode.cpp" />
     <ClCompile Include="src/ArrayLiteralNode.cpp" />
+    <ClCompile Include="src/dict_support.cpp" />
     <ClCompile Include="src/AssignmentExpressionNode.cpp" />
     <ClCompile Include="src/AssignmentNode.cpp" />
     <ClCompile Include="src/ast.cpp" />
@@ -219,6 +220,8 @@
     <ClInclude Include="src/ArrayCreationExpressionNode.h" />
     <ClInclude Include="src/ArrayCreationNode.h" />
     <ClInclude Include="src/ArrayLiteralNode.h" />
+    <ClInclude Include="src/DictLiteralNode.h" />
+    <ClInclude Include="src/dict_support.h" />
     <ClInclude Include="src/AssignmentExpressionNode.h" />
     <ClInclude Include="src/AssignmentNode.h" />
     <ClInclude Include="src/ASTVisitor.h" />

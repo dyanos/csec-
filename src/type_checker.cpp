@@ -4,6 +4,7 @@
 #include "codegen.h"
 #include "symbol.h"
 #include "type_utils.h"
+#include "dict_support.h"
 
 #include <iostream>
 
@@ -455,6 +456,12 @@ void TypeChecker::checkTypeResolved(const std::unique_ptr<Type>& type, const std
 
 void TypeChecker::visit(VariableDeclarationNode& node) {
     if (node.initializer) {
+        // `val d: Dict<K, V> = {...}` (including an empty `{}`) takes its type from the annotation.
+        if (auto* dictLiteral = dynamic_cast<DictLiteralNode*>(node.initializer.get())) {
+            if (node.hasExplicitType && isDictType(node.type.get())) {
+                dictLiteral->type = node.type->clone();
+            }
+        }
         node.initializer->accept(*this);
         auto initType = node.initializer->getType();
         if (!isResolvedType(initType)) {
@@ -816,8 +823,23 @@ void TypeChecker::visit(ForStatementNode& node) {
     }
     cg.symbolTable.enterScope();
     enterOwnershipScope();
-    bindVariable(node.variable, std::make_unique<BasicType>("Int"), false);
-    declareOwnership(node.variable, std::make_unique<BasicType>("Int"));
+    auto iterableType = (node.iterableExpr && !node.isRange) ? node.iterableExpr->getType() : nullptr;
+    if (isDictType(iterableType.get())) {
+        // `for (k <- d)` binds each key; `for (k, v <- d)` binds the key and its value.
+        const Type* keyType = dictKeyType(iterableType.get());
+        const Type* valueType = dictValueType(iterableType.get());
+        const std::string keyName = node.tokenValue.empty() ? node.variable : node.tokenValue;
+        bindVariable(keyName, cloneType(keyType), false);
+        declareOwnership(keyName, cloneType(keyType));
+        if (!node.tokenValue.empty()) {
+            bindVariable(node.variable, cloneType(valueType), false);
+            declareOwnership(node.variable, cloneType(valueType));
+        }
+    }
+    else {
+        bindVariable(node.variable, std::make_unique<BasicType>("Int"), false);
+        declareOwnership(node.variable, std::make_unique<BasicType>("Int"));
+    }
     if (node.body) {
         node.body->accept(*this);
     }
@@ -987,6 +1009,26 @@ void TypeChecker::visit(MethodCallNode& node) {
             arg->accept(*this);
         }
     }
+    if (node.object) {
+        auto receiverType = node.object->getType();
+        if (isDictType(receiverType.get())) {
+            if (!dictMethodType(receiverType.get(), node.methodName, node.arguments.size())) {
+                reportError("Type error: " + typeDisplayName(receiverType.get()) + " has no method '" + node.methodName +
+                            "' taking " + std::to_string(node.arguments.size()) + " argument(s); available: size(), "
+                            "isEmpty(), contains(key), get(key), get(key, default), remove(key), keyAt(i), "
+                            "valueAt(i), copy(), clear(), toString()");
+                return;
+            }
+            const std::string& m = node.methodName;
+            if ((m == "contains" || m == "has" || m == "containsKey" || m == "remove" || m == "get") &&
+                !node.arguments.empty()) {
+                checkDictKey(receiverType.get(), node.arguments[0].get());
+            }
+            if (m == "get" && node.arguments.size() == 2) {
+                checkDictValue(dictValueType(receiverType.get()), node.arguments[1].get(), "default value");
+            }
+        }
+    }
     checkTypeResolved(node.getType(), "method call");
 }
 
@@ -1099,7 +1141,88 @@ void TypeChecker::visit(ArrayAccessNode& node) {
         if (spec->end) spec->end->accept(*this);
         if (spec->step) spec->step->accept(*this);
     }
+    if (node.array) {
+        auto containerType = node.array->getType();
+        if (isDictType(containerType.get())) {
+            ASTNode* keyExpr = node.index ? node.index.get()
+                : (!node.indices.empty() && node.indices[0] ? node.indices[0]->index.get() : nullptr);
+            if (node.indices.size() > 1 || !keyExpr) {
+                reportError("Type error: a dictionary is indexed by exactly one key: d[key]");
+                return;
+            }
+            checkDictKey(containerType.get(), keyExpr);
+            return;
+        }
+    }
     checkTypeResolved(node.getType(), "array access");
+}
+
+void TypeChecker::checkDictKey(const Type* dictType, ASTNode* keyExpr) {
+    const Type* keyType = dictKeyType(dictType);
+    auto actual = keyExpr ? keyExpr->getType() : nullptr;
+    if (!keyType || !actual || !isResolvedType(actual)) {
+        return;
+    }
+    auto unified = unifyDictElementTypes(keyType, actual.get());
+    if (!unified || !unified->equals(*keyType)) {
+        reportError("Type error: dictionary key of type '" + typeDisplayName(actual.get()) +
+                    "' does not match the key type of " + typeDisplayName(dictType));
+    }
+}
+
+void TypeChecker::checkDictValue(const Type* valueType, ASTNode* valueExpr, const std::string& context) {
+    auto actual = valueExpr ? valueExpr->getType() : nullptr;
+    if (!valueType || !actual || !isResolvedType(actual)) {
+        return;
+    }
+    auto unified = unifyDictElementTypes(valueType, actual.get());
+    if (!unified || !unified->equals(*valueType)) {
+        reportError("Type error: " + context + " of type '" + typeDisplayName(actual.get()) +
+                    "' does not fit the dictionary value type '" + typeDisplayName(valueType) + "'");
+    }
+}
+
+std::string TypeChecker::typeDisplayName(const Type* type) {
+    if (!type) return "?";
+    if (auto* generic = dynamic_cast<const GenericType*>(type)) {
+        std::string text = generic->getName();
+        const bool squareBrackets = text == "Vector" || text == "Array";
+        text += squareBrackets ? "[" : "<";
+        for (size_t i = 0; i < generic->typeArguments.size(); ++i) {
+            if (i > 0) text += ", ";
+            text += typeDisplayName(generic->typeArguments[i].get());
+        }
+        text += squareBrackets ? "]" : ">";
+        return text;
+    }
+    if (auto* array = dynamic_cast<const ArrayType*>(type)) {
+        return "Array[" + typeDisplayName(array->elementType.get()) + "]";
+    }
+    return type->getName();
+}
+
+void TypeChecker::visit(DictLiteralNode& node) {
+    const bool expected = isDictType(node.type.get());
+    const Type* valueType = expected ? dictValueType(node.type.get()) : nullptr;
+    for (size_t i = 0; i < node.keys.size(); ++i) {
+        if (expected && isDictType(valueType)) {
+            if (auto* nested = dynamic_cast<DictLiteralNode*>(node.values[i].get())) {
+                nested->type = cloneType(valueType);
+            }
+        }
+        if (node.keys[i]) node.keys[i]->accept(*this);
+        if (node.values[i]) node.values[i]->accept(*this);
+    }
+    if (expected) {
+        for (size_t i = 0; i < node.keys.size(); ++i) {
+            checkDictKey(node.type.get(), node.keys[i].get());
+            checkDictValue(valueType, node.values[i].get(), "dictionary value");
+        }
+        return;
+    }
+    if (!isDictType(node.getType().get())) {
+        reportError("Type error: " + node.inferenceError());
+    }
 }
 
 void TypeChecker::visit(ArrayCreationNode& node) {
@@ -1143,10 +1266,24 @@ void TypeChecker::visit(AssignmentExpressionNode& node) {
     if (node.left) {
         node.left->accept(*this);
     }
+    // `d = {...}` / `d = {}` for a Dict variable, and `d[k] = {...}` for a nested Dict value, take the
+    // target's type.
+    if (auto* dictLiteral = dynamic_cast<DictLiteralNode*>(node.right.get())) {
+        auto leftType = node.left ? node.left->getType() : nullptr;
+        if (isDictType(leftType.get()) && !dictLiteral->type) {
+            dictLiteral->type = leftType->clone();
+        }
+    }
     if (node.right) {
         node.right->accept(*this);
     }
     auto rightType = node.right ? node.right->getType() : std::make_unique<UnknownType>();
+    if (auto* access = dynamic_cast<ArrayAccessNode*>(node.left.get())) {
+        auto containerType = access->array ? access->array->getType() : nullptr;
+        if (isDictType(containerType.get()) && (node.op == "=" || node.op == "<-")) {
+            checkDictValue(dictValueType(containerType.get()), node.right.get(), "assigned value");
+        }
+    }
     const std::string leftName = identifierName(node.left.get());
     const std::string rightName = movedOrBorrowedIdentifier(node.right.get());
     const bool rightIsMoveChecked = rightType && isMoveCheckedType(rightType.get());

@@ -563,6 +563,22 @@ CSEC_NATIVE_API char* csec_html_to_text(const char* html);
 CSEC_NATIVE_API char* csec_html_title(const char* html);
 CSEC_NATIVE_API char* csec_html_links(const char* html, const char* base);
 
+// Dictionaries (dict_runtime.inc): the `{key: value}` literal and Dict<K, V>.
+CSEC_NATIVE_API void* csec_dict_new(int keyKind, int valueKind, int elementKind, int elementBytes);
+CSEC_NATIVE_API void csec_dict_free(void* dict);
+CSEC_NATIVE_API void csec_dict_set(void* dict, long long key, long long value);
+CSEC_NATIVE_API void csec_dict_set_array(void* dict, long long key, long long value, long long length);
+CSEC_NATIVE_API long long csec_dict_get(void* dict, long long key);
+CSEC_NATIVE_API long long csec_dict_get_or(void* dict, long long key, long long fallback);
+CSEC_NATIVE_API int csec_dict_contains(void* dict, long long key);
+CSEC_NATIVE_API int csec_dict_remove(void* dict, long long key);
+CSEC_NATIVE_API long long csec_dict_size(void* dict);
+CSEC_NATIVE_API long long csec_dict_key_at(void* dict, long long index);
+CSEC_NATIVE_API long long csec_dict_value_at(void* dict, long long index);
+CSEC_NATIVE_API void csec_dict_clear(void* dict);
+CSEC_NATIVE_API void* csec_dict_copy(void* dict);
+CSEC_NATIVE_API char* csec_dict_to_string(void* dict);
+
 #ifdef __cplusplus
 }
 #endif

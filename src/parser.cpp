@@ -109,7 +109,7 @@ std::unique_ptr<Type> Parser::parseType() {
 			do {
 				typeArgs.push_back(parseTemplateArgumentAsType());
 			} while (match(TokenType::OPERATOR, ","));
-			expect(TokenType::OPERATOR, ">");
+			expectClosingAngle();
 			return std::make_unique<GenericType>(baseType, typeArgs);
 		}
 

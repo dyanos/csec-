@@ -1,0 +1,41 @@
+import std.dataframe = pl;
+// A tour of std.dataframe's Polars-style API on the test fixture (run from the repository root):
+//
+//     csec++ examples/dataframe_demo.csec --emit-ir -o demo.ll
+//     csec++ --run-ir demo.ll
+
+def main(): Int {
+    val path = "tests/stdlib/data/people_snappy_dict.parquet";
+    val people = pl.readParquet(path);
+    println(people.toString());
+
+    // Expressions: filter, computed columns, conditionals, window functions.
+    val scored = people
+        .filter(pl.col("score").isNotNull())
+        .withColumns(
+            pl.when(pl.col("score") >= 7).then("high").otherwise("low").alias("level"),
+            (pl.col("score") - pl.col("score").mean().over("region")).round(2).alias("vs_region"),
+            pl.col("name").str().toUppercase());
+    println(scored.select(pl.col("id"), pl.col("name"), pl.col("region"), pl.col("level"), pl.col("vs_region")).toString());
+
+    // Group-by aggregation.
+    val byRegion = people.groupBy("region")
+        .agg(pl.col("score").mean().alias("avg_score"), pl.col("score").max(), pl.len(), pl.col("flag").sum().alias("flagged"))
+        .sort("avg_score", true);
+    println(byRegion.toString());
+
+    // Joins.
+    val managers = pl.readCsvString("region,manager\neast,Kim\nwest,Lee\n");
+    println(people.join(managers, "region", "left").select(pl.col("name"), pl.col("region"), pl.col("manager")).head(4).toString());
+
+    // A lazy query: see how the plan is optimized, then run it.
+    val q = pl.scanParquet(path)
+        .filter(pl.col("id") > 8)
+        .select(pl.col("id"), pl.col("name"), (pl.col("score") * 10).alias("score10"));
+    println(q.explain());
+    println(q.collect().toString());
+    println("scan read " + pl.lastScanInfo());
+
+    println(people.describe().toString());
+    return 0;
+}

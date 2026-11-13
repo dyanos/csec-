@@ -6,7 +6,7 @@ import "../data/alias_helper.csec" = helper;
 
 def main(): Int {
     // Qualified calls through an alias.
-    val t = df.readParquet("tests/stdlib/data/people_lz4.parquet");
+    val t = df.dfReadParquet("tests/stdlib/data/people_lz4.parquet");
     if (t == 0) { return 1; }
     if (df.dfRows(t) != 10) { return 2; }
     val g = df.dfGroupBy(t, "region", "count");

@@ -78,7 +78,7 @@ name that no imported module declared is an ordinary unresolved call (an error).
 | --- | --- |
 | `std.microthread` | Erlang-style processes (§2) |
 | `std.thread` | OS threads, mutexes, atomics, channels |
-| `std.dataframe` | columnar data frames; Parquet and CSV input/output (§8) |
+| `std.dataframe` | Polars-style DataFrame / LazyFrame / expressions; Parquet and CSV (§8) |
 | `std.process` | running OS processes (`runCommand`, `commandOutput`, `startProcess`, `waitProcess`, ...) |
 | `std.math.natural` | `Nat` division/modulo/power/gcd/lcm/isqrt, primality, factorial, binomial, Fibonacci |
 | `std.math.real` | constants and real-number helpers |
@@ -226,54 +226,110 @@ the build machine's CPU (e.g. AVX2/AVX-512).
 
 ## 8. Data frames and Parquet (`import std.dataframe`)
 
-A data frame is a handle (`Long`) to an immutable table of named columns. Each column is `long`,
-`double`, or `string`, and any cell may be null. Every operation returns a new frame (or `0` on
-failure; `dfLastError()` says why) and leaves its input unchanged. Release frames with `dfFree`.
+`std.dataframe` is modelled on [Polars](https://pola.rs): eager `DataFrame`s, lazy `LazyFrame`
+queries, and composable expressions. Columns have the dtypes `i64`, `f64`, `str`, and `bool`, and
+any cell may be null.
 
 ```csec
-import std.dataframe = df;
+import std.dataframe = pl;
 
 def main(): Int {
-    val sales = df.readParquet("sales.parquet");
-    if (sales == 0) { println(df.dfLastError()); return 1; }
-    val big = df.dfFilter(sales, "amount", ">=", 100.0e0);
-    val byRegion = df.dfSort(df.dfGroupBy(big, "region", "amount:sum,amount:mean,count"), "-amount_sum");
-    println(df.dfToString(byRegion, 20));
+    val sales = pl.readParquet("sales.parquet");
+    val top = sales
+        .filter((pl.col("amount") > 100) & pl.col("region").isNotNull())
+        .withColumns((pl.col("qty") * pl.col("price")).alias("total"))
+        .groupBy("region")
+        .agg(pl.col("total").sum(), pl.col("amount").mean().alias("avg"), pl.len())
+        .sort("total", true);
+    println(top.toString());
+
+    // Lazy: optimized, then run by collect().
+    val q = pl.scanParquet("sales.parquet")
+        .filter(pl.col("region") == "east")
+        .select(pl.col("amount"), pl.col("qty"))
+        .head(10);
+    println(q.explain());
+    val firstTen = q.collect();
     return 0;
 }
 ```
 
-The alias is optional (§1.1); `import std.dataframe` and the unqualified names work the same.
+**Expressions** (`Expr`). They are built with `col(name)`, `all()`, `lit(value)`, `len()`, and
+`when(cond).then(a).otherwise(b)`.
+- Arithmetic is `+ - * / %`. `/` always gives `f64`, `%` follows the divisor's sign, and `+` on two
+  strings concatenates them.
+- Comparisons are `== != < <= > >=`. A comparison operand may be another expression or a
+  `Long`, `Double`, `String`, or `Boolean`.
+- Logic is `&`, `|`, `.and()`, `.or()`, `.not()`, with Kleene nulls (false & null = false, true | null = true).
+- Null handling is `isNull`, `isNotNull`, and `fillNull`.
+- Math functions are `abs`, `sqrt`, `exp`, `log`, `floor`, `ceil`, `round(n)`, and `neg`.
+- Other functions are `cast("i64" | "f64" | "str" | "bool")`, `isBetween(lo, hi)`, and `alias(name)`.
+- String functions go through `.str()`: `contains`, `startsWith`, and `endsWith` (all literal
+  matches), `lenChars`, `lenBytes`, `toUppercase`, `toLowercase`, `stripChars`, `replace`, and
+  `replaceAll`.
+- Aggregations are `sum`, `mean`, `min`, `max`, `count` (non-null cells), `std`, `var` (ddof 1),
+  `median`, `first`, `last`, `nUnique`, and `nullCount`. In a select an aggregation is a scalar that
+  broadcasts; inside `agg()` it is computed per group. `expr.over("k")` computes it per group of `k`
+  and keeps one value per row (a window function).
+- An output column is named after the expression's leftmost input column (`literal` for a literal,
+  `len` for `len()`), or after its `alias`.
 
-- **Input/output.** `readParquet(path)`, `readParquetColumns(path, "a,b")` (projection), and
-  `writeParquet(frame, path)`; `readCsv`/`writeCsv`, `csvToFrame(text)`/`frameToCsv(frame)`.
-  CSV has a header row. Column types are inferred (long, then double, then string), and empty
-  cells are null.
-- **Parquet coverage.** The reader handles flat schemas, data pages v1 and v2, and the PLAIN,
-  dictionary, RLE, DELTA_BINARY_PACKED, DELTA_LENGTH_BYTE_ARRAY, DELTA_BYTE_ARRAY, and
-  BYTE_STREAM_SPLIT encodings. Pages may be UNCOMPRESSED, SNAPPY, GZIP, or LZ4_RAW, or ZSTD when the
-  runtime is built with libzstd (`dfZstdSupported()`; CMake option `CSEC_WITH_ZSTD`, AUTO by
-  default). Columns are decoded in parallel on several OS threads. Booleans, integers, DATE (days),
-  TIMESTAMP (the file's unit), and INT96 (nanoseconds) become `long`. FLOAT, DOUBLE, DECIMAL, and
-  FLOAT16 become `double`. Byte arrays become `string`. Nested and repeated columns are rejected;
-  read the flat ones with `readParquetColumns`. `writeParquet` writes one uncompressed PLAIN row
-  group per 2^20 rows, with OPTIONAL INT64 / DOUBLE / UTF8 columns.
-- **Cells.** `dfRows`, `dfColumns`, `dfColumnName(i)`, `dfColumnIndex`, `dfColumnType`, `dfIsNull`,
-  `dfGetLong` / `dfGetDouble` / `dfGetString` (a null reads as `0`, NaN, or `""`).
-- **Operations.** `dfSelect`, `dfDrop`, `dfRename`, `dfHead`, `dfTail`, `dfSlice`;
-  `dfFilter(frame, col, op, Double)` with `== != < <= > >=`;
-  `dfFilterString` with those ops plus `contains`, `startswith`, `endswith`; `dfDropNulls`;
-  `dfSort(frame, "a,-b")` (stable; `-` for descending; nulls last);
-  `dfGroupBy(frame, "keys", "col:fn,...")` with fn = `count sum mean min max std first last nunique`
-  (a bare `count` counts rows; result columns are named `col_fn`); `dfJoin(left, right, "key" or
-  "l=r", "inner" | "left")`; `dfCompute(frame, name, a, op, b)` and `dfComputeScalar` with
-  `+ - * /` (long op long stays long except `/`, and `+` concatenates strings);
-  `dfConcat`; `dfValueCounts`.
-- **Statistics.** `dfSum`, `dfMean`, `dfMin`, `dfMax`, `dfStd` (sample) return `Double` (NaN when
-  there is no value). `dfCount` and `dfNullCount` return `Long`.
-- **Building frames.** `dfNew()`, `dfAddColumn(frame, name, "long" | "double" | "string")`, and
-  `dfAppendLong` / `dfAppendDouble` / `dfAppendString` / `dfAppendNull`. A frame under construction
-  must not be appended to from two threads at once; finished frames may be shared freely.
+**DataFrame.**
+- Shape: `height`, `width`, `shape`, `columnName(i)`, `dtype(name)`, and `schema`.
+- Columns: `select(...)` (expressions, or `"a,b"`), `withColumns(...)`, `withColumn`, `drop`,
+  `rename("old=new,...")`, and `withRowIndex`.
+- Rows: `filter`, `head`, `tail`, `slice`, `limit`, `unique([subset])`, and `dropNulls([subset])`.
+- `sort(by[, descending[, nullsLast]])` sorts by `"a,-b"` or by an expression. The sort is stable,
+  and nulls come first by default, as in Polars.
+- `groupBy(keys).agg(...)` (or `.len()`) keeps the groups in order of first appearance.
+- `join(other, on[, how[, suffix]])` takes `on` as `"k"`, `"a,b"`, or `"l=r"`. `how` is `inner`,
+  `left`, `full`, `semi`, `anti`, or `cross`.
+- Summaries: `vstack`, `describe`, `nullCount`, `sum`, `mean`, `min`, `max`, `std`, and `median`.
+- Cells: `getLong`, `getDouble`, `getString`, `isNull`, and `itemLong`/`itemDouble`/`itemString`.
+- Output: `toString([maxRows])` gives a Polars-style table (UTF-8 box drawing, or ASCII through
+  `setTableFormat("ascii")`; on a Windows console that is not in UTF-8 mode the default is ASCII).
+  `writeParquet`, `writeCsv`, and `toCsv` write the frame out.
+- `lazy()` turns the frame into a `LazyFrame`.
+
+**LazyFrame.**
+- Building: `scanParquet(path)`, `scanCsv(path)`, or `df.lazy()`, then the same operations as a
+  DataFrame. `collect()` runs the query, `explain()` shows the optimized plan (`explain(false)`
+  the plan as written), and `columns()` lists the output columns.
+- Predicate pushdown: filters move below sorts, `withColumns` (when they do not read the new
+  columns), group keys, and the left side of joins, down into the scan. At the scan, Parquet
+  row-group min/max statistics skip row groups the filter cannot match.
+- Projection pushdown: a scan reads only the columns the query uses, and unused `withColumns`
+  outputs are dropped.
+- Limit pushdown: `head(n)` over a scan stops reading row groups once it has `n` rows.
+- `lastScanInfo()` reports what the last scan read (`row_groups=1/3 columns=2/6`).
+
+**Input and output.** `readParquet(path[, "a,b"])`, `readCsv(path)`, `readCsvString(text)`,
+`scanParquet`, `scanCsv`, and `concat(a, b)`.
+- Parquet: the reader handles flat schemas, data pages v1 and v2, and the PLAIN, dictionary, RLE,
+  DELTA_*, and BYTE_STREAM_SPLIT encodings.
+- Compression: UNCOMPRESSED, SNAPPY, GZIP, and LZ4_RAW are built in. ZSTD, which Polars writes by
+  default, needs a runtime built with libzstd (`dfZstdSupported()`; CMake `CSEC_WITH_ZSTD`, AUTO
+  by default).
+- Types: booleans become `bool`; integers, DATE (days), TIMESTAMP (the file's unit), and INT96
+  (nanoseconds) become `i64`; floats and DECIMAL become `f64`; byte arrays become `str`. Nested and
+  repeated columns are rejected; read the flat ones by name.
+- Parallelism: columns are decoded in parallel, and `take`-style operations (filter, sort, join)
+  gather columns in parallel.
+- `writeParquet` writes uncompressed PLAIN files.
+
+**Errors.** Like a Polars exception, a failing operation prints `DataFrame error: ...` and exits
+with status 1. After `setRaiseErrors(false)` it instead returns an invalid frame (`isValid()` is
+false) and `dfLastError()` explains why.
+
+**Values, not owners.** `DataFrame`, `LazyFrame`, `Expr`, and the other API types are value structs
+around runtime handles, so they copy freely without `<-`. A method takes up to six expressions per
+call; chain `withColumns`/`select` calls for more.
+
+**Procedural API.** The earlier handle-based functions remain for existing code: `dfFilter`,
+`dfSort`, `dfGroupBy("k", "col:fn,...")`, `dfJoin`, `dfCompute`, `dfGetLong`, and the rest. Their
+input and output functions are `dfReadParquet`, `dfReadParquetColumns`, `dfWriteParquet`,
+`dfReadCsv`, `dfFromCsv`, `dfWriteCsv`, and `dfToCsv`. Before the Polars-style API these were named
+`readParquet`, `readCsv`, ...; those names now return `DataFrame`s.
 
 ## 5. Self-hosted compiler support
 

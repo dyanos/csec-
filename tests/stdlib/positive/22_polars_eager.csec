@@ -1,0 +1,99 @@
+import std.dataframe = pl;
+// Polars-style eager API on the people fixture (10 rows: id, name, region, score, flag, small).
+
+def main(): Int {
+    val df = pl.readParquet("tests/stdlib/data/people_snappy_dict.parquet");
+    if (df.height() != 10 or df.width() != 6) { return 1; }
+    if (df.dtype("flag") != "bool" or df.dtype("score") != "f64" or df.dtype("name") != "str") { return 2; }
+    if (df.shape() != "(10, 6)") { return 3; }
+
+    // filter with expressions; null scores never match
+    val high = df.filter(pl.col("score") > 5);
+    if (high.height() != 5 or high.getLong("id", 0) != 6) { return 4; }
+    val eastFlag = df.filter((pl.col("region") == "east") & pl.col("flag"));
+    if (eastFlag.height() != 3) { return 5; }  // ids 1, 3, 9
+    val either = df.filter((pl.col("small") < -2) | (pl.col("small") >= 6));
+    if (either.height() != 2) { return 6; }
+    val between = df.filter(pl.col("id").isBetween(3, 5));
+    if (between.height() != 3) { return 7; }
+    val notFlag = df.filter(pl.col("flag").not());
+    if (notFlag.height() != 4) { return 8; }
+    val named = df.filter(pl.col("name").isNotNull() & pl.col("name").str().startsWith("a"));
+    if (named.height() != 1 or named.getString("name", 0) != "alice") { return 9; }
+
+    // select / withColumns: names, dtypes, arithmetic, broadcasting
+    val sel = df.select(pl.col("id"), (pl.col("score") * 2).alias("double"), pl.col("score").sum().alias("total"));
+    if (sel.width() != 3 or sel.height() != 10 or sel.getDouble("double", 9) != 21.5e0) { return 10; }
+    if (sel.getDouble("total", 4) != 52.5e0) { return 11; }  // scalar broadcast to every row
+    val ints = df.select((pl.col("id") * pl.col("small")).alias("p"), (pl.col("id") / 2).alias("q"), (pl.col("small") % 4).alias("r"));
+    if (ints.dtype("p") != "i64" or ints.dtype("q") != "f64" or ints.getDouble("q", 0) != 0.5e0) { return 12; }
+    if (ints.getLong("r", 0) != 1) { return 13; }  // -3 mod 4 = 1, like Polars
+    val sums = df.select(pl.col("score").sum(), pl.col("id").max(), pl.len());
+    if (sums.height() != 1 or sums.getLong("len", 0) != 10 or sums.getLong("id", 0) != 10) { return 14; }
+    val one = df.select(pl.col("score").mean());
+    if (one.itemDouble() != 52.5e0 / 9.0e0) { return 15; }
+    val wc = df.withColumns(pl.col("name").str().toUppercase(), pl.lit(1).alias("one"), pl.col("score").fillNull(0.0e0));
+    if (wc.width() != 7 or wc.getString("name", 0) != "ALICE" or wc.getLong("one", 3) != 1) { return 16; }
+    if (wc.isNull("score", 4) or wc.getDouble("score", 4) != 0.0e0) { return 17; }
+    val casted = df.select(pl.col("id").cast("str"), pl.col("score").cast("i64").alias("si"));
+    if (casted.dtype("id") != "str" or casted.getString("id", 9) != "10" or casted.getLong("si", 9) != 10) { return 18; }
+
+    // when / then / otherwise, string functions
+    val label = df.select(pl.when(pl.col("score") >= 5).then("high").otherwise("low").alias("level"), pl.col("region").str().lenChars().alias("n"));
+    if (label.getString("level", 0) != "low" or label.getString("level", 9) != "high" or label.getString("level", 4) != "low") { return 19; }
+    if (label.getLong("n", 3) != 5) { return 20; }
+    val noElse = df.select(pl.when(pl.col("flag")).then(pl.col("id")).end().alias("x"));
+    if (!noElse.isNull("x", 1) or noElse.getLong("x", 0) != 1) { return 21; }
+
+    // group by + agg, len, window functions
+    val g = df.groupBy("region").agg(pl.col("score").sum().alias("total"), pl.col("score").mean(), pl.len(), pl.col("name").first());
+    if (g.height() != 3 or g.getString("region", 1) != "west") { return 22; }
+    if (g.getDouble("total", 0) != 19.75e0 or g.getDouble("score", 1) != 7.25e0 or g.getLong("len", 2) != 2) { return 23; }
+    if (!g.isNull("name", 2)) { return 24; }  // north's first row has a null name (Polars semantics)
+    val counts = df.groupBy("region").len().sort("len", true);
+    if (counts.getLong("len", 0) != 4 or counts.getLong("len", 2) != 2) { return 25; }
+    val win = df.select(pl.col("id"), (pl.col("score") - pl.col("score").mean().over("region")).alias("dev"), pl.len().over("region").alias("size"));
+    if (win.getDouble("dev", 0) != 1.5e0 - 4.9375e0 or win.getLong("size", 3) != 2) { return 26; }
+    val ratio = df.groupBy("region").agg((pl.col("score").sum() / pl.len()).alias("per"));
+    if (ratio.getDouble("per", 2) != 5.5e0) { return 27; }
+
+    // sort (nulls first by default, like Polars), unique, head/tail
+    val byScore = df.sort("score", true);
+    if (!byScore.isNull("score", 0) or byScore.getLong("id", 1) != 10) { return 28; }
+    val nullsLast = df.sort("score", true, true);
+    if (nullsLast.getLong("id", 0) != 10 or !nullsLast.isNull("score", 9)) { return 29; }
+    val multi = df.sort("region,-id");
+    if (multi.getLong("id", 0) != 9 or multi.getLong("id", 9) != 2) { return 30; }
+    if (df.unique("region").height() != 3) { return 31; }
+    if (df.head(3).height() != 3 or df.tail(2).getLong("id", 0) != 9) { return 32; }
+
+    // joins
+    val managers = pl.readCsvString("region,manager\neast,Kim\nwest,Lee\nsouth,Park\n");
+    val inner = df.join(managers, "region");
+    if (inner.height() != 8 or inner.width() != 7) { return 33; }
+    val left = df.join(managers, "region", "left");
+    if (left.height() != 10 or !left.isNull("manager", 3)) { return 34; }
+    val anti = df.join(managers, "region", "anti");
+    if (anti.height() != 2) { return 35; }
+    val semi = managers.join(df, "region", "semi");
+    if (semi.height() != 2) { return 36; }
+    val full = df.select(pl.col("id"), pl.col("region")).join(managers, "region", "full");
+    if (full.height() != 11) { return 37; }  // 8 matches + 2 north + 1 south
+
+    // summaries and display
+    val d = df.describe();
+    if (d.height() != 9 or d.getString("statistic", 2) != "mean" or d.getDouble("id", 2) != 5.5e0) { return 38; }
+    val nc = df.nullCount();
+    if (nc.getLong("name", 0) != 2 or nc.getLong("score", 0) != 1) { return 39; }
+    if (df.sum().getLong("id", 0) != 55) { return 40; }
+    pl.setTableFormat("ascii");
+    val text = df.head(2).toString();
+    if (!text.startsWith("shape: (2, 6)") or !text.contains("\"alice\"") or !text.contains("| i64 ")) { return 41; }
+    println(g.toString());
+
+    // with row index, rename, drop, vstack
+    val idx = df.withRowIndex().rename("score=points").drop("flag");
+    if (idx.columnName(0) != "index" or idx.getLong("index", 9) != 9 or !idx.hasColumn("points") or idx.hasColumn("flag")) { return 42; }
+    if (pl.concat(df, df).height() != 20) { return 43; }
+    return 0;
+}

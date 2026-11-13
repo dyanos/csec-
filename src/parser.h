@@ -35,6 +35,8 @@ private:
     bool matchWord(const std::string& value);
     void expectWord(const std::string& value);
     bool matchIdentifierName();
+    // A member or method name: an identifier, or a keyword after '.' / 'def' (`frame.filter(...)`).
+    bool matchMemberName();
     // 현재 Token position 저장/복원
     bool saveTokenPosition();
     void restoreTokenPosition();

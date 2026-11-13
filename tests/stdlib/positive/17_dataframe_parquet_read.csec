@@ -3,7 +3,7 @@ import std.dataframe
 // (tests/stdlib/data/make_parquet_fixtures.py) must read back identically.
 
 def checkPeople(path: String): Int {
-    val df = readParquet(path);
+    val df = dfReadParquet(path);
     if (df == 0) {
         println(path + ": " + dfLastError());
         return 1;
@@ -14,7 +14,7 @@ def checkPeople(path: String): Int {
     if (dfColumnType(df, "id") != "long") { return 5; }
     if (dfColumnType(df, "score") != "double") { return 6; }
     if (dfColumnType(df, "name") != "string") { return 7; }
-    if (dfColumnType(df, "flag") != "long") { return 8; }
+    if (dfColumnType(df, "flag") != "bool") { return 8; }  // BOOLEAN columns read as bool
     if (dfSum(df, "id") != 55.0e0) { return 9; }
     if (dfSum(df, "score") != 52.5e0) { return 10; }
     if (dfSum(df, "flag") != 6.0e0) { return 11; }
@@ -47,17 +47,17 @@ def main(): Int {
         if (r != 0) { return 250 + r; }
     } else {
         // Without libzstd the reader must fail cleanly and say why.
-        if (readParquet("tests/stdlib/data/people_zstd.parquet") != 0) { return 3; }
+        if (dfReadParquet("tests/stdlib/data/people_zstd.parquet") != 0) { return 3; }
     }
 
     // Projection picks columns in the requested order.
-    val two = readParquetColumns("tests/stdlib/data/people_snappy_dict.parquet", "score, id");
+    val two = dfReadParquetColumns("tests/stdlib/data/people_snappy_dict.parquet", "score, id");
     if (two == 0) { return 4; }
     if (dfColumns(two) != 2 or dfColumnName(two, 0) != "score") { return 5; }
-    if (readParquetColumns("tests/stdlib/data/people_snappy_dict.parquet", "missing") != 0) { return 6; }
+    if (dfReadParquetColumns("tests/stdlib/data/people_snappy_dict.parquet", "missing") != 0) { return 6; }
 
     // Not a Parquet file.
-    if (readParquet("tests/stdlib/data/make_parquet_fixtures.py") != 0) { return 7; }
-    if (readParquet("tests/stdlib/data/does_not_exist.parquet") != 0) { return 8; }
+    if (dfReadParquet("tests/stdlib/data/make_parquet_fixtures.py") != 0) { return 7; }
+    if (dfReadParquet("tests/stdlib/data/does_not_exist.parquet") != 0) { return 8; }
     return 0;
 }

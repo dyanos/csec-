@@ -1,0 +1,48 @@
+// Value structs with operator overloads chosen by operand type, including numeric widening (an Int
+// literal picks the Long overload over the Double one), forward references between structs, struct
+// results passed straight to methods, and keyword-named methods.
+struct Vec(x: Long, y: Long) {
+    def operator +(other: Vec): Vec = new Vec(x + other.x, y + other.y)
+    def operator *(k: Long): Vec = new Vec(x * k, y * k)
+    def operator *(k: Double): Scaled = new Scaled(x * k, y * k)
+    def operator ==(other: Vec): Boolean {
+        if (x == other.x and y == other.y) {
+            return true;
+        }
+        return false;
+    }
+    def filter(minimum: Long): Vec {
+        var nx: Long = x;
+        var ny: Long = y;
+        if (nx < minimum) { nx = 0; }
+        if (ny < minimum) { ny = 0; }
+        return new Vec(nx, ny);
+    }
+    def map(k: Long): Vec = new Vec(x + k, y + k)
+    def label(): String = "vec"
+}
+
+// Declared after Vec, which already returns it.
+struct Scaled(x: Double, y: Double) {
+    def sum(): Double = x + y
+}
+
+def vec(x: Long, y: Long): Vec = new Vec(x, y)
+def pick(v: Long): Long = v + 1
+def pick(v: Double): Long = 2
+def pick(v: String): Long = v.length + 100
+
+def main(): Int {
+    val a = vec(1, 2);
+    val b = vec(3, 4);
+    val c = (a + b) * 2;
+    if (c.x != 8 or c.y != 12) { return 1; }
+    val s = (a + b) * 0.5e0;
+    if (s.sum() != 5.0e0) { return 2; }
+    if (!(a + a == vec(2, 4))) { return 3; }
+    val f = vec(1, 7).filter(5).map(1);
+    if (f.x != 1 or f.y != 8) { return 4; }
+    if (!a.label().contains("ec")) { return 5; }
+    if (pick(1) != 2 or pick(1.5e0) != 2 or pick("ab") != 102) { return 6; }
+    return 0;
+}

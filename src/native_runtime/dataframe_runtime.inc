@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -34,11 +35,12 @@
 
 namespace csec_df {
 
-enum class ColType { Long, Double, String };
+enum class ColType { Long, Double, String, Bool };
 
 const char* typeName(ColType type) {
     switch (type) {
     case ColType::Long: return "long";
+    case ColType::Bool: return "bool";
     case ColType::Double: return "double";
     default: return "string";
     }
@@ -56,23 +58,29 @@ struct Column {
     Column(std::string columnName, ColType columnType) : name(std::move(columnName)), type(columnType) {}
 
     size_t size() const { return valid.size(); }
+    // Bool cells are stored as 0/1 in `longs`, like Long cells.
+    bool usesLongs() const { return type == ColType::Long || type == ColType::Bool; }
     bool isNull(size_t row) const { return row >= valid.size() || !valid[row]; }
 
     void reserve(size_t n) {
         valid.reserve(n);
-        if (type == ColType::Long) longs.reserve(n);
+        if (usesLongs()) longs.reserve(n);
         else if (type == ColType::Double) doubles.reserve(n);
         else strings.reserve(n);
     }
     void pushNull() {
         valid.push_back(0);
-        if (type == ColType::Long) longs.push_back(0);
+        if (usesLongs()) longs.push_back(0);
         else if (type == ColType::Double) doubles.push_back(0.0);
         else strings.emplace_back();
     }
     void pushLong(long long value) {
         valid.push_back(1);
         longs.push_back(value);
+    }
+    void pushBool(bool value) {
+        valid.push_back(1);
+        longs.push_back(value ? 1 : 0);
     }
     void pushDouble(double value) {
         valid.push_back(1);
@@ -88,18 +96,18 @@ struct Column {
             pushNull();
             return;
         }
-        if (type == ColType::Long) pushLong(source.longs[row]);
+        if (usesLongs()) pushLong(source.longs[row]);
         else if (type == ColType::Double) pushDouble(source.doubles[row]);
         else pushString(source.strings[row]);
     }
     void appendAll(const Column& source) {
         valid.insert(valid.end(), source.valid.begin(), source.valid.end());
-        if (type == ColType::Long) longs.insert(longs.end(), source.longs.begin(), source.longs.end());
+        if (usesLongs()) longs.insert(longs.end(), source.longs.begin(), source.longs.end());
         else if (type == ColType::Double) doubles.insert(doubles.end(), source.doubles.begin(), source.doubles.end());
         else strings.insert(strings.end(), source.strings.begin(), source.strings.end());
     }
     bool numeric() const { return type != ColType::String; }
-    double number(size_t row) const { return type == ColType::Long ? static_cast<double>(longs[row]) : doubles[row]; }
+    double number(size_t row) const { return usesLongs() ? static_cast<double>(longs[row]) : doubles[row]; }
     Column emptyLike() const { return Column(name, type); }
 };
 
@@ -183,20 +191,59 @@ std::string formatDouble(double value) {
 
 std::string cellText(const Column& column, size_t row, const char* nullText) {
     if (column.isNull(row)) return nullText;
+    if (column.type == ColType::Bool) return column.longs[row] ? "true" : "false";
     if (column.type == ColType::Long) return std::to_string(column.longs[row]);
     if (column.type == ColType::Double) return formatDouble(column.doubles[row]);
     return column.strings[row];
 }
 
+// Run `body(k)` for k in [0, count), on several threads when there is enough work (`work` is a rough
+// cell count). Each k must touch only its own data.
+template <typename Body>
+void parallelFor(size_t count, size_t work, Body body) {
+    const unsigned hardware = std::max(1u, std::thread::hardware_concurrency());
+    const size_t workers = std::min<size_t>(count, std::min<unsigned>(hardware, 16));
+    if (workers <= 1 || work < 200000) {
+        for (size_t k = 0; k < count; ++k) body(k);
+        return;
+    }
+    std::atomic<size_t> next{0};
+    std::vector<std::thread> pool;
+    pool.reserve(workers);
+    for (size_t w = 0; w < workers; ++w) {
+        pool.emplace_back([&] {
+            for (size_t k = next++; k < count; k = next++) body(k);
+        });
+    }
+    for (auto& t : pool) t.join();
+}
+
+// Gather `rows` of one column (tight per-type loops instead of appendFrom per cell).
+Column gatherColumn(const Column& column, const std::vector<size_t>& rows) {
+    Column copy = column.emptyLike();
+    const size_t n = rows.size();
+    copy.valid.resize(n);
+    for (size_t k = 0; k < n; ++k) copy.valid[k] = column.valid[rows[k]];
+    if (column.usesLongs()) {
+        copy.longs.resize(n);
+        for (size_t k = 0; k < n; ++k) copy.longs[k] = column.longs[rows[k]];
+    } else if (column.type == ColType::Double) {
+        copy.doubles.resize(n);
+        for (size_t k = 0; k < n; ++k) copy.doubles[k] = column.doubles[rows[k]];
+    } else {
+        copy.strings.reserve(n);
+        for (size_t k = 0; k < n; ++k) copy.strings.push_back(column.strings[rows[k]]);
+    }
+    return copy;
+}
+
+// Rows `rows` of every column; columns are gathered in parallel for large frames.
 DataFrame take(const DataFrame& frame, const std::vector<size_t>& rows) {
     DataFrame out;
-    out.columns.reserve(frame.columns.size());
-    for (const auto& column : frame.columns) {
-        Column copy = column.emptyLike();
-        copy.reserve(rows.size());
-        for (size_t row : rows) copy.appendFrom(column, row);
-        out.columns.push_back(std::move(copy));
-    }
+    out.columns.resize(frame.columns.size());
+    parallelFor(frame.columns.size(), rows.size() * frame.columns.size(), [&](size_t c) {
+        out.columns[c] = gatherColumn(frame.columns[c], rows);
+    });
     return out;
 }
 
@@ -213,6 +260,7 @@ struct Leaf {
     bool supported = true;
     bool decimal = false;
     bool float16 = false;
+    bool unsignedInt = false;  // UINT_* / INTEGER(signed=false): statistics use unsigned order
     int scale = 0;
     ColType out = ColType::Long;
 };
@@ -245,8 +293,10 @@ void collectLeaves(const std::vector<TValue>& schema, size_t& index, const std::
             else if (logical && logical->has(5)) leaf.scale = static_cast<int>(logical->field(5)->intOr(1, 0));
         }
         leaf.float16 = logical && logical->has(15) && leaf.physical == csec_parquet::kFixedLenByteArray && leaf.typeLength == 2;
+        leaf.unsignedInt = (converted >= 11 && converted <= 14) ||
+                           (logical && logical->has(10) && logical->field(10)->intOr(2, 1) == 0);
         switch (leaf.physical) {
-        case csec_parquet::kBoolean:
+        case csec_parquet::kBoolean: leaf.out = ColType::Bool; break;
         case csec_parquet::kInt32:
         case csec_parquet::kInt64:
         case csec_parquet::kInt96: leaf.out = leaf.decimal ? ColType::Double : ColType::Long; break;
@@ -280,7 +330,7 @@ double halfToDouble(const std::string& bytes) {
 
 void appendValue(Column& column, const Leaf& leaf, const csec_parquet::Values& values, size_t index) {
     using namespace csec_parquet;
-    if (leaf.out == ColType::Long) {
+    if (leaf.out == ColType::Long || leaf.out == ColType::Bool) {
         column.pushLong(values.ints[index]);
     } else if (leaf.out == ColType::String) {
         column.pushString(values.bytes[index]);
@@ -527,13 +577,41 @@ bool readColumnChunk(const uint8_t* file, size_t fileSize, const TValue& chunk, 
             present = 0;
             for (uint32_t level : definitions) present += level == static_cast<uint32_t>(leaf.maxDef) ? 1 : 0;
         }
+        column.reserve(column.size() + count);
+        if ((encoding == kPlainDictionary || encoding == kRleDictionary) && present > 0) {
+            // Append straight from the dictionary by index (no intermediate copy of every value).
+            if (!haveDictionary) {
+                error = "dictionary-encoded page without a dictionary page";
+                return false;
+            }
+            std::vector<uint32_t> indices;
+            const size_t dictionarySize = dictionary.size(leaf.physical);
+            if (valueSize < 1 || !decodeHybrid(valueData + 1, valueSize - 1, valueData[0], present, indices)) {
+                error = "corrupt dictionary indices";
+                return false;
+            }
+            size_t next = 0;
+            for (size_t k = 0; k < count; ++k) {
+                if (leaf.maxDef > 0 && definitions[k] != static_cast<uint32_t>(leaf.maxDef)) {
+                    column.pushNull();
+                    continue;
+                }
+                const uint32_t index = indices[next++];
+                if (index >= dictionarySize) {
+                    error = "corrupt dictionary indices";
+                    return false;
+                }
+                appendValue(column, leaf, dictionary, index);
+            }
+            read += static_cast<long long>(count);
+            continue;
+        }
         Values values;
         if (!decodeValues(encoding, valueData, valueSize, present, leaf, haveDictionary, dictionary, values, error)) return false;
         if (values.size(leaf.physical) < present) {
             error = "page holds fewer values than its header says";
             return false;
         }
-        column.reserve(column.size() + count);
         size_t next = 0;
         for (size_t k = 0; k < count; ++k) {
             if (leaf.maxDef > 0 && definitions[k] != static_cast<uint32_t>(leaf.maxDef)) {
@@ -559,67 +637,209 @@ bool readFile(const std::string& path, std::string& data) {
     return static_cast<bool>(in) || in.eof();
 }
 
-long long readParquet(const char* path, const char* columnSpec) {
+// What the most recent Parquet scan on this thread read (for tests and LazyFrame.explain users).
+struct ScanInfo {
+    size_t rowGroupsTotal = 0;
+    size_t rowGroupsRead = 0;
+    size_t columnsTotal = 0;
+    size_t columnsRead = 0;
+};
+thread_local ScanInfo lastScan;
+
+// Min/max statistics of a column chunk as doubles (only for signed integer and floating columns).
+struct ChunkStats {
+    bool valid = false;
+    double min = 0.0;
+    double max = 0.0;
+};
+
+bool chunkStats(const Leaf& leaf, const TValue& chunk, ChunkStats& stats) {
     using namespace csec_parquet;
-    lastError.clear();
-    if (!path) return fail("no path given");
-    std::string data;
-    if (!readFile(path, data)) return fail(std::string("cannot read ") + path);
-    const auto* file = reinterpret_cast<const uint8_t*>(data.data());
-    const size_t size = data.size();
+    stats = ChunkStats();
+    if (leaf.decimal || leaf.float16 || leaf.unsignedInt) return false;
+    const TValue* meta = chunk.field(3);
+    const TValue* s = meta ? meta->field(12) : nullptr;
+    if (!s) return false;
+    // min_value/max_value (6/5) replace the deprecated min/max (2/1), whose sort order is unreliable
+    // for anything but the numeric types handled here.
+    const TValue* minV = s->field(6) ? s->field(6) : s->field(2);
+    const TValue* maxV = s->field(5) ? s->field(5) : s->field(1);
+    if (!minV || !maxV) return false;
+    auto decode = [&](const std::string& bytes, double& out) {
+        const auto* p = reinterpret_cast<const uint8_t*>(bytes.data());
+        switch (leaf.physical) {
+        case kInt32:
+            if (bytes.size() != 4) return false;
+            out = static_cast<double>(static_cast<int32_t>(le32(p)));
+            return true;
+        case kInt64:
+            if (bytes.size() != 8) return false;
+            out = static_cast<double>(static_cast<long long>(le64(p)));
+            return true;
+        case kFloat: {
+            if (bytes.size() != 4) return false;
+            const uint32_t bits = le32(p);
+            float f;
+            std::memcpy(&f, &bits, sizeof f);
+            out = f;
+            return !std::isnan(out);
+        }
+        case kDoubleType: {
+            if (bytes.size() != 8) return false;
+            const uint64_t bits = le64(p);
+            std::memcpy(&out, &bits, sizeof out);
+            return !std::isnan(out);
+        }
+        default:
+            return false;
+        }
+    };
+    stats.valid = decode(minV->bin, stats.min) && decode(maxV->bin, stats.max);
+    return stats.valid;
+}
+
+// Footer metadata and flattened leaf columns of a Parquet file held in memory.
+bool parseParquetMeta(const uint8_t* file, size_t size, const std::string& path, TValue& meta, std::vector<Leaf>& leaves, std::string& error) {
+    using namespace csec_parquet;
     if (size < 12 || std::memcmp(file, "PAR1", 4) != 0 || std::memcmp(file + size - 4, "PAR1", 4) != 0) {
-        return fail(std::string(path) + " is not a Parquet file");
+        error = path + " is not a Parquet file";
+        return false;
     }
     const size_t footerSize = le32(file + size - 8);
-    if (footerSize > size - 12) return fail("corrupt Parquet footer");
+    if (footerSize > size - 12) {
+        error = "corrupt Parquet footer";
+        return false;
+    }
     ThriftReader reader(file + size - 8 - footerSize, footerSize);
-    TValue meta;
-    if (!reader.readStruct(meta)) return fail("corrupt Parquet file metadata");
+    if (!reader.readStruct(meta)) {
+        error = "corrupt Parquet file metadata";
+        return false;
+    }
     const TValue* schema = meta.field(2);
-    if (!schema || schema->list.empty()) return fail("Parquet file without a schema");
-    std::vector<Leaf> leaves;
+    if (!schema || schema->list.empty()) {
+        error = "Parquet file without a schema";
+        return false;
+    }
+    leaves.clear();
     size_t index = 1;
     collectLeaves(schema->list, index, "", 0, 0, false, leaves, static_cast<int>(schema->list[0].intOr(5, 0)));
+    return true;
+}
+
+// Column names of a Parquet file, read from its footer only.
+bool parquetColumnNames(const std::string& path, std::vector<std::string>& names, std::string& error) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        error = "cannot read " + path;
+        return false;
+    }
+    in.seekg(0, std::ios::end);
+    const std::streamoff size = in.tellg();
+    if (size < 12) {
+        error = path + " is not a Parquet file";
+        return false;
+    }
+    in.seekg(size - 8);
+    uint8_t tail[8];
+    in.read(reinterpret_cast<char*>(tail), 8);
+    const size_t footerSize = csec_parquet::le32(tail);
+    if (static_cast<std::streamoff>(footerSize) > size - 12) {
+        error = "corrupt Parquet footer";
+        return false;
+    }
+    // Rebuild a minimal "file": magic + footer + length + magic, which parseParquetMeta accepts.
+    std::string buffer = "PAR1";
+    buffer.resize(4 + footerSize);
+    in.seekg(size - 8 - static_cast<std::streamoff>(footerSize));
+    in.read(&buffer[4], static_cast<std::streamsize>(footerSize));
+    buffer.append(reinterpret_cast<const char*>(tail), 8);
+    TValue meta;
+    std::vector<Leaf> leaves;
+    if (!parseParquetMeta(reinterpret_cast<const uint8_t*>(buffer.data()), buffer.size(), path, meta, leaves, error)) return false;
+    names.clear();
+    for (const auto& leaf : leaves) {
+        if (leaf.supported) names.push_back(leaf.name);
+    }
+    return true;
+}
+
+using RowGroupFilter = std::function<bool(const std::vector<Leaf>& leaves, const TValue& rowGroup)>;
+
+// Read a Parquet file into `frame`. `columns` (null = every column) projects and orders the result;
+// `keepGroup` (may be empty) can skip row groups, e.g. by their statistics; a non-negative `limit`
+// stops after the row groups that hold the first `limit` rows (the caller trims the rest).
+bool readParquetInto(const std::string& path, const std::vector<std::string>* columns, const RowGroupFilter& keepGroup,
+                     long long limit, DataFrame& frame, std::string& error) {
+    using namespace csec_parquet;
+    std::string data;
+    if (!readFile(path, data)) {
+        error = "cannot read " + path;
+        return false;
+    }
+    const auto* file = reinterpret_cast<const uint8_t*>(data.data());
+    const size_t size = data.size();
+    TValue meta;
+    std::vector<Leaf> leaves;
+    if (!parseParquetMeta(file, size, path, meta, leaves, error)) return false;
 
     // Which leaves to read, in the requested order.
     std::vector<size_t> selected;
-    const std::vector<std::string> wanted = splitList(columnSpec);
-    if (wanted.empty()) {
+    if (!columns) {
         for (size_t k = 0; k < leaves.size(); ++k) {
             if (!leaves[k].supported) {
-                return fail("column '" + leaves[k].name +
-                            "' is nested or repeated, which std.dataframe does not support; select the flat columns explicitly");
+                error = "column '" + leaves[k].name +
+                        "' is nested or repeated, which std.dataframe does not support; select the flat columns explicitly";
+                return false;
             }
             selected.push_back(k);
         }
     } else {
-        for (const auto& name : wanted) {
+        for (const auto& name : *columns) {
             size_t found = leaves.size();
             for (size_t k = 0; k < leaves.size(); ++k) {
                 if (leaves[k].name == name) found = k;
             }
-            if (found == leaves.size()) return fail("no column '" + name + "' in " + path);
-            if (!leaves[found].supported) return fail("column '" + name + "' is nested or repeated, which is not supported");
+            if (found == leaves.size()) {
+                error = "no column '" + name + "' in " + path;
+                return false;
+            }
+            if (!leaves[found].supported) {
+                error = "column '" + name + "' is nested or repeated, which is not supported";
+                return false;
+            }
             selected.push_back(found);
         }
     }
 
+    // Which row groups to read.
     const TValue* rowGroups = meta.field(4);
-    const long long totalRows = meta.intOr(3, 0);
-    DataFrame frame;
-    frame.columns.resize(selected.size());
+    std::vector<const TValue*> groups;
+    long long expectedRows = 0;
+    const size_t groupCount = rowGroups ? rowGroups->list.size() : 0;
+    for (size_t g = 0; g < groupCount; ++g) {
+        if (limit >= 0 && expectedRows >= limit) break;
+        const TValue& group = rowGroups->list[g];
+        if (keepGroup && !keepGroup(leaves, group)) continue;
+        groups.push_back(&group);
+        expectedRows += group.intOr(3, 0);
+    }
+    lastScan.rowGroupsTotal = groupCount;
+    lastScan.rowGroupsRead = groups.size();
+    lastScan.columnsTotal = leaves.size();
+    lastScan.columnsRead = selected.size();
+
+    frame.columns.assign(selected.size(), Column());
     std::vector<std::string> errors(selected.size());
     for (size_t k = 0; k < selected.size(); ++k) {
         frame.columns[k] = Column(leaves[selected[k]].name, leaves[selected[k]].out);
-        frame.columns[k].reserve(static_cast<size_t>(std::max(0LL, totalRows)));
+        frame.columns[k].reserve(static_cast<size_t>(std::max(0LL, expectedRows)));
     }
 
     // Decode the columns in parallel; each worker takes whole columns.
     auto decodeColumn = [&](size_t k) {
         const size_t leafIndex = selected[k];
-        if (!rowGroups) return;
-        for (const TValue& group : rowGroups->list) {
-            const TValue* chunks = group.field(1);
+        for (const TValue* group : groups) {
+            const TValue* chunks = group->field(1);
             if (!chunks || leafIndex >= chunks->list.size()) {
                 errors[k] = "row group without column '" + leaves[leafIndex].name + "'";
                 return;
@@ -632,7 +852,7 @@ long long readParquet(const char* path, const char* columnSpec) {
     };
     const unsigned hardware = std::max(1u, std::thread::hardware_concurrency());
     const size_t workers = std::min<size_t>(selected.size(), std::min<unsigned>(hardware, 16));
-    if (workers <= 1 || totalRows < 4096) {
+    if (workers <= 1 || expectedRows < 4096) {
         for (size_t k = 0; k < selected.size(); ++k) decodeColumn(k);
     } else {
         std::atomic<size_t> nextColumn{0};
@@ -646,14 +866,28 @@ long long readParquet(const char* path, const char* columnSpec) {
         for (auto& t : pool) t.join();
     }
     for (const auto& e : errors) {
-        if (!e.empty()) return fail(e);
-    }
-    for (const auto& column : frame.columns) {
-        if (static_cast<long long>(column.size()) != totalRows) {
-            return fail("column '" + column.name + "' has " + std::to_string(column.size()) + " values, expected " +
-                        std::to_string(totalRows));
+        if (!e.empty()) {
+            error = e;
+            return false;
         }
     }
+    for (const auto& column : frame.columns) {
+        if (static_cast<long long>(column.size()) != expectedRows) {
+            error = "column '" + column.name + "' has " + std::to_string(column.size()) + " values, expected " +
+                    std::to_string(expectedRows);
+            return false;
+        }
+    }
+    return true;
+}
+
+long long readParquet(const char* path, const char* columnSpec) {
+    lastError.clear();
+    if (!path) return fail("no path given");
+    const std::vector<std::string> wanted = splitList(columnSpec);
+    DataFrame frame;
+    std::string error;
+    if (!readParquetInto(path, wanted.empty() ? nullptr : &wanted, RowGroupFilter(), -1, frame, error)) return fail(error);
     return store(std::move(frame));
 }
 
@@ -690,11 +924,16 @@ bool writeParquet(const DataFrame& frame, const char* path) {
         for (const auto& column : frame.columns) {
             std::vector<uint8_t> levels(count);
             std::string values;
+            size_t boolBits = 0;  // BOOLEAN values are bit-packed, LSB first
             for (size_t k = 0; k < count; ++k) {
                 const size_t row = first + k;
                 levels[k] = column.isNull(row) ? 0 : 1;
                 if (!levels[k]) continue;
-                if (column.type == ColType::Long) {
+                if (column.type == ColType::Bool) {
+                    if (boolBits % 8 == 0) values.push_back('\0');
+                    if (column.longs[row]) values.back() = static_cast<char>(values.back() | (1 << (boolBits % 8)));
+                    ++boolBits;
+                } else if (column.type == ColType::Long) {
                     putLe64(values, static_cast<uint64_t>(column.longs[row]));
                 } else if (column.type == ColType::Double) {
                     uint64_t bits;
@@ -733,7 +972,8 @@ bool writeParquet(const DataFrame& frame, const char* path) {
     }
 
     auto physicalOf = [](ColType type) {
-        return type == ColType::Long ? csec_parquet::kInt64 : type == ColType::Double ? csec_parquet::kDoubleType : csec_parquet::kByteArray;
+        return type == ColType::Long ? csec_parquet::kInt64 : type == ColType::Bool ? csec_parquet::kBoolean
+             : type == ColType::Double ? csec_parquet::kDoubleType : csec_parquet::kByteArray;
     };
     ThriftWriter meta;
     meta.i32(1, 1);
@@ -862,6 +1102,15 @@ bool parseLongStrict(const std::string& text, long long& value) {
     return errno == 0 && end && *end == '\0' && end != text.c_str();
 }
 
+bool parseBoolStrict(const std::string& text, bool& value) {
+    std::string lower;
+    for (char c : text) lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+    if (lower == "true") value = true;
+    else if (lower == "false") value = false;
+    else return false;
+    return true;
+}
+
 bool parseDoubleStrict(const std::string& text, double& value) {
     if (text.empty()) return false;
     char* end = nullptr;
@@ -879,22 +1128,31 @@ long long frameFromCsv(const std::string& text) {
         const std::string name = trim(header[c]);
         bool allLong = true;
         bool allDouble = true;
+        bool allBool = true;
         for (size_t r = 1; r < records.size(); ++r) {
             const std::string cell = c < records[r].size() ? trim(records[r][c]) : std::string();
             if (cell.empty()) continue;
             long long l;
             double d;
+            bool b;
+            if (allBool && !parseBoolStrict(cell, b)) allBool = false;
             if (allLong && !parseLongStrict(cell, l)) allLong = false;
             if (allDouble && !parseDoubleStrict(cell, d)) allDouble = false;
-            if (!allLong && !allDouble) break;
+            if (!allLong && !allDouble && !allBool) break;
         }
-        Column column(name, allLong ? ColType::Long : allDouble ? ColType::Double : ColType::String);
+        bool anyValue = false;
+        for (size_t r = 1; r < records.size() && !anyValue; ++r) anyValue = c < records[r].size() && !trim(records[r][c]).empty();
+        Column column(name, (allBool && anyValue) ? ColType::Bool : allLong ? ColType::Long : allDouble ? ColType::Double : ColType::String);
         column.reserve(records.size() - 1);
         for (size_t r = 1; r < records.size(); ++r) {
             const std::string raw = c < records[r].size() ? records[r][c] : std::string();
             const std::string cell = trim(raw);
             if (cell.empty()) {
                 column.pushNull();
+            } else if (column.type == ColType::Bool) {
+                bool value = false;
+                parseBoolStrict(cell, value);
+                column.pushBool(value);
             } else if (column.type == ColType::Long) {
                 long long value = 0;
                 parseLongStrict(cell, value);
@@ -974,7 +1232,7 @@ bool compareOrdered(const T& a, const T& b, Cmp cmp) {
 
 // -1, 0, 1 between two non-null cells of the same column type.
 int compareCells(const Column& column, size_t a, size_t b) {
-    if (column.type == ColType::Long) return column.longs[a] < column.longs[b] ? -1 : column.longs[a] > column.longs[b] ? 1 : 0;
+    if (column.usesLongs()) return column.longs[a] < column.longs[b] ? -1 : column.longs[a] > column.longs[b] ? 1 : 0;
     if (column.type == ColType::Double) {
         const double x = column.doubles[a], y = column.doubles[b];
         if (std::isnan(x) || std::isnan(y)) return std::isnan(x) ? (std::isnan(y) ? 0 : 1) : -1;
@@ -995,7 +1253,7 @@ void appendKey(std::string& key, const Column& column, size_t row, bool asDouble
         const uint32_t length = static_cast<uint32_t>(column.strings[row].size());
         key.append(reinterpret_cast<const char*>(&length), sizeof length);
         key += column.strings[row];
-    } else if (column.type == ColType::Long && !asDouble) {
+    } else if (column.usesLongs() && !asDouble) {
         key.push_back('l');
         key.append(reinterpret_cast<const char*>(&column.longs[row]), sizeof(long long));
     } else {
@@ -1008,7 +1266,7 @@ void appendKey(std::string& key, const Column& column, size_t row, bool asDouble
 
 // ---- Aggregation -------------------------------------------------------------------------------
 
-enum class Agg { Count, Sum, Mean, Min, Max, Std, First, Last, NUnique, Invalid };
+enum class Agg { Count, Sum, Mean, Min, Max, Std, Var, Median, NullCount, First, Last, NUnique, Invalid };
 
 Agg parseAgg(const std::string& name) {
     if (name == "count") return Agg::Count;
@@ -1017,6 +1275,9 @@ Agg parseAgg(const std::string& name) {
     if (name == "min") return Agg::Min;
     if (name == "max") return Agg::Max;
     if (name == "std") return Agg::Std;
+    if (name == "var") return Agg::Var;
+    if (name == "median") return Agg::Median;
+    if (name == "null_count") return Agg::NullCount;
     if (name == "first") return Agg::First;
     if (name == "last") return Agg::Last;
     if (name == "nunique") return Agg::NUnique;
@@ -1026,9 +1287,13 @@ Agg parseAgg(const std::string& name) {
 ColType aggType(Agg agg, const Column* source) {
     switch (agg) {
     case Agg::Count:
+    case Agg::NullCount:
     case Agg::NUnique: return ColType::Long;
     case Agg::Mean:
-    case Agg::Std: return ColType::Double;
+    case Agg::Std:
+    case Agg::Var:
+    case Agg::Median: return ColType::Double;
+    case Agg::Sum: return source && source->type == ColType::Bool ? ColType::Long : (source ? source->type : ColType::Long);
     default: return source ? source->type : ColType::Long;
     }
 }
@@ -1039,6 +1304,32 @@ void aggregate(Agg agg, const Column* source, const std::vector<size_t>& rows, C
         long long count = 0;
         for (size_t r : rows) count += (!source || !source->isNull(r)) ? 1 : 0;
         out.pushLong(count);
+        return;
+    }
+    if (agg == Agg::NullCount) {
+        long long count = 0;
+        for (size_t r : rows) count += (source && source->isNull(r)) ? 1 : 0;
+        out.pushLong(count);
+        return;
+    }
+    if (agg == Agg::Median) {
+        std::vector<double> values;
+        values.reserve(rows.size());
+        for (size_t r : rows) {
+            if (!source->isNull(r)) values.push_back(source->number(r));
+        }
+        if (values.empty()) {
+            out.pushNull();
+            return;
+        }
+        const size_t mid = values.size() / 2;
+        std::nth_element(values.begin(), values.begin() + mid, values.end());
+        double median = values[mid];
+        if (values.size() % 2 == 0) {
+            const double lower = *std::max_element(values.begin(), values.begin() + mid);
+            median = (median + lower) / 2.0;
+        }
+        out.pushDouble(median);
         return;
     }
     if (agg == Agg::NUnique) {
@@ -1072,7 +1363,7 @@ void aggregate(Agg agg, const Column* source, const std::vector<size_t>& rows, C
         return;
     }
     // Sum, Mean, Std need numbers.
-    if (source->type == ColType::Long && agg == Agg::Sum) {
+    if (source->usesLongs() && agg == Agg::Sum) {
         long long sum = 0;
         for (size_t r : rows) {
             if (!source->isNull(r)) sum += source->longs[r];
@@ -1095,7 +1386,7 @@ void aggregate(Agg agg, const Column* source, const std::vector<size_t>& rows, C
         out.pushDouble(sum);
         return;
     }
-    if (n == 0 || (agg == Agg::Std && n < 2)) {
+    if (n == 0 || ((agg == Agg::Std || agg == Agg::Var) && n < 2)) {
         out.pushNull();
         return;
     }
@@ -1110,7 +1401,8 @@ void aggregate(Agg agg, const Column* source, const std::vector<size_t>& rows, C
         const double d = source->number(r) - mean;
         squares += d * d;
     }
-    out.pushDouble(std::sqrt(squares / static_cast<double>(n - 1)));
+    const double variance = squares / static_cast<double>(n - 1);
+    out.pushDouble(agg == Agg::Var ? variance : std::sqrt(variance));
 }
 
 struct AggSpec {
@@ -1127,7 +1419,7 @@ bool parseAggSpecs(const DataFrame& frame, const char* spec, std::vector<AggSpec
         const std::string aggName = trim(colon == std::string::npos ? item : item.substr(colon + 1));
         s.agg = parseAgg(aggName);
         if (s.agg == Agg::Invalid) {
-            fail("unknown aggregation '" + aggName + "' (count, sum, mean, min, max, std, first, last, nunique)");
+            fail("unknown aggregation '" + aggName + "' (count, sum, mean, min, max, std, var, median, null_count, first, last, nunique)");
             return false;
         }
         if (columnName.empty() || columnName == "*") {
@@ -1143,7 +1435,8 @@ bool parseAggSpecs(const DataFrame& frame, const char* spec, std::vector<AggSpec
                 return false;
             }
             const Column& source = frame.columns[s.column];
-            if (!source.numeric() && (s.agg == Agg::Sum || s.agg == Agg::Mean || s.agg == Agg::Std)) {
+            if (!source.numeric() && (s.agg == Agg::Sum || s.agg == Agg::Mean || s.agg == Agg::Std || s.agg == Agg::Var ||
+                                      s.agg == Agg::Median)) {
                 fail("cannot take the " + aggName + " of string column '" + columnName + "'");
                 return false;
             }
@@ -1312,7 +1605,7 @@ long long csec_df_get_long(long long handle, const char* name, long long row) {
     const auto& column = frame->columns[index];
     const size_t r = static_cast<size_t>(row);
     if (column.isNull(r)) return 0;
-    if (column.type == csec_df::ColType::Long) return column.longs[r];
+    if (column.usesLongs()) return column.longs[r];
     if (column.type == csec_df::ColType::Double) return static_cast<long long>(column.doubles[r]);
     long long value = 0;
     return csec_df::parseLongStrict(csec_df::trim(column.strings[r]), value) ? value : 0;
@@ -1352,6 +1645,7 @@ int csec_df_add_column(long long handle, const char* name, const char* type) {
     if (t == "long") columnType = csec_df::ColType::Long;
     else if (t == "double") columnType = csec_df::ColType::Double;
     else if (t == "string") columnType = csec_df::ColType::String;
+    else if (t == "bool") columnType = csec_df::ColType::Bool;
     else {
         csec_df::fail("unknown column type '" + t + "' (long, double, string)");
         return 0;
@@ -1381,6 +1675,7 @@ int csec_df_append_long(long long handle, const char* name, long long value) {
     csec_df::Column* column = csecDfAppendTarget(handle, name);
     if (!column) return 0;
     if (column->type == csec_df::ColType::Long) column->pushLong(value);
+    else if (column->type == csec_df::ColType::Bool) column->pushBool(value != 0);
     else if (column->type == csec_df::ColType::Double) column->pushDouble(static_cast<double>(value));
     else column->pushString(std::to_string(value));
     return 1;
@@ -1391,6 +1686,7 @@ int csec_df_append_double(long long handle, const char* name, double value) {
     if (!column) return 0;
     if (column->type == csec_df::ColType::Double) column->pushDouble(value);
     else if (column->type == csec_df::ColType::Long) column->pushLong(static_cast<long long>(value));
+    else if (column->type == csec_df::ColType::Bool) column->pushBool(value != 0.0);
     else column->pushString(csec_df::formatDouble(value));
     return 1;
 }
@@ -1405,7 +1701,9 @@ int csec_df_append_string(long long handle, const char* name, const char* value)
     }
     long long l;
     double d;
-    if (column->type == csec_df::ColType::Long && csec_df::parseLongStrict(csec_df::trim(text), l)) column->pushLong(l);
+    bool b;
+    if (column->type == csec_df::ColType::Bool && csec_df::parseBoolStrict(csec_df::trim(text), b)) column->pushBool(b);
+    else if (column->type == csec_df::ColType::Long && csec_df::parseLongStrict(csec_df::trim(text), l)) column->pushLong(l);
     else if (column->type == csec_df::ColType::Double && csec_df::parseDoubleStrict(csec_df::trim(text), d)) column->pushDouble(d);
     else column->pushNull();
     return 1;
@@ -1481,7 +1779,7 @@ long long csec_df_filter(long long handle, const char* name, const char* op, dou
     if (!column.numeric()) return csec_df::fail("column '" + column.name + "' is a string column; use dfFilterString");
     std::vector<size_t> picked;
     const size_t rows = frame->rows();
-    const bool integral = column.type == csec_df::ColType::Long && std::floor(value) == value && std::fabs(value) < 9.2e18;
+    const bool integral = column.usesLongs() && std::floor(value) == value && std::fabs(value) < 9.2e18;
     for (size_t r = 0; r < rows; ++r) {
         if (column.isNull(r)) continue;
         const bool keep = integral ? csec_df::compareOrdered(column.longs[r], static_cast<long long>(value), cmp)
@@ -1671,8 +1969,8 @@ static long long csecDfCompute(long long handle, const char* name, const char* a
             else result.pushString(x.strings[r] + y->strings[r]);
         }
     } else {
-        const bool integral = o != "/" && x.type == csec_df::ColType::Long &&
-                              (scalar ? (std::floor(value) == value && std::fabs(value) < 9.2e18) : y->type == csec_df::ColType::Long);
+        const bool integral = o != "/" && x.usesLongs() &&
+                              (scalar ? (std::floor(value) == value && std::fabs(value) < 9.2e18) : y->usesLongs());
         result = csec_df::Column(name, integral ? csec_df::ColType::Long : csec_df::ColType::Double);
         for (size_t r = 0; r < rows; ++r) {
             if (x.isNull(r) || (y && y->isNull(r))) {
@@ -1770,7 +2068,7 @@ double csec_df_aggregate(long long handle, const char* name, const char* aggrega
     csec_df::Column cell("", csec_df::aggType(s.agg, source));
     csec_df::aggregate(s.agg, source, rows, cell);
     if (cell.isNull(0)) return nan;
-    return cell.type == csec_df::ColType::Long ? static_cast<double>(cell.longs[0]) : cell.doubles[0];
+    return cell.usesLongs() ? static_cast<double>(cell.longs[0]) : cell.doubles[0];
 }
 
 // Non-null cells in the column (-1 for a missing column).
@@ -1843,5 +2141,3 @@ char* csec_df_to_string(long long handle, int maxRows) {
 
 } // extern "C"
 
-#pragma pop_macro("max")
-#pragma pop_macro("min")

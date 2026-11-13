@@ -57,7 +57,7 @@ FunctionDeclaration
   = "def" __ FunctionRest
 
 FunctionRest
-  = Identifier _ "(" _ Parameters? _ ")" _ (":" _ Type)? _
+  = MemberName _ "(" _ Parameters? _ ")" _ (":" _ Type)? _
     ("=" _ Expression / "{" _ Statement* _ "}")?
 
 Parameters
@@ -253,7 +253,11 @@ IdentifierList
   = Identifier (_ "," _ Identifier)*
 
 QualifiedName
-  = Identifier (_ "." _ Identifier)*
+  = Identifier (_ "." _ MemberName)*
+
+// After '.' (and as a method name) keywords are ordinary names: frame.filter(...), xs.map(...).
+MemberName
+  = [A-Za-z_\u0080-\uFFFF] [A-Za-z0-9_\u0080-\uFFFF]*
 
 Identifier
   = !ReservedWord [A-Za-z_\u0080-\uFFFF] [A-Za-z0-9_\u0080-\uFFFF]*

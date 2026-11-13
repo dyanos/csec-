@@ -141,7 +141,10 @@ std::unique_ptr<FunctionDeclarationNode> Parser::parseFunctionDeclaration(bool i
         functionName = "operator" + previous().value;
     }
     else {
-	    expect(TokenType::IDENTIFIER);
+	    // A keyword may name a method (`def filter(...)`), which is then called as `x.filter(...)`.
+	    if (!matchMemberName()) {
+		    expect(TokenType::IDENTIFIER);
+	    }
 	    functionName = previous().value;
     }
 

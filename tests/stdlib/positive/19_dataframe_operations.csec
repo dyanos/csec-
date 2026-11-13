@@ -3,7 +3,7 @@ import std.dataframe
 // value counts, null handling, building frames, and CSV.
 
 def main(): Int {
-    val df = readParquet("tests/stdlib/data/people_snappy_dict.parquet");
+    val df = dfReadParquet("tests/stdlib/data/people_snappy_dict.parquet");
     if (df == 0) {
         println(dfLastError());
         return 1;
@@ -45,7 +45,7 @@ def main(): Int {
     if (dfRows(all) != 1 or dfGetLong(all, "id_sum", 0) != 55 or dfGetLong(all, "id_max", 0) != 10) { return 17; }
     if (dfGetLong(all, "small_min", 0) != -3 or dfGetLong(all, "region_nunique", 0) != 3) { return 18; }
     if (dfGroupBy(df, "region", "name:sum") != 0) { return 19; }  // sum of a string column
-    if (dfGroupBy(df, "region", "score:median") != 0) { return 20; }
+    if (dfGroupBy(df, "region", "score:mode") != 0) { return 20; }
 
     // ---- column statistics ----
     if (dfMean(df, "id") != 5.5e0 or dfMin(df, "score") != 1.5e0 or dfMax(df, "score") != 10.75e0) { return 21; }
@@ -108,11 +108,11 @@ def main(): Int {
     if (dfGetString(counts, "region", 2) != "north" or dfGetLong(counts, "count", 2) != 2) { return 46; }
 
     // ---- CSV ----
-    val csv = frameToCsv(df);
-    val back = csvToFrame(csv);
+    val csv = dfToCsv(df);
+    val back = dfFromCsv(csv);
     if (dfRows(back) != 10 or dfColumnType(back, "score") != "double" or dfColumnType(back, "id") != "long") { return 47; }
     if (dfSum(back, "score") != 52.5e0 or dfNullCount(back, "name") != 2) { return 48; }
-    val quoted = csvToFrame("a,b\n1,\"x,y\"\n2,\"say \"\"hi\"\"\"\n3,\n");
+    val quoted = dfFromCsv("a,b\n1,\"x,y\"\n2,\"say \"\"hi\"\"\"\n3,\n");
     if (dfRows(quoted) != 3 or dfGetString(quoted, "b", 0) != "x,y") { return 49; }
     if (dfGetString(quoted, "b", 1) != "say \"hi\"" or !dfIsNull(quoted, "b", 2)) { return 50; }
 

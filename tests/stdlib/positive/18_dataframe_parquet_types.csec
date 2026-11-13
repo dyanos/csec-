@@ -3,7 +3,7 @@ import std.dataframe
 // flat columns are selected explicitly.
 
 def main(): Int {
-    val t = readParquet("tests/stdlib/data/types.parquet");
+    val t = dfReadParquet("tests/stdlib/data/types.parquet");
     if (t == 0) {
         println(dfLastError());
         return 1;
@@ -26,20 +26,20 @@ def main(): Int {
     dfFree(t);
 
     // INT96 timestamps: nanoseconds since the epoch.
-    val ns = readParquet("tests/stdlib/data/types_int96.parquet");
+    val ns = dfReadParquet("tests/stdlib/data/types_int96.parquet");
     if (ns == 0) { return 12; }
     if (dfGetLong(ns, "at_ns", 0) != 2000000000) { return 13; }
     if (dfGetLong(ns, "at_ns", 1) != 1000000000000000000) { return 14; }
     dfFree(ns);
 
     // Nested columns: the whole file is refused, the flat columns can be read.
-    if (readParquet("tests/stdlib/data/nested.parquet") != 0) { return 15; }
-    val flat = readParquetColumns("tests/stdlib/data/nested.parquet", "id,label");
+    if (dfReadParquet("tests/stdlib/data/nested.parquet") != 0) { return 15; }
+    val flat = dfReadParquetColumns("tests/stdlib/data/nested.parquet", "id,label");
     if (flat == 0) {
         println(dfLastError());
         return 16;
     }
     if (dfRows(flat) != 3 or dfGetString(flat, "label", 2) != "three") { return 17; }
-    if (readParquetColumns("tests/stdlib/data/nested.parquet", "tags") != 0) { return 18; }
+    if (dfReadParquetColumns("tests/stdlib/data/nested.parquet", "tags") != 0) { return 18; }
     return 0;
 }

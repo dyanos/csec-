@@ -3,27 +3,27 @@ import std.dataframe
 // that its columns are decoded in parallel on several threads).
 
 def main(): Int {
-    val df = readParquet("tests/stdlib/data/people_snappy_dict.parquet");
+    val df = dfReadParquet("tests/stdlib/data/people_snappy_dict.parquet");
     if (df == 0) { return 1; }
     val path = "tests/stdlib/data/people.tmp.parquet";
-    if (!writeParquet(df, path)) {
+    if (!dfWriteParquet(df, path)) {
         println(dfLastError());
         return 2;
     }
-    val back = readParquet(path);
+    val back = dfReadParquet(path);
     if (back == 0) {
         println(dfLastError());
         return 3;
     }
     // Same columns, types, values, and nulls.
-    if (frameToCsv(back) != frameToCsv(df)) { return 4; }
+    if (dfToCsv(back) != dfToCsv(df)) { return 4; }
     if (dfColumnType(back, "name") != "string" or dfColumnType(back, "score") != "double") { return 5; }
 
     // An empty frame keeps its schema.
     val none = dfFilter(df, "id", ">", 100.0e0);
     if (dfRows(none) != 0) { return 6; }
-    if (!writeParquet(none, "tests/stdlib/data/empty.tmp.parquet")) { return 7; }
-    val emptyBack = readParquet("tests/stdlib/data/empty.tmp.parquet");
+    if (!dfWriteParquet(none, "tests/stdlib/data/empty.tmp.parquet")) { return 7; }
+    val emptyBack = dfReadParquet("tests/stdlib/data/empty.tmp.parquet");
     if (emptyBack == 0 or dfRows(emptyBack) != 0 or dfColumns(emptyBack) != 6) { return 8; }
     if (dfColumnType(emptyBack, "region") != "string") { return 9; }
 
@@ -43,8 +43,8 @@ def main(): Int {
         dfAppendString(big, "category", "c" + (i % 7));
         i = i + 1;
     }
-    if (!writeParquet(big, "tests/stdlib/data/big.tmp.parquet")) { return 10; }
-    val bigBack = readParquet("tests/stdlib/data/big.tmp.parquet");
+    if (!dfWriteParquet(big, "tests/stdlib/data/big.tmp.parquet")) { return 10; }
+    val bigBack = dfReadParquet("tests/stdlib/data/big.tmp.parquet");
     if (bigBack == 0) {
         println(dfLastError());
         return 11;

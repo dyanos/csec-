@@ -166,7 +166,7 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 		std::vector<std::string> pathComponents;
 		pathComponents.push_back(previous().value);
 		while (match(TokenType::OPERATOR, ".")) {
-			if (matchIdentifierName()) {
+			if (matchMemberName()) {
 				pathComponents.push_back(previous().value);
 			}
 			else {
@@ -666,7 +666,9 @@ std::unique_ptr<ASTNode> Parser::parseUnaryExpression() {
 		match(TokenType::OPERATOR, "~") ||
 		match(TokenType::OPERATOR, "!")) {
 		std::string op = previous().value;
-		auto rightCopy = parseUnaryExpression();
+		// The operand includes its postfix chain: `!s.contains(x)` is `!(s.contains(x))`, and
+		// `-a[i]` is `-(a[i])` (postfix binds tighter than prefix, as in C).
+		auto rightCopy = parsePostfixExpression();
 		return std::make_unique<UnaryExpressionNode>(op, std::move(rightCopy));
 	}
 	else {
@@ -741,7 +743,7 @@ std::unique_ptr<ASTNode> Parser::parsePostfixExpression() {
 			// Member access on an arbitrary expression, e.g. a method call on a string literal
 			// (`" x ".trim()`). Identifier-rooted paths are handled in parseSimpleExpression;
 			// this covers the cases that reach here as a completed primary expression.
-			if (!matchIdentifierName()) {
+			if (!matchMemberName()) {
 				error("Expected member name after '.'");
 				break;
 			}

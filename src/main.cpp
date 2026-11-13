@@ -31,6 +31,7 @@
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/Signals.h>
 #include <llvm/Support/raw_ostream.h>
 
 #ifdef _WIN32
@@ -1280,7 +1281,20 @@ HostTarget createHostTarget(bool nativeCpu) {
 int main(int argc, char** argv) {
 #ifdef _WIN32
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    // Report failed assertions and abort() on stderr instead of a modal dialog, which would block
+    // test runs and scripts until someone clicks it.
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+    _set_error_mode(_OUT_TO_STDERR);
+    _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
+    // CSEC_STACK_TRACE=1: print a symbolized stack trace on a crash or failed LLVM assertion (opt-in:
+    // the handler makes a normal Debug-CRT exit report abort).
+    if (const char* trace = std::getenv("CSEC_STACK_TRACE"); trace && *trace && *trace != '0') {
+        llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
+    }
     //_CrtSetBreakAlloc(3404);
 
     if (argc > 1 && std::string(argv[1]) == "--mangle") {

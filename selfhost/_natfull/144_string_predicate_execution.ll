@@ -1,8 +1,8 @@
 ; ModuleID = 'main'
 source_filename = "main"
 
-@0 = private unnamed_addr constant [13 x i8] c"csec-runtime\00", align 1
-@1 = private unnamed_addr constant [5 x i8] c"csec\00", align 1
+@0 = private unnamed_addr constant [16 x i8] c"tessera-runtime\00", align 1
+@1 = private unnamed_addr constant [8 x i8] c"tessera\00", align 1
 @2 = private unnamed_addr constant [5 x i8] c"time\00", align 1
 @3 = private unnamed_addr constant [4 x i8] c"run\00", align 1
 @4 = private unnamed_addr constant [8 x i8] c"runtime\00", align 1
@@ -62,7 +62,7 @@ and_end13:                                        ; preds = %and_rhs12, %and_end
 
 then:                                             ; preds = %and_end13
   %str.index = call i64 @csec_string_index_of(ptr @0, ptr @4)
-  %addtmp = add i64 %str.index, 35
+  %addtmp = add i64 %str.index, 32
   %abi.trunc = trunc i64 %addtmp to i32
   ret i32 %abi.trunc
 

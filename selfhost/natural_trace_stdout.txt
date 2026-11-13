@@ -1,2 +1,2 @@
-get current directory: C:\Users\dyano\Projects\csec-
+get current directory: C:\Users\dyano\Projects\tessera
 Parsing completed successfully.

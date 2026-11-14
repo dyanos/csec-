@@ -1,0 +1,5 @@
+// A Set holds one element type.
+def main(): Int {
+    val s = {1, "two"};
+    return 0;
+}

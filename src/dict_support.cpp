@@ -71,7 +71,7 @@ int kindOf(const Type* type) {
     if (isBoolType(type)) return KindBool;
     if (type->isStringTy()) return KindString;
     if (type->isCharTy()) return KindChar;
-    if (isDictType(type)) return KindDict;
+    if (isDictType(type) || isSetType(type)) return KindDict;  // printed through the runtime object
     if (arrayElementType(type)) return KindArray;
     return KindOpaque;
 }
@@ -91,7 +91,7 @@ llvm::Type* ptrType() { return llvm::PointerType::getUnqual(CodeGenerator::getIn
 llvm::Type* slotType(const Type* type) {
     type = unborrow(type);
     if (!type) return nullptr;
-    if (arrayElementType(type) || isDictType(type)) return ptrType();
+    if (arrayElementType(type) || isDictType(type) || isSetType(type)) return ptrType();
     // Reference classes are pointers (getLLVMType gives the class's struct type).
     return getABIStorageType(type);
 }
@@ -155,7 +155,7 @@ llvm::Value* heapArrayLiteral(ArrayLiteralNode* literal, const Type* elementType
             value = heapArrayLiteral(nested, nestedElement);
         }
         else if (auto* dict = dynamic_cast<DictLiteralNode*>(element)) {
-            if (isDictType(elementType)) dict->type = cloneType(elementType);
+            if (isDictType(elementType) || isSetType(elementType)) dict->type = cloneType(elementType);
             value = dict->codegen();
         }
         else {
@@ -218,6 +218,7 @@ bool isValidDictValueType(const Type* type) {
     if (!type || type->getKind() == Type::Kind::UNKNOWN || type->isVoidTy()) return false;
     if (type->getKind() == Type::Kind::TUPLE || type->getKind() == Type::Kind::BOX) return false;
     if (isDictType(type)) return isValidDictKeyType(dictKeyType(type)) && isValidDictValueType(dictValueType(type));
+    if (isSetType(type)) return isValidDictKeyType(setElementType(type));
     if (const Type* element = arrayElementType(type)) return isValidDictValueType(element);
     if (isStructClassType(type)) return false;
     // Reference classes (also Nat, Tensor) are pointers. Checked by kind: during type checking the
@@ -241,6 +242,10 @@ std::unique_ptr<Type> unifyDictElementTypes(const Type* a, const Type* b) {
         if (a->isFloatTy() && (b->isFloatTy() || b->isIntegerTy())) return cloneType(a);
         if (b->isFloatTy() && a->isIntegerTy()) return cloneType(b);
         return std::make_unique<BasicType>("Double");
+    }
+    if (isSetType(a) && isSetType(b)) {
+        auto element = unifyDictElementTypes(setElementType(a), setElementType(b));
+        return element ? makeSetType(element.get()) : nullptr;
     }
     if (isDictType(a) && isDictType(b)) {
         auto key = unifyDictElementTypes(dictKeyType(a), dictKeyType(b));
@@ -314,7 +319,7 @@ llvm::Value* codegenDictPayload(ASTNode* expr, const Type* targetType, long long
         }
     }
     if (auto* dict = dynamic_cast<DictLiteralNode*>(expr)) {
-        if (isDictType(targetType)) dict->type = cloneType(targetType);
+        if (isDictType(targetType) || isSetType(targetType)) dict->type = cloneType(targetType);
     }
 
     llvm::Value* value = expr->codegen();
@@ -451,6 +456,7 @@ std::unique_ptr<Type> dictMethodType(const Type* dictType, const std::string& me
     if (method == "clear" && argumentCount == 0) return std::make_unique<BasicType>("Unit");
     if (method == "copy" && argumentCount == 0) return makeDictType(keyType, valueType);
     if (method == "toString" && argumentCount == 0) return std::make_unique<BasicType>("String");
+    if (method == "keys" && argumentCount == 0) return makeSetType(keyType);
     return nullptr;
 }
 
@@ -524,6 +530,9 @@ llvm::Value* codegenDictMethod(ASTNode* dictExpr, const std::string& method,
     if (method == "toString") {
         return codegenDictToString(handle);
     }
+    if (method == "keys") {
+        return cg.builder.CreateCall(runtimeFunction("csec_dict_keys", ptrType(), {ptrType()}), {handle}, "dict.keys");
+    }
     return nullptr;
 }
 
@@ -534,6 +543,23 @@ void DictLiteralNode::accept(ASTVisitor& visitor) {
 }
 
 std::string DictLiteralNode::inferenceError() {
+    if (isSet) {
+        std::unique_ptr<Type> elementType;
+        for (size_t i = 0; i < keys.size(); ++i) {
+            auto e = keys[i] ? keys[i]->getType() : nullptr;
+            if (!e || e->getKind() == Type::Kind::UNKNOWN) return "cannot infer the type of set element #" + std::to_string(i + 1);
+            if (!isValidDictKeyType(e.get())) {
+                return "set elements must be Int, Long, Char, Bool or String, not '" + e->getName() + "'";
+            }
+            auto previous = elementType ? elementType->clone() : nullptr;
+            elementType = elementType ? unifyDictElementTypes(elementType.get(), e.get()) : e->clone();
+            if (!elementType) {
+                return "set elements have different types ('" + previous->getName() + "' and '" + e->getName() +
+                       "'); a Set holds one element type";
+            }
+        }
+        return "";
+    }
     if (keys.empty()) {
         return "cannot infer the type of an empty dictionary literal '{}'; declare it with a type, "
                "e.g. 'val d: Dict<String, Int> = {}'";
@@ -566,6 +592,17 @@ std::string DictLiteralNode::inferenceError() {
 std::unique_ptr<Type> DictLiteralNode::getType() {
     if (type) return type->clone();
     if (keys.empty()) return std::make_unique<UnknownType>();
+    if (isSet) {
+        std::unique_ptr<Type> elementType;
+        for (auto& key : keys) {
+            auto e = key ? key->getType() : nullptr;
+            if (!e) return std::make_unique<UnknownType>();
+            elementType = elementType ? unifyDictElementTypes(elementType.get(), e.get()) : e->clone();
+            if (!elementType) return std::make_unique<UnknownType>();
+        }
+        if (!isValidDictKeyType(elementType.get())) return std::make_unique<UnknownType>();
+        return makeSetType(elementType.get());
+    }
     std::unique_ptr<Type> keyType;
     std::unique_ptr<Type> valueType;
     for (size_t i = 0; i < keys.size(); ++i) {
@@ -588,6 +625,9 @@ std::unique_ptr<Type> DictLiteralNode::getType() {
 
 llvm::Value* DictLiteralNode::codegen() {
     auto dictType = getType();
+    if (isSetType(dictType.get())) {
+        return codegenSetLiteral(dictType.get(), keys);
+    }
     if (!isDictType(dictType.get())) {
         std::cerr << "Type error: " << inferenceError() << std::endl;
         return nullptr;
@@ -614,4 +654,206 @@ llvm::Value* DictLiteralNode::codegen() {
         }
     }
     return handle;
+}
+
+// ---- Sets ----
+
+bool isSetType(const Type* type) {
+    type = unborrow(type);
+    if (!type || type->getKind() != Type::Kind::GENERIC || type->getName() != "Set") return false;
+    auto* generic = dynamic_cast<const GenericType*>(type);
+    return generic && generic->typeArguments.size() == 1 && generic->typeArguments[0];
+}
+
+std::unique_ptr<Type> makeSetType(const Type* elementType) {
+    std::vector<std::unique_ptr<Type>> arguments;
+    arguments.push_back(cloneType(elementType));
+    std::unique_ptr<Type> base = std::make_unique<ClassType>("Set");
+    return std::make_unique<GenericType>(base, arguments);
+}
+
+const Type* setElementType(const Type* type) {
+    if (!isSetType(type)) return nullptr;
+    return static_cast<const GenericType*>(unborrow(type))->typeArguments[0].get();
+}
+
+llvm::Value* codegenSetNew(const Type* setType) {
+    auto& cg = CodeGenerator::getInstance();
+    const Type* element = setElementType(setType);
+    if (!element) return nullptr;
+    return cg.builder.CreateCall(runtimeFunction("csec_set_new", ptrType(), {i32Type()}),
+                                 {llvm::ConstantInt::get(i32Type(), kindOf(element))}, "set.new");
+}
+
+llvm::Value* codegenSetLiteral(const Type* setType, std::vector<std::unique_ptr<ASTNode>>& elements) {
+    auto& cg = CodeGenerator::getInstance();
+    const Type* elementType = setElementType(setType);
+    llvm::Value* handle = codegenSetNew(setType);
+    if (!handle || !elementType) return nullptr;
+    auto* add = runtimeFunction("csec_set_add", i32Type(), {ptrType(), i64Type()});
+    for (auto& element : elements) {
+        llvm::Value* payload = codegenKeyPayload(element.get(), elementType);
+        if (!payload) return nullptr;
+        cg.builder.CreateCall(add, {handle, payload});
+    }
+    return handle;
+}
+
+llvm::Value* codegenSetContains(ASTNode* setExpr, ASTNode* elementExpr) {
+    auto& cg = CodeGenerator::getInstance();
+    auto setType = setExpr->getType();
+    const Type* elementType = setElementType(setType.get());
+    if (!elementType) return nullptr;
+    llvm::Value* handle = codegenDictHandle(setExpr);
+    llvm::Value* element = codegenKeyPayload(elementExpr, elementType);
+    if (!handle || !element) return nullptr;
+    llvm::Value* found = cg.builder.CreateCall(
+        runtimeFunction("csec_dict_contains", i32Type(), {ptrType(), i64Type()}), {handle, element}, "set.has");
+    return cg.builder.CreateICmpNE(found, llvm::ConstantInt::get(i32Type(), 0), "set.has.bool");
+}
+
+namespace {
+// The runtime function and result shape of a set operator.
+struct SetOperation {
+    const char* runtime = nullptr;  // csec_set_*
+    bool producesSet = false;
+    bool swap = false;    // evaluate runtime(right, left)
+    bool negate = false;  // !runtime(...)
+    bool proper = false;  // also require the sets to differ
+};
+
+bool setOperation(const std::string& op, SetOperation& out) {
+    out = SetOperation();
+    if (op == "|" || op == "union") { out.runtime = "csec_set_union"; out.producesSet = true; return true; }
+    if (op == "&" || op == "intersect") { out.runtime = "csec_set_intersection"; out.producesSet = true; return true; }
+    if (op == "-" || op == "diff" || op == "without") { out.runtime = "csec_set_difference"; out.producesSet = true; return true; }
+    if (op == "^" || op == "xor" || op == "symdiff") { out.runtime = "csec_set_symmetric_difference"; out.producesSet = true; return true; }
+    if (op == "==") { out.runtime = "csec_set_equals"; return true; }
+    if (op == "!=") { out.runtime = "csec_set_equals"; out.negate = true; return true; }
+    if (op == "<=" || op == "subset") { out.runtime = "csec_set_is_subset"; return true; }
+    if (op == ">=" || op == "superset") { out.runtime = "csec_set_is_subset"; out.swap = true; return true; }
+    if (op == "<" || op == "properSubset") { out.runtime = "csec_set_is_subset"; out.proper = true; return true; }
+    if (op == ">" || op == "properSuperset") { out.runtime = "csec_set_is_subset"; out.swap = true; out.proper = true; return true; }
+    return false;
+}
+} // namespace
+
+bool isSetBinaryOperator(const std::string& op) {
+    SetOperation ignored;
+    return setOperation(op, ignored);
+}
+
+std::unique_ptr<Type> setBinaryOperatorType(const std::string& op, const Type* leftType, const Type* rightType) {
+    SetOperation operation;
+    if (!isSetType(leftType) || !isSetType(rightType) || !setOperation(op, operation)) return nullptr;
+    if (!operation.producesSet) return std::make_unique<BasicType>("Boolean");
+    return unifyDictElementTypes(leftType, rightType);
+}
+
+llvm::Value* codegenSetBinary(const std::string& op, ASTNode* left, ASTNode* right) {
+    auto& cg = CodeGenerator::getInstance();
+    SetOperation operation;
+    if (!setOperation(op, operation)) return nullptr;
+    llvm::Value* a = codegenDictHandle(left);
+    llvm::Value* b = codegenDictHandle(right);
+    if (!a || !b) return nullptr;
+    if (operation.swap) std::swap(a, b);
+    if (operation.producesSet) {
+        return cg.builder.CreateCall(runtimeFunction(operation.runtime, ptrType(), {ptrType(), ptrType()}), {a, b}, "set.op");
+    }
+    llvm::Value* raw = cg.builder.CreateCall(runtimeFunction(operation.runtime, i32Type(), {ptrType(), ptrType()}), {a, b}, "set.test");
+    llvm::Value* result = cg.builder.CreateICmpNE(raw, llvm::ConstantInt::get(i32Type(), 0), "set.test.bool");
+    if (operation.negate) result = cg.builder.CreateNot(result, "set.test.not");
+    if (operation.proper) {
+        llvm::Value* same = cg.builder.CreateCall(runtimeFunction("csec_set_equals", i32Type(), {ptrType(), ptrType()}), {a, b}, "set.same");
+        llvm::Value* differs = cg.builder.CreateICmpEQ(same, llvm::ConstantInt::get(i32Type(), 0), "set.differs");
+        result = cg.builder.CreateAnd(result, differs, "set.proper");
+    }
+    return result;
+}
+
+std::unique_ptr<Type> setMethodType(const Type* setType, const std::string& method, size_t argumentCount) {
+    const Type* elementType = setElementType(setType);
+    if (!elementType) return nullptr;
+    if ((method == "size" || method == "length" || method == "count" || method == "len") && argumentCount == 0) {
+        return std::make_unique<BasicType>("Long");
+    }
+    if (method == "isEmpty" && argumentCount == 0) return std::make_unique<BasicType>("Boolean");
+    if ((method == "add" || method == "remove" || method == "discard" || method == "contains" || method == "has") &&
+        argumentCount == 1) {
+        return std::make_unique<BasicType>("Boolean");
+    }
+    if (method == "elementAt" && argumentCount == 1) return cloneType(elementType);
+    if (method == "clear" && argumentCount == 0) return std::make_unique<BasicType>("Unit");
+    if (method == "copy" && argumentCount == 0) return makeSetType(elementType);
+    if (method == "toString" && argumentCount == 0) return std::make_unique<BasicType>("String");
+    if ((method == "union" || method == "intersection" || method == "difference" || method == "symmetricDifference") &&
+        argumentCount == 1) {
+        return makeSetType(elementType);
+    }
+    if ((method == "isSubset" || method == "isSuperset" || method == "isDisjoint") && argumentCount == 1) {
+        return std::make_unique<BasicType>("Boolean");
+    }
+    return nullptr;
+}
+
+llvm::Value* codegenSetMethod(ASTNode* setExpr, const std::string& method,
+                              std::vector<std::unique_ptr<ASTNode>>& arguments, bool& handled) {
+    auto& cg = CodeGenerator::getInstance();
+    auto setType = setExpr->getType();
+    handled = true;
+    if (!setMethodType(setType.get(), method, arguments.size())) {
+        std::cerr << "Error: Set has no method '" << method << "' taking " << arguments.size() << " argument(s)" << std::endl;
+        return nullptr;
+    }
+    const Type* elementType = setElementType(setType.get());
+    if (method == "contains" || method == "has") return codegenSetContains(setExpr, arguments[0].get());
+    if (method == "union") return codegenSetBinary("|", setExpr, arguments[0].get());
+    if (method == "intersection") return codegenSetBinary("&", setExpr, arguments[0].get());
+    if (method == "difference") return codegenSetBinary("-", setExpr, arguments[0].get());
+    if (method == "symmetricDifference") return codegenSetBinary("^", setExpr, arguments[0].get());
+    if (method == "isSubset") return codegenSetBinary("<=", setExpr, arguments[0].get());
+    if (method == "isSuperset") return codegenSetBinary(">=", setExpr, arguments[0].get());
+
+    llvm::Value* handle = codegenDictHandle(setExpr);
+    if (!handle) return nullptr;
+    if (method == "isDisjoint") {
+        llvm::Value* other = codegenDictHandle(arguments[0].get());
+        if (!other) return nullptr;
+        llvm::Value* raw = cg.builder.CreateCall(
+            runtimeFunction("csec_set_is_disjoint", i32Type(), {ptrType(), ptrType()}), {handle, other}, "set.disjoint");
+        return cg.builder.CreateICmpNE(raw, llvm::ConstantInt::get(i32Type(), 0), "set.disjoint.bool");
+    }
+    if (method == "size" || method == "length" || method == "count" || method == "len" || method == "isEmpty") {
+        llvm::Value* size = cg.builder.CreateCall(runtimeFunction("csec_dict_size", i64Type(), {ptrType()}), {handle}, "set.size");
+        if (method != "isEmpty") return size;
+        return cg.builder.CreateICmpEQ(size, llvm::ConstantInt::get(i64Type(), 0), "set.empty");
+    }
+    if (method == "add" || method == "remove" || method == "discard") {
+        llvm::Value* element = codegenKeyPayload(arguments[0].get(), elementType);
+        if (!element) return nullptr;
+        const bool adding = method == "add";
+        llvm::Value* raw = cg.builder.CreateCall(
+            runtimeFunction(adding ? "csec_set_add" : "csec_dict_remove", i32Type(), {ptrType(), i64Type()}),
+            {handle, element}, adding ? "set.added" : "set.removed");
+        return cg.builder.CreateICmpNE(raw, llvm::ConstantInt::get(i32Type(), 0), "set.changed");
+    }
+    if (method == "elementAt") {
+        long long ignored = -1;
+        BasicType longType("Long");
+        llvm::Value* index = codegenDictPayload(arguments[0].get(), &longType, &ignored);
+        if (!index) return nullptr;
+        llvm::Value* payload = cg.builder.CreateCall(
+            runtimeFunction("csec_dict_key_at", i64Type(), {ptrType(), i64Type()}), {handle, index}, "set.element");
+        return dictValueFromPayload(payload, elementType);
+    }
+    if (method == "clear") {
+        cg.builder.CreateCall(runtimeFunction("csec_dict_clear", llvm::Type::getVoidTy(cg.context), {ptrType()}), {handle});
+        return llvm::ConstantInt::get(i32Type(), 0);
+    }
+    if (method == "copy") {
+        return cg.builder.CreateCall(runtimeFunction("csec_dict_copy", ptrType(), {ptrType()}), {handle}, "set.copy");
+    }
+    if (method == "toString") return codegenDictToString(handle);
+    return nullptr;
 }

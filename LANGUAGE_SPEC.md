@@ -426,7 +426,40 @@ var counts: Dict<String, Long> = {};
   `keyAt(i)`, `valueAt(i)`, `copy()`, `clear()`, `toString()`. `print`/`println` and string
   concatenation render a dictionary like Python: `{'a': 1, 'b': [2, 3]}`.
 - **Iteration.** `for (k <- d) { ... }` visits the keys in insertion order; `for (k, v <- d)` also
-  binds each value.
+  binds each value. `d.keys()` returns the keys as a `Set<K>` (§10.3).
+
+### 10.3 Set literals and `Set<T>`
+
+```
+set-lit = '{' expr ',' [ expr { ',' expr } [ ',' ] ] '}' ;   (* at least one ',' *)
+type    = ... | 'Set' '<' type '>' ;
+```
+
+```csec
+val primes = {2, 3, 5, 7};          // Set<Int>
+val one = {42,};                    // a one-element set needs the trailing comma
+var seen: Set<String> = {};         // `{}` is an empty set only when the type says Set
+```
+
+- **Parsing.** A `{` in expression position is a set literal when its top-level items are separated
+  by commas and none of `:`, `;`, `=`, `<-`, `->` appears at the top level before the closing `}`.
+  `{x}` without a comma stays a block expression (whose value is `x`), and a block that begins with
+  a destructuring assignment (`{ q, r = f(); ... }`) stays a block. An empty `{}` is a dictionary
+  unless it initializes or is assigned to something typed `Set<T>`.
+- **Typing.** `T` is the common type of the elements (same rules as dictionary keys, §10.2), and
+  must be `Int`, `Long`, `Short`, `Byte`, `Char`, `Bool`, or `String`.
+- **Semantics.** A set is a shared reference value like a dictionary, keeps insertion order, and
+  compares String elements by content. It prints like Python: `{1, 2, 3}`, and `set()` when empty.
+- **Operators.** `a | b` / `a union b`, `a & b` / `a intersect b`, `a - b` / `a diff b` /
+  `a without b`, `a ^ b` / `a symdiff b` produce a new set; `a == b`, `a != b`, `a <= b` /
+  `a subset b`, `a >= b` / `a superset b`, `a < b` / `a properSubset b`, `a > b` /
+  `a properSuperset b` are `Bool`; `x in s`, `x notin s`. Both sides must have the same element
+  type. (On `Long` bitsets the keyword operators keep their existing meaning.)
+- **Methods.** `add(x)` and `remove(x)`/`discard(x)` return whether the set changed;
+  `contains(x)`/`has(x)`, `size()`/`length()`/`count()`, `isEmpty()`, `clear()`, `copy()`,
+  `elementAt(i)`, `union(s)`, `intersection(s)`, `difference(s)`, `symmetricDifference(s)`,
+  `isSubset(s)`, `isSuperset(s)`, `isDisjoint(s)`, `toString()`.
+- **Iteration.** `for (x <- s) { ... }` visits the elements in insertion order.
 
 ## 5. Self-hosted compiler support
 
@@ -443,6 +476,8 @@ The self-hosted compiler (`selfhost/`, whose emitter lives in `src/native_runtim
   `Float`, `Boolean`, `Char`, `String`): literals, `val d: Dict<K, V> = {}`, `d[k]`,
   `d[k] = v`, `d[k] op= v`, `get`, `size`, `isEmpty`, `contains`, `remove`, `clear`, `Dict`
   parameters and return types, and local type inference from `d[k]`/`d.get(..)`/`d.size()`;
+- sets (§10.3) of those scalar types: literals, `val s: Set<T> = {}`, `add`, `remove`, `discard`,
+  `contains`, `size`, `isEmpty`, `clear`, and `Set` parameters;
 - calls through `std.io`, `std.thread`, `std.process`, `std.pipe`, `std.shared`, `std.mail`,
   `std.math.natural`, `std.math.real`, and `std.symbolic`, which are ordinary functions
   over `external def` runtime entry points. `external def` declarations are emitted with
@@ -457,6 +492,8 @@ Narrower than the native compiler:
   types.
 - The self-host does not type-check: the share-nothing and borrow rules of §2–§3 are
   enforced by the native compiler only.
+- Set operators (`|`, `&`, `-`, `^`, comparisons, `in`), `for` over a set, and the set-algebra
+  methods are native-only.
 - Dictionary values that are lists or nested dictionaries, `for` over a dictionary, `k in d`,
   `keyAt`/`valueAt`/`copy`/`toString`, printing a dictionary, and calling a method on a
   dictionary read in one expression (`d[k].length()`; bind `d[k]` to a local first) are

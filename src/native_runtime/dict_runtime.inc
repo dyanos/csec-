@@ -6,6 +6,9 @@
 // object references travel as their pointer. The compiler tells the dictionary the kind of its keys
 // and values when it is created, so lookups can hash String keys by content and toString() can
 // print the entries. Entries keep insertion order, like Python's dict.
+//
+// A set (`{1, 2, 3}`, `Set<T>`) is the same object with `isSet` set: only the keys are used, and it
+// prints as `{1, 2, 3}` (or `set()` when empty).
 
 #include <charconv>
 #include <cstdint>
@@ -42,6 +45,7 @@ struct Dict {
     int valueKind = KindInt;
     int elementKind = KindInt;  // for KindArray values
     int elementBytes = 8;
+    bool isSet = false;
     std::vector<Entry> entries;
     size_t dead = 0;
     std::unordered_map<long long, size_t> intIndex;
@@ -238,6 +242,18 @@ void appendDict(std::string& out, Dict* dict, int depth) {
     if (!dict) { out += "None"; return; }
     if (depth > 64) { out += "{...}"; return; }
     dict->compact();
+    if (dict->isSet) {
+        if (dict->entries.empty()) { out += "set()"; return; }
+        out += '{';
+        bool firstElement = true;
+        for (const auto& entry : dict->entries) {
+            if (!firstElement) out += ", ";
+            firstElement = false;
+            appendScalar(out, dict->keyKind, entry.key, depth);
+        }
+        out += '}';
+        return;
+    }
     out += '{';
     bool first = true;
     for (const auto& entry : dict->entries) {
@@ -262,6 +278,8 @@ void appendDict(std::string& out, Dict* dict, int depth) {
 } // namespace csec_dict
 
 extern "C" {
+
+void* csec_set_new(int elementKind);
 
 void* csec_dict_new(int keyKind, int valueKind, int elementKind, int elementBytes) {
     auto* dict = new csec_dict::Dict();
@@ -362,8 +380,91 @@ void* csec_dict_copy(void* handle) {
         dict ? dict->elementKind : 0, dict ? dict->elementBytes : 8));
     if (!dict) return copy;
     dict->compact();
+    copy->isSet = dict->isSet;
     for (const auto& entry : dict->entries) copy->set(entry.key, entry.value, entry.length);
     return copy;
+}
+
+// The keys of a dictionary, as a new set.
+void* csec_dict_keys(void* handle) {
+    auto* dict = csec_dict::asDict(handle);
+    auto* keys = static_cast<csec_dict::Dict*>(csec_set_new(dict ? dict->keyKind : 0));
+    if (!dict) return keys;
+    dict->compact();
+    for (const auto& entry : dict->entries) keys->set(entry.key, 0, -1);
+    return keys;
+}
+
+// ---- sets ----
+
+void* csec_set_new(int elementKind) {
+    auto* set = static_cast<csec_dict::Dict*>(csec_dict_new(elementKind, csec_dict::KindInt, 0, 8));
+    set->isSet = true;
+    return set;
+}
+
+int csec_set_add(void* handle, long long element) {
+    auto* set = csec_dict::asDict(handle);
+    if (!set || set->find(element) >= 0) return 0;
+    set->set(element, 0, -1);
+    return 1;
+}
+
+static csec_dict::Dict* csec_set_combine(void* left, void* right, bool keepLeftOnly, bool keepBoth, bool keepRightOnly) {
+    auto* a = csec_dict::asDict(left);
+    auto* b = csec_dict::asDict(right);
+    auto* result = static_cast<csec_dict::Dict*>(csec_set_new(a ? a->keyKind : (b ? b->keyKind : 0)));
+    if (a) {
+        a->compact();
+        for (const auto& entry : a->entries) {
+            const bool inB = b && b->find(entry.key) >= 0;
+            if ((inB && keepBoth) || (!inB && keepLeftOnly)) result->set(entry.key, 0, -1);
+        }
+    }
+    if (b && keepRightOnly) {
+        b->compact();
+        for (const auto& entry : b->entries) {
+            if (!(a && a->find(entry.key) >= 0)) result->set(entry.key, 0, -1);
+        }
+    }
+    return result;
+}
+
+void* csec_set_union(void* left, void* right) { return csec_set_combine(left, right, true, true, true); }
+void* csec_set_intersection(void* left, void* right) { return csec_set_combine(left, right, false, true, false); }
+void* csec_set_difference(void* left, void* right) { return csec_set_combine(left, right, true, false, false); }
+void* csec_set_symmetric_difference(void* left, void* right) { return csec_set_combine(left, right, true, false, true); }
+
+// 1 when every element of `left` is in `right`.
+int csec_set_is_subset(void* left, void* right) {
+    auto* a = csec_dict::asDict(left);
+    auto* b = csec_dict::asDict(right);
+    if (!a) return 1;
+    a->compact();
+    for (const auto& entry : a->entries) {
+        if (!b || b->find(entry.key) < 0) return 0;
+    }
+    return 1;
+}
+
+int csec_set_equals(void* left, void* right) {
+    auto* a = csec_dict::asDict(left);
+    auto* b = csec_dict::asDict(right);
+    const size_t sizeA = a ? a->size() : 0;
+    const size_t sizeB = b ? b->size() : 0;
+    return sizeA == sizeB && csec_set_is_subset(left, right) ? 1 : 0;
+}
+
+// 1 when the sets share no element.
+int csec_set_is_disjoint(void* left, void* right) {
+    auto* a = csec_dict::asDict(left);
+    auto* b = csec_dict::asDict(right);
+    if (!a || !b) return 1;
+    a->compact();
+    for (const auto& entry : a->entries) {
+        if (b->find(entry.key) >= 0) return 0;
+    }
+    return 1;
 }
 
 char* csec_dict_to_string(void* handle) {

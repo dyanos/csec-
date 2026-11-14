@@ -990,8 +990,8 @@ static std::string csec_emit_i32_expression(const char* tokens, int start, int e
                         const bool pointerArgument = argumentIndex < static_cast<int>(parameters.size()) &&
                             std::strcmp(csec_llvm_type_for_name(parameters[argumentIndex].second), "ptr") == 0;
                         if (!arguments.empty()) arguments += ", ";
-                        if (pointerArgument && parameters[argumentIndex].second == "Dict") {
-                            // A `Dict<K, V>` parameter takes the dictionary handle.
+                        if (pointerArgument && (parameters[argumentIndex].second == "Dict" || parameters[argumentIndex].second == "Set")) {
+                            // A `Dict<K, V>` / `Set<T>` parameter takes the handle.
                             output += csec_emit_ptr_expression(tokens, argumentStart, cursor, argumentName);
                             arguments += "ptr " + argumentName;
                         } else if (pointerArgument && csec_token_kind_at(tokens, argumentStart) == 'I' && argumentStart + 1 == cursor &&

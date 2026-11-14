@@ -191,7 +191,7 @@ bool isCopyType(const Type* type) {
             return true;
         case Type::Kind::GENERIC: {
             const std::string& n = type->getName();
-            return !(n == "Array" || n == "Vector" || n == "Map" || n == "Set" ||
+            return !(n == "Array" || n == "Vector" || n == "Map" ||
                      n == "List" || n == "Shared" || n == "Weak");
         }
         case Type::Kind::TUPLE: {
@@ -458,7 +458,7 @@ void TypeChecker::visit(VariableDeclarationNode& node) {
     if (node.initializer) {
         // `val d: Dict<K, V> = {...}` (including an empty `{}`) takes its type from the annotation.
         if (auto* dictLiteral = dynamic_cast<DictLiteralNode*>(node.initializer.get())) {
-            if (node.hasExplicitType && isDictType(node.type.get())) {
+            if (node.hasExplicitType && (isDictType(node.type.get()) || isSetType(node.type.get()))) {
                 dictLiteral->type = node.type->clone();
             }
         }
@@ -630,6 +630,25 @@ void TypeChecker::visit(BinaryExpressionNode& node) {
     }
     if (node.right) {
         node.right->accept(*this);
+    }
+    if (node.left && node.right) {
+        auto leftType = node.left->getType();
+        auto rightType = node.right->getType();
+        if ((node.op == "in" || node.op == "notin") && isSetType(rightType.get())) {
+            checkDictValue(setElementType(rightType.get()), node.left.get(), "set element");
+        }
+        else if ((isSetType(leftType.get()) || isSetType(rightType.get())) &&
+                 !(node.op == "+" && (leftType->isStringTy() || rightType->isStringTy()))) {  // "s=" + set
+            if (!isSetBinaryOperator(node.op)) {
+                reportError("Type error: operator '" + node.op + "' is not defined for sets");
+                return;
+            }
+            if (!setBinaryOperatorType(node.op, leftType.get(), rightType.get())) {
+                reportError("Type error: set operator '" + node.op + "' needs two sets with the same element type, got '" +
+                            typeDisplayName(leftType.get()) + "' and '" + typeDisplayName(rightType.get()) + "'");
+                return;
+            }
+        }
     }
     auto resolved = node.getType();
     if (!isResolvedType(resolved)) {
@@ -824,7 +843,16 @@ void TypeChecker::visit(ForStatementNode& node) {
     cg.symbolTable.enterScope();
     enterOwnershipScope();
     auto iterableType = (node.iterableExpr && !node.isRange) ? node.iterableExpr->getType() : nullptr;
-    if (isDictType(iterableType.get())) {
+    if (isSetType(iterableType.get())) {
+        // `for (x <- s)` binds each element in insertion order.
+        if (!node.tokenValue.empty()) {
+            reportError("Type error: a set is iterated with one variable: for (x <- s)");
+        }
+        const Type* elementType = setElementType(iterableType.get());
+        bindVariable(node.variable, cloneType(elementType), false);
+        declareOwnership(node.variable, cloneType(elementType));
+    }
+    else if (isDictType(iterableType.get())) {
         // `for (k <- d)` binds each key; `for (k, v <- d)` binds the key and its value.
         const Type* keyType = dictKeyType(iterableType.get());
         const Type* valueType = dictValueType(iterableType.get());
@@ -1011,7 +1039,29 @@ void TypeChecker::visit(MethodCallNode& node) {
     }
     if (node.object) {
         auto receiverType = node.object->getType();
-        if (isDictType(receiverType.get())) {
+        if (isSetType(receiverType.get())) {
+            if (!setMethodType(receiverType.get(), node.methodName, node.arguments.size())) {
+                reportError("Type error: " + typeDisplayName(receiverType.get()) + " has no method '" + node.methodName +
+                            "' taking " + std::to_string(node.arguments.size()) + " argument(s); available: add(x), "
+                            "remove(x), discard(x), contains(x), size(), isEmpty(), clear(), copy(), elementAt(i), "
+                            "union(s), intersection(s), difference(s), symmetricDifference(s), isSubset(s), "
+                            "isSuperset(s), isDisjoint(s), toString()");
+                return;
+            }
+            const std::string& m = node.methodName;
+            if ((m == "add" || m == "remove" || m == "discard" || m == "contains" || m == "has") && !node.arguments.empty()) {
+                checkDictValue(setElementType(receiverType.get()), node.arguments[0].get(), "set element");
+            }
+            if (m == "union" || m == "intersection" || m == "difference" || m == "symmetricDifference" ||
+                m == "isSubset" || m == "isSuperset" || m == "isDisjoint") {
+                auto otherType = node.arguments[0] ? node.arguments[0]->getType() : nullptr;
+                if (!isSetType(otherType.get()) || !unifyDictElementTypes(receiverType.get(), otherType.get())) {
+                    reportError("Type error: " + m + "() needs a set with the same element type, got '" +
+                                typeDisplayName(otherType.get()) + "'");
+                }
+            }
+        }
+        else if (isDictType(receiverType.get())) {
             if (!dictMethodType(receiverType.get(), node.methodName, node.arguments.size())) {
                 reportError("Type error: " + typeDisplayName(receiverType.get()) + " has no method '" + node.methodName +
                             "' taking " + std::to_string(node.arguments.size()) + " argument(s); available: size(), "
@@ -1178,7 +1228,8 @@ void TypeChecker::checkDictValue(const Type* valueType, ASTNode* valueExpr, cons
     auto unified = unifyDictElementTypes(valueType, actual.get());
     if (!unified || !unified->equals(*valueType)) {
         reportError("Type error: " + context + " of type '" + typeDisplayName(actual.get()) +
-                    "' does not fit the dictionary value type '" + typeDisplayName(valueType) + "'");
+                    "' does not fit the " + (context.rfind("set", 0) == 0 ? "set element" : "dictionary value") +
+                    " type '" + typeDisplayName(valueType) + "'");
     }
 }
 
@@ -1202,6 +1253,29 @@ std::string TypeChecker::typeDisplayName(const Type* type) {
 }
 
 void TypeChecker::visit(DictLiteralNode& node) {
+    if (isSetType(node.type.get()) || node.isSet) {
+        for (auto& element : node.keys) {
+            if (element) element->accept(*this);
+        }
+        if (isSetType(node.type.get())) {
+            if (!node.isSet && !node.keys.empty()) {
+                reportError("Type error: a dictionary literal cannot initialize " + typeDisplayName(node.type.get()));
+                return;
+            }
+            const Type* elementType = setElementType(node.type.get());
+            for (auto& element : node.keys) {
+                checkDictValue(elementType, element.get(), "set element");
+            }
+            return;
+        }
+        if (!isSetType(node.getType().get())) {
+            reportError("Type error: " + node.inferenceError());
+        }
+        return;
+    }
+    if (node.isSet == false && node.type && !isDictType(node.type.get())) {
+        node.type.reset();
+    }
     const bool expected = isDictType(node.type.get());
     const Type* valueType = expected ? dictValueType(node.type.get()) : nullptr;
     for (size_t i = 0; i < node.keys.size(); ++i) {
@@ -1270,7 +1344,7 @@ void TypeChecker::visit(AssignmentExpressionNode& node) {
     // target's type.
     if (auto* dictLiteral = dynamic_cast<DictLiteralNode*>(node.right.get())) {
         auto leftType = node.left ? node.left->getType() : nullptr;
-        if (isDictType(leftType.get()) && !dictLiteral->type) {
+        if ((isDictType(leftType.get()) || isSetType(leftType.get())) && !dictLiteral->type) {
             dictLiteral->type = leftType->clone();
         }
     }

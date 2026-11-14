@@ -60,6 +60,28 @@ llvm::Value* codegenDictNew(const Type* dictType);
 // dict.toString() for printing and String concatenation.
 llvm::Value* codegenDictToString(llvm::Value* handle);
 
+// ---- Sets: the `{a, b, c}` literal and Set<T> (a dictionary that only uses its keys) ----
+
+bool isSetType(const Type* type);
+std::unique_ptr<Type> makeSetType(const Type* elementType);
+const Type* setElementType(const Type* type);
+// A new, empty set for `setType`; a set holding the evaluated `elements`.
+llvm::Value* codegenSetNew(const Type* setType);
+llvm::Value* codegenSetLiteral(const Type* setType, std::vector<std::unique_ptr<ASTNode>>& elements);
+// element in set
+llvm::Value* codegenSetContains(ASTNode* setExpr, ASTNode* elementExpr);
+// Set algebra for `|`/union, `&`/intersect, `-`/diff/without, `^`/symdiff (a new set), and
+// `==`, `!=`, `<=`/subset, `>=`/superset, `<`/properSubset, `>`/properSuperset (a Bool).
+// nullptr when `op` is not a set operator.
+bool isSetBinaryOperator(const std::string& op);
+std::unique_ptr<Type> setBinaryOperatorType(const std::string& op, const Type* leftType, const Type* rightType);
+llvm::Value* codegenSetBinary(const std::string& op, ASTNode* left, ASTNode* right);
+// add, remove/discard, contains/has, size/length/count, isEmpty, clear, copy, toString, elementAt,
+// union, intersection, difference, symmetricDifference, isSubset, isSuperset, isDisjoint.
+llvm::Value* codegenSetMethod(ASTNode* setExpr, const std::string& method,
+                              std::vector<std::unique_ptr<ASTNode>>& arguments, bool& handled);
+std::unique_ptr<Type> setMethodType(const Type* setType, const std::string& method, size_t argumentCount);
+
 // Methods: size/length/count, isEmpty, contains/has/containsKey, get(key[, default]), remove, clear,
 // copy, toString, keyAt(i), valueAt(i). Returns nullptr and sets `handled` false for other names.
 llvm::Value* codegenDictMethod(ASTNode* dictExpr, const std::string& method,

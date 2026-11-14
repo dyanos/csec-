@@ -582,6 +582,7 @@ const SNIPPETS: &[(&str, &str, &str)] = &[
     ("import", "import \"${1:path}\";", "import"),
     ("tensor", "new Tensor<${1:Double}, ${2:2}, ${3:2}>(${4:0.0})", "new tensor"),
     ("dict", "{${1:\"key\"}: ${2:value}}", "dictionary literal"),
+    ("set", "{${1:a}, ${2:b}}", "set literal"),
     ("fordict", "for (${1:key}, ${2:value} <- ${3:dict}) {\n\t$0\n}", "dictionary loop"),
 ];
 

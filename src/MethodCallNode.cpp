@@ -249,6 +249,11 @@ llvm::Value* MethodCallNode::codegen() {
 
     if (object) {
         auto receiverType = object->getType();
+        if (isSetType(receiverType.get())) {
+            bool handled = false;
+            llvm::Value* result = codegenSetMethod(object.get(), methodName, arguments, handled);
+            if (handled) return result;
+        }
         if (isDictType(receiverType.get())) {
             bool handled = false;
             llvm::Value* result = codegenDictMethod(object.get(), methodName, arguments, handled);
@@ -520,6 +525,10 @@ std::unique_ptr<Type> MethodCallNode::getType() {
 
     if (object) {
         auto receiverType = object->getType();
+        if (isSetType(receiverType.get())) {
+            auto result = setMethodType(receiverType.get(), methodName, arguments.size());
+            return result ? std::move(result) : std::make_unique<UnknownType>();
+        }
         if (isDictType(receiverType.get())) {
             auto result = dictMethodType(receiverType.get(), methodName, arguments.size());
             return result ? std::move(result) : std::make_unique<UnknownType>();

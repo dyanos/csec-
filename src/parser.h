@@ -79,6 +79,8 @@ private:
     std::unique_ptr<ASTNode> parseSimpleExpression();
     bool looksLikeDictLiteral() const;
     std::unique_ptr<ASTNode> parseDictLiteral();
+    bool looksLikeSetLiteral() const;
+    std::unique_ptr<ASTNode> parseSetLiteral();
     std::unique_ptr<ASTNode> parseInlineMathLatex();
     std::unique_ptr<ASTNode> parseBlockMathLatex();
     std::unique_ptr<ASTNode> parseLatexCommand();

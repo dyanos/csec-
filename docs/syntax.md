@@ -667,8 +667,34 @@ Keys are `Int`, `Long`, `Char`, `Bool`, or `String` (compared by content). Value
 any scalar, `String`, list, nested dictionary, or class instance. Methods: `size()`
 (also `length()`/`count()`), `isEmpty()`, `contains(key)` (also `key in d`, `key notin d`),
 `get(key)`, `get(key, default)`, `remove(key)`, `keyAt(i)`, `valueAt(i)`, `copy()`,
-`clear()`, and `toString()`. Dictionaries are reference values: `val e = d` and passing `d`
-to a function share the same dictionary (use `copy()` for an independent one).
+`clear()`, `keys()` (a `Set`), and `toString()`. Dictionaries are reference values: `val e = d`
+and passing `d` to a function share the same dictionary (use `copy()` for an independent one).
+
+## Sets
+
+A set literal is written as in Python, `{a, b, c}`, and has the type `Set<T>`. A one-element set
+needs a trailing comma, `{x,}` (`{x}` is a block whose value is `x`), and an empty set needs a type,
+because `{}` alone is an empty dictionary:
+
+```ts
+val primes = {2, 3, 5, 7};              // Set<Int>
+val odds = {1, 3, 5, 7, 9};
+var seen: Set<String> = {};
+
+println(primes | odds);                 // union         {2, 3, 5, 7, 1, 9}
+println(primes & odds);                 // intersection  {3, 5, 7}
+println(primes - odds);                 // difference    {2}
+println(primes ^ odds);                 // symmetric difference {2, 1, 9}
+val small = {3, 5} <= primes;           // subset (also >=, <, >, ==, !=)
+if (4 notin primes) { primes.add(4); }  // add/remove return whether the set changed
+for (p <- primes) { print(p); }         // insertion order
+```
+
+The keyword forms `union`, `intersect`, `diff`/`without`, `symdiff`, `subset`, `superset`,
+`properSubset`, and `properSuperset` work on sets too. Elements are `Int`, `Long`, `Char`, `Bool`,
+or `String`. Methods: `add`, `remove`/`discard`, `contains`, `size`, `isEmpty`, `clear`, `copy`,
+`elementAt(i)`, `union`, `intersection`, `difference`, `symmetricDifference`, `isSubset`,
+`isSuperset`, `isDisjoint`, `toString`.
 
 ## Tensors
 

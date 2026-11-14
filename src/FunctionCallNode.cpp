@@ -447,7 +447,7 @@ llvm::Value* codegenNativeIOCall(
                     getOrCreateRuntimeFunction(cg, "csec_print_double", voidTy, {f64Ty}),
                     {coerceMathValueToDouble(cg, argValues[i])});
             }
-            else if (argType && isDictType(argType) && argValues[i]->getType()->isPointerTy()) {
+            else if (argType && (isDictType(argType) || isSetType(argType)) && argValues[i]->getType()->isPointerTy()) {
                 // Print a dictionary as Python's dict repr: {'a': 1, 'b': [2, 3]}.
                 llvm::Value* handle = argValues[i];
                 if (auto* slot = llvm::dyn_cast<llvm::AllocaInst>(handle)) {

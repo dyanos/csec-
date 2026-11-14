@@ -171,7 +171,7 @@ llvm::Value* coerceValueForString(CodeGenerator& cg, llvm::Value* value, const T
             "str.int.call");
     }
     // A dictionary renders as Python's dict repr: {'a': 1, 'b': [2, 3]}.
-    if (isDictType(type) && value->getType()->isPointerTy()) {
+    if ((isDictType(type) || isSetType(type)) && value->getType()->isPointerTy()) {
         if (auto* slot = llvm::dyn_cast<llvm::AllocaInst>(value)) {
             if (slot->getAllocatedType()->isPointerTy()) value = cg.builder.CreateLoad(i8PtrTy, slot, "dict.load");
         }
@@ -594,8 +594,20 @@ static llvm::Value* codegenQuaternionOp(const std::string& op, llvm::Value* left
 }
 
 llvm::Value* BinaryExpressionNode::codegen() {
+    {
+        auto leftSetType = left->getType();
+        auto rightSetType = right->getType();
+        if (isSetType(leftSetType.get()) && isSetType(rightSetType.get()) && isSetBinaryOperator(op)) {
+            return codegenSetBinary(op, left.get(), right.get());
+        }
+    }
     if (op == "in" || op == "notin") {
         auto containerType = right->getType();
+        if (isSetType(containerType.get())) {
+            llvm::Value* found = codegenSetContains(right.get(), left.get());
+            if (!found || op == "in") return found;
+            return CodeGenerator::getInstance().builder.CreateNot(found, "set.notin");
+        }
         if (isDictType(containerType.get())) {
             llvm::Value* found = codegenDictContains(right.get(), left.get());
             if (!found || op == "in") return found;
@@ -1184,8 +1196,12 @@ std::unique_ptr<Type> BinaryExpressionNode::getType() {
         return std::make_unique<UnknownType>();
     }
 
-    if ((op == "in" || op == "notin") && isDictType(rightType.get())) {
+    if ((op == "in" || op == "notin") && (isDictType(rightType.get()) || isSetType(rightType.get()))) {
         return std::make_unique<BasicType>("Boolean");
+    }
+    if (isSetType(leftType.get()) && isSetType(rightType.get())) {
+        auto result = setBinaryOperatorType(op, leftType.get(), rightType.get());
+        return result ? std::move(result) : std::make_unique<UnknownType>();
     }
 
     if (op == "+" && (leftType->getName() == "String" || rightType->getName() == "String")) {

@@ -1,0 +1,43 @@
+// Set literals: Python-style `{a, b, c}` (`{x,}` for one element), typed Set<T> from the elements.
+def unique(words: Vector[String], n: Int): Set<String> {
+    var seen: Set<String> = {};       // an empty set needs a type: `{}` alone is an empty Dict
+    var i = 0;
+    while (i < n) {
+        seen.add(words[i]);
+        i = i + 1;
+    }
+    return seen;
+}
+
+def main(): Int {
+    val primes = {2, 3, 5, 7};                   // Set<Int>
+    val odds = {1, 3, 5, 7, 9};
+    if ((primes | odds).size() != 6) { return 1; }
+    if ((primes & odds) != {3, 5, 7}) { return 2; }
+    if ((primes - odds) != {2,}) { return 3; }
+    if ((primes ^ odds) != {1, 2, 9}) { return 4; }
+    if (!(primes intersect odds subset odds)) { return 5; }
+    if (!({3, 5} < primes) or ({3, 5} > primes) or !(primes >= {2, 3})) { return 6; }
+    if (!(3 in primes) or !(4 notin primes)) { return 7; }
+
+    primes.add(11);
+    if (primes.add(11)) { return 8; }            // already present
+    if (!primes.remove(2) or primes.contains(2)) { return 9; }
+
+    var sum = 0;
+    for (p <- primes) { sum = sum + p; }        // insertion order: 3, 5, 7, 11
+    if (sum != 26) { return 10; }
+
+    val words = unique(["b", "a", "b", "c"], 4);
+    if (words.toString() != "{'b', 'a', 'c'}") { return 11; }
+    val empty: Set<Int> = {};
+    if (empty.toString() != "set()" or !empty.isEmpty()) { return 12; }
+
+    val ages = {"ann": 30, "bo": 25};
+    if (ages.keys() != {"bo", "ann"}) { return 13; }
+    val tags = {"warm": {"red", "orange"}, "cool": {"blue",}};  // Dict<String, Set<String>>
+    if (!("red" in tags["warm"])) { return 14; }
+    println(primes);
+    println(tags);
+    return 0;
+}

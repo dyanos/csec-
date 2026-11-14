@@ -2,7 +2,8 @@
 // parameters (the direct compiler's counterpart is src/dict_support.cpp). A dictionary is a `ptr`
 // handle into dict_runtime.inc; keys and values cross as i64 payloads. The self-host supports scalar
 // keys (String, Int, Long, Char, Boolean) and scalar values (those plus Double/Float); list and nested
-// dictionary values are compiled by the direct compiler only.
+// dictionary values are compiled by the direct compiler only. Sets (`{1, 2, 3}`, `Set<T>`) reuse this
+// machinery with `isSet`: only keys, created by csec_set_new and filled by csec_set_add.
 //
 // Every hook here first checks that the tokens name a dictionary, so modules without dictionaries
 // (including the self-host compiler itself) lower exactly as before.
@@ -13,6 +14,7 @@ extern "C++" {
 struct CsecDictTypes {
     std::string key;
     std::string value;
+    bool isSet = false;
 };
 
 static std::string csec_dict_canonical_type(const std::string& name) {
@@ -27,6 +29,10 @@ static bool csec_dict_scalar_type(const std::string& name) {
         name == "Float" || name == "Boolean" || name == "String" || name == "Char";
 }
 
+static bool csec_dict_types_valid(const CsecDictTypes& types) {
+    return csec_dict_scalar_type(types.key) && (types.isSet || csec_dict_scalar_type(types.value));
+}
+
 static int csec_dict_kind(const std::string& name) {
     if (name == "Double" || name == "Float") return 1;
     if (name == "Boolean") return 2;
@@ -37,6 +43,15 @@ static int csec_dict_kind(const std::string& name) {
 
 // `Dict < K , V >` starting at `at`; on success fills `types` and returns the index after '>'.
 static int csec_dict_parse_type(const char* tokens, int at, CsecDictTypes& types) {
+    types.isSet = false;
+    if (csec_native_token_is(tokens, at, 'I', "Set") && csec_native_token_is(tokens, at + 1, 'O', "<") &&
+        csec_token_kind_at(tokens, at + 2) == 'I' &&
+        (csec_native_token_is(tokens, at + 3, 'O', ">") || csec_native_token_is(tokens, at + 3, 'O', ">>"))) {
+        types.isSet = true;
+        types.key = csec_dict_canonical_type(csec_token_text_at(tokens, at + 2));
+        types.value.clear();
+        return at + 4;
+    }
     if (!csec_native_token_is(tokens, at, 'I', "Dict") || !csec_native_token_is(tokens, at + 1, 'O', "<") ||
         csec_token_kind_at(tokens, at + 2) != 'I' || !csec_native_token_is(tokens, at + 3, 'O', ",") ||
         csec_token_kind_at(tokens, at + 4) != 'I') {
@@ -78,6 +93,27 @@ static bool csec_dict_literal_at(const char* tokens, int open, int close) {
         }
     }
     return false;
+}
+
+// `{` at `open` whose matching `}` is `close` encloses a set literal: comma-separated elements
+// (`{1, 2}` or `{x,}`) with no top-level ':', ';', '=', '->' or '<-'.
+static bool csec_set_literal_at(const char* tokens, int open, int close) {
+    if (!csec_native_token_is(tokens, open, 'O', "{") || close <= open + 1) return false;
+    if (csec_token_kind_at(tokens, open + 1) == 'K') return false;
+    int depth = 0;
+    bool comma = false;
+    for (int cursor = open + 1; cursor < close; ++cursor) {
+        if (csec_token_kind_at(tokens, cursor) != 'O') continue;
+        const char* text = csec_token_text_at(tokens, cursor);
+        if (!std::strcmp(text, "(") || !std::strcmp(text, "[") || !std::strcmp(text, "{")) ++depth;
+        else if (!std::strcmp(text, ")") || !std::strcmp(text, "]") || !std::strcmp(text, "}")) --depth;
+        else if (depth == 0) {
+            if (!std::strcmp(text, ",")) comma = true;
+            else if (!std::strcmp(text, ":") || !std::strcmp(text, ";") || !std::strcmp(text, "=") ||
+                     !std::strcmp(text, "->") || !std::strcmp(text, "<-")) return false;
+        }
+    }
+    return comma;
 }
 
 // Split `[start, end)` at top-level commas.
@@ -146,6 +182,13 @@ static std::string csec_dict_unify(const std::string& a, const std::string& b) {
 static bool csec_dict_literal_types(const char* tokens, int open, int close, CsecDictTypes& types) {
     types.key.clear();
     types.value.clear();
+    types.isSet = csec_set_literal_at(tokens, open, close);
+    if (types.isSet) {
+        for (const auto& item : csec_dict_split_items(tokens, open + 1, close)) {
+            types.key = csec_dict_unify(types.key, csec_dict_expression_type(tokens, item.first, item.second));
+        }
+        return !types.key.empty();
+    }
     for (const auto& item : csec_dict_split_items(tokens, open + 1, close)) {
         const int colon = csec_dict_entry_colon(tokens, item.first, item.second);
         if (colon < 0) return false;
@@ -168,7 +211,7 @@ static bool csec_dict_named_types(const char* tokens, int at, CsecDictTypes& typ
         const int value = declaration + 3;
         if (csec_native_token_is(tokens, value, 'O', "{")) {
             const int close = csec_find_closing_token(tokens, value, 1000000000, "{", "}");
-            return close > value && csec_dict_literal_at(tokens, value, close) &&
+            return close > value && (csec_dict_literal_at(tokens, value, close) || csec_set_literal_at(tokens, value, close)) &&
                 csec_dict_literal_types(tokens, value, close, types);
         }
         // `val d = makeIndex(...)` where `def makeIndex(...): Dict<K, V>`.
@@ -203,7 +246,9 @@ static std::string csec_dict_initializer_type(const char* tokens, int start, int
     if (end <= start) return "";
     if (csec_native_token_is(tokens, start, 'O', "{")) {
         const int close = csec_find_closing_token(tokens, start, end, "{", "}");
-        return close == end - 1 && csec_dict_literal_at(tokens, start, close) ? "Dict" : "";
+        if (close != end - 1) return "";
+        if (csec_dict_literal_at(tokens, start, close)) return "Dict";
+        return csec_set_literal_at(tokens, start, close) ? "Set" : "";
     }
     if (csec_token_kind_at(tokens, start) != 'I') return "";
     const bool indexed = csec_native_token_is(tokens, start + 1, 'O', "[");
@@ -211,7 +256,15 @@ static std::string csec_dict_initializer_type(const char* tokens, int start, int
         csec_native_token_is(tokens, start + 3, 'O', "(");
     if (!indexed && !method) return "";
     CsecDictTypes types;
-    if (!csec_dict_named_types(tokens, start, types) || !csec_dict_scalar_type(types.value)) return "";
+    if (!csec_dict_named_types(tokens, start, types) || !csec_dict_types_valid(types)) return "";
+    if (types.isSet) {
+        if (indexed) return "";
+        const std::string setMethod = csec_token_text_at(tokens, start + 2);
+        if (setMethod == "size" || setMethod == "length" || setMethod == "count") return "Long";
+        if (setMethod == "contains" || setMethod == "has" || setMethod == "isEmpty" || setMethod == "add" ||
+            setMethod == "remove" || setMethod == "discard") return "Boolean";
+        return "";
+    }
     int depth = 0;
     for (int cursor = start; cursor < end; ++cursor) {
         if (csec_token_kind_at(tokens, cursor) != 'O') continue;
@@ -234,12 +287,13 @@ static std::string csec_dict_initializer_type(const char* tokens, int start, int
 
 static bool csec_module_uses_dicts(const char* tokens) {
     for (int cursor = 0; csec_token_kind_at(tokens, cursor) != 'E'; ++cursor) {
-        if (csec_native_token_is(tokens, cursor, 'I', "Dict") && csec_native_token_is(tokens, cursor + 1, 'O', "<")) return true;
+        if ((csec_native_token_is(tokens, cursor, 'I', "Dict") || csec_native_token_is(tokens, cursor, 'I', "Set")) &&
+            csec_native_token_is(tokens, cursor + 1, 'O', "<")) return true;
         if (csec_native_token_is(tokens, cursor, 'O', "{") && cursor > 0 &&
             (csec_native_token_is(tokens, cursor - 1, 'O', "=") || csec_native_token_is(tokens, cursor - 1, 'O', "(") ||
              csec_native_token_is(tokens, cursor - 1, 'O', ","))) {
             const int close = csec_find_closing_token(tokens, cursor, 1000000000, "{", "}");
-            if (close > cursor && csec_dict_literal_at(tokens, cursor, close)) return true;
+            if (close > cursor && (csec_dict_literal_at(tokens, cursor, close) || csec_set_literal_at(tokens, cursor, close))) return true;
         }
     }
     return false;
@@ -259,7 +313,9 @@ static std::string csec_dict_definitions(const char* tokens) {
         "declare i64 @csec_dict_value_at(ptr, i64)\n"
         "declare void @csec_dict_clear(ptr)\n"
         "declare ptr @csec_dict_copy(ptr)\n"
-        "declare ptr @csec_dict_to_string(ptr)\n\n";
+        "declare ptr @csec_dict_to_string(ptr)\n"
+        "declare ptr @csec_set_new(i32)\n"
+        "declare i32 @csec_set_add(ptr, i64)\n\n";
 }
 
 // Emit `[start, end)` as a value of scalar `type` and widen it to an i64 payload named `payload`.
@@ -316,6 +372,18 @@ static std::string csec_dict_convert_payload(const std::string& payload, const s
 
 // A new dictionary from the literal at [open, close] with entry types `types`, as ptr `resultName`.
 static std::string csec_dict_emit_literal(const char* tokens, int open, int close, const CsecDictTypes& types, const std::string& resultName) {
+    if (types.isSet) {
+        std::string output = "  " + resultName + " = call ptr @csec_set_new(i32 " + std::to_string(csec_dict_kind(types.key)) + ")\n";
+        int index = 0;
+        if (close > open + 1) {
+            for (const auto& item : csec_dict_split_items(tokens, open + 1, close)) {
+                const std::string element = resultName + ".element" + std::to_string(index++);
+                output += csec_dict_emit_payload(tokens, item.first, item.second, types.key, element);
+                output += "  " + element + ".added = call i32 @csec_set_add(ptr " + resultName + ", i64 " + element + ")\n";
+            }
+        }
+        return output;
+    }
     std::string output = "  " + resultName + " = call ptr @csec_dict_new(i32 " + std::to_string(csec_dict_kind(types.key)) +
         ", i32 " + std::to_string(csec_dict_kind(types.value)) + ", i32 0, i32 8)\n";
     int index = 0;
@@ -333,18 +401,16 @@ static std::string csec_dict_emit_literal(const char* tokens, int open, int clos
 // `val d = {...}`, `val d: Dict<K, V> = ...`, `val d = makeDict(...)`: the declaration at `cursor`.
 static bool csec_dict_declaration(const char* tokens, int cursor, int next, int initializer, CsecDictTypes& types) {
     if (csec_native_token_is(tokens, cursor + 2, 'O', ":")) {
-        return csec_dict_parse_type(tokens, cursor + 3, types) >= 0 &&
-            csec_dict_scalar_type(types.key) && csec_dict_scalar_type(types.value);
+        return csec_dict_parse_type(tokens, cursor + 3, types) >= 0 && csec_dict_types_valid(types);
     }
     if (initializer < cursor) return false;
     if (csec_native_token_is(tokens, initializer + 1, 'O', "{")) {
         const int close = csec_find_closing_token(tokens, initializer + 1, next, "{", "}");
-        return close > initializer + 1 && csec_dict_literal_at(tokens, initializer + 1, close) &&
-            csec_dict_literal_types(tokens, initializer + 1, close, types) &&
-            csec_dict_scalar_type(types.key) && csec_dict_scalar_type(types.value);
+        return close > initializer + 1 &&
+            (csec_dict_literal_at(tokens, initializer + 1, close) || csec_set_literal_at(tokens, initializer + 1, close)) &&
+            csec_dict_literal_types(tokens, initializer + 1, close, types) && csec_dict_types_valid(types);
     }
-    return csec_dict_named_types(tokens, cursor + 1, types) &&
-        csec_dict_scalar_type(types.key) && csec_dict_scalar_type(types.value);
+    return csec_dict_named_types(tokens, cursor + 1, types) && csec_dict_types_valid(types);
 }
 
 static std::string csec_dict_emit_declaration(const char* tokens, int cursor, int next, int initializer,
@@ -374,7 +440,8 @@ static std::string csec_emit_dict_expression(const char* tokens, int start, int 
     if (target == "ptr" && csec_native_token_is(tokens, start, 'O', "{")) {
         const int close = csec_find_closing_token(tokens, start, end, "{", "}");
         CsecDictTypes types;
-        if (close == end - 1 && close > start + 1 && csec_dict_literal_at(tokens, start, close) &&
+        if (close == end - 1 && close > start + 1 &&
+            (csec_dict_literal_at(tokens, start, close) || csec_set_literal_at(tokens, start, close)) &&
             csec_dict_literal_types(tokens, start, close, types)) {
             return csec_dict_emit_literal(tokens, start, close, types, resultName);
         }
@@ -389,13 +456,22 @@ static std::string csec_emit_dict_expression(const char* tokens, int start, int 
     const int close = csec_find_closing_token(tokens, open, end, indexed ? "[" : "(", indexed ? "]" : ")");
     if (close != end - 1) return "";
     CsecDictTypes types;
-    if (!csec_dict_named_types(tokens, start, types) || !csec_dict_scalar_type(types.key) || !csec_dict_scalar_type(types.value)) {
+    if (!csec_dict_named_types(tokens, start, types) || !csec_dict_types_valid(types)) {
         return "";
     }
+    if (types.isSet && indexed) return "";
     const std::string handle = resultName + ".dict";
     std::string output = csec_emit_ptr_expression(tokens, start, start + 1, handle);
     const std::string methodName = method ? csec_token_text_at(tokens, start + 2) : "";
     const auto arguments = csec_dict_split_items(tokens, open + 1, close);
+    if (types.isSet && (methodName == "add" || methodName == "discard") && arguments.size() == 1) {
+        output += csec_dict_emit_payload(tokens, arguments[0].first, arguments[0].second, types.key, resultName + ".key");
+        output += "  " + resultName + ".flag = call i32 @csec_" + std::string(methodName == "add" ? "set_add" : "dict_remove") +
+            "(ptr " + handle + ", i64 " + resultName + ".key)\n";
+        output += "  " + resultName + ".payload = sext i32 " + resultName + ".flag to i64\n";
+        return output + csec_dict_convert_payload(resultName + ".payload", "Boolean", target, resultName);
+    }
+    if (types.isSet && methodName == "get") return "";
     if (indexed || (methodName == "get" && arguments.size() == 1)) {
         if (arguments.size() != 1) return "";
         output += csec_dict_emit_payload(tokens, arguments[0].first, arguments[0].second, types.key, resultName + ".key");
@@ -445,7 +521,7 @@ static std::string csec_emit_dict_store(const char* tokens, int cursor, int next
         std::strcmp(assignment, "*=") == 0 || std::strcmp(assignment, "/=") == 0 || std::strcmp(assignment, "%=") == 0;
     if (!plain && !compound) return "";
     CsecDictTypes types;
-    if (!csec_dict_named_types(tokens, cursor, types) || !csec_dict_scalar_type(types.key) || !csec_dict_scalar_type(types.value)) {
+    if (!csec_dict_named_types(tokens, cursor, types) || !csec_dict_types_valid(types) || types.isSet) {
         return "";
     }
     const std::string seed = "%" + std::string(csec_token_text_at(tokens, cursor)) + ".dictset." + std::to_string(cursor);

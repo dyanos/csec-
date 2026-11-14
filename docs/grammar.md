@@ -141,7 +141,7 @@ generic-args = '<' type-arg { ',' type-arg } '>'            (* Tensor<Double,3,3
 type-arg     = type | int-lit ;                             (* non-type args: dimensions *)
 type-name    = 'Int' | 'Long' | 'Double' | 'Float' | 'Real' | 'Bool' | 'Boolean'
              | 'Char' | 'String' | 'Nat' | 'Unit' | 'Void'
-             | 'Tensor' | 'Vector' | 'Matrix' | 'Shared' | 'Weak' | 'Dict' | identifier ;
+             | 'Tensor' | 'Vector' | 'Matrix' | 'Shared' | 'Weak' | 'Dict' | 'Set' | identifier ;
 ```
 
 `Nat` is an arbitrary-precision integer (reference type). `struct`/value types are
@@ -224,12 +224,13 @@ index        = expr | [ expr ] ':' [ expr ] [ ':' expr ] ;  (* Fortran section t
 primary      = literal | identifier | '(' expr ')'
              | 'build' '{' { expr [ ';' ] } '}'
              | 'new' applied-type call-args
-             | lambda | if-expr | match-expr | array-lit | dict-lit | latex-math
+             | lambda | if-expr | match-expr | array-lit | dict-lit | set-lit | latex-math
              | 'this' | 'super' | dsl-entry ;
 lambda       = '[' [ capture-list ] ']' '(' [ params ] ')' '->' block ;
 array-lit    = '[' [ expr { ',' expr } ] ']' ;
 dict-lit     = '{' [ expr ':' expr { ',' expr ':' expr } [ ',' ] ] '}' ;
                                                             (* Dict<K, V>; see below *)
+set-lit      = '{' expr ',' [ expr { ',' expr } [ ',' ] ] '}' ;   (* Set<T>; at least one ',' *)
 if-expr      = 'if' '(' expr ')' block [ 'else' block ] ;
 latex-math   = '$' … '$' | '$$' … '$$' ;                     (* inline LaTeX-math evaluated to a value *)
 dsl-entry    = ( 'molecule' | 'cfd' | 'ode' | 'protein' ) … ;
@@ -241,6 +242,10 @@ value (after `=`, `(`, `,`, `:`, `[`, `<-`, or `return`); otherwise it is a bloc
 type is `Dict<K, V>`, with `K` and `V` the common types of its keys and values, or the declared
 type when it initializes an annotated declaration. In nested type arguments the closing `>>` is
 read as two `>`: `Dict<String, Dict<String, Int>>`.
+
+A `{` that is not a `dict-lit` starts a `set-lit` when its top-level items are separated by commas
+and no `:`, `;`, `=`, `<-` or `->` appears at the top level (so `{x}` is a block, `{x,}` a set). An
+empty `{}` is a set when the declaration or assignment target has type `Set<T>`.
 
 Token-processing sugar is intended for the self-hosted compiler:
 

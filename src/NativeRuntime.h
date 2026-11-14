@@ -578,6 +578,17 @@ CSEC_NATIVE_API long long csec_dict_value_at(void* dict, long long index);
 CSEC_NATIVE_API void csec_dict_clear(void* dict);
 CSEC_NATIVE_API void* csec_dict_copy(void* dict);
 CSEC_NATIVE_API char* csec_dict_to_string(void* dict);
+CSEC_NATIVE_API void* csec_dict_keys(void* dict);
+// Sets share the dictionary representation (keys only).
+CSEC_NATIVE_API void* csec_set_new(int elementKind);
+CSEC_NATIVE_API int csec_set_add(void* set, long long element);
+CSEC_NATIVE_API void* csec_set_union(void* left, void* right);
+CSEC_NATIVE_API void* csec_set_intersection(void* left, void* right);
+CSEC_NATIVE_API void* csec_set_difference(void* left, void* right);
+CSEC_NATIVE_API void* csec_set_symmetric_difference(void* left, void* right);
+CSEC_NATIVE_API int csec_set_is_subset(void* left, void* right);
+CSEC_NATIVE_API int csec_set_equals(void* left, void* right);
+CSEC_NATIVE_API int csec_set_is_disjoint(void* left, void* right);
 
 #ifdef __cplusplus
 }

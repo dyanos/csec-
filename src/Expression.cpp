@@ -346,6 +346,9 @@ std::unique_ptr<ASTNode> Parser::parseSimpleExpression() {
 		if (looksLikeDictLiteral()) {
 			return parseDictLiteral();
 		}
+		if (looksLikeSetLiteral()) {
+			return parseSetLiteral();
+		}
 		return parseBlock();
 	}
 	else if (check(TokenType::OPERATOR, "[")) {
@@ -1042,6 +1045,65 @@ std::unique_ptr<ASTNode> Parser::parseDictLiteral() {
 		auto value = parseExpression();
 		node->keys.push_back(std::move(key));
 		node->values.push_back(std::move(value));
+		if (!match(TokenType::OPERATOR, ",")) {
+			break;
+		}
+	}
+	expect(TokenType::OPERATOR, "}");
+	return node;
+}
+
+// Called just after a '{' in expression position (and after looksLikeDictLiteral). A '{' opens a set
+// literal when its top-level items are separated by commas -- `{1, 2, 3}`, or `{x,}` for a single
+// element -- with no ';', '=', '<-' or '->' before the closing '}' (so a block that starts with a
+// destructuring assignment `{ q, r = f(); ... }` stays a block).
+bool Parser::looksLikeSetLiteral() const {
+	if (check(TokenType::OPERATOR, "}")) {
+		return false;
+	}
+	if (peek().type == TokenType::KEYWORD && peek().value != "new") {
+		return false;
+	}
+	int depth = 0;
+	bool sawComma = false;
+	for (size_t i = position; i < tokens.size(); ++i) {
+		const Token& token = tokens[i];
+		if (token.type == TokenType::END_OF_FILE) {
+			return false;
+		}
+		if (token.type != TokenType::OPERATOR) {
+			continue;
+		}
+		const std::string& v = token.value;
+		if (v == "(" || v == "[" || v == "{") {
+			++depth;
+		}
+		else if (v == ")" || v == "]") {
+			if (depth == 0) return false;
+			--depth;
+		}
+		else if (v == "}") {
+			if (depth == 0) return sawComma;
+			--depth;
+		}
+		else if (depth == 0) {
+			if (v == ",") sawComma = true;
+			else if (v == ";" || v == "=" || v == "->" || v == "=>" || v == "<-" || v == ":") return false;
+		}
+	}
+	return false;
+}
+
+// `{e1, e2, ...}` (a trailing comma is allowed); the '{' is already consumed.
+std::unique_ptr<ASTNode> Parser::parseSetLiteral() {
+	auto node = std::make_unique<DictLiteralNode>();
+	node->isSet = true;
+	while (!check(TokenType::OPERATOR, "}")) {
+		if (isAtEnd()) {
+			error("Unterminated set literal");
+			return nullptr;
+		}
+		node->keys.push_back(parseExpression());
 		if (!match(TokenType::OPERATOR, ",")) {
 			break;
 		}

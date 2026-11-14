@@ -1,0 +1,7 @@
+// Set algebra needs two sets of the same element type.
+def main(): Int {
+    val numbers = {1, 2};
+    val names = {"a", "b"};
+    val both = numbers | names;
+    return 0;
+}

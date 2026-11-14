@@ -68,8 +68,10 @@ void bindLoopVariable(const std::string& name, const Type* type, llvm::Value* va
 llvm::Value* ForStatementNode::codegenDictLoop() {
     auto& cg = CodeGenerator::getInstance();
     auto dictType = iterableExpr->getType();
-    const Type* keyType = dictKeyType(dictType.get());
-    const Type* valueType = dictValueType(dictType.get());
+    // A set iterates its elements, which are the keys of the underlying dictionary.
+    const bool isSet = isSetType(dictType.get());
+    const Type* keyType = isSet ? setElementType(dictType.get()) : dictKeyType(dictType.get());
+    const Type* valueType = isSet ? keyType : dictValueType(dictType.get());
     llvm::Value* handle = codegenDictHandle(iterableExpr.get());
     if (!handle || !keyType || !valueType) return nullptr;
 
@@ -97,7 +99,7 @@ llvm::Value* ForStatementNode::codegenDictLoop() {
 
     cg.builder.SetInsertPoint(bodyBB);
     cg.symbolTable.enterScope();
-    const std::string keyName = tokenValue.empty() ? variable : tokenValue;
+    const std::string keyName = (tokenValue.empty() || isSet) ? variable : tokenValue;
     llvm::Value* keyPayload = cg.builder.CreateCall(runtime("csec_dict_key_at", i64Ty, {ptrTy, i64Ty}), {handle, index}, "dict.iter.key");
     llvm::Value* key = dictValueFromPayload(keyPayload, keyType);
     if (!key) {
@@ -105,7 +107,7 @@ llvm::Value* ForStatementNode::codegenDictLoop() {
         return nullptr;
     }
     bindLoopVariable(keyName, keyType, key);
-    if (!tokenValue.empty()) {
+    if (!tokenValue.empty() && !isSet) {
         llvm::Value* valuePayload = cg.builder.CreateCall(runtime("csec_dict_value_at", i64Ty, {ptrTy, i64Ty}), {handle, index}, "dict.iter.value");
         llvm::Value* value = dictValueFromPayload(valuePayload, valueType);
         if (!value) {
@@ -136,7 +138,7 @@ llvm::Value* ForStatementNode::codegen() {
 
     if (!isRange && !tokenStream && iterableExpr) {
         auto iterableType = iterableExpr->getType();
-        if (isDictType(iterableType.get())) {
+        if (isDictType(iterableType.get()) || isSetType(iterableType.get())) {
             return codegenDictLoop();
         }
     }
